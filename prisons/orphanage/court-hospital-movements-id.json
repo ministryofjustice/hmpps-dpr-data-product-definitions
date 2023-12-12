@@ -1,0 +1,175 @@
+{
+  "id": "court-hospital-movements-id",
+  "name": "Court & Hospital Movement DPD",
+  "description": "DPD contains report variants for courts Movements Description",
+  "metadata": {
+    "author": "Zahoor Hussain",
+    "owner": "Michael Clarke",
+    "version": "1.0.5"
+  },
+  "datasource": [
+    {
+      "id": "datamart",
+      "name": "datamart"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "court-dataset",
+      "name": "court-dataset",
+      "datasource": "datamart",
+      "query": "SELECT prisoners.number AS prisonNumber,CONCAT(CONCAT(prisoners.lastname, ', '), substring(prisoners.firstname, 1, 1)) AS name,movements.time AS date,movements.direction,movements.type,movements.origin,movements.origin_code,movements.destination,movements.destination_code,movements.reason\nFROM datamart.domain.movement_movement as movements\nJOIN datamart.domain.prisoner_prisoner as prisoners\nON movements.prisoner = prisoners.id Where type='CRT'",
+      "schema": {
+        "field": [
+          {
+            "name": "prisonNumber",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "date",
+            "type": "date",
+            "display": ""
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "origin",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "destination",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "direction",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "reason",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "origin_code",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "destination_code",
+            "type": "string",
+            "display": ""
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "caseload",
+      "type": "row-level",
+      "action": [
+        "(origin_code=${caseload} AND direction='OUT') OR (destination_code=${caseload} AND direction='IN')"
+      ],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": []
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "court-movement-report",
+      "name": "court movement",
+      "description": "court movement",
+      "classification": "list",
+      "version": "v1.0",
+      "render": "HTML",
+      "dataset": "$ref:court-dataset",
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:name",
+            "display": "Full Name",
+            "formula": "",
+            "visible": true,
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:date",
+            "display": "Date",
+            "formula": "",
+            "visible": true,
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "daterange",
+              "default": "today(-1,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:origin",
+            "display": "From",
+            "formula": "",
+            "visible": true,
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {}
+          },
+          {
+            "name": "$ref:destination",
+            "display": "To",
+            "formula": "",
+            "visible": true,
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:direction",
+            "display": "Direction",
+            "formula": "",
+            "visible": true,
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "Radio",
+              "staticoptions": [
+                {
+                  "name": "In",
+                  "display": "IN"
+                },
+                {
+                  "name": "Out",
+                  "display": "OUT"
+                }
+              ]
+            }
+          },
+          {
+            "name": "$ref:reason",
+            "display": "Reason",
+            "formula": "",
+            "visible": true,
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    }
+  ]
+}
