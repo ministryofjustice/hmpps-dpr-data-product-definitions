@@ -1,11 +1,11 @@
 {
-  "id": "hospital-courts-movements",
-  "name": "hospital-and-court-movements",
-  "description": "DPD contains report variants for both Hospital & courts Movements",
+  "id": "dpd001-court-hospital-movements",
+  "name": "Court & Hospital Movement DPD",
+  "description": "DPD contains report variants for courts Movements Description",
   "metadata": {
-    "author": "me",
+    "author": "Zahoor Hussain",
     "owner": "Michael Clarke",
-    "version": "1.0.3"
+    "version": "1.0.5"
   },
   "datasource": [
     {
@@ -15,8 +15,68 @@
   ],
   "dataset": [
     {
-      "id": "movement_movement",
-      "name": "movement_movement",
+      "id": "court-dataset",
+      "name": "court-dataset",
+      "datasource": "datamart",
+      "query": "SELECT prisoners.number AS prisonNumber,CONCAT(CONCAT(prisoners.lastname, ', '), substring(prisoners.firstname, 1, 1)) AS name,movements.time AS date,movements.direction,movements.type,movements.origin,movements.origin_code,movements.destination,movements.destination_code,movements.reason\nFROM datamart.domain.movement_movement as movements\nJOIN datamart.domain.prisoner_prisoner as prisoners\nON movements.prisoner = prisoners.id Where type='CRT'",
+      "schema": {
+        "field": [
+          {
+            "name": "prisonNumber",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "date",
+            "type": "date",
+            "display": ""
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "origin",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "destination",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "direction",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "reason",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "origin_code",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "destination_code",
+            "type": "string",
+            "display": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "hospital-dataset",
+      "name": "hospital-dataset",
       "datasource": "datamart",
       "query": "SELECT prisoners.number AS prisonNumber,CONCAT(CONCAT(prisoners.lastname, ', '), substring(prisoners.firstname, 1, 1)) AS name,movements.time AS date,movements.direction,movements.type,movements.origin,movements.origin_code,movements.destination,movements.destination_code,movements.reason\nFROM datamart.domain.movement_movement as movements\nJOIN datamart.domain.prisoner_prisoner as prisoners\nON movements.prisoner = prisoners.id",
       "schema": {
@@ -37,8 +97,8 @@
             "display": "Date"
           },
           {
-            "name": "time",
-            "type": "time",
+            "name": "type",
+            "type": "string",
             "display": "Time"
           },
           {
@@ -57,19 +117,14 @@
             "display": "Direction"
           },
           {
-            "name": "type",
+            "name": "reason",
             "type": "string",
             "display": "Type"
           },
           {
-            "name": "reason",
-            "type": "string",
-            "display": "Reason"
-          },
-          {
             "name": "origin_code",
             "type": "string",
-            "display": ""
+            "display": "Reason"
           },
           {
             "name": "destination_code",
@@ -84,44 +139,30 @@
     {
       "id": "caseload",
       "type": "row-level",
+      "action": ["(origin_code=${caseload} AND direction='OUT') OR (destination_code=${caseload} AND direction='IN')"],
       "rule": [
         {
           "effect": "permit",
-          "condition": [
-            {
-              "match": {
-                "fragment": "(origin_code=${caseload} AND direction='OUT') OR (destination_code=${caseload} AND direction='IN')"
-              }
-            }
-          ]
+          "condition": []
         }
       ]
     }
   ],
   "report": [
     {
-      "id": "hospital-movement",
-      "name": "hospital movement",
-      "description": "hospital movement",
-      "created": "2023-07-12T09:55:00.000Z",
-      "classification": "hospital movement",
+      "id": "report001-court-movement",
+      "name": "court movement",
+      "description": "court movement",
+      "classification": "list",
       "version": "v1.0",
       "render": "HTML",
-      "dataset": "$ref:movement_movement",
+      "dataset": "$ref:court-dataset",
       "specification": {
         "template": "list",
         "field": [
           {
             "name": "$ref:name",
-            "display": "",
-            "formula": "",
-            "visible": true,
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:prisonNumber",
-            "display": "",
+            "display": "Full Name",
             "formula": "",
             "visible": true,
             "sortable": true,
@@ -129,11 +170,11 @@
           },
           {
             "name": "$ref:date",
-            "display": "",
+            "display": "Date",
             "formula": "",
             "visible": true,
             "sortable": true,
-            "defaultsort": true,
+            "defaultsort": false,
             "filter": {
               "type": "daterange",
               "default": "today(-1,months) - today()"
@@ -141,7 +182,7 @@
           },
           {
             "name": "$ref:origin",
-            "display": "",
+            "display": "From",
             "formula": "",
             "visible": true,
             "sortable": true,
@@ -149,7 +190,7 @@
           },
           {
             "name": "$ref:destination",
-            "display": "",
+            "display": "To",
             "formula": "",
             "visible": true,
             "sortable": true,
@@ -157,15 +198,7 @@
           },
           {
             "name": "$ref:direction",
-            "display": "",
-            "formula": "",
-            "visible": true,
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:type",
-            "display": "",
+            "display": "Direction",
             "formula": "",
             "visible": true,
             "sortable": true,
@@ -174,57 +207,41 @@
               "type": "Radio",
               "staticoptions": [
                 {
-                  "name": "CRT",
-                  "display": "Court"
+                  "name": "In",
+                  "display": "IN"
                 },
                 {
-                  "name": "HSP",
-                  "display": "Hospital"
+                  "name": "Out",
+                  "display": "OUT"
                 }
               ]
             }
           },
           {
             "name": "$ref:reason",
-            "display": "",
+            "display": "Reason",
             "formula": "",
             "visible": true,
             "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:origin_code",
-            "display": "",
-            "formula": "",
-            "visible": false,
-            "sortable": false,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:destination_code",
-            "display": "",
-            "formula": "",
-            "visible": false,
-            "sortable": false,
             "defaultsort": false
           }
         ]
       }
     },
     {
-      "id": "court-movement",
-      "name": "court movement",
-      "description": "court movement",
-      "classification": "court movement",
+      "id": "hospital-movement",
+      "name": "hospital movement",
+      "description": "hospital movement",
+      "classification": "list",
       "version": "v1.0",
       "render": "HTML",
-      "dataset": "$ref:movement_movement",
+      "dataset": "$ref:hospital-dataset",
       "specification": {
         "template": "list",
         "field": [
           {
             "name": "$ref:name",
-            "display": "",
+            "display": "Full Name",
             "formula": "",
             "visible": true,
             "sortable": true,
@@ -232,7 +249,7 @@
           },
           {
             "name": "$ref:prisonNumber",
-            "display": "",
+            "display": "Prison Number",
             "formula": "",
             "visible": true,
             "sortable": true,
@@ -240,7 +257,7 @@
           },
           {
             "name": "$ref:date",
-            "display": "",
+            "display": "Date",
             "formula": "",
             "visible": true,
             "sortable": true,
@@ -252,7 +269,7 @@
           },
           {
             "name": "$ref:origin",
-            "display": "",
+            "display": "From",
             "formula": "",
             "visible": true,
             "sortable": true,
@@ -260,7 +277,7 @@
           },
           {
             "name": "$ref:destination",
-            "display": "",
+            "display": "To",
             "formula": "",
             "visible": true,
             "sortable": true,
@@ -268,7 +285,7 @@
           },
           {
             "name": "$ref:direction",
-            "display": "",
+            "display": "Direction",
             "formula": "",
             "visible": true,
             "sortable": true,
@@ -276,7 +293,7 @@
           },
           {
             "name": "$ref:type",
-            "display": "",
+            "display": "Type",
             "formula": "",
             "visible": true,
             "sortable": true,
@@ -297,26 +314,10 @@
           },
           {
             "name": "$ref:reason",
-            "display": "",
+            "display": "Reason",
             "formula": "",
             "visible": true,
             "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:origin_code",
-            "display": "",
-            "formula": "",
-            "visible": false,
-            "sortable": false,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:destination_code",
-            "display": "",
-            "formula": "",
-            "visible": false,
-            "sortable": false,
             "defaultsort": false
           }
         ]
