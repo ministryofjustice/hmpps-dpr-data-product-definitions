@@ -1,11 +1,11 @@
 {
-  "id": "dpd001-court-hospital-movements",
-  "name": "Court And Hospital Movement DPD",
-  "description": "DPD contains report variants for courts Movements Description",
+  "id": "dpd001-hospital-and-court-movements",
+  "name": "Hospital Movements and Prisoners at Court",
+  "description": "Contains reports for Hospital Movements and Prisoners at court",
   "metadata": {
     "author": "Zahoor Hussain",
     "owner": "Michael Clarke",
-    "version": "1.0.5"
+    "version": "1.0.1"
   },
   "datasource": [
     {
@@ -18,11 +18,11 @@
       "id": "court-dataset",
       "name": "court-dataset",
       "datasource": "datamart",
-      "query": "SELECT prisoners.number AS prisonNumber,CONCAT(CONCAT(prisoners.lastname, ', '), substring(prisoners.firstname, 1, 1)) AS name,movements.time AS date,movements.direction,movements.type,movements.origin,movements.origin_code,movements.destination,movements.destination_code,movements.reason\nFROM datamart.domain.movement_movement as movements\nJOIN datamart.domain.prisoner_prisoner as prisoners\nON movements.prisoner = prisoners.id Where type='CRT'",
+      "query": "SELECT prisoners.number AS prison_number,name AS name,movements.time AS date,movements.direction as direction,movements.type as type,movements.origin as origin,movements.origin_code as origin_code,movements.destination as destination,movements.destination_code as destination_code,movements.reason FROM datamart.domain.movement_movement as movements JOIN datamart.domain.prisoner_prisoner as prisoners ON movements.prisoner = prisoners.id Where type='CRT'  and lower(direction) = 'out'",
       "schema": {
         "field": [
           {
-            "name": "prisonNumber",
+            "name": "prison_number",
             "type": "string",
             "display": ""
           },
@@ -37,27 +37,7 @@
             "display": ""
           },
           {
-            "name": "type",
-            "type": "string",
-            "display": ""
-          },
-          {
             "name": "origin",
-            "type": "string",
-            "display": ""
-          },
-          {
-            "name": "destination",
-            "type": "string",
-            "display": ""
-          },
-          {
-            "name": "direction",
-            "type": "string",
-            "display": ""
-          },
-          {
-            "name": "reason",
             "type": "string",
             "display": ""
           },
@@ -67,7 +47,27 @@
             "display": ""
           },
           {
+            "name": "destination",
+            "type": "string",
+            "display": ""
+          },
+          {
             "name": "destination_code",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "direction",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "reason",
             "type": "string",
             "display": ""
           }
@@ -78,11 +78,11 @@
       "id": "hospital-dataset",
       "name": "hospital-dataset",
       "datasource": "datamart",
-      "query": "SELECT prisoners.number AS prisonNumber,CONCAT(CONCAT(prisoners.lastname, ', '), substring(prisoners.firstname, 1, 1)) AS name,movements.time AS date,movements.direction,movements.type,movements.origin,movements.origin_code,movements.destination,movements.destination_code,movements.reason\nFROM datamart.domain.movement_movement as movements\nJOIN datamart.domain.prisoner_prisoner as prisoners\nON movements.prisoner = prisoners.id Where type='CRT'",
+      "query": "SELECT prisoners.number AS prison_number, name AS name, movements.time AS date, movements.direction, movements.type, movements.origin, movements.origin_code, movements.destination, movements.destination_code, movements.reason, movements.escort,  movements.comment  FROM datamart.domain.movement_movement as movements JOIN datamart.domain.prisoner_prisoner as prisoners ON movements.prisoner = prisoners.id where reason_code in ('C5','C6','MED','5','HP')",
       "schema": {
         "field": [
           {
-            "name": "prisonNumber",
+            "name": "prison_number",
             "type": "string",
             "display": ""
           },
@@ -107,7 +107,17 @@
             "display": ""
           },
           {
+            "name": "origin_code",
+            "type": "string",
+            "display": ""
+          },
+          {
             "name": "destination",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "destination_code",
             "type": "string",
             "display": ""
           },
@@ -122,12 +132,12 @@
             "display": ""
           },
           {
-            "name": "origin_code",
+            "name": "escort",
             "type": "string",
             "display": ""
           },
           {
-            "name": "destination_code",
+            "name": "comment",
             "type": "string",
             "display": ""
           }
@@ -139,13 +149,17 @@
     {
       "id": "caseload",
       "type": "row-level",
-      "action": ["(origin_code='${caseload}' AND lower(direction)='out') OR (destination_code='${caseload}' AND lower(direction)='in')"],
+      "action": [
+        "(origin_code='${caseload}' AND lower(direction)='out') OR (destination_code='${caseload}' AND lower(direction)='in')"
+      ],
       "rule": [
         {
           "effect": "permit",
           "condition": [
             {
-              "exists": ["${caseload}"]
+              "exists": [
+                "${caseload}"
+              ]
             }
           ]
         }
@@ -154,167 +168,9 @@
   ],
   "report": [
     {
-      "id": "report003-hospital-movement",
-      "name": "report003-hospital-movement",
-      "description": "report003-hospital-movement",
-      "classification": "list",
-      "version": "v1.0",
-      "render": "HTML",
-      "dataset": "$ref:hospital-dataset",
-      "specification": {
-        "template": "list",
-        "field": [
-          {
-            "name": "$ref:name",
-            "display": "Full Name",
-            "formula": "",
-            "visible": true,
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:date",
-            "display": "Date",
-            "formula": "",
-            "visible": true,
-            "sortable": true,
-            "defaultsort": false,
-            "filter": {
-              "type": "daterange",
-              "default": "today(-1,months) - today()"
-            }
-          },
-          {
-            "name": "$ref:origin",
-            "display": "From",
-            "formula": "",
-            "visible": true,
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:destination",
-            "display": "To",
-            "formula": "",
-            "visible": true,
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:direction",
-            "display": "Direction",
-            "formula": "",
-            "visible": true,
-            "sortable": true,
-            "defaultsort": false,
-            "filter": {
-              "type": "Radio",
-              "staticoptions": [
-                {
-                  "name": "In",
-                  "display": "IN"
-                },
-                {
-                  "name": "Out",
-                  "display": "OUT"
-                }
-              ]
-            }
-          },
-          {
-            "name": "$ref:reason",
-            "display": "Reason",
-            "formula": "",
-            "visible": true,
-            "sortable": true,
-            "defaultsort": false
-          }
-        ]
-      }
-    },
-    {
-      "id": "report002-hospital-movement",
-      "name": "report002-hospital-movement",
-      "description": "report002-hospital-movement",
-      "classification": "list",
-      "version": "v1.0",
-      "render": "HTML",
-      "dataset": "$ref:hospital-dataset",
-      "specification": {
-        "template": "list",
-        "field": [
-          {
-            "name": "$ref:name",
-            "display": "Full Name",
-            "formula": "",
-            "visible": true,
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:date",
-            "display": "Date",
-            "formula": "",
-            "visible": true,
-            "sortable": true,
-            "defaultsort": false,
-            "filter": {
-              "type": "daterange",
-              "default": "today(-1,months) - today()"
-            }
-          },
-          {
-            "name": "$ref:origin",
-            "display": "From",
-            "formula": "",
-            "visible": true,
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:destination",
-            "display": "To",
-            "formula": "",
-            "visible": true,
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:direction",
-            "display": "Direction",
-            "formula": "",
-            "visible": true,
-            "sortable": true,
-            "defaultsort": false,
-            "filter": {
-              "type": "Radio",
-              "staticoptions": [
-                {
-                  "name": "In",
-                  "display": "IN"
-                },
-                {
-                  "name": "Out",
-                  "display": "OUT"
-                }
-              ]
-            }
-          },
-          {
-            "name": "$ref:reason",
-            "display": "Reason",
-            "formula": "",
-            "visible": true,
-            "sortable": true,
-            "defaultsort": false
-          }
-        ]
-      }
-    },
-    {
-      "id": "report001-court-movement",
-      "name": "report001-court-movement",
-      "description": "court movement",
+      "id": "prisoners-at-court--mov0028",
+      "name": "Prisoners at Court",
+      "description": "Prisoners at Court",
       "classification": "list",
       "version": "v1.0",
       "render": "HTML",
@@ -328,28 +184,38 @@
             "formula": "",
             "visible": true,
             "sortable": true,
-            "defaultsort": false,
-            "filter": {
-              "type": "daterange",
-              "default": "today(-1,months) - today()"
-            }
+            "defaultsort": true
           },
           {
-            "name": "$ref:origin",
-            "display": "From",
+            "name": "$ref:prison_number",
+            "display": "Prison Number",
             "formula": "",
             "visible": true,
             "sortable": true,
             "defaultsort": false
           },
           {
-            "name": "$ref:destination",
-            "display": "To",
+            "name": "$ref:name",
+            "display": "Name",
             "formula": "",
             "visible": true,
             "sortable": true,
             "defaultsort": false
-          },
+          }
+        ]
+      }
+    },
+    {
+      "id": "hospital-movement-mov0027",
+      "name": "Hospital Movements",
+      "description": "Prisoner Movements to/from Hospital",
+      "classification": "list",
+      "version": "v1.0",
+      "render": "HTML",
+      "dataset": "$ref:hospital-dataset",
+      "specification": {
+        "template": "list",
+        "field": [
           {
             "name": "$ref:direction",
             "display": "Direction",
@@ -372,8 +238,20 @@
             }
           },
           {
-            "name": "$ref:reason",
-            "display": "Reason",
+            "name": "$ref:date",
+            "display": "Date",
+            "formula": "",
+            "visible": true,
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "daterange",
+              "default": "today(-1,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:prison_number",
+            "display": "Prisoner Number",
             "formula": "",
             "visible": true,
             "sortable": true,
@@ -385,6 +263,38 @@
             "formula": "",
             "visible": true,
             "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:origin",
+            "display": "From",
+            "formula": "",
+            "visible": true,
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:destination",
+            "display": "To",
+            "formula": "",
+            "visible": true,
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:escort",
+            "display": "Escort",
+            "formula": "",
+            "visible": true,
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:comment",
+            "display": "Comment",
+            "formula": "",
+            "visible": true,
+            "sortable": false,
             "defaultsort": false
           }
         ]
