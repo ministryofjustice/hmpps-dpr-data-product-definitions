@@ -19,7 +19,7 @@ import kotlin.io.path.name
 @Service
 class DefinitionsService() {
 
-  fun getDefinitions(path: String): List<ProductDefinition> {
+  fun getDefinitions(path: String): List<Map<String,Any>> {
    val gson : Gson = GsonBuilder()
       .registerTypeAdapter(LocalDateTime::class.java, IsoLocalDateTimeTypeAdaptor())
       .registerTypeAdapter(FilterType::class.java, FilterTypeDeserializer())
@@ -32,10 +32,10 @@ class DefinitionsService() {
       .filter { Files.isRegularFile(it) }
       .filter { item -> item.toString().endsWith(".json")  }
       .toList()
-    val result = dirs.map<Path, ProductDefinition> {
+    val result = dirs.map<Path, Map<String,Any>> {
       gson.fromJson(
         this::class.java.classLoader.getResource("$path/${it.name}")?.readText(),
-        object : TypeToken<ProductDefinition>() {}.type
+        object : TypeToken<Map<String,Any>>() {}.type
       )
     }
     return result

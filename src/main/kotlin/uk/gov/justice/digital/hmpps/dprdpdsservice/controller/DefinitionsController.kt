@@ -15,7 +15,7 @@ class DefinitionsController(val definitionsService: DefinitionsService) {
     description = "Gets all the definitions by directory",
   )
   @GetMapping("/definitions/**")
-  fun getDefinitions(request: HttpServletRequest): List<ProductDefinition> {
+  fun getDefinitions(request: HttpServletRequest): List<Map<String,Any>> {
     val path: String = request.requestURI
     return definitionsService.getDefinitions(path.removePrefix("/"))
   }
