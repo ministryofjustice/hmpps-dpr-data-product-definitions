@@ -9,7 +9,7 @@ import org.springframework.web.util.UriBuilder
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class DefinitionsServiceIntegrationTest{
+class DefinitionsServiceIntegrationTest {
 
   @Autowired
   lateinit var webTestClient: WebTestClient
