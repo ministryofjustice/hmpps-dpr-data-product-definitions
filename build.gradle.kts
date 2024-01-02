@@ -13,10 +13,6 @@ configurations {
 
 dependencies {
   implementation("org.springframework.boot:spring-boot-starter-webflux")
-  // DPR Library
-  implementation("uk.gov.justice.service.hmpps:hmpps-digital-prison-reporting-lib:1.3.2") {
-    exclude(group = "org.springframework.boot", module = "spring-boot-starter-security")
-  }
   implementation("org.springframework.boot:spring-boot-starter-security")
   // Swagger
   implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
