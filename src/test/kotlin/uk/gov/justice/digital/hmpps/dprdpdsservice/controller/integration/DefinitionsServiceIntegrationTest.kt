@@ -34,4 +34,44 @@ class DefinitionsServiceIntegrationTest{
       """,
       )
   }
+
+  @Test
+  fun `Definitions API returns an empty list of definitions for a missing directory`() {
+    val requestPath = "prisons"
+
+    webTestClient.get()
+      .uri { uriBuilder: UriBuilder ->
+        uriBuilder
+          .path("/definitions/$requestPath")
+          .build()
+      }
+      .exchange()
+      .expectStatus()
+      .isOk()
+      .expectBody()
+      .json(
+        """[]       
+      """,
+      )
+  }
+
+  @Test
+  fun `Definitions API returns an empty list of definitions for an directory with no json files`() {
+    val requestPath = "nonexistent"
+
+    webTestClient.get()
+      .uri { uriBuilder: UriBuilder ->
+        uriBuilder
+          .path("/definitions/$requestPath")
+          .build()
+      }
+      .exchange()
+      .expectStatus()
+      .isOk()
+      .expectBody()
+      .json(
+        """[]       
+      """,
+      )
+  }
 }
