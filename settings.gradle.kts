@@ -1,1 +1,1 @@
-rootProject.name = "digital-prison-reporting-data-product-definitions"
+rootProject.name = "hmpps-digital-prison-reporting-data-product-definitions"
