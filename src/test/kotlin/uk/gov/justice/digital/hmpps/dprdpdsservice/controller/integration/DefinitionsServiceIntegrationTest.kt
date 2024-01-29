@@ -19,6 +19,7 @@ class DefinitionsServiceIntegrationTest {
     val requestPath = "prisons/orphanage"
     val expectedCourtsJson = this::class.java.classLoader.getResource("definitions/$requestPath/dpd001-court-hospital-movements.json")?.readText()
     val expectedExternalMovementsJson = this::class.java.classLoader.getResource("definitions/$requestPath/external-movements.json")?.readText()
+
     webTestClient.get()
       .uri { uriBuilder: UriBuilder ->
         uriBuilder
