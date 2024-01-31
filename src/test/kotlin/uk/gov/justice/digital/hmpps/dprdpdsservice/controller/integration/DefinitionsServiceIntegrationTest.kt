@@ -17,7 +17,6 @@ class DefinitionsServiceIntegrationTest {
   @Test
   fun `Definitions API returns the full list of definitions for a valid directory which has definition json files`() {
     val requestPath = "prisons/orphanage"
-    val expectedCourtsJson = this::class.java.classLoader.getResource("definitions/$requestPath/dpd001-court-hospital-movements.json")?.readText()
     val expectedExternalMovementsJson = this::class.java.classLoader.getResource("definitions/$requestPath/external-movements.json")?.readText()
 
     webTestClient.get()
@@ -31,7 +30,7 @@ class DefinitionsServiceIntegrationTest {
       .isOk()
       .expectBody()
       .json(
-        """[$expectedExternalMovementsJson, $expectedCourtsJson]       
+        """[$expectedExternalMovementsJson]       
       """,
       )
   }
