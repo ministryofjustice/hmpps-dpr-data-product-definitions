@@ -1,0 +1,262 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Data Product Definition Schema",
+  "type": "object",
+
+  "required": ["id", "name", "metadata", "datasource", "dataset", "report"],
+
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "metadata": { "$ref": "#/definitions/metadata" },
+    "datasource": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/datasource" }
+    },
+    "dataset": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/dataset" }
+    },
+    "policy": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/policy" }
+    },
+    "report": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/report" }
+    }
+  },
+
+  "additionalProperties": false,
+
+  "definitions": {
+    "alias": { "type": "array", "items": { "type": "string" } },
+
+    "datasource": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "connection": { "type": "string" }
+      }
+    },
+
+    "dataset": {
+      "type": "object",
+      "required": ["id", "name", "datasource", "query", "schema"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "datasource": { "type": "string" },
+        "query": { "type": "string" },
+        "schema": {
+          "type": "object",
+          "required": ["field"],
+          "properties": {
+            "field": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/dataset-field" }
+            }
+          }
+        }
+      }
+    },
+
+    "dataset-field": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "description": { "type": "string" },
+        "glossaryindex": { "type": "string" },
+        "name": { "type": "string" },
+        "display": { "type": "string" },
+        "piiindex": { "type": "string" },
+        "sensitivity": { "$ref": "#/definitions/sensitivity" },
+        "alias": { "$ref": "#/definitions/alias" },
+        "tags": { "$ref": "#/definitions/tags" },
+        "type": { "enum": ["null", "boolean", "int", "long", "float", "double", "bytes", "string", "date", "time", "datetime", "timestamp"] }
+      },
+      "additionalProperties": false
+    },
+
+    "filter": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string" },
+        "default": { "type": "string" },
+        "staticoptions": { "$ref": "#/definitions/static-options" }
+      }
+    },
+
+    "metadata": {
+      "type": "object",
+      "required": ["version"],
+      "properties": {
+        "author": { "type": "string" },
+        "version": { "type": "string" },
+        "owner": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "policy": {
+      "type": "object",
+      "required": ["id", "type", "rule"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "enum": ["access", "row-level", "column-level", "masking", "privacy", "geofencing", "timefencing", "propagation", "retention"] },
+        "action": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "rule": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/policy-rule" }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "policy-rule": {
+      "type": "object",
+      "required": ["effect", "condition"],
+      "properties": {
+        "effect": { "enum": ["permit", "deny"], "default": "deny" },
+        "condition": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/policy-condition" }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "policy-condition": {
+      "anyOf": [
+        { "$ref": "#/definitions/policy-condition-match" },
+        { "$ref": "#/definitions/policy-condition-nomatch" },
+        { "$ref": "#/definitions/policy-condition-like" },
+        { "$ref": "#/definitions/policy-condition-between" }
+      ]
+    },
+
+    "policy-condition-match": {
+      "type": "object",
+      "properties": {
+        "match": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+
+    "policy-condition-nomatch": {
+      "type": "object",
+      "properties": {
+        "notequals": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+
+    "policy-condition-like": {
+      "type": "object",
+      "properties": {
+        "like": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+
+    "policy-condition-between": {
+      "type": "object",
+      "properties": {
+        "between": {
+          "type": "object",
+          "required": ["value", "start", "end"],
+          "properties": {
+            "value": { "type": "string" },
+            "start": { "type": "string" },
+            "end": { "type": "string" }
+          }
+        }
+      }
+    },
+
+    "report": {
+      "type": "object",
+      "required": ["id", "name", "version", "dataset", "render", "specification"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "created": { "type": "string" },
+        "modified": { "type": "string" },
+        "withdrawn": { "type": "string" },
+        "version": { "type": "string" },
+        "dataset": { "type": "string" },
+        "render": { "type": "string" },
+        "classification": { "type": "string" },
+        "policy": { "type": "array", "items": { "$ref": "#/definitions/policy" } },
+        "specification": { "$ref": "#/definitions/report-specification" }
+      }
+    },
+
+    "report-specification": {
+      "type": "object",
+      "required": ["template", "field"],
+      "properties": {
+        "template": { "enum": ["list"] },
+        "field": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/report-field" }
+        }
+      }
+    },
+
+    "report-field": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "description": { "type": "string" },
+        "name": { "type": "string" },
+        "display": { "type": "string" },
+        "formula": { "type": "string" },
+        "visible": { "enum": ["true", "false", "mandatory"] },
+        "sortable": { "type": "boolean" },
+        "defaultsort": { "type": "boolean" },
+        "wordwrap": { "enum": ["none", "normal", "break-words"] },
+        "alias": { "$ref": "#/definitions/alias" },
+        "filter": { "$ref": "#/definitions/filter" },
+        "type": { "enum": ["boolean", "int", "long", "float", "double", "string", "date", "time", "datetime", "timestamp"] }
+      },
+      "additionalProperties": false
+    },
+
+    "sensitivity": {
+      "enum": ["public", "private", "internal", "confidential", "restricted"],
+      "default": "public"
+    },
+
+    "static-options": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "display"],
+        "properties": {
+          "name": { "type": "string" },
+          "display": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "tags": { "type": "array", "items": { "type": "string" } }
+  }
+}
