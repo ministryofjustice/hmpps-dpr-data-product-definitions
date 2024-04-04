@@ -1,0 +1,51 @@
+name: PR preparation
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+jobs:
+  preparation:
+    runs-on: ubuntu-latest
+
+    permissions:
+      pull-requests: write
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '19'
+          distribution: 'corretto'
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+
+      - name: Add linting fixes
+        run: ./gradlew ktlintFormat
+
+      - name: Commit linting fixes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Linting fixes
+
+      - uses: ministryofjustice/github-actions/code-formatter@v14
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Calculate test coverage
+        id: calculate-test-coverage
+        run: |
+          ./gradlew jacocoTestReport > logs.txt
+          grep 'Test Coverage:' logs.txt -A6 > message.txt
+
+      - name: PR comment
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          comment_tag: coverage
+          filePath: message.txt
