@@ -19,6 +19,8 @@ dependencies {
 
   implementation("com.h2database:h2")
   implementation("com.google.code.gson:gson:2.10.1")
+
+  testImplementation("com.github.java-json-tools:json-schema-validator:2.2.14")
 }
 
 java {
