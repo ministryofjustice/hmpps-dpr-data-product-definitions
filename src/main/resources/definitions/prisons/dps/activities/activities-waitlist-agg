@@ -15,14 +15,14 @@
   ],
   "dataset": [
     {
-      "id": "dataset",
-      "name": "dataset",
+      "id": "allocated",
+      "name": "allocated",
       "datasource": "datamart",
-      "query": "Select  activities_waiting_list.prisoner_number, status, start_date, application_date , sum( start_date - application_date) From prisons.activities_waiting_list, prisons.activities_allocation Where  activities_Allocation.prisoner_number = activities_waiting_list.prisoner_number And Status != 'ALLOCATED' Group by start_date, application_date, activities_waiting_list.prisoner_number, status Order by application_date ",
+      "query": "Select  activities_waiting_list.prisoner_number, first_name, last_name,status, summary,activities_allocation.start_date,date_of_birth, application_date , sum( activities_allocation.start_date - application_date) From prisons.activities_waiting_list  left join prisons.activities_activity on  prisons.activities_activity.activity_id=prisons.activities_waiting_list.activity_id left join  domain.prisoner_prisoner ON prisons.activities_waiting_list.prisoner_number = domain.prisoner_prisoner.number join prisons.activities_allocation on prisons.activities_Allocation.prisoner_number = prisons.activities_waiting_list.prisoner_number Group by activities_allocation.start_date, application_date, activities_waiting_list.prisoner_number, status, first_name, last_name, date_of_birth, summary Order by application_date",
       "schema": {
         "field": [
           {
-            "name": "prison_number",
+            "name": "prisoner_number",
             "type": "string",
             "display": "NOMS Number"
           },
@@ -32,24 +32,44 @@
             "display": "status"
           },
           {
-            "name": "start_date",
+            "name": "summary",
             "type": "string",
+            "display": "summary"
+          },
+          {
+            "name": "start_date",
+            "type": "date",
             "display": "start_date"
           },
           {
             "name": "application_date",
-            "type": "string",
+            "type": "date",
             "display": "application_date"
           },
           {
             "name": "sum",
-            "type": "date",
-            "display": "sum"
+            "type": "string",
+            "display": "days"
           },
           {
             "name": "activities_allocation",
             "type": "string",
             "display": "activities_allocation"
+          },
+          {
+            "name": "first_name",
+            "type": "string",
+            "display": "first_name"
+          },
+          {
+            "name": "last_name",
+            "type": "string",
+            "display": "last_name"
+          },
+          {
+            "name": "date_of_birth",
+            "type": "date",
+            "display": "date_of_birth"
           }
         ]
       }
@@ -66,7 +86,7 @@
             {
               "match": [
                 "${role}",
-                "DPR_REPORT_USER"
+                "ROLE_PRISONS_REPORTING_USER"
               ]
             }
           ]
@@ -76,18 +96,47 @@
   ],
   "report": [
     {
-      "id": "simple-view",
-      "name": "Waitlist by prisoners not allocated",
-      "description": "Waitlist by prisoners not allocated",
+      "id": "Prisoner-waitlist",
+      "name": "Prisoner-waitlist",
+      "description": "Prisoner-waitlist",
       "classification": "list",
       "version": "v1.0",
       "render": "HTML",
-      "dataset": "$ref:dataset",
+      "dataset": "$ref:allocated",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
       "specification": {
         "template": "list",
         "field": [
           {
-            "name": "$ref:prison_number",
+            "name": "$ref:prisoner_number",
+            "display": "",
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prisoner_number}',${full_name},TRUE)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:first_name",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:last_name",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:summary",
             "display": "",
             "formula": "",
             "visible": "true",
@@ -100,7 +149,24 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false
+            "defaultsort": false,
+            "filter": {
+              "type": "Radio",
+              "staticoptions": [
+                {
+                  "name": "REJECTED",
+                  "display": "Rejected"
+                },
+                {
+                  "name": "DECLINED",
+                  "display": "Declined"
+                },
+                {
+                  "name": "APPROVED",
+                  "display": "Approved"
+                }
+              ]
+            }
           },
           {
             "name": "$ref:start_date",
@@ -120,28 +186,19 @@
           },
           {
             "name": "$ref:sum",
-            "display": "",
+            "display": "Days waiting",
             "formula": "",
             "visible": "true",
             "sortable": true,
             "defaultsort": false
           },
           {
-            "name": "$ref:activities_allocation",
+            "name": "$ref:date_of_birth",
             "display": "",
             "formula": "",
             "visible": "true",
-            "sortable": false,
-            "defaultsort": false,
-            "filter": {
-              "type": "Radio",
-              "staticoptions": [
-                {
-                  "name": "DECLINED",
-                  "display": "Declined"
-                }
-              ]
-            }
+            "sortable": true,
+            "defaultsort": false
           }
         ]
       }
