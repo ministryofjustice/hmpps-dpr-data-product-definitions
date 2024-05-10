@@ -1,11 +1,11 @@
 {
-  "id": "waitlist",
-  "name": "Waitlist by prisoners not allocated",
-  "description": "Waitlist by prisoners not allocated",
+  "id": "waitlist-agg",
+  "name": "Waitlist aggregation reports",
+  "description": "Waitlist aggregation reports",
   "metadata": {
     "author": "Zahoor Hussain",
     "owner": "Michael Clarke",
-    "version": "0.1"
+    "version": "V0.1"
   },
   "datasource": [
     {
@@ -15,61 +15,36 @@
   ],
   "dataset": [
     {
-      "id": "allocated",
-      "name": "allocated",
+      "id": "dataset",
+      "name": "dataset",
       "datasource": "datamart",
-      "query": "Select  activities_waiting_list.prisoner_number, first_name, last_name,status, summary,activities_allocation.start_date,date_of_birth, application_date , sum( activities_allocation.start_date - application_date) From prisons.activities_waiting_list  left join prisons.activities_activity on  prisons.activities_activity.activity_id=prisons.activities_waiting_list.activity_id left join  domain.prisoner_prisoner ON prisons.activities_waiting_list.prisoner_number = domain.prisoner_prisoner.number join prisons.activities_allocation on prisons.activities_Allocation.prisoner_number = prisons.activities_waiting_list.prisoner_number Group by activities_allocation.start_date, application_date, activities_waiting_list.prisoner_number, status, first_name, last_name, date_of_birth, summary Order by application_date",
+      "query": "Select application_date , start_date, datediff(days,application_date,start_date) as sum,  activities_waiting_list.prisoner_number, status From prisons.activities_waiting_list, prisons.activities_allocation Where activities_Allocation.prisoner_number = activities_waiting_list.prisoner_number And Status != 'ALLOCATED' And Status != 'DECLINED' Order by application_date",
       "schema": {
         "field": [
           {
-            "name": "prisoner_number",
-            "type": "string",
-            "display": "NOMS Number"
-          },
-          {
-            "name": "status",
-            "type": "string",
-            "display": "status"
-          },
-          {
-            "name": "summary",
-            "type": "string",
-            "display": "summary"
-          },
-          {
-            "name": "start_date",
-            "type": "date",
-            "display": "start_date"
-          },
-          {
             "name": "application_date",
             "type": "date",
-            "display": "application_date"
+            "display": "Application date"
+          },
+          {
+            "name": "prisoner_number",
+            "type": "string",
+            "display": "Prisoner Number"
           },
           {
             "name": "sum",
             "type": "string",
-            "display": "days"
+            "display": "Days waiting"
           },
           {
-            "name": "activities_allocation",
+            "name": "status",
             "type": "string",
-            "display": "activities_allocation"
+            "display": "Status"
           },
           {
-            "name": "first_name",
-            "type": "string",
-            "display": "first_name"
-          },
-          {
-            "name": "last_name",
-            "type": "string",
-            "display": "last_name"
-          },
-          {
-            "name": "date_of_birth",
+            "name": "start_date",
             "type": "date",
-            "display": "date_of_birth"
+            "display": "Start date"
           }
         ]
       }
@@ -77,7 +52,7 @@
   ],
   "policy": [
     {
-      "id": "caseload",
+      "id": "access",
       "type": "access",
       "rule": [
         {
@@ -96,47 +71,43 @@
   ],
   "report": [
     {
-      "id": "Prisoner-waitlist",
-      "name": "Prisoner-waitlist",
-      "description": "Prisoner-waitlist",
+      "id": "days-on-waitlist",
+      "name": "Number of days on a waitlist by prisoner",
+      "description": "Number of days on a waitlist by prisoner",
       "classification": "list",
       "version": "v1.0",
       "render": "HTML",
-      "dataset": "$ref:allocated",
+      "dataset": "$ref:dataset",
       "feature": [
         {
-          "type": "print"
+          "type": "share"
         }
       ],
       "specification": {
         "template": "list",
         "field": [
           {
+            "name": "$ref:application_date",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "daterange",
+              "default": ""
+            }
+          },
+          {
             "name": "$ref:prisoner_number",
             "display": "",
-            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prisoner_number}',${full_name},TRUE)",
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prisoner_number}',${prisoner_number},TRUE)",
             "visible": "true",
             "sortable": true,
             "defaultsort": false
           },
           {
-            "name": "$ref:first_name",
-            "display": "",
-            "formula": "",
-            "visible": "true",
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:last_name",
-            "display": "",
-            "formula": "",
-            "visible": "true",
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:summary",
+            "name": "$ref:sum",
             "display": "",
             "formula": "",
             "visible": "true",
@@ -154,46 +125,22 @@
               "type": "Radio",
               "staticoptions": [
                 {
-                  "name": "REJECTED",
-                  "display": "Rejected"
-                },
-                {
-                  "name": "DECLINED",
-                  "display": "Declined"
+                  "name": "REMOVED",
+                  "display": "Removed"
                 },
                 {
                   "name": "APPROVED",
                   "display": "Approved"
+                },
+                {
+                  "name": "PENDING",
+                  "display": "Pending"
                 }
               ]
             }
           },
           {
             "name": "$ref:start_date",
-            "display": "",
-            "formula": "",
-            "visible": "true",
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:application_date",
-            "display": "",
-            "formula": "",
-            "visible": "true",
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:sum",
-            "display": "Days waiting",
-            "formula": "",
-            "visible": "true",
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:date_of_birth",
             "display": "",
             "formula": "",
             "visible": "true",
