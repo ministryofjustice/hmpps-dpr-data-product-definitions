@@ -1,0 +1,154 @@
+{
+  "id": "waitlist-agg",
+  "name": "Waitlist aggregation reports",
+  "description": "Waitlist aggregation reports",
+  "metadata": {
+    "author": "Zahoor Hussain",
+    "owner": "Michael Clarke",
+    "version": "V0.1"
+  },
+  "datasource": [
+    {
+      "id": "datamart",
+      "name": "datamart"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "dataset",
+      "name": "dataset",
+      "datasource": "datamart",
+      "query": "Select  CAST(start_date AS timestamp) AS start_date,  CAST(application_date AS timestamp) AS application_date, datediff(days,application_date,start_date) as sum,  activities_waiting_list.prisoner_number, status From prisons.activities_waiting_list, prisons.activities_allocation Where activities_Allocation.prisoner_number = activities_waiting_list.prisoner_number And Status != 'ALLOCATED' And Status != 'DECLINED' Order by application_date",
+      "schema": {
+        "field": [
+          {
+            "name": "application_date",
+            "type": "date",
+            "display": "Application date"
+          },
+          {
+            "name": "prisoner_number",
+            "type": "string",
+            "display": "Prisoner Number"
+          },
+          {
+            "name": "sum",
+            "type": "string",
+            "display": "Days waiting"
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "display": "Status"
+          },
+          {
+            "name": "start_date",
+            "type": "date",
+            "display": "Start date"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "days-on-waitlist",
+      "name": "Number of days on a waitlist by prisoner",
+      "description": "Number of days on a waitlist by prisoner",
+      "classification": "list",
+      "version": "v1.0",
+      "render": "HTML",
+      "dataset": "$ref:dataset",
+      "feature": [
+        {
+          "type": "share"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:application_date",
+            "display": "",
+            "formula": "format_date(${application_date}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "daterange",
+              "default": ""
+            }
+          },
+          {
+            "name": "$ref:prisoner_number",
+            "display": "",
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prisoner_number}',${prisoner_number},TRUE)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:sum",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:status",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "Radio",
+              "staticoptions": [
+                {
+                  "name": "REMOVED",
+                  "display": "Removed"
+                },
+                {
+                  "name": "APPROVED",
+                  "display": "Approved"
+                },
+                {
+                  "name": "PENDING",
+                  "display": "Pending"
+                }
+              ]
+            }
+          },
+          {
+            "name": "$ref:start_date",
+            "display": "",
+            "formula": "format_date(${start_date}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    }
+  ]
+}
