@@ -51,8 +51,7 @@ class DefinitionsServiceIntegrationTest {
       .isOk()
       .expectBody()
       .json(
-        """[]       
-      """,
+        """[]""",
       )
   }
 
