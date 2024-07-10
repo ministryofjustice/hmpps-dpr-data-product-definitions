@@ -18,7 +18,7 @@ dependencies {
   implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
 
   implementation("com.h2database:h2")
-  implementation("com.google.code.gson:gson:2.10.1")
+  implementation("com.google.code.gson:gson:2.11.0")
 
   testImplementation("com.github.java-json-tools:json-schema-validator:2.2.14")
 }
