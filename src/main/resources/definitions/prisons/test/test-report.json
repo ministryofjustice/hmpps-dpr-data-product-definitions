@@ -18,7 +18,7 @@
       "id": "test",
       "name": "Test data",
       "datasource": "redshift",
-      "query": "SELECT 'One' as column1, 2 as column2, 'Three' as column3, TO_TIMESTAMP('2004-05-06 07:08:09', 'YYYY-MM-DD HH24:MI:ss') as column4 UNION SELECT 'Remove' as column1, null as column2, null as column3, null as column4 UNION SELECT 'Eleven' as column1, 12 as column2, 'Thirteen' as column3, TO_TIMESTAMP('2014-12-16 17:18:19', 'YYYY-MM-DD HH24:MI:ss') as column4",
+      "query": "SELECT 'One' as column1, 2 as column2, 'Three' as column3, TO_DATE('2004-05-06', 'YYYY-MM-DD') as column4 UNION SELECT 'Remove' as column1, null as column2, null as column3, null as column4 UNION SELECT 'Eleven' as column1, 12 as column2, 'Thirteen' as column3, TO_DATE('2014-12-16', 'YYYY-MM-DD') as column4",
       "schema": {
         "field": [
           {
@@ -36,6 +36,43 @@
           {
             "name": "column4",
             "type": "date"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test-simple",
+      "name": "Test data",
+      "datasource": "redshift",
+      "query": "SELECT 'One' as column1, 2 as column2, 'Three' as column3 UNION SELECT 'Remove' as column1, null as column2, null as column3 UNION SELECT 'Eleven' as column1, 12 as column2, 'Thirteen' as column3",
+      "schema": {
+        "field": [
+          {
+            "name": "column1",
+            "type": "string"
+          },
+          {
+            "name": "column2",
+            "type": "string"
+          },
+          {
+            "name": "column3",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test-summary",
+      "name": "Test data",
+      "datasource": "redshift",
+      "query": "SELECT SUM(column2) as column2Sum FROM ${tableId}",
+      "schema": {
+        "field": [
+          {
+            "name": "column2Sum",
+            "display": "Sum of Column 2",
+            "type": "int"
           }
         ]
       }
@@ -194,6 +231,75 @@
             "filter": {
               "type": "daterange",
               "default": "2004-01-01 - today()"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "test-variant-summary",
+      "name": "Test Summary Variant",
+      "description": "A report that exercises the summary functionality",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "$ref:test-simple",
+      "printable": true,
+      "summary": [
+        {
+          "id": "test-summary",
+          "template": "page-footer",
+          "dataset": "$ref:test-summary"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:column1",
+            "display": "Column 1",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "radio",
+              "staticoptions": [
+                {
+                  "name": "one",
+                  "display": "One"
+                },
+                {
+                  "name": "nothing",
+                  "display": "No results"
+                }
+              ]
+            }
+          },
+          {
+            "name": "$ref:column2",
+            "display": "Column 2",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "text",
+              "mandatory": false,
+              "pattern": "[a-z]*"
+            }
+          },
+          {
+            "name": "$ref:column3",
+            "display": "Column 3",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "formula": "Formula: ${column3}",
+            "filter": {
+              "type": "autocomplete",
+              "dynamicoptions": {
+                "minimumLength": 2,
+                "returnAsStaticOptions": true
+              }
             }
           }
         ]
