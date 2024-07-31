@@ -1,0 +1,168 @@
+{
+  "id": "olA_M8MABrtJVrIAJv_D8K7B0_I",
+  "name": "ORS National Report of Booked Visits",
+  "description": "PND0015 00.00.01 Last Modified: 10/09/12\nThis report returns the count of booked visits for a date range entered at runtime and of those how many have not had the Completion field updated post-visit.",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PND0015 v00.00.01 LSRIT039"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP10",
+      "name": "Visits Booked",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_VISIT_HIST_ESTAB.AGY_LOC_ID AS AGY_LOC_ID, AT_VISIT_HIST_ESTAB.DESCRIPTION AS DESCRIPTION, COUNT(AT_OFFENDER_HIST_VISITS.OFFENDER_VISIT_ID) AS VISIT_COUNT, CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'SCH' THEN 'Scheduled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'NORM' THEN 'Normal Completion' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'CANC' THEN 'Cancelled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'EXP' THEN 'Expired' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'HMPOP' THEN 'Terminated by Staff' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'OFFEND' THEN 'Prisoner Completed Early' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'VISITOR' THEN 'Visitor Completed Early' ELSE AT_OFFENDER_HIST_VISITS.VISIT_STATUS END AS STATUS_OF_VISIT FROM OMS_OWNER.AGENCY_LOCATIONS AT_VISIT_HIST_ESTAB, USER_ACCESSIBLE_CASELOADS AT_UAC, OMS_OWNER.OFFENDER_VISITS AT_OFFENDER_HIST_VISITS WHERE (AT_OFFENDER_HIST_VISITS.AGY_LOC_ID = AT_VISIT_HIST_ESTAB.AGY_LOC_ID) AND (AT_VISIT_HIST_ESTAB.AGY_LOC_ID = AT_UAC.CASELOAD_ID) AND (AT_UAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_UAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (TRUNC(AT_OFFENDER_HIST_VISITS.CREATE_DATETIME) >= (SELECT START_DATE FROM prompt_ /* = #prompt('Start Date','D','Visit History\\Visit Created On Date',Mono,Free,Not_Persistent,,User:0) */) AND TRUNC(AT_OFFENDER_HIST_VISITS.CREATE_DATETIME) <= (SELECT END_DATE FROM prompt_ /* = #prompt('End Date','D','Visit History\\Visit Created On Date',Mono,Free,Not_Persistent,,User:1) */) AND AT_OFFENDER_HIST_VISITS.VISIT_DATE < TRUNC(CURRENT_TIMESTAMP)) GROUP BY AT_VISIT_HIST_ESTAB.AGY_LOC_ID, AT_VISIT_HIST_ESTAB.DESCRIPTION, CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'SCH' THEN 'Scheduled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'NORM' THEN 'Normal Completion' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'CANC' THEN 'Cancelled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'EXP' THEN 'Expired' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'HMPOP' THEN 'Terminated by Staff' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'OFFEND' THEN 'Prisoner Completed Early' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'VISITOR' THEN 'Visitor Completed Early' ELSE AT_OFFENDER_HIST_VISITS.VISIT_STATUS END), dataset_ AS (SELECT AGY_LOC_ID, DESCRIPTION, VISIT_COUNT, STATUS_OF_VISIT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "start_date",
+          "filterType": "text",
+          "reportFieldType": "date",
+          "display": "Start Date",
+          "description": "@prompt('Start Date','D','Visit History\\Visit Created On Date',Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "end_date",
+          "filterType": "text",
+          "reportFieldType": "date",
+          "display": "End Date",
+          "description": "@prompt('End Date','D','Visit History\\Visit Created On Date',Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code Where Visit Held",
+            "legacyId": "DP10.DOdd4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name Where Visit Held",
+            "legacyId": "DP10.DOe37",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "VISIT_COUNT",
+            "type": "double",
+            "display": "Visit Count",
+            "legacyId": "DP10.DOe39",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "STATUS_OF_VISIT",
+            "type": "string",
+            "display": "Status of Visit",
+            "legacyId": "DP10.DOdd6",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP16",
+      "name": "All Establishments",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDERS_LOCATIONS.AGY_LOC_ID AS AGY_LOC_ID, AT_OFFENDERS_LOCATIONS.DESCRIPTION AS DESCRIPTION FROM OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */)) AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID <> 'ZZGHI' AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND AT_OFFENDERS_LOCATIONS.ACTIVE_FLAG = 'Y' AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))))), dataset_ AS (SELECT AGY_LOC_ID, DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code (All for all)",
+          "description": "@Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP16.DO43b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP16.DO33b",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "167243.RS",
+      "name": "National Report of Booked Visits",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ESTABLISHMENT_CODE <> 'ZZGHI')"
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:VISIT_COUNT",
+            "display": "Visit Count",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    }
+  ]
+}
