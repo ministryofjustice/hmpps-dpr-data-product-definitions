@@ -1,0 +1,344 @@
+{
+  "id": "ok9GYvIABHd_JqMAO9CD8K7BsgM",
+  "name": "ORS Temporary Absence and Home Leave Return Dates",
+  "description": "MOV0029 - v00.00.04 Last Modified: 19/11/12\nThis report returns prisoners who are due to return to an establishment from a temporary absence or home leave movement between the dates entered at runtime. The prisoners shown on the report are those who have already left the establishment, having had the outward movement confirmed by Reception.",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": ["MOV0029 v00.00.04 DPR LSRIT039.1"]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP0",
+      "name": "Return Dates",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_HEADER_BLOCK.LIV_UNIT_DESC AS LIV_UNIT_DESC, AT_HEADER_BLOCK.STATUS_DISPLAY || ' ' || AT_HEADER_BLOCK.IN_OUT_STATUS AS COMMUNITY_STATUS, AT_TAP_RETURN.EVENT_DATE AS EVENT_DATE, AT_TAP_RETURN.START_TIME AS START_TIME, AT_TAP_RETURN.EVENT_SUB_TYPE_DESC AS EVENT_SUB_TYPE_DESC FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_IND_SCHEDULES AT_OFFENDER_IND_SCHEDULES, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, USER_ACCESSIBLE_CASELOADS AT_UAC_ROTL, OMS_OWNER.AGENCY_LOCATIONS AT_RETURN_EST, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OMS_OWNER.V_OFFENDER_EXT_MOVEMENTS AT_TAP_RETURN WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_IND_SCHEDULES.OFFENDER_BOOK_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (AT_TAP_RETURN.EVENT_ID = AT_OFFENDER_IND_SCHEDULES.EVENT_ID) AND (AT_TAP_RETURN.OFFENDER_BOOK_ID = AT_OFFENDER_IND_SCHEDULES.OFFENDER_BOOK_ID) AND (AT_TAP_RETURN.EVENT_TYPE = 'TAP') AND (AT_TAP_RETURN.DIRECTION_CODE = 'IN') AND (AT_RETURN_EST.AGY_LOC_ID = AT_TAP_RETURN.TO_AGY_LOC_ID) AND (AT_RETURN_EST.AGENCY_LOCATION_TYPE = 'INST') AND (AT_RETURN_EST.AGY_LOC_ID = AT_UAC_ROTL.CASELOAD_ID) AND ((AT_OFFENDER_BOOKING.IN_OUT_STATUS = 'OUT') AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_TAP_RETURN.EVENT_DATE >= TO_DATE('01-01-2008 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_TAP_RETURN.EVENT_DATE <= TO_DATE('21-11-2012 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_RETURN_EST.AGY_LOC_ID = 'ALI' AND (AT_UAC_ROTL.USERNAME = UPPER('RRUSSELL')))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FIRST_NAME, LAST_NAME, LIV_UNIT_DESC, COMMUNITY_STATUS, EVENT_DATE, START_TIME, EVENT_SUB_TYPE_DESC FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP0.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP0.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "LIV_UNIT_DESC",
+            "type": "string",
+            "display": "Liv Unit Desc",
+            "legacyId": "DP0.DOf8c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "COMMUNITY_STATUS",
+            "type": "string",
+            "display": "Community Status",
+            "legacyId": "DP0.DOe3a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "EVENT_DATE",
+            "type": "date",
+            "display": "Return Date",
+            "legacyId": "DP0.DOfc1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "START_TIME",
+            "type": "date",
+            "display": "Return Time",
+            "legacyId": "DP0.DOfc2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "EVENT_SUB_TYPE_DESC",
+            "type": "string",
+            "display": "Reason",
+            "legacyId": "DP0.DOfc0",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": ["${role}", "ROLE_PRISONS_REPORTING_USER"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "829.RS",
+      "name": "By Reason and Date",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP0",
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:EVENT_SUB_TYPE_DESC",
+            "display": "Reason",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:EVENT_DATE",
+            "display": "Return Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:START_TIME",
+            "display": "Return Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:COMMUNITY_STATUS",
+            "display": "Community Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:LIV_UNIT_DESC",
+            "display": "Liv Unit Desc",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "1315.RS",
+      "name": "By Date and Time",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP0",
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:EVENT_DATE",
+            "display": "Return Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:START_TIME",
+            "display": "Return Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:COMMUNITY_STATUS",
+            "display": "Community Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:LIV_UNIT_DESC",
+            "display": "Liv Unit Desc",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:EVENT_SUB_TYPE_DESC",
+            "display": "Reason",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "1533.RS",
+      "name": "By Prisoner",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP0",
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:COMMUNITY_STATUS",
+            "display": "Community Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:LIV_UNIT_DESC",
+            "display": "Liv Unit Desc",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:EVENT_SUB_TYPE_DESC",
+            "display": "Reason",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:EVENT_DATE",
+            "display": "Return Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:START_TIME",
+            "display": "Return Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    }
+  ]
+}
