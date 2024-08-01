@@ -22,7 +22,7 @@
       "name": "Prop Boxes At An Establishment",
       "description": "Demographic",
       "datasource": "nomis",
-      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_HEADER_BLOCK.STATUS_DISPLAY || ' ' || AT_HEADER_BLOCK.IN_OUT_STATUS AS COMMUNITY_STATUS, DT_PROPERTY_BOXES2.EXPIRY_DATE AS EXPIRY_DATE, DT_PROPERTY_BOXES2.SEAL_MARK AS SEAL_MARK, AT_PROP_LOC2.DESCRIPTION AS DESCRIPTION, DT_PROPERTY_BOXES2.ACTIVE_FLAG AS ACTIVE_FLAG FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_PROP_LOC2, (SELECT p.Offender_Book_ID, p.Property_Container_ID, p.Active_Flag, p.Seal_Mark, p.Agy_Loc_ID, p.Expiry_Date, p.Internal_Location_ID, p.PROPOSED_DISPOSAL_DATE, p.Container_Code, p.Property_Only_Flag, p.Comment_Text FROM oms_owner.offender_ppty_containers p, oms_owner.user_accessible_caseloads uac WHERE p.active_flag = 'Y' AND uac.caseload_id = p.agy_loc_id AND p.Agy_Loc_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) DT_PROPERTY_BOXES2 WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (AT_PROP_LOC2.INTERNAL_LOCATION_ID = DT_PROPERTY_BOXES2.INTERNAL_LOCATION_ID) AND (DT_PROPERTY_BOXES2.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID)), dataset_ AS (SELECT FIRST_NAME, OFFENDER_ID_DISPLAY, LAST_NAME, COMMUNITY_STATUS, EXPIRY_DATE, SEAL_MARK, DESCRIPTION, ACTIVE_FLAG FROM dataset_base_)",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_HEADER_BLOCK.STATUS_DISPLAY || ' ' || AT_HEADER_BLOCK.IN_OUT_STATUS AS COMMUNITY_STATUS, DT_PROPERTY_BOXES2.EXPIRY_DATE AS EXPIRY_DATE, DT_PROPERTY_BOXES2.SEAL_MARK AS SEAL_MARK, AT_PROP_LOC2.DESCRIPTION AS DESCRIPTION, DT_PROPERTY_BOXES2.ACTIVE_FLAG AS ACTIVE_FLAG FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_PROP_LOC2, (SELECT p.Offender_Book_ID, p.Property_Container_ID, p.Active_Flag, p.Seal_Mark, p.Agy_Loc_ID, p.Expiry_Date, p.Internal_Location_ID, p.PROPOSED_DISPOSAL_DATE, p.Container_Code, p.Property_Only_Flag, p.Comment_Text FROM oms_owner.offender_ppty_containers p, oms_owner.user_accessible_caseloads uac WHERE p.active_flag = 'Y' AND uac.caseload_id = p.agy_loc_id AND p.Agy_Loc_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) DT_PROPERTY_BOXES2 WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (AT_PROP_LOC2.INTERNAL_LOCATION_ID = DT_PROPERTY_BOXES2.INTERNAL_LOCATION_ID) AND (DT_PROPERTY_BOXES2.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID)), dataset_ AS (SELECT FIRST_NAME, OFFENDER_ID_DISPLAY, LAST_NAME, COMMUNITY_STATUS, EXPIRY_DATE, SEAL_MARK, DESCRIPTION, ACTIVE_FLAG, CASE WHEN LENGTH(DESCRIPTION) > 18 THEN SUBSTR(DESCRIPTION, 19, LENGTH(DESCRIPTION)-18) ELSE '0' END AS PROP_BOX_NO FROM dataset_base_)",
       "parameters": [
         {
           "index": 0,
@@ -99,6 +99,14 @@
             "display": "PB Active Flag",
             "legacyId": "DP10.DO1019",
             "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "PROP_BOX_NO",
+            "type": "string",
+            "display": "PB Location Number",
+            "legacyId": "????",
+            "legacySqlClass": "alias"
           }
         ]
       }
@@ -134,12 +142,12 @@
       "specification": {
         "template": "list",
         "field": [
-          {
-            "name": "$ref:v_PropBoxLocationAsNumber",
-            "display": "",
-            "formula": "=ToNumber(If(Length([PB Location])=20;Substr([PB Location];18;3);If(Length([PB Location])=19;Substr([PB Location];18;2);If(Length([PB Location])=18;Substr([PB Location];18;1);If(Length([PB Location])=21;Substr([PB Location];18;4))))))",
+         {
+            "name": "$ref:PROP_BOX_NO",
+            "display": "PB Number",
+            "formula": "",
             "visible": "true",
-            "sortable": true,
+            "sortable": false,
             "defaultsort": false
           },
           {
