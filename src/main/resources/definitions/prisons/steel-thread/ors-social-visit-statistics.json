@@ -4,7 +4,9 @@
   "description": "VIS0020 - v00.00.01 Last Modified: 26/03/2018\nThis report provides a summary count by year, month and visit status as well as a visitor breakdown of the number of Social visits booked for a date range for a specific establishment. ",
   "metadata": {
     "version": "1.0.0",
-    "tags": ["VIS0020 - v00.00.01"]
+    "tags": [
+      "VIS0020 - v00.00.01"
+    ]
   },
   "datasource": [
     {
@@ -18,10 +20,38 @@
     {
       "id": "3377299/DP10",
       "name": "Social Visits",
-      "description": "Demographic",
+      "description": "OR - Demographics",
       "datasource": "nomis",
-      "query": "dataset_base_ AS (SELECT AT_OFFENDER_HIST_VISITS.OFFENDER_VISIT_ID AS OFFENDER_VISIT_ID, AT_OFFENDER_HIST_VISITS.VISIT_DATE AS VISIT_DATE, TO_NUMBER(TO_CHAR(AT_OFFENDER_HIST_VISITS.VISIT_DATE, 'SYYYY')) AS YEAR_OF_VISIT_DATE, TO_NUMBER(TO_CHAR(AT_OFFENDER_HIST_VISITS.VISIT_DATE, 'MM')) AS MONTH_OF_VISIT_DATE, CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'SCH' THEN 'Scheduled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'NORM' THEN 'Normal Completion' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'CANC' THEN 'Cancelled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'EXP' THEN 'Expired' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'HMPOP' THEN 'Terminated by Staff' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'OFFEND' THEN 'Prisoner Completed Early' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'VISITOR' THEN 'Visitor Completed Early' ELSE AT_OFFENDER_HIST_VISITS.VISIT_STATUS END AS STATUS_OF_VISIT, AT_VISIT_HIST_ESTAB.DESCRIPTION AS DESCRIPTION, CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'SCON' THEN 'Social' WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'OFFI' THEN 'Official' ELSE AT_OFFENDER_HIST_VISITS.VISIT_TYPE END AS VISIT_TYPE_HELD, DT_BOOKED_VISITORS.BIRTHDATE AS BIRTHDATE, COUNT(DT_BOOKED_VISITORS.OFFENDER_VISIT_VISITOR_ID) AS VISITOR_COUNT, DT_BOOKED_VISITORS.FIRST_NAME AS FIRST_NAME, DT_BOOKED_VISITORS.LAST_NAME AS LAST_NAME, AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_VISIT_HIST_ESTAB, OMS_OWNER.OFFENDER_VISITS AT_OFFENDER_HIST_VISITS, (SELECT off_vis.offender_visit_id AS VisitID, off_vis_vis.offender_visit_visitor_id, TO_CHAR(off_vis_vis.person_id) AS PersonID, NULL AS Offender_ID_Display, 'PERSON' AS visitor_type, per.last_name, per.first_name, per.birthdate, per.middle_name, RC.description, off_vis.offender_visit_id FROM offender_visit_visitors off_vis_vis, offender_visits off_vis, reference_codes RC, persons per, offender_contact_persons ocp WHERE per.person_id = off_vis_vis.person_id AND NOT off_vis_vis.person_id IS NULL AND off_vis_vis.person_id = ocp.person_id AND off_vis.offender_book_id = ocp.offender_book_id AND off_vis.offender_visit_id = off_vis_vis.offender_visit_id AND ocp.relationship_type = RC.code AND RC.domain = 'RELATIONSHIP' UNION ALL SELECT off_vis.offender_visit_id, off_vis_vis.offender_visit_visitor_id, NULL, vns.offender_id_display AS Offender_ID_Display, 'OFFENDER' AS visitor_type, vns.last_name, vns.first_name, vns.birth_date, vns.middle_name, RC.description, off_vis.offender_visit_id FROM offender_visit_visitors off_vis_vis, offender_visits off_vis, reference_codes RC, v_name_search2 vns, offender_contact_persons ocp, offender_bookings ob WHERE off_vis.offender_visit_id = off_vis_vis.offender_visit_id AND NOT off_vis_vis.offender_book_id IS NULL AND ob.offender_book_id = off_vis_vis.offender_book_id AND ocp.contact_root_offender_id = ob.root_offender_id AND ocp.relationship_type = RC.code AND ocp.offender_book_id = off_vis.offender_book_id AND vns.root_offender_id = ocp.contact_root_offender_id AND RC.domain = 'RELATIONSHIP' AND ob.ACTIVE_FLAG = 'Y') DT_BOOKED_VISITORS, USER_ACCESSIBLE_CASELOADS AT_UAC WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_HIST_VISITS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_HIST_VISITS.AGY_LOC_ID = AT_VISIT_HIST_ESTAB.AGY_LOC_ID) AND (AT_OFFENDER_HIST_VISITS.OFFENDER_VISIT_ID = DT_BOOKED_VISITORS.VISITID (+)) AND (AT_VISIT_HIST_ESTAB.AGY_LOC_ID = AT_UAC.CASELOAD_ID) AND (AT_UAC.USERNAME = UPPER('SQZ39G')) AND (AT_VISIT_HIST_ESTAB.AGY_LOC_ID IN ('KMI') AND (AT_UAC.USERNAME = UPPER('SQZ39G')) AND AT_OFFENDER_HIST_VISITS.VISIT_DATE BETWEEN TO_DATE('01-01-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('29-01-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'SCON' THEN 'Social' WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'OFFI' THEN 'Official' ELSE AT_OFFENDER_HIST_VISITS.VISIT_TYPE END IN ('Social')) GROUP BY AT_OFFENDER_HIST_VISITS.OFFENDER_VISIT_ID, AT_OFFENDER_HIST_VISITS.VISIT_DATE, TO_NUMBER(TO_CHAR(AT_OFFENDER_HIST_VISITS.VISIT_DATE, 'SYYYY')), TO_NUMBER(TO_CHAR(AT_OFFENDER_HIST_VISITS.VISIT_DATE, 'MM')), CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'SCH' THEN 'Scheduled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'NORM' THEN 'Normal Completion' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'CANC' THEN 'Cancelled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'EXP' THEN 'Expired' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'HMPOP' THEN 'Terminated by Staff' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'OFFEND' THEN 'Prisoner Completed Early' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'VISITOR' THEN 'Visitor Completed Early' ELSE AT_OFFENDER_HIST_VISITS.VISIT_STATUS END, AT_VISIT_HIST_ESTAB.DESCRIPTION, CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'SCON' THEN 'Social' WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'OFFI' THEN 'Official' ELSE AT_OFFENDER_HIST_VISITS.VISIT_TYPE END, DT_BOOKED_VISITORS.BIRTHDATE, DT_BOOKED_VISITORS.FIRST_NAME, DT_BOOKED_VISITORS.LAST_NAME, AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME), dataset_ AS (SELECT OFFENDER_VISIT_ID, VISIT_DATE, YEAR_OF_VISIT_DATE, MONTH_OF_VISIT_DATE, STATUS_OF_VISIT, DESCRIPTION, VISIT_TYPE_HELD, BIRTHDATE, VISITOR_COUNT, FIRST_NAME, LAST_NAME, OFFENDER_ID_DISPLAY, LAST_NAME FROM dataset_base_)",
-      "parameters": [],
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_HIST_VISITS.OFFENDER_VISIT_ID AS OFFENDER_VISIT_ID, AT_OFFENDER_HIST_VISITS.VISIT_DATE AS VISIT_DATE, TO_NUMBER(TO_CHAR(AT_OFFENDER_HIST_VISITS.VISIT_DATE, 'SYYYY')) AS YEAR_OF_VISIT_DATE, TO_NUMBER(TO_CHAR(AT_OFFENDER_HIST_VISITS.VISIT_DATE, 'MM')) AS MONTH_OF_VISIT_DATE, CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'SCH' THEN 'Scheduled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'NORM' THEN 'Normal Completion' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'CANC' THEN 'Cancelled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'EXP' THEN 'Expired' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'HMPOP' THEN 'Terminated by Staff' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'OFFEND' THEN 'Prisoner Completed Early' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'VISITOR' THEN 'Visitor Completed Early' ELSE AT_OFFENDER_HIST_VISITS.VISIT_STATUS END AS STATUS_OF_VISIT, AT_VISIT_HIST_ESTAB.DESCRIPTION AS DESCRIPTION, CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'SCON' THEN 'Social' WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'OFFI' THEN 'Official' ELSE AT_OFFENDER_HIST_VISITS.VISIT_TYPE END AS VISIT_TYPE_HELD, DT_BOOKED_VISITORS.BIRTHDATE AS BIRTHDATE, COUNT(DT_BOOKED_VISITORS.OFFENDER_VISIT_VISITOR_ID) AS VISITOR_COUNT, DT_BOOKED_VISITORS.FIRST_NAME AS FIRST_NAME, DT_BOOKED_VISITORS.LAST_NAME AS LAST_NAME, AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_VISIT_HIST_ESTAB, OMS_OWNER.OFFENDER_VISITS AT_OFFENDER_HIST_VISITS, (SELECT off_vis.offender_visit_id AS VisitID, off_vis_vis.offender_visit_visitor_id, TO_CHAR(off_vis_vis.person_id) AS PersonID, NULL AS Offender_ID_Display, 'PERSON' AS visitor_type, per.last_name, per.first_name, per.birthdate, per.middle_name, RC.description, off_vis.offender_visit_id FROM offender_visit_visitors off_vis_vis, offender_visits off_vis, reference_codes RC, persons per, offender_contact_persons ocp WHERE per.person_id = off_vis_vis.person_id AND NOT off_vis_vis.person_id IS NULL AND off_vis_vis.person_id = ocp.person_id AND off_vis.offender_book_id = ocp.offender_book_id AND off_vis.offender_visit_id = off_vis_vis.offender_visit_id AND ocp.relationship_type = RC.code AND RC.domain = 'RELATIONSHIP' UNION ALL SELECT off_vis.offender_visit_id, off_vis_vis.offender_visit_visitor_id, NULL, vns.offender_id_display AS Offender_ID_Display, 'OFFENDER' AS visitor_type, vns.last_name, vns.first_name, vns.birth_date, vns.middle_name, RC.description, off_vis.offender_visit_id FROM offender_visit_visitors off_vis_vis, offender_visits off_vis, reference_codes RC, v_name_search2 vns, offender_contact_persons ocp, offender_bookings ob WHERE off_vis.offender_visit_id = off_vis_vis.offender_visit_id AND NOT off_vis_vis.offender_book_id IS NULL AND ob.offender_book_id = off_vis_vis.offender_book_id AND ocp.contact_root_offender_id = ob.root_offender_id AND ocp.relationship_type = RC.code AND ocp.offender_book_id = off_vis.offender_book_id AND vns.root_offender_id = ocp.contact_root_offender_id AND RC.domain = 'RELATIONSHIP' AND ob.ACTIVE_FLAG = 'Y') DT_BOOKED_VISITORS, USER_ACCESSIBLE_CASELOADS AT_UAC WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_HIST_VISITS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_HIST_VISITS.AGY_LOC_ID = AT_VISIT_HIST_ESTAB.AGY_LOC_ID) AND (AT_OFFENDER_HIST_VISITS.OFFENDER_VISIT_ID = DT_BOOKED_VISITORS.VISITID (+)) AND (AT_VISIT_HIST_ESTAB.AGY_LOC_ID = AT_UAC.CASELOAD_ID) AND (AT_UAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_VISIT_HIST_ESTAB.AGY_LOC_ID IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #prompt('Enter Establishment Code Where Visit Held:','A','Visit History\\Establishment Code Where Visit Held',Multi,Free,Not_Persistent,,User:2) */) AND (AT_UAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND AT_OFFENDER_HIST_VISITS.VISIT_DATE BETWEEN (SELECT START_DATE FROM prompt_ /* = #prompt('Start Date','D',,Mono,Free,Not_Persistent,,User:0) */) AND (SELECT END_DATE FROM prompt_ /* = #prompt('End Date','D',,Mono,Free,Not_Persistent,,User:1) */) AND CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'SCON' THEN 'Social' WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'OFFI' THEN 'Official' ELSE AT_OFFENDER_HIST_VISITS.VISIT_TYPE END IN ('Social')) GROUP BY AT_OFFENDER_HIST_VISITS.OFFENDER_VISIT_ID, AT_OFFENDER_HIST_VISITS.VISIT_DATE, TO_NUMBER(TO_CHAR(AT_OFFENDER_HIST_VISITS.VISIT_DATE, 'SYYYY')), TO_NUMBER(TO_CHAR(AT_OFFENDER_HIST_VISITS.VISIT_DATE, 'MM')), CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'SCH' THEN 'Scheduled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'NORM' THEN 'Normal Completion' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'CANC' THEN 'Cancelled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'EXP' THEN 'Expired' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'HMPOP' THEN 'Terminated by Staff' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'OFFEND' THEN 'Prisoner Completed Early' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'VISITOR' THEN 'Visitor Completed Early' ELSE AT_OFFENDER_HIST_VISITS.VISIT_STATUS END, AT_VISIT_HIST_ESTAB.DESCRIPTION, CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'SCON' THEN 'Social' WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'OFFI' THEN 'Official' ELSE AT_OFFENDER_HIST_VISITS.VISIT_TYPE END, DT_BOOKED_VISITORS.BIRTHDATE, DT_BOOKED_VISITORS.FIRST_NAME, DT_BOOKED_VISITORS.LAST_NAME, AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME), dataset_ AS (SELECT OFFENDER_VISIT_ID, VISIT_DATE, YEAR_OF_VISIT_DATE, MONTH_OF_VISIT_DATE, STATUS_OF_VISIT, DESCRIPTION, VISIT_TYPE_HELD, BIRTHDATE, VISITOR_COUNT, FIRST_NAME, LAST_NAME, OFFENDER_ID_DISPLAY, LAST_NAME, CASE WHEN STATUS_OF_VISIT = 'Normal Completion' THEN 'Completed' ELSE CASE WHEN STATUS_OF_VISIT = 'VDE' THEN 'Visitor Declined Entry' ELSE STATUS_OF_VISIT END END AS V_VISIT_STATUS FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter Establishment Code Where Visit Held:",
+          "description": "@prompt('Enter Establishment Code Where Visit Held:','A','Visit History\\Establishment Code Where Visit Held',Multi,Free,Not_Persistent,,User:2)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "start_date",
+          "filterType": "text",
+          "reportFieldType": "date",
+          "display": "Start Date",
+          "description": "@prompt('Start Date','D',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "end_date",
+          "filterType": "text",
+          "reportFieldType": "date",
+          "display": "End Date",
+          "description": "@prompt('End Date','D',,Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        }
+      ],
       "schema": {
         "field": [
           {
@@ -30,7 +60,7 @@
             "type": "double",
             "display": "Visit Id",
             "legacyId": "DP10.DOe38",
-            "legacySqlClass": "alias"
+            "legacySqlClass": "column"
           },
           {
             "index": 1,
@@ -38,7 +68,7 @@
             "type": "date",
             "display": "Date of Visit",
             "legacyId": "DP10.DOdcf",
-            "legacySqlClass": "alias"
+            "legacySqlClass": "column"
           },
           {
             "index": 2,
@@ -46,7 +76,7 @@
             "type": "double",
             "display": "Year of Visit Date",
             "legacyId": "DP10.DOe93",
-            "legacySqlClass": "alias"
+            "legacySqlClass": "column"
           },
           {
             "index": 3,
@@ -54,7 +84,7 @@
             "type": "double",
             "display": "Month of Visit Date",
             "legacyId": "DP10.DOe95",
-            "legacySqlClass": "alias"
+            "legacySqlClass": "column"
           },
           {
             "index": 4,
@@ -62,7 +92,7 @@
             "type": "string",
             "display": "Status of Visit",
             "legacyId": "DP10.DOdd6",
-            "legacySqlClass": "alias"
+            "legacySqlClass": "column"
           },
           {
             "index": 5,
@@ -70,7 +100,7 @@
             "type": "string",
             "display": "Establishment Name Where Visit Held",
             "legacyId": "DP10.DOe37",
-            "legacySqlClass": "alias"
+            "legacySqlClass": "column"
           },
           {
             "index": 6,
@@ -78,7 +108,7 @@
             "type": "string",
             "display": "Visit Type Held",
             "legacyId": "DP10.DOdd3",
-            "legacySqlClass": "alias"
+            "legacySqlClass": "column"
           },
           {
             "index": 7,
@@ -86,7 +116,7 @@
             "type": "date",
             "display": "Visitor DOB",
             "legacyId": "DP10.DOf8b",
-            "legacySqlClass": "alias"
+            "legacySqlClass": "column"
           },
           {
             "index": 8,
@@ -94,7 +124,7 @@
             "type": "double",
             "display": "Visitor Count",
             "legacyId": "DP10.DOe91",
-            "legacySqlClass": "alias"
+            "legacySqlClass": "column"
           },
           {
             "index": 9,
@@ -102,7 +132,7 @@
             "type": "string",
             "display": "First Name of Visitor",
             "legacyId": "DP10.DOe18",
-            "legacySqlClass": "alias"
+            "legacySqlClass": "column"
           },
           {
             "index": 10,
@@ -110,7 +140,7 @@
             "type": "string",
             "display": "Last Name of Visitor",
             "legacyId": "DP10.DOe19",
-            "legacySqlClass": "alias"
+            "legacySqlClass": "column"
           },
           {
             "index": 11,
@@ -118,7 +148,7 @@
             "type": "string",
             "display": "NOMS Number",
             "legacyId": "DP10.DO44",
-            "legacySqlClass": "alias"
+            "legacySqlClass": "column"
           },
           {
             "index": 12,
@@ -126,6 +156,14 @@
             "type": "string",
             "display": "Last Name",
             "legacyId": "DP10.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "V_VISIT_STATUS",
+            "type": "string",
+            "display": "V_VISIT_STATUS",
+            "legacyId": "???",
             "legacySqlClass": "alias"
           }
         ]
@@ -141,7 +179,10 @@
           "effect": "permit",
           "condition": [
             {
-              "match": ["${role}", "ROLE_PRISONS_REPORTING_USER"]
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
             }
           ]
         }
@@ -168,9 +209,9 @@
             "defaultsort": false
           },
           {
-            "name": "$ref:v_Visit _Status",
+            "name": "$ref:V_VISIT_STATUS",
             "display": "",
-            "formula": "=If([Status of Visit]=\"Normal Completion\";\"Completed\"; If([Status of Visit]=\"VDE\";\"Visitor Declined Entry\";[Status of Visit]))",
+            "formula": "",
             "visible": "true",
             "sortable": true,
             "defaultsort": false
