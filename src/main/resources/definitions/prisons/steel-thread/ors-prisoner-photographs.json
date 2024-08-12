@@ -20,7 +20,7 @@
       "name": "Prisoner Photographs",
       "description": "OR - Sentence",
       "datasource": "nomis",
-      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) = 0 THEN NULL ELSE SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) + 1, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) = 0 THEN LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION) ELSE INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) - INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) END - 1) END AS UNIT_CODE_1, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, DT_LATEST_FACIAL_IMAGES.CAPTURE_DATETIME AS CAPTURE_DATETIME FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, (SELECT OFFENDER_BOOK_ID, OFFENDER_IMAGE_ID, CAPTURE_DATETIME FROM oms_owner.OFFENDER_IMAGES WHERE (OFFENDER_BOOK_ID, CAPTURE_DATETIME) IN (SELECT OFFENDER_BOOK_ID, MAX(CAPTURE_DATETIME) FROM OMS_OWNER.OFFENDER_IMAGES WHERE active_flag = 'Y' AND image_view_type = 'FACE' GROUP BY OFFENDER_BOOK_ID)) DT_LATEST_FACIAL_IMAGES, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (DT_LATEST_FACIAL_IMAGES.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (WING_CASELOAD_SECURITY.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (WING_CASELOAD_SECURITY.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) AND (AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE IN (SELECT WING FROM prompt_ /* = #Prompt('Wing (All for all)','A','Cell\\Location LOV',multi,free,,Not_Persistent,,User:4) */) OR 'All' IN (SELECT WING FROM prompt_ /* = #Prompt('Wing (All for all)','A','Cell\\Location LOV',multi,free,,Not_Persistent,,User:4) */)))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, UNIT_CODE_1, UNIT_DESCRIPTION_4_SHORT, CAPTURE_DATETIME, CURRENT_EFFECTIVE_SENTENCE_LENGTH AS D_CURRENT_EFFECTIVE_SENTENCE35, MAIN_LEGAL_STATUS___DESCRIPTION AS D_MAIN_LEGAL_STATUS FROM dataset_base_)",
+      "query": "CATEGY AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID AS OFFENDER_BOOK_ID, AT_IMPRISON_STATUSES.DESCRIPTION AS DESCRIPTION, AT_HEADER_BLOCK.STATUS_2 AS STATUS_2 FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.IMPRISONMENT_STATUSES AT_IMPRISON_STATUSES, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OMS_OWNER.OFFENDER_IMPRISON_STATUSES AT_OFFENDER_IMPRISON_STATUSES WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_IMPRISON_STATUSES.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_IMPRISON_STATUSES.LATEST_STATUS = 'Y' OR AT_OFFENDER_IMPRISON_STATUSES.LATEST_STATUS IS NULL) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_IMPRISON_STATUSES.IMPRISONMENT_STATUS (+) = AT_OFFENDER_IMPRISON_STATUSES.IMPRISONMENT_STATUS) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y')), LATEST_SENTENCE AS (SELECT OFF_BOOK.OFFENDER_BOOK_ID, CASE WHEN LIFE_FLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' ELSE SENT_CALC.EFFECTIVE_SENTENCE_LENGTH END AS CURR_EFF_SENT_LEN FROM ( SELECT DISTINCT OFFENDER_SENTENCE_TERMS.OFFENDER_BOOK_ID, OFFENDER_SENTENCE_TERMS.LIFE_SENTENCE_FLAG FROM OFFENDER_SENTENCE_TERMS WHERE OFFENDER_SENTENCE_TERMS.LIFE_SENTENCE_FLAG = 'Y') LIFE_FLAG, OMS_OWNER.OFFENDER_SENT_CALCULATIONS SENT_CALC, OMS_OWNER.OFFENDER_BOOKINGS OFF_BOOK WHERE ( OFF_BOOK.OFFENDER_BOOK_ID = SENT_CALC.OFFENDER_BOOK_ID (+) ) AND ( LIFE_FLAG.OFFENDER_BOOK_ID (+) = SENT_CALC.OFFENDER_BOOK_ID ) AND SENT_CALC.OFFENDER_SENT_CALCULATION_ID = ( SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE SENT_CALC.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)),dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) = 0 THEN NULL ELSE SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) + 1, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) = 0 THEN LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION) ELSE INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) - INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) END - 1) END AS UNIT_CODE_1, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, DT_LATEST_FACIAL_IMAGES.CAPTURE_DATETIME AS CAPTURE_DATETIME, LATEST_SENTENCE.CURR_EFF_SENT_LEN, CATEGY.STATUS_2, CATEGY.DESCRIPTION FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, LATEST_SENTENCE, CATEGY, (SELECT OFFENDER_BOOK_ID, OFFENDER_IMAGE_ID, CAPTURE_DATETIME FROM oms_owner.OFFENDER_IMAGES WHERE (OFFENDER_BOOK_ID, CAPTURE_DATETIME) IN (SELECT OFFENDER_BOOK_ID, MAX(CAPTURE_DATETIME) FROM OMS_OWNER.OFFENDER_IMAGES WHERE active_flag = 'Y' AND image_view_type = 'FACE' GROUP BY OFFENDER_BOOK_ID)) DT_LATEST_FACIAL_IMAGES, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (DT_LATEST_FACIAL_IMAGES.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND ( LATEST_SENTENCE.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND ( CATEGY.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (WING_CASELOAD_SECURITY.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (WING_CASELOAD_SECURITY.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) AND (AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE IN (SELECT WING FROM prompt_ /* = #Prompt('Wing (All for all)','A','Cell\\Location LOV',multi,free,,Not_Persistent,,User:4) */) OR 'All' IN (SELECT WING FROM prompt_ /* = #Prompt('Wing (All for all)','A','Cell\\Location LOV',multi,free,,Not_Persistent,,User:4) */)))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, UNIT_CODE_1, UNIT_DESCRIPTION_4_SHORT, CAPTURE_DATETIME, CURR_EFF_SENT_LEN AS D_CURRENT_EFFECTIVE_SENTENCE35, STATUS_2 AS D_SEC_CAT, CASE WHEN STATUS_2 IN ('Cat A','Cat A Ex','Cat A Hi','Prov A') THEN 'Y' ELSE 'N' END AS V_CAT_A, DESCRIPTION AS D_MAIN_LEGAL_STATUS FROM dataset_base_)",
       "parameters": [
         {
           "index": 0,
@@ -79,7 +79,7 @@
             "index": 4,
             "name": "UNIT_DESCRIPTION_4_SHORT",
             "type": "string",
-            "display": "Unit Description 4 Short",
+            "display": "Location",
             "legacyId": "DP3.DO10427",
             "legacySqlClass": "column"
           },
@@ -95,7 +95,7 @@
             "index": 6,
             "name": "D_CURRENT_EFFECTIVE_SENTENCE35",
             "type": "string",
-            "display": "D_CURRENT_EFFECTIVE_SENTENCE35",
+            "display": "Effectvie Sentence Length",
             "legacyId": "???",
             "legacySqlClass": "alias"
           },
@@ -103,7 +103,7 @@
             "index": 7,
             "name": "D_MAIN_LEGAL_STATUS",
             "type": "string",
-            "display": "D_MAIN_LEGAL_STATUS",
+            "display": "Main Legal Status",
             "legacyId": "???",
             "legacySqlClass": "alias"
           }
@@ -228,7 +228,7 @@
         "field": [
           {
             "name": "$ref:UNIT_CODE_1",
-            "display": "Unit Code 1",
+            "display": "Wing",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -236,7 +236,7 @@
           },
           {
             "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
-            "display": "Unit Description 4 Short",
+            "display": "Location",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -267,17 +267,17 @@
             "defaultsort": false
           },
           {
-            "name": "$ref:d_Current_Effective_Sentence_Length",
-            "display": "",
-            "formula": "=[Current Effective Sentence Length]",
+            "name": "$ref:D_CURRENT_EFFECTIVE_SENTENCE35",
+            "display": "Effective Sentence Length",
+            "formula": "",
             "visible": "true",
             "sortable": true,
             "defaultsort": false
           },
           {
-            "name": "$ref:d_Main_Legal_Status",
-            "display": "",
-            "formula": "=[Main Legal Status - Description]",
+            "name": "$ref:D_MAIN_LEGAL_STATUS",
+            "display": "Main Legal Status",
+            "formula": "",
             "visible": "true",
             "sortable": true,
             "defaultsort": false
@@ -301,7 +301,7 @@
         "field": [
           {
             "name": "$ref:UNIT_CODE_1",
-            "display": "Unit Code 1",
+            "display": "Wing",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -309,7 +309,7 @@
           },
           {
             "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
-            "display": "Unit Description 4 Short",
+            "display": "Location",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -340,17 +340,17 @@
             "defaultsort": false
           },
           {
-            "name": "$ref:d_Current_Effective_Sentence_Length",
-            "display": "",
-            "formula": "=[Current Effective Sentence Length]",
+            "name": "$ref:D_CURRENT_EFFECTIVE_SENTENCE35",
+            "display": "Effective Sentence Length",
+            "formula": "",
             "visible": "true",
             "sortable": true,
             "defaultsort": false
           },
           {
-            "name": "$ref:d_Main_Legal_Status",
-            "display": "",
-            "formula": "=[Main Legal Status - Description]",
+            "name": "$ref:D_MAIN_LEGAL_STATUS",
+            "display": "Main Legal Status",
+            "formula": "",
             "visible": "true",
             "sortable": true,
             "defaultsort": false
@@ -374,7 +374,7 @@
         "field": [
           {
             "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
-            "display": "Unit Description 4 Short",
+            "display": "Location",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -405,17 +405,17 @@
             "defaultsort": false
           },
           {
-            "name": "$ref:d_Current_Effective_Sentence_Length",
+            "name": "$ref:D_CURRENT_EFFECTIVE_SENTENCE35",
             "display": "",
-            "formula": "=[Current Effective Sentence Length]",
+            "formula": "Current Effective Sentence Length",
             "visible": "true",
             "sortable": true,
             "defaultsort": false
           },
           {
-            "name": "$ref:d_Main_Legal_Status",
+            "name": "$ref:D_MAIN_LEGAL_STATUS",
             "display": "",
-            "formula": "=[Main Legal Status - Description]",
+            "formula": "Main Legal Status",
             "visible": "true",
             "sortable": true,
             "defaultsort": false
@@ -447,7 +447,7 @@
         "field": [
           {
             "name": "$ref:UNIT_CODE_1",
-            "display": "Unit Code 1",
+            "display": "Wing",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -455,7 +455,7 @@
           },
           {
             "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
-            "display": "Unit Description 4 Short",
+            "display": "Location",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -486,17 +486,17 @@
             "defaultsort": false
           },
           {
-            "name": "$ref:d_Current_Effective_Sentence_Length",
+            "name": "$ref:D_CURRENT_EFFECTIVE_SENTENCE35",
             "display": "",
-            "formula": "=[Current Effective Sentence Length]",
+            "formula": "Effective Sentence Length",
             "visible": "true",
             "sortable": true,
             "defaultsort": false
           },
           {
-            "name": "$ref:d_Main_Legal_Status",
+            "name": "$ref:D_MAIN_LEGAL_STATUS",
             "display": "",
-            "formula": "=[Main Legal Status - Description]",
+            "formula": "Main Legal Status",
             "visible": "true",
             "sortable": true,
             "defaultsort": false
