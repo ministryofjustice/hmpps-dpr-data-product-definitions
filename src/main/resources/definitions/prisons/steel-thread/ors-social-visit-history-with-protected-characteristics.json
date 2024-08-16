@@ -1,0 +1,1192 @@
+{
+  "id": "FpdblAFgXQgAuNEoAACnrrYAACJIAGc1",
+  "name": "ORS Social Visit History with Protected Characteristics",
+  "description": "VIS0025 - v1 Last Modified: 30/08/2023\nThis report provides the visit history for the time period entered at run time as well as the Protected Characteristics for all Prisoners currently in the Establishment.",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "VIS0025 v1 Visits",
+      "Visit History",
+      "Protected Characteristics",
+      "Stats"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP18",
+      "name": "All Prisoners",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER_HIST_VISITS.VISIT_DATE AS VISIT_DATE, DT_ADMISSION.ADMISSION_DATE AS ADMISSION_DATE, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, CASE WHEN TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) <= 17 THEN 'Juvenile' WHEN TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) >= 18 AND TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) <= 20 THEN 'Young Person' ELSE 'Adult' END AS ADULT_YOUNG_PERSON_JUVENILE_37, AT_NATIONALITY.PROFILE_CODE AS PROFILE_CODE, AT_NATIONALITY.DESCRIPTION AS DESCRIPTION, AT_DOMSTAT.DESCRIPTION AS DOMESTIC_STATUS, CASE WHEN SUBSTR(AT_OFFENDER_MATERNITY_DESC.DESCRIPTION, 1, 4) = 'Preg' THEN 'Pregnant' ELSE 'Non Pregnant' END AS MATERNITY_STATUS, AT_RELIGION.DESCRIPTION AS RELIGION_DESCRIPTION, AT_OFFENDER_RELIGION.PROFILE_CODE AS RELIGION, AT_OFFENDER_MARITAL_STATUS.PROFILE_CODE AS MARITAL_STATUS_CODE, CASE WHEN AT_OFFENDER.RACE_CODE = 'W8' THEN 'W3' WHEN AT_OFFENDER.RACE_CODE = 'O1' THEN 'A4' ELSE AT_OFFENDER.RACE_CODE END || '-' || CASE WHEN AT_ETHNICITY_DESC.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_ETHNICITY_DESC.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_ETHNICITY_DESC.DESCRIPTION END AS ETHNIC_DESCRIPTION, CASE WHEN AT_OFFENDER.RACE_CODE = 'W8' THEN 'W3' WHEN AT_OFFENDER.RACE_CODE = 'O1' THEN 'A4' ELSE AT_OFFENDER.RACE_CODE END AS ETHNIC_CODE, AT_SEXUAL_ORIENTATION.DESCRIPTION AS SEXUAL_ORIENTATION_DESCRIPTION, AT_OFFENDER_SEXUAL_ORIENTATION.PROFILE_CODE AS SEXUAL_ORIENTATION_CODE, AT_OFFENDER.BIRTH_PLACE AS BIRTH_PLACE, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_OFFENDER.BIRTH_DATE AS BIRTH_DATE, TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) AS AGE_IN_YEARS, AT_OFFENDER.LAST_NAME AS LAST_NAME FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.REFERENCE_CODES AT_OFFENDER_MATERNITY_DESC, OMS_OWNER.REFERENCE_CODES AT_ETHNICITY_DESC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFFENDER_RELIGION, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFFENDER_MARITAL_STATUS, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFFENDER_SEXUAL_ORIENTATION, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFF_PROF_DET_NAT, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFF_PROF_DET_DOM, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDER_HEALTH_PROBLEMS AT_OFFENDER_MATERNITY, OMS_OWNER.OFFENDER_VISITS AT_OFFENDER_HIST_VISITS, (SELECT DISTINCT m.OFFENDER_BOOK_ID, MAX(m.MOVEMENT_TIME) AS ADMISSION_DATE FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS m, OMS_OWNER.offender_bookings h WHERE h.booking_status = 'O' AND h.active_flag = 'Y' AND m.direction_code = 'IN' /* AND m.Movement_reason_code !='R' */ AND m.Movement_type = 'ADM' AND m.to_agy_loc_id = h.agy_loc_id AND h.offender_book_id = m.offender_book_id GROUP BY m.OFFENDER_BOOK_ID) DT_ADMISSION, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, OMS_OWNER.PROFILE_CODES AT_NATIONALITY, OMS_OWNER.PROFILE_CODES AT_DOMSTAT, OMS_OWNER.PROFILE_CODES AT_RELIGION, OMS_OWNER.PROFILE_CODES AT_SEXUAL_ORIENTATION WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_ETHNICITY_DESC.DOMAIN (+) = 'ETHNICITY') AND (AT_ETHNICITY_DESC.CODE (+) = AT_OFFENDER.RACE_CODE) AND (AT_OFFENDER_RELIGION.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_RELIGION.PROFILE_TYPE (+) = 'RELF') AND (AT_OFFENDER_MARITAL_STATUS.PROFILE_TYPE (+) = 'MARITAL') AND (AT_OFFENDER_MARITAL_STATUS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFF_PROF_DET_NAT.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFF_PROF_DET_NAT.PROFILE_TYPE (+) = ('NAT')) AND (AT_NATIONALITY.PROFILE_TYPE (+) = AT_OFF_PROF_DET_NAT.PROFILE_TYPE AND AT_NATIONALITY.PROFILE_CODE (+) = AT_OFF_PROF_DET_NAT.PROFILE_CODE) AND (AT_NATIONALITY.PROFILE_TYPE (+) = ('NAT')) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (AT_RELIGION.PROFILE_CODE (+) = AT_OFFENDER_RELIGION.PROFILE_CODE) AND (AT_RELIGION.PROFILE_TYPE (+) = AT_OFFENDER_RELIGION.PROFILE_TYPE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_ADMISSION.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_HIST_VISITS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFF_PROF_DET_DOM.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_DOMSTAT.PROFILE_TYPE (+) = 'MARITAL') AND (AT_DOMSTAT.PROFILE_CODE (+) = AT_OFF_PROF_DET_DOM.PROFILE_CODE) AND (AT_OFF_PROF_DET_DOM.PROFILE_TYPE (+) = 'MARITAL') AND (AT_DOMSTAT.PROFILE_TYPE (+) = AT_OFF_PROF_DET_DOM.PROFILE_TYPE) AND (AT_OFFENDER_MATERNITY_DESC.PARENT_DOMAIN (+) = 'HEALTH' AND AT_OFFENDER_MATERNITY_DESC.PARENT_CODE (+) = 'MATSTAT') AND (AT_OFFENDER_MATERNITY.PROBLEM_CODE = AT_OFFENDER_MATERNITY_DESC.CODE (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_MATERNITY.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_SEXUAL_ORIENTATION.PROFILE_TYPE (+) = 'SEXO') AND (AT_OFFENDER_SEXUAL_ORIENTATION.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_SEXUAL_ORIENTATION.PROFILE_TYPE (+) = AT_OFFENDER_SEXUAL_ORIENTATION.PROFILE_TYPE) AND (AT_SEXUAL_ORIENTATION.PROFILE_CODE (+) = AT_OFFENDER_SEXUAL_ORIENTATION.PROFILE_CODE) AND (WING_CASELOAD_SECURITY.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, VISIT_DATE, ADMISSION_DATE, UNIT_DESCRIPTION_4_SHORT, ADULT_YOUNG_PERSON_JUVENILE_37, PROFILE_CODE, DESCRIPTION, DOMESTIC_STATUS, MATERNITY_STATUS, RELIGION_DESCRIPTION, RELIGION, MARITAL_STATUS_CODE, ETHNIC_DESCRIPTION, ETHNIC_CODE, SEXUAL_ORIENTATION_DESCRIPTION, SEXUAL_ORIENTATION_CODE, BIRTH_PLACE, FIRST_NAME, BIRTH_DATE, AGE_IN_YEARS, LAST_NAME, CASE WHEN ALERT_TYPE_CODE = 'LCE' THEN 'Y' END AS V_CARE_EXPERIENCED_ALERT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP18.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "VISIT_DATE",
+            "type": "date",
+            "display": "Date of Visit",
+            "legacyId": "DP18.DOdcf",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ADMISSION_DATE",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DP18.DOc6a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP18.DO427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ADULT_YOUNG_PERSON_JUVENILE_37",
+            "type": "string",
+            "display": "Adult / Young Person / Juvenile Indicator",
+            "legacyId": "DP18.DO8b9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "PROFILE_CODE",
+            "type": "string",
+            "display": "Nationality Code",
+            "legacyId": "DP18.DO10d6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Nationality",
+            "legacyId": "DP18.DOb7e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "DOMESTIC_STATUS",
+            "type": "string",
+            "display": "Domestic Status",
+            "legacyId": "DP18.DO1085",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "MATERNITY_STATUS",
+            "type": "string",
+            "display": "Maternity Status",
+            "legacyId": "DP18.DO107",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "RELIGION_DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DP18.DOc29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "RELIGION",
+            "type": "string",
+            "display": "Religion",
+            "legacyId": "DP18.DOb0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "MARITAL_STATUS_CODE",
+            "type": "string",
+            "display": "Marital Status Code",
+            "legacyId": "DP18.DOb3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "ETHNIC_DESCRIPTION",
+            "type": "string",
+            "display": "Ethnic Description",
+            "legacyId": "DP18.DO9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP18.DO88",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "SEXUAL_ORIENTATION_DESCRIPTION",
+            "type": "string",
+            "display": "Sexual Orientation Description",
+            "legacyId": "DP18.DO11ba",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "SEXUAL_ORIENTATION_CODE",
+            "type": "string",
+            "display": "Sexual Orientation Code",
+            "legacyId": "DP18.DO118a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "BIRTH_PLACE",
+            "type": "string",
+            "display": "Birth Place",
+            "legacyId": "DP18.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP18.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 18,
+            "name": "BIRTH_DATE",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP18.DO75",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 19,
+            "name": "AGE_IN_YEARS",
+            "type": "double",
+            "display": "Age in Years",
+            "legacyId": "DP18.DOa15",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 20,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP18.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 21,
+            "name": "V_CARE_EXPERIENCED_ALERT",
+            "type": "string",
+            "display": "V_CARE_EXPERIENCED_ALERT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP10",
+      "name": "Visits Booked",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, CASE WHEN TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) <= 17 THEN 'Juvenile' WHEN TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) >= 18 AND TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) <= 20 THEN 'Young Person' ELSE 'Adult' END AS ADULT_YOUNG_PERSON_JUVENILE_37, AT_NATIONALITY.PROFILE_CODE AS PROFILE_CODE, AT_NATIONALITY.DESCRIPTION AS DESCRIPTION, AT_DOMSTAT.DESCRIPTION AS DOMESTIC_STATUS, CASE WHEN SUBSTR(AT_OFFENDER_MATERNITY_DESC.DESCRIPTION, 1, 4) = 'Preg' THEN 'Pregnant' ELSE 'Non Pregnant' END AS MATERNITY_STATUS, AT_RELIGION.DESCRIPTION AS RELIGION_DESCRIPTION, AT_OFFENDER_RELIGION.PROFILE_CODE AS RELIGION, AT_OFFENDER_MARITAL_STATUS.PROFILE_CODE AS MARITAL_STATUS_CODE, CASE WHEN AT_OFFENDER.RACE_CODE = 'W8' THEN 'W3' WHEN AT_OFFENDER.RACE_CODE = 'O1' THEN 'A4' ELSE AT_OFFENDER.RACE_CODE END || '-' || CASE WHEN AT_ETHNICITY_DESC.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_ETHNICITY_DESC.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_ETHNICITY_DESC.DESCRIPTION END AS ETHNIC_DESCRIPTION, CASE WHEN AT_OFFENDER.RACE_CODE = 'W8' THEN 'W3' WHEN AT_OFFENDER.RACE_CODE = 'O1' THEN 'A4' ELSE AT_OFFENDER.RACE_CODE END AS ETHNIC_CODE, AT_SEXUAL_ORIENTATION.DESCRIPTION AS SEXUAL_ORIENTATION_DESCRIPTION, AT_OFFENDER_SEXUAL_ORIENTATION.PROFILE_CODE AS SEXUAL_ORIENTATION_CODE, AT_OFFENDER.BIRTH_PLACE AS BIRTH_PLACE, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_OFFENDER.BIRTH_DATE AS BIRTH_DATE, TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) AS AGE_IN_YEARS, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER_HIST_VISITS.OFFENDER_VISIT_ID AS OFFENDER_VISIT_ID, AT_OFFENDER_HIST_VISITS.VISIT_DATE AS VISIT_DATE, CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'SCH' THEN 'Scheduled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'NORM' THEN 'Normal Completion' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'CANC' THEN 'Cancelled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'EXP' THEN 'Expired' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'HMPOP' THEN 'Terminated by Staff' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'OFFEND' THEN 'Prisoner Completed Early' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'VISITOR' THEN 'Visitor Completed Early' ELSE AT_OFFENDER_HIST_VISITS.VISIT_STATUS END AS STATUS_OF_VISIT, AT_VISIT_HIST_ESTAB.DESCRIPTION AS ESTABLISHMENT_NAME_WHERE_VIS35 FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.REFERENCE_CODES AT_OFFENDER_MATERNITY_DESC, OMS_OWNER.REFERENCE_CODES AT_ETHNICITY_DESC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_VISIT_HIST_ESTAB, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFFENDER_RELIGION, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFFENDER_MARITAL_STATUS, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFFENDER_SEXUAL_ORIENTATION, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFF_PROF_DET_NAT, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFF_PROF_DET_DOM, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDER_HEALTH_PROBLEMS AT_OFFENDER_MATERNITY, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, OMS_OWNER.PROFILE_CODES AT_NATIONALITY, OMS_OWNER.PROFILE_CODES AT_DOMSTAT, OMS_OWNER.PROFILE_CODES AT_RELIGION, OMS_OWNER.PROFILE_CODES AT_SEXUAL_ORIENTATION, OMS_OWNER.OFFENDER_VISITS AT_OFFENDER_HIST_VISITS, USER_ACCESSIBLE_CASELOADS AT_UAC, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_ETHNICITY_DESC.DOMAIN (+) = 'ETHNICITY') AND (AT_ETHNICITY_DESC.CODE (+) = AT_OFFENDER.RACE_CODE) AND (AT_OFFENDER_RELIGION.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_RELIGION.PROFILE_TYPE (+) = 'RELF') AND (AT_OFFENDER_MARITAL_STATUS.PROFILE_TYPE (+) = 'MARITAL') AND (AT_OFFENDER_MARITAL_STATUS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFF_PROF_DET_NAT.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFF_PROF_DET_NAT.PROFILE_TYPE (+) = ('NAT')) AND (AT_NATIONALITY.PROFILE_TYPE (+) = AT_OFF_PROF_DET_NAT.PROFILE_TYPE AND AT_NATIONALITY.PROFILE_CODE (+) = AT_OFF_PROF_DET_NAT.PROFILE_CODE) AND (AT_NATIONALITY.PROFILE_TYPE (+) = ('NAT')) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (AT_RELIGION.PROFILE_CODE (+) = AT_OFFENDER_RELIGION.PROFILE_CODE) AND (AT_RELIGION.PROFILE_TYPE (+) = AT_OFFENDER_RELIGION.PROFILE_TYPE) AND (AT_OFFENDER_HIST_VISITS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_HIST_VISITS.AGY_LOC_ID = AT_VISIT_HIST_ESTAB.AGY_LOC_ID) AND (AT_VISIT_HIST_ESTAB.AGY_LOC_ID = AT_UAC.CASELOAD_ID) AND (AT_UAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFF_PROF_DET_DOM.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_DOMSTAT.PROFILE_TYPE (+) = 'MARITAL') AND (AT_DOMSTAT.PROFILE_CODE (+) = AT_OFF_PROF_DET_DOM.PROFILE_CODE) AND (AT_OFF_PROF_DET_DOM.PROFILE_TYPE (+) = 'MARITAL') AND (AT_DOMSTAT.PROFILE_TYPE (+) = AT_OFF_PROF_DET_DOM.PROFILE_TYPE) AND (AT_OFFENDER_MATERNITY_DESC.PARENT_DOMAIN (+) = 'HEALTH' AND AT_OFFENDER_MATERNITY_DESC.PARENT_CODE (+) = 'MATSTAT') AND (AT_OFFENDER_MATERNITY.PROBLEM_CODE = AT_OFFENDER_MATERNITY_DESC.CODE (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_MATERNITY.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_SEXUAL_ORIENTATION.PROFILE_TYPE (+) = 'SEXO') AND (AT_OFFENDER_SEXUAL_ORIENTATION.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_SEXUAL_ORIENTATION.PROFILE_TYPE (+) = AT_OFFENDER_SEXUAL_ORIENTATION.PROFILE_TYPE) AND (AT_SEXUAL_ORIENTATION.PROFILE_CODE (+) = AT_OFFENDER_SEXUAL_ORIENTATION.PROFILE_CODE) AND (WING_CASELOAD_SECURITY.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) AND AT_VISIT_HIST_ESTAB.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID AND (AT_UAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_HIST_VISITS.VISIT_DATE BETWEEN (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter Date of Visit (Start)','D',,Mono,Free,Not_Persistent,,User:0) */) AND (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter Date of Visit (End)','D',,Mono,Free,Not_Persistent,,User:1) */) AND CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'SCON' THEN 'Social' WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'OFFI' THEN 'Official' ELSE AT_OFFENDER_HIST_VISITS.VISIT_TYPE END = 'Social')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, UNIT_DESCRIPTION_4_SHORT, ADULT_YOUNG_PERSON_JUVENILE_37, PROFILE_CODE, DESCRIPTION, DOMESTIC_STATUS, MATERNITY_STATUS, RELIGION_DESCRIPTION, RELIGION, MARITAL_STATUS_CODE, ETHNIC_DESCRIPTION, ETHNIC_CODE, SEXUAL_ORIENTATION_DESCRIPTION, SEXUAL_ORIENTATION_CODE, BIRTH_PLACE, FIRST_NAME, BIRTH_DATE, AGE_IN_YEARS, LAST_NAME, OFFENDER_VISIT_ID, VISIT_DATE, STATUS_OF_VISIT, ESTABLISHMENT_NAME_WHERE_VIS35, CASE WHEN ALERT_TYPE_CODE = 'LCE' THEN 'Y' END AS V_CARE_EXPERIENCED_ALERT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "unknown_parameter",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter Date of Visit (Start)",
+          "description": "@prompt('Enter Date of Visit (Start)','D',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP10.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP10.DO427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ADULT_YOUNG_PERSON_JUVENILE_37",
+            "type": "string",
+            "display": "Adult / Young Person / Juvenile Indicator",
+            "legacyId": "DP10.DO8b9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "PROFILE_CODE",
+            "type": "string",
+            "display": "Nationality Code",
+            "legacyId": "DP10.DO10d6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Nationality",
+            "legacyId": "DP10.DOb7e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "DOMESTIC_STATUS",
+            "type": "string",
+            "display": "Domestic Status",
+            "legacyId": "DP10.DO1085",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "MATERNITY_STATUS",
+            "type": "string",
+            "display": "Maternity Status",
+            "legacyId": "DP10.DO107",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "RELIGION_DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DP10.DOc29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "RELIGION",
+            "type": "string",
+            "display": "Religion",
+            "legacyId": "DP10.DOb0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "MARITAL_STATUS_CODE",
+            "type": "string",
+            "display": "Marital Status Code",
+            "legacyId": "DP10.DOb3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ETHNIC_DESCRIPTION",
+            "type": "string",
+            "display": "Ethnic Description",
+            "legacyId": "DP10.DO9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP10.DO88",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "SEXUAL_ORIENTATION_DESCRIPTION",
+            "type": "string",
+            "display": "Sexual Orientation Description",
+            "legacyId": "DP10.DO11ba",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "SEXUAL_ORIENTATION_CODE",
+            "type": "string",
+            "display": "Sexual Orientation Code",
+            "legacyId": "DP10.DO118a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "BIRTH_PLACE",
+            "type": "string",
+            "display": "Birth Place",
+            "legacyId": "DP10.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP10.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "BIRTH_DATE",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP10.DO75",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "AGE_IN_YEARS",
+            "type": "double",
+            "display": "Age in Years",
+            "legacyId": "DP10.DOa15",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 18,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP10.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 19,
+            "name": "OFFENDER_VISIT_ID",
+            "type": "double",
+            "display": "Visit Id",
+            "legacyId": "DP10.DOe38",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 20,
+            "name": "VISIT_DATE",
+            "type": "date",
+            "display": "Date of Visit",
+            "legacyId": "DP10.DOdcf",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 21,
+            "name": "STATUS_OF_VISIT",
+            "type": "string",
+            "display": "Status of Visit",
+            "legacyId": "DP10.DOdd6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 22,
+            "name": "ESTABLISHMENT_NAME_WHERE_VIS35",
+            "type": "string",
+            "display": "Establishment Name Where Visit Held",
+            "legacyId": "DP10.DOe37",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 23,
+            "name": "V_CARE_EXPERIENCED_ALERT",
+            "type": "string",
+            "display": "V_CARE_EXPERIENCED_ALERT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP16",
+      "name": "Disability All",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_HLTH_PRB_DISAB_DSC.DESCRIPTION AS DESCRIPTION FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_HLTH_PRB_DISAB_DSC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.OFFENDER_HEALTH_PROBLEMS AT_OFFENDER_HEALTH, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_HEALTH.OFFENDER_BOOK_ID) AND (AT_HLTH_PRB_DISAB_DSC.DOMAIN = 'HEALTH_PBLM') AND (AT_OFFENDER_HEALTH.PROBLEM_CODE = AT_HLTH_PRB_DISAB_DSC.CODE) AND (NOT AT_HLTH_PRB_DISAB_DSC.CODE IN ('ND', 'NR', 'RD', 'PRD') AND AT_HLTH_PRB_DISAB_DSC.PARENT_CODE = 'DISAB' AND AT_HLTH_PRB_DISAB_DSC.DOMAIN = 'HEALTH_PBLM') AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_HEALTH.PROBLEM_STATUS = 'ON' AND (AT_HLTH_PRB_DISAB_DSC.DOMAIN = 'HEALTH_PBLM' AND AT_HLTH_PRB_DISAB_DSC.PARENT_CODE = 'DISAB' AND NOT AT_HLTH_PRB_DISAB_DSC.CODE IN ('ND', 'NR', 'PRD', 'RD')))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP16.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Disability",
+            "legacyId": "DP16.DOc87",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP17",
+      "name": "Care Experienced Alert",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER_ALERTS.ALERT_CODE AS ALERT_CODE, AT_ALERT_TYPE_DESC.DESCRIPTION AS DESCRIPTION FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_ALERT_TYPE_DESC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDER_ALERTS AT_OFFENDER_ALERTS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_ALERTS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_ALERT_TYPE_DESC.CODE (+) = AT_OFFENDER_ALERTS.ALERT_CODE) AND (AT_ALERT_TYPE_DESC.DOMAIN = 'ALERT_CODE' OR AT_ALERT_TYPE_DESC.DOMAIN IS NULL) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_ALERTS.ALERT_STATUS = 'ACTIVE') AND AT_OFFENDER_ALERTS.ALERT_CODE = 'LCE')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, ALERT_CODE, DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP17.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ALERT_CODE",
+            "type": "string",
+            "display": "Alert Type Code",
+            "legacyId": "DP17.DO7e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Alert Description",
+            "legacyId": "DP17.DO97",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP19",
+      "name": "Disability with visits",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER_HIST_VISITS.OFFENDER_VISIT_ID AS OFFENDER_VISIT_ID, CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'SCH' THEN 'Scheduled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'NORM' THEN 'Normal Completion' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'CANC' THEN 'Cancelled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'EXP' THEN 'Expired' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'HMPOP' THEN 'Terminated by Staff' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'OFFEND' THEN 'Prisoner Completed Early' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'VISITOR' THEN 'Visitor Completed Early' ELSE AT_OFFENDER_HIST_VISITS.VISIT_STATUS END AS STATUS_OF_VISIT, AT_HLTH_PRB_DISAB_DSC.DESCRIPTION AS DESCRIPTION FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_HLTH_PRB_DISAB_DSC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_VISIT_HIST_ESTAB, OMS_OWNER.OFFENDER_HEALTH_PROBLEMS AT_OFFENDER_HEALTH, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDER_VISITS AT_OFFENDER_HIST_VISITS, USER_ACCESSIBLE_CASELOADS AT_UAC, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_HEALTH.OFFENDER_BOOK_ID) AND (AT_HLTH_PRB_DISAB_DSC.DOMAIN = 'HEALTH_PBLM') AND (AT_OFFENDER_HEALTH.PROBLEM_CODE = AT_HLTH_PRB_DISAB_DSC.CODE) AND (AT_OFFENDER_HIST_VISITS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_HIST_VISITS.AGY_LOC_ID = AT_VISIT_HIST_ESTAB.AGY_LOC_ID) AND (AT_VISIT_HIST_ESTAB.AGY_LOC_ID = AT_UAC.CASELOAD_ID) AND (AT_UAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (NOT AT_HLTH_PRB_DISAB_DSC.CODE IN ('ND', 'NR', 'RD', 'PRD') AND AT_HLTH_PRB_DISAB_DSC.PARENT_CODE = 'DISAB' AND AT_HLTH_PRB_DISAB_DSC.DOMAIN = 'HEALTH_PBLM') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) AND AT_VISIT_HIST_ESTAB.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID AND (AT_UAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_HEALTH.PROBLEM_STATUS = 'ON' AND (AT_HLTH_PRB_DISAB_DSC.DOMAIN = 'HEALTH_PBLM' AND AT_HLTH_PRB_DISAB_DSC.PARENT_CODE = 'DISAB' AND NOT AT_HLTH_PRB_DISAB_DSC.CODE IN ('ND', 'NR', 'PRD', 'RD')) AND AT_OFFENDER_HIST_VISITS.VISIT_DATE BETWEEN (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter Date of Visit (Start)','D',,Mono,Free,Persistent,,User:0) */) AND (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter Date of Visit (End)','D',,Mono,Free,Persistent,,User:1) */) AND CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'SCON' THEN 'Social' WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'OFFI' THEN 'Official' ELSE AT_OFFENDER_HIST_VISITS.VISIT_TYPE END = 'Social')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, OFFENDER_VISIT_ID, STATUS_OF_VISIT, DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "unknown_parameter",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter Date of Visit (Start)",
+          "description": "@prompt('Enter Date of Visit (Start)','D',,Mono,Free,Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP19.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_VISIT_ID",
+            "type": "double",
+            "display": "Visit Id",
+            "legacyId": "DP19.DOe38",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "STATUS_OF_VISIT",
+            "type": "string",
+            "display": "Status of Visit",
+            "legacyId": "DP19.DOdd6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Disability",
+            "legacyId": "DP19.DOc87",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "166646.RS",
+      "name": "All Visit Status by Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    },
+    {
+      "id": "167913.RS",
+      "name": "Visit Details",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:VISIT_DATE",
+            "display": "Date of Visit",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:STATUS_OF_VISIT",
+            "display": "Status of Visit",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "167536.RS",
+      "name": "Visits - Normal Completion By Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (VISITS_BOOKED_STATUS_OF_VISIT IN ('Normal Completion')))"
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:VISIT_DATE",
+            "display": "Date of Visit",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:STATUS_OF_VISIT",
+            "display": "Status of Visit",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "167920.RS",
+      "name": "Visits - Normal Completion By Date",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (VISITS_BOOKED_STATUS_OF_VISIT IN ('Normal Completion')))"
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:VISIT_DATE",
+            "display": "Date of Visit",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:STATUS_OF_VISIT",
+            "display": "Status of Visit",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "167408.RS",
+      "name": "Protected Characteristics - All",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP18",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_)"
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:AGE_IN_YEARS",
+            "display": "Age in Years",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:MARITAL_STATUS_CODE",
+            "display": "Marital Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:PROFILE_CODE",
+            "display": "Nationality Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:RELIGION",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:SEXUAL_ORIENTATION_CODE",
+            "display": "Sexual Orientation Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_Max_Concat_disability",
+            "display": "",
+            "formula": "=[v_concat_disability] Where ([Disability All].[Disability]= [v_max_disability]) In ([NOMS Number])",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:ADULT_YOUNG_PERSON_JUVENILE_37",
+            "display": "Adult / Young Person / Juvenile Indicator",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_Care_experienced_alert",
+            "display": "",
+            "formula": "=If([Alert Type Code] = \"LCE\"; \"Y\")",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_max_concat_visit_status",
+            "display": "",
+            "formula": "=[v_concat_visit_status]Where ([Visits Booked].[Status of Visit]= [v_max_visit_status]) In ([NOMS Number])",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_Had_visit_booked_in_time_frame?",
+            "display": "",
+            "formula": "=If(IsNull([Visits Booked].[Visit Id]);\"N\";\"Y\" In ([NOMS Number]))",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:MATERNITY_STATUS",
+            "display": "Maternity Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "167537.RS",
+      "name": "Protected Characteristics - With visits",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_)"
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:AGE_IN_YEARS",
+            "display": "Age in Years",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:MARITAL_STATUS_CODE",
+            "display": "Marital Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:PROFILE_CODE",
+            "display": "Nationality Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:RELIGION",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:SEXUAL_ORIENTATION_CODE",
+            "display": "Sexual Orientation Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_Max_Concat_disability",
+            "display": "",
+            "formula": "=[v_concat_disability] Where ([Disability All].[Disability]= [v_max_disability]) In ([NOMS Number])",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:ADULT_YOUNG_PERSON_JUVENILE_37",
+            "display": "Adult / Young Person / Juvenile Indicator",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_Care_experienced_alert",
+            "display": "",
+            "formula": "=If([Alert Type Code] = \"LCE\"; \"Y\")",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_max_concat_visit_status",
+            "display": "",
+            "formula": "=[v_concat_visit_status]Where ([Visits Booked].[Status of Visit]= [v_max_visit_status]) In ([NOMS Number])",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_Had_visit_booked_in_time_frame?",
+            "display": "",
+            "formula": "=If(IsNull([Visits Booked].[Visit Id]);\"N\";\"Y\" In ([NOMS Number]))",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "167540.RS",
+      "name": "Visit Stats",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_)"
+      },
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Disability",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:STATUS_OF_VISIT",
+            "display": "Status of Visit",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "167742.RS",
+      "name": "Population Stats",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP16",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_)"
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Disability",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "168008.RS",
+      "name": "Codes and Descriptions",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    }
+  ]
+}
