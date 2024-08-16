@@ -43,3 +43,9 @@ tasks.test {
 tasks.jacocoTestReport {
   dependsOn(tasks.test)
 }
+
+tasks {
+  withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
+  }
+}
