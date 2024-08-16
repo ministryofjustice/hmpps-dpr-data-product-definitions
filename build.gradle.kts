@@ -1,6 +1,6 @@
 plugins {
   idea
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.15.6"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "6.0.3"
   kotlin("jvm") version "2.0.10"
   kotlin("plugin.spring") version "2.0.10"
   id("jacoco")
@@ -24,18 +24,13 @@ dependencies {
 }
 
 java {
-  toolchain.languageVersion.set(JavaLanguageVersion.of(19))
+  toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }
 kotlin {
-  jvmToolchain(19)
+  jvmToolchain(21)
 }
 
 tasks {
-  withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions {
-      jvmTarget = "19"
-    }
-  }
   withType<Test> {
     useJUnitPlatform()
   }
