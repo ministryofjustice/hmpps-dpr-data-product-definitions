@@ -4,7 +4,9 @@
   "description": "MOV0068 v00.00.01 Last Modified: 26/07/2019\nThis report retrieves Sentence Details, ACCT information, Self Harm, Risk Alerts and Category Information.  This is to assist users when completing a PER form. Please Note: This report is also available in Management Information to include Alias Details.  However, as that report is in Management information, the data will be one day behind current date.",
   "metadata": {
     "version": "1.0.0",
-    "tags": ["MOV0068 v00.00.01 DPR"]
+    "tags": [
+      "MOV0068 v00.00.01 DPR"
+    ]
   },
   "datasource": [
     {
@@ -20,7 +22,7 @@
       "name": "Main Data",
       "description": "OR - Demographics",
       "datasource": "nomis",
-      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_OFFENDER.BIRTH_DATE AS BIRTH_DATE, AT_OFFENDERS_LOCATIONS.DESCRIPTION AS DESCRIPTION, AT_OFFENDER_CRO.IDENTIFIER AS IDENTIFIER, AT_OFFENDER_PNC.IDENTIFIER AS PNC_ID, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_OFFENDER_RELIGION.PROFILE_CODE AS PROFILE_CODE, CASE WHEN AT_OFFENDER.RACE_CODE = 'W8' THEN 'W3' WHEN AT_OFFENDER.RACE_CODE = 'O1' THEN 'A4' ELSE AT_OFFENDER.RACE_CODE END AS ETHNIC_CODE, AT_OFFENDER_BOOKING.BOOKING_NO AS BOOKING_NO, AT_HEADER_BLOCK.STATUS_2 AS STATUS_2, DT_IEP_BAND_LAST.IEP_LEVEL AS IEP_LEVEL FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, (SELECT iep_level, description, agy_loc_id, offender_book_id, iep_date FROM (SELECT iep.iep_level, rc.description, iep.agy_loc_id, iep.offender_book_id, iep.iep_date, ROW_NUMBER() OVER (PARTITION BY iep.offender_book_id ORDER BY iep.iep_time DESC, iep.iep_level_seq DESC) AS row_seq_filter FROM oms_owner.offender_iep_levels iep LEFT OUTER JOIN oms_owner.reference_codes rc ON iep.iep_level = rc.code AND rc.domain = 'IEP_LEVEL') WHERE row_seq_filter = 1) DT_IEP_BAND_LAST, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFFENDER_RELIGION, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, USER_ACCESSIBLE_CASELOADS, OMS_OWNER.OFFENDER_IDENTIFIERS AT_OFFENDER_CRO, OMS_OWNER.OFFENDER_IDENTIFIERS AT_OFFENDER_PNC, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDER_RELIGION.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_RELIGION.PROFILE_TYPE (+) = 'RELF') AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (DT_IEP_BAND_LAST.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDER_CRO.IDENTIFIER_TYPE (+) = 'CRO') AND (AT_OFFENDER_CRO.OFFENDER_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_PNC.IDENTIFIER_TYPE (+) = 'PNC') AND (AT_OFFENDER_PNC.OFFENDER_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (WING_CASELOAD_SECURITY.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('Enter NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0) */))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, BIRTH_DATE, DESCRIPTION, IDENTIFIER, PNC_ID, UNIT_DESCRIPTION_4_SHORT, PROFILE_CODE, ETHNIC_CODE, BOOKING_NO, STATUS_2, IEP_LEVEL, MAIN_LEGAL_STATUS AS V_MAIN_LEGAL_STATUS, EFFECTIVE_SENTENCE_LENGTH AS V_SENTENCE_LENGTH, CURRENT_RELEASE_DATE AS V_CURRENT_RELEASE_DATE, CASE WHEN V_COUNT_BOOKINGS > 1 THEN 'Yes' ELSE 'No' END AS V_PREVIOUS_CUSTODIAL, COUNT(AGENCY_INCIDENT_ID) AS V_NO_OF_ADJUDICATIONS FROM dataset_base_)",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_OFFENDER.BIRTH_DATE AS BIRTH_DATE, AT_OFFENDERS_LOCATIONS.DESCRIPTION AS DESCRIPTION, AT_OFFENDER_CRO.IDENTIFIER AS IDENTIFIER, AT_OFFENDER_PNC.IDENTIFIER AS PNC_ID, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_OFFENDER_RELIGION.PROFILE_CODE AS PROFILE_CODE, CASE WHEN AT_OFFENDER.RACE_CODE = 'W8' THEN 'W3' WHEN AT_OFFENDER.RACE_CODE = 'O1' THEN 'A4' ELSE AT_OFFENDER.RACE_CODE END AS ETHNIC_CODE, AT_OFFENDER_BOOKING.BOOKING_NO AS BOOKING_NO, AT_HEADER_BLOCK.STATUS_2 AS STATUS_2, DT_IEP_BAND_LAST.IEP_LEVEL AS IEP_LEVEL FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, (SELECT iep_level, description, agy_loc_id, offender_book_id, iep_date FROM (SELECT iep.iep_level, rc.description, iep.agy_loc_id, iep.offender_book_id, iep.iep_date, ROW_NUMBER() OVER (PARTITION BY iep.offender_book_id ORDER BY iep.iep_time DESC, iep.iep_level_seq DESC) AS row_seq_filter FROM oms_owner.offender_iep_levels iep LEFT OUTER JOIN oms_owner.reference_codes rc ON iep.iep_level = rc.code AND rc.domain = 'IEP_LEVEL') WHERE row_seq_filter = 1) DT_IEP_BAND_LAST, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFFENDER_RELIGION, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, USER_ACCESSIBLE_CASELOADS, OMS_OWNER.OFFENDER_IDENTIFIERS AT_OFFENDER_CRO, OMS_OWNER.OFFENDER_IDENTIFIERS AT_OFFENDER_PNC, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDER_RELIGION.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_RELIGION.PROFILE_TYPE (+) = 'RELF') AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (DT_IEP_BAND_LAST.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDER_CRO.IDENTIFIER_TYPE (+) = 'CRO') AND (AT_OFFENDER_CRO.OFFENDER_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_PNC.IDENTIFIER_TYPE (+) = 'PNC') AND (AT_OFFENDER_PNC.OFFENDER_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (WING_CASELOAD_SECURITY.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('Enter NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0) */))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, BIRTH_DATE, DESCRIPTION, IDENTIFIER, PNC_ID, UNIT_DESCRIPTION_4_SHORT, PROFILE_CODE, ETHNIC_CODE, BOOKING_NO, STATUS_2, IEP_LEVEL, MAIN_LEGAL_STATUS AS V_MAIN_LEGAL_STATUS, EFFECTIVE_SENTENCE_LENGTH AS V_SENTENCE_LENGTH, CURRENT_RELEASE_DATE AS V_CURRENT_RELEASE_DATE, CASE WHEN V_COUNT_BOOKINGS > 1 THEN 'Yes' ELSE 'No' END AS V_PREVIOUS_CUSTODIAL, COUNT(AGENCY_INCIDENT_ID) AS V_NO_OF_ADJUDICATIONS, 0 AS V_MAX_CONCAT_MAIN_OFFENCE FROM dataset_base_)",
       "parameters": [
         {
           "index": 0,
@@ -175,6 +177,14 @@
             "name": "V_NO_OF_ADJUDICATIONS",
             "type": "string",
             "display": "V_NO_OF_ADJUDICATIONS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 18,
+            "name": "V_MAX_CONCAT_MAIN_OFFENCE",
+            "type": "string",
+            "display": "V_MAX_CONCAT_MAIN_OFFENCE",
             "legacyId": "???",
             "legacySqlClass": "alias"
           }
@@ -529,7 +539,10 @@
           "effect": "permit",
           "condition": [
             {
-              "match": ["${role}", "ROLE_PRISONS_REPORTING_USER"]
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
             }
           ]
         }
@@ -545,63 +558,70 @@
       "render": "HTML",
       "dataset": "3377299/DP3",
       "specification": {
-        "template": "list-tab",
+        "template": "list",
         "field": [
           {
-            "name": "$ref:v_Max_Concat_Main_Offence",
+            "name": "$ref:V_MAX_CONCAT_MAIN_OFFENCE",
             "display": "Main Offence",
-            "formula": "=[v_concat_Main_Offence] Where ([v_Main_Offence]= [v_Max_Main_Offence]) In ([NOMS Number])",
+            "formula": "",
             "visible": "true",
-            "sortable": false,
-            "defaultsort": false
+            "sortable": true,
+            "defaultsort": false,
+            "legacySql": "=[v_concat_Main_Offence] Where ([v_Main_Offence]= [v_Max_Main_Offence]) In ([NOMS Number])"
           },
           {
-            "name": "$ref:v_Main_Legal_Status",
+            "name": "$ref:V_MAIN_LEGAL_STATUS",
             "display": "Main Legal Status",
-            "formula": "=[Main Legal Status]",
+            "formula": "",
             "visible": "true",
-            "sortable": false,
-            "defaultsort": false
+            "sortable": true,
+            "defaultsort": false,
+            "legacySql": "=[Main Legal Status]"
           },
           {
-            "name": "$ref:v_Sentence_length",
+            "name": "$ref:V_SENTENCE_LENGTH",
             "display": "Effective Sentence Length",
-            "formula": "=[Effective Sentence Length]",
+            "formula": "",
             "visible": "true",
-            "sortable": false,
-            "defaultsort": false
+            "sortable": true,
+            "defaultsort": false,
+            "legacySql": "=[Effective Sentence Length]"
           },
           {
-            "name": "$ref:v_Current_Release_Date",
+            "name": "$ref:V_CURRENT_RELEASE_DATE",
             "display": "Current Release Date",
-            "formula": "=[Current Release Date]",
+            "formula": "",
             "visible": "true",
-            "sortable": false,
-            "defaultsort": false
+            "sortable": true,
+            "defaultsort": false,
+            "legacySql": "=[Current Release Date]"
           },
           {
-            "name": "$ref:v_Previous_Custodial",
+            "name": "$ref:V_PREVIOUS_CUSTODIAL",
             "display": "Previous Custodial (Recorded on Prison-NOMIS)",
-            "formula": "=If([v_count_Bookings] > 1; \"Yes\";\"No\") ",
+            "formula": "",
             "visible": "true",
-            "sortable": false,
-            "defaultsort": false
+            "sortable": true,
+            "defaultsort": false,
+            "legacySql": "=If([v_count_Bookings] > 1; \"Yes\";\"No\") "
           },
           {
             "name": "$ref:IEP_LEVEL",
             "display": "IEP Level",
-            "formula": "IEP Level",
+            "formula": "",
             "visible": "true",
-            "sortable": false,
-            "defaultsort": false
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO715"
           },
           {
-            "name": "$ref:v_No._of_Adjudications",
+            "name": "$ref:V_NO_OF_ADJUDICATIONS",
             "display": "Count of Adjudications",
-            "formula": "=Count([Agency Incident ID])",
+            "formula": "",
             "visible": "true",
-            "sortable": false,
-            "defaultsort": false
+            "sortable": true,
+            "defaultsort": false,
+            "legacySql": "=Count([Agency Incident ID])"
           }
         ]
       }
@@ -612,17 +632,18 @@
       "classification": "OFFICIAL",
       "version": "1.0.0",
       "render": "HTML",
-      "dataset": "3377299/DP3",
+      "dataset": "3377299/DP14",
       "specification": {
-        "template": "list-tab",
+        "template": "list",
         "field": [
           {
             "name": "$ref:ALERT_CODE",
-            "display": "Alert Code",
+            "display": "Alert Type Code",
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": true
+            "defaultsort": false,
+            "legacyId": "DP14.DO7e"
           },
           {
             "name": "$ref:DESCRIPTION",
@@ -630,7 +651,8 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false
+            "defaultsort": false,
+            "legacyId": "DP14.DO97"
           },
           {
             "name": "$ref:ALERT_DATE",
@@ -638,7 +660,8 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false
+            "defaultsort": false,
+            "legacyId": "DP14.DO59e"
           }
         ]
       }
