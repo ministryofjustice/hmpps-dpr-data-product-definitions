@@ -1,10 +1,12 @@
 {
   "id": "klnfFpwABgufIf0BP.8AISgWcQA",
   "name": "ORS Resettlement ETE",
-  "description": "A count per day of prisoners who have been released from an establishment from the start of the month to the current date. It is broken down by calendar week and grouped by prisoners discharged with FT employment, training/employment address, no fixed abode, or have been sent to training.<br />MOV0017 - v00.03.00  Last Modified: 12/10/17",
+  "description": "This report returns a count per day of prisoners who have been released from an establishment from the start of the month to the current date. It is broken down by calendar week and grouped by prisoners discharged with FT employment, training/employment address, no fixed abode, or have been sent to training.<br/>MOV0017 - v00.03.00  Last Modified: 12/10/17",
   "metadata": {
     "version": "1.0.0",
-    "tags": ["MOV0017 v00.01.00 DPR"]
+    "tags": [
+      "MOV0017 v00.01.00 DPR"
+    ]
   },
   "datasource": [
     {
@@ -20,11 +22,11 @@
       "name": "Resettlement ETE",
       "description": "Demographic",
       "datasource": "nomis",
-      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID AS OFFENDER_BOOK_ID, AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_DATE AS MOVEMENT_DATE, AT_OFFENDER_ADDRESSES.NO_FIXED_ADDRESS_FLAG AS NO_FIXED_ADDRESS_FLAG, AT_OFFENDER_ADDRESS_USAGES.ACTIVE_FLAG AS ACTIVE_FLAG, CASE WHEN AT_OFFENDER_EMPL_ADDRESSES.OWNER_CLASS = 'OFF_EMP' AND AT_OFFENDER_EMPL_ADDRESSES.END_DATE IS NULL THEN 'Y' ELSE 'N' END AS ACTIVE_EMPLOYMENT_ADDRESS_FLAG, CASE WHEN AT_OFFENDER_EDU_ADDRESSES.OWNER_CLASS = 'OFF_EDU' AND AT_OFFENDER_EDU_ADDRESSES.END_DATE IS NULL THEN 'Y' ELSE 'N' END AS ACTIVE_TRAINING_ADDRESS_FLAG, CASE WHEN (AT_OFFENDER_EMPLOYMENTS.TERMINATION_DATE) > (AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_DATE) AND AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_TYPE = 'REL' AND AT_OFFENDER_EMPLOYMENTS.EMPLOYMENT_POST_CODE = 'FT' THEN 'Y' WHEN (AT_OFFENDER_EMPLOYMENTS.TERMINATION_DATE) IS NULL AND AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_TYPE = 'REL' AND AT_OFFENDER_EMPLOYMENTS.EMPLOYMENT_POST_CODE = 'FT' THEN 'Y' ELSE 'N' END AS DISCHARGE_TO_FT_EMPLOYMENT_F31, CASE WHEN NOT AT_OFFENDER_EDUCATIONS.OFFENDER_BOOK_ID IS NULL AND (AT_OFFENDER_EDUCATIONS.END_DATE > AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_DATE OR AT_OFFENDER_EDUCATIONS.END_DATE IS NULL) AND AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_TYPE = 'REL' THEN 'Y' ELSE 'N' END AS edu_flag_new FROM OMS_OWNER.ADDRESSES AT_OFFENDER_ADDRESSES, OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_MOV_TYPE_DESC, OMS_OWNER.ADDRESS_USAGES AT_OFFENDER_ADDRESS_USAGES, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.ADDRESSES AT_OFFENDER_EMPL_ADDRESSES, OMS_OWNER.ADDRESSES AT_OFFENDER_EDU_ADDRESSES, OMS_OWNER.AGENCY_LOCATIONS AT_MOV_LOC_FROM_OFFND_LOCTION, OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS AT_OFFENDER_EXTERNAL_MOVEMENTS, OMS_OWNER.OFFENDER_EMPLOYMENTS AT_OFFENDER_EMPLOYMENTS, OMS_OWNER.OFFENDER_EDUCATIONS AT_OFFENDER_EDUCATIONS, USER_ACCESSIBLE_CASELOADS USER_ACCESS_CLDS_MVMTS_FROM WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_ADDRESSES.OWNER_ID (+) = AT_OFFENDER.ROOT_OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_EXTERNAL_MOVEMENTS.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_ADDRESS_USAGES.ADDRESS_ID (+) = AT_OFFENDER_ADDRESSES.ADDRESS_ID) AND (AT_MOV_TYPE_DESC.CODE (+) = AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_TYPE) AND (AT_MOV_TYPE_DESC.DOMAIN (+) = ('MOVE_TYPE')) AND (USER_ACCESS_CLDS_MVMTS_FROM.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDER_EXTERNAL_MOVEMENTS.FROM_AGY_LOC_ID = AT_MOV_LOC_FROM_OFFND_LOCTION.AGY_LOC_ID (+)) AND (AT_MOV_LOC_FROM_OFFND_LOCTION.AGY_LOC_ID = USER_ACCESS_CLDS_MVMTS_FROM.CASELOAD_ID (+)) AND (AT_OFFENDER_EMPLOYMENTS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_EDUCATIONS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_EDU_ADDRESSES.OWNER_ID (+) = AT_OFFENDER_EDUCATIONS.OFFENDER_BOOK_ID AND AT_OFFENDER_EDU_ADDRESSES.OWNER_SEQ (+) = AT_OFFENDER_EDUCATIONS.EDUCATION_SEQ AND AT_OFFENDER_EDU_ADDRESSES.OWNER_CLASS (+) = 'OFF_EDU') AND (AT_OFFENDER_EMPL_ADDRESSES.OWNER_ID (+) = AT_OFFENDER_EMPLOYMENTS.OFFENDER_BOOK_ID AND AT_OFFENDER_EMPL_ADDRESSES.OWNER_SEQ (+) = AT_OFFENDER_EMPLOYMENTS.EMPLOY_SEQ AND AT_OFFENDER_EMPL_ADDRESSES.OWNER_CLASS (+) = 'OFF_EMPL') AND (AT_MOV_LOC_FROM_OFFND_LOCTION.AGENCY_LOCATION_TYPE = 'INST') AND ((AT_OFFENDER_EXTERNAL_MOVEMENTS.FROM_AGY_LOC_ID = (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #Prompt('Discharge Location Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:0) */)) AND (USER_ACCESS_CLDS_MVMTS_FROM.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_REASON_CODE IN ('NP', 'RW', 'CR', 'D2', 'D3', 'DA', 'HE', 'HR', 'HU', 'SC', 'AR', 'AU', 'D1', 'D6', 'HD', 'PX', 'D5', 'D4', 'IF', 'HC', 'PD', 'CE') AND AT_MOV_TYPE_DESC.CODE = 'REL' AND AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_DATE BETWEEN TRUNC(ADD_MONTHS(LAST_DAY(CURRENT_TIMESTAMP), -1) + 1) AND TRUNC(CURRENT_TIMESTAMP))), dataset_ AS (SELECT OFFENDER_BOOK_ID, MOVEMENT_DATE, NO_FIXED_ADDRESS_FLAG, ACTIVE_FLAG, ACTIVE_EMPLOYMENT_ADDRESS_FLAG, ACTIVE_TRAINING_ADDRESS_FLAG, DISCHARGE_TO_FT_EMPLOYMENT_F31, edu_flag_new, TO_NUMBER(TO_CHAR(TO_DATE(MOVEMENT_DATE, 'DD-MM-YYYY HH24:MI:SS'), 'IW')) AS V_DISCHARGEWEEK, CASE WHEN DISCHARGE_TO_FT_EMPLOYMENT_FLAG = 'Y' THEN V_DISCHARGED END AS V_FT_EMPLOYMENT, CASE WHEN NO_FIXED_ADDRESS_FLAG = 'Y' AND ACTIVE_FLAG = 'Y' THEN V_DISCHARGED END AS V_NFA, CASE WHEN DISCHARGE_TO_TRAINING_FLAG = 'Y' THEN V_DISCHARGED END AS V_TRAINING FROM dataset_base_)",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID AS OFFENDER_BOOK_ID, AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_DATE AS MOVEMENT_DATE, AT_OFFENDER_ADDRESSES.NO_FIXED_ADDRESS_FLAG AS NO_FIXED_ADDRESS_FLAG, AT_OFFENDER_ADDRESS_USAGES.ACTIVE_FLAG AS ACTIVE_FLAG, CASE WHEN AT_OFFENDER_EMPL_ADDRESSES.OWNER_CLASS = 'OFF_EMP' AND AT_OFFENDER_EMPL_ADDRESSES.END_DATE IS NULL THEN 'Y' ELSE 'N' END AS ACTIVE_EMPLOYMENT_ADDRESS_FLAG, CASE WHEN AT_OFFENDER_EDU_ADDRESSES.OWNER_CLASS = 'OFF_EDU' AND AT_OFFENDER_EDU_ADDRESSES.END_DATE IS NULL THEN 'Y' ELSE 'N' END AS ACTIVE_TRAINING_ADDRESS_FLAG, CASE WHEN (AT_OFFENDER_EMPLOYMENTS.TERMINATION_DATE) > (AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_DATE) AND AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_TYPE = 'REL' AND AT_OFFENDER_EMPLOYMENTS.EMPLOYMENT_POST_CODE = 'FT' THEN 'Y' WHEN (AT_OFFENDER_EMPLOYMENTS.TERMINATION_DATE) IS NULL AND AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_TYPE = 'REL' AND AT_OFFENDER_EMPLOYMENTS.EMPLOYMENT_POST_CODE = 'FT' THEN 'Y' ELSE 'N' END AS DISCHARGE_TO_FT_EMPLOYMENT_F31, CASE WHEN NOT AT_OFFENDER_EDUCATIONS.OFFENDER_BOOK_ID IS NULL AND (AT_OFFENDER_EDUCATIONS.END_DATE > AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_DATE OR AT_OFFENDER_EDUCATIONS.END_DATE IS NULL) AND AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_TYPE = 'REL' THEN 'Y' ELSE 'N' END AS edu_flag_new FROM OMS_OWNER.ADDRESSES AT_OFFENDER_ADDRESSES, OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_MOV_TYPE_DESC, OMS_OWNER.ADDRESS_USAGES AT_OFFENDER_ADDRESS_USAGES, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.ADDRESSES AT_OFFENDER_EMPL_ADDRESSES, OMS_OWNER.ADDRESSES AT_OFFENDER_EDU_ADDRESSES, OMS_OWNER.AGENCY_LOCATIONS AT_MOV_LOC_FROM_OFFND_LOCTION, OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS AT_OFFENDER_EXTERNAL_MOVEMENTS, OMS_OWNER.OFFENDER_EMPLOYMENTS AT_OFFENDER_EMPLOYMENTS, OMS_OWNER.OFFENDER_EDUCATIONS AT_OFFENDER_EDUCATIONS, USER_ACCESSIBLE_CASELOADS USER_ACCESS_CLDS_MVMTS_FROM WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_ADDRESSES.OWNER_ID (+) = AT_OFFENDER.ROOT_OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_EXTERNAL_MOVEMENTS.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_ADDRESS_USAGES.ADDRESS_ID (+) = AT_OFFENDER_ADDRESSES.ADDRESS_ID) AND (AT_MOV_TYPE_DESC.CODE (+) = AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_TYPE) AND (AT_MOV_TYPE_DESC.DOMAIN (+) = ('MOVE_TYPE')) AND (USER_ACCESS_CLDS_MVMTS_FROM.USERNAME = (SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND (AT_OFFENDER_EXTERNAL_MOVEMENTS.FROM_AGY_LOC_ID = AT_MOV_LOC_FROM_OFFND_LOCTION.AGY_LOC_ID (+)) AND (AT_MOV_LOC_FROM_OFFND_LOCTION.AGY_LOC_ID = USER_ACCESS_CLDS_MVMTS_FROM.CASELOAD_ID (+)) AND (AT_OFFENDER_EMPLOYMENTS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_EDUCATIONS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_EDU_ADDRESSES.OWNER_ID (+) = AT_OFFENDER_EDUCATIONS.OFFENDER_BOOK_ID AND AT_OFFENDER_EDU_ADDRESSES.OWNER_SEQ (+) = AT_OFFENDER_EDUCATIONS.EDUCATION_SEQ AND AT_OFFENDER_EDU_ADDRESSES.OWNER_CLASS (+) = 'OFF_EDU') AND (AT_OFFENDER_EMPL_ADDRESSES.OWNER_ID (+) = AT_OFFENDER_EMPLOYMENTS.OFFENDER_BOOK_ID AND AT_OFFENDER_EMPL_ADDRESSES.OWNER_SEQ (+) = AT_OFFENDER_EMPLOYMENTS.EMPLOY_SEQ AND AT_OFFENDER_EMPL_ADDRESSES.OWNER_CLASS (+) = 'OFF_EMPL') AND (AT_MOV_LOC_FROM_OFFND_LOCTION.AGENCY_LOCATION_TYPE = 'INST') AND ((AT_OFFENDER_EXTERNAL_MOVEMENTS.FROM_AGY_LOC_ID = (SELECT establishment_code FROM prompt_ /* = #Prompt('Discharge Location Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:0) */)) AND (USER_ACCESS_CLDS_MVMTS_FROM.USERNAME = (SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_REASON_CODE IN ('NP', 'RW', 'CR', 'D2', 'D3', 'DA', 'HE', 'HR', 'HU', 'SC', 'AR', 'AU', 'D1', 'D6', 'HD', 'PX', 'D5', 'D4', 'IF', 'HC', 'PD', 'CE') AND AT_MOV_TYPE_DESC.CODE = 'REL' AND AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_DATE BETWEEN TRUNC(ADD_MONTHS(LAST_DAY(CURRENT_TIMESTAMP), -1) + 1) AND TRUNC(CURRENT_TIMESTAMP))), dataset_ AS (SELECT OFFENDER_BOOK_ID, MOVEMENT_DATE, NO_FIXED_ADDRESS_FLAG, ACTIVE_FLAG, ACTIVE_EMPLOYMENT_ADDRESS_FLAG, ACTIVE_TRAINING_ADDRESS_FLAG, DISCHARGE_TO_FT_EMPLOYMENT_F31, edu_flag_new, TO_NUMBER(TO_CHAR(TO_DATE(MOVEMENT_DATE, 'DD-MM-YYYY HH24:MI:SS'), 'IW')) AS V_DISCHARGEWEEK, COUNT(OFFENDER_BOOK_ID) OVER (PARTITION BY OFFENDER_BOOK_ID) AS V_DISCHARGED, CASE WHEN DISCHARGE_TO_FT_EMPLOYMENT_F31 = 'Y' THEN COUNT(OFFENDER_BOOK_ID) OVER (PARTITION BY OFFENDER_BOOK_ID) ELSE 0 END AS V_FT_EMPLOYMENT, CASE WHEN NO_FIXED_ADDRESS_FLAG = 'Y' AND ACTIVE_FLAG = 'Y' THEN COUNT(OFFENDER_BOOK_ID) OVER (PARTITION BY OFFENDER_BOOK_ID) ELSE 0 END AS V_NFA, CASE WHEN ACTIVE_TRAINING_ADDRESS_FLAG = 'Y' THEN COUNT(OFFENDER_BOOK_ID) OVER (PARTITION BY OFFENDER_BOOK_ID) ELSE 0 END AS V_TRAINING, CASE WHEN ACTIVE_TRAINING_ADDRESS_FLAG = 'Y' OR ACTIVE_EMPLOYMENT_ADDRESS_FLAG = 'Y' OR ACTIVE_FLAG = 'Y' THEN COUNT(OFFENDER_BOOK_ID) OVER (PARTITION BY OFFENDER_BOOK_ID) ELSE 0 END AS V_ADDRESS, (SUM(CASE WHEN ACTIVE_TRAINING_ADDRESS_FLAG = 'Y' THEN 1  ELSE 0 END) OVER (PARTITION BY OFFENDER_BOOK_ID) / COUNT(OFFENDER_BOOK_ID) OVER (PARTITION BY OFFENDER_BOOK_ID)) AS V_TRAINING_PCT, (SUM(CASE WHEN DISCHARGE_TO_FT_EMPLOYMENT_F31 = 'Y' THEN 1  ELSE 0 END) OVER (PARTITION BY OFFENDER_BOOK_ID) / COUNT(OFFENDER_BOOK_ID) OVER (PARTITION BY OFFENDER_BOOK_ID)) AS V_FT_EMPLOYMENT_PCT, (SUM(CASE WHEN NO_FIXED_ADDRESS_FLAG = 'Y' AND ACTIVE_FLAG = 'Y' THEN 1  ELSE 0 END) OVER (PARTITION BY OFFENDER_BOOK_ID) / COUNT(OFFENDER_BOOK_ID) OVER (PARTITION BY OFFENDER_BOOK_ID)) AS V_NFA_PCT, (SUM(CASE WHEN ACTIVE_TRAINING_ADDRESS_FLAG = 'Y' OR ACTIVE_EMPLOYMENT_ADDRESS_FLAG = 'Y' OR ACTIVE_FLAG = 'Y' THEN 1  ELSE 0 END) OVER (PARTITION BY OFFENDER_BOOK_ID) / COUNT(OFFENDER_BOOK_ID) OVER (PARTITION BY OFFENDER_BOOK_ID)) AS V_ADDRESS_PCT FROM dataset_base_)",
       "parameters": [
         {
           "index": 0,
-          "name": "unknown_parameter",
+          "name": "establishment_code",
           "filterType": "text",
           "reportFieldType": "string",
           "display": "Discharge Location Code",
@@ -92,7 +94,7 @@
           },
           {
             "index": 7,
-            "name": "edu_flag_new",
+            "name": "EDU_FLAG_NEW",
             "type": "string",
             "display": "Discharge to Training Flag",
             "legacyId": "DP1a.DObf5",
@@ -108,25 +110,73 @@
           },
           {
             "index": 9,
-            "name": "V_FT_EMPLOYMENT",
+            "name": "V_DISCHARGED",
             "type": "string",
-            "display": "V_FT_EMPLOYMENT",
+            "display": "Discharged",
             "legacyId": "???",
             "legacySqlClass": "alias"
           },
           {
             "index": 10,
-            "name": "V_NFA",
+            "name": "V_FT_EMPLOYMENT",
             "type": "string",
-            "display": "V_NFA",
+            "display": "FullTime Employment",
             "legacyId": "???",
             "legacySqlClass": "alias"
           },
           {
             "index": 11,
+            "name": "V_NFA",
+            "type": "string",
+            "display": "NFA",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 12,
             "name": "V_TRAINING",
             "type": "string",
-            "display": "V_TRAINING",
+            "display": "Training",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 13,
+            "name": "V_ADDRESS",
+            "type": "string",
+            "display": "Address",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 14,
+            "name": "V_TRAINING_PCT",
+            "type": "string",
+            "display": "Running Total Training",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 15,
+            "name": "V_FT_EMPLOYMENT_PCT",
+            "type": "string",
+            "display": "Running Total Employment",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 16,
+            "name": "V_NFA_PCT",
+            "type": "string",
+            "display": "Running Total NFA",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 17,
+            "name": "V_ADDRESS_PCT",
+            "type": "string",
+            "display": "Running Total Address",
             "legacyId": "???",
             "legacySqlClass": "alias"
           }
@@ -143,7 +193,10 @@
           "effect": "permit",
           "condition": [
             {
-              "match": ["${role}", "ROLE_PRISONS_REPORTING_USER"]
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
             }
           ]
         }
@@ -167,79 +220,89 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false
+            "defaultsort": false,
+            "legacyId": "DP1a.DO837"
           },
           {
             "name": "$ref:V_DISCHARGEWEEK",
-            "display": "",
+            "display": "Prisoners Discharged",
             "formula": "",
             "visible": "true",
-            "sortable": true,
-            "defaultsort": false
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Week([Movement Date])"
           },
           {
             "name": "$ref:V_FT_EMPLOYMENT",
+            "display": "Prisoners Discharged With FT Employment",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Discharged] Where([Discharge to FT Employment Flag]=\"Y\")"
+          },
+          {
+            "name": "$ref:V_ADDRESS",
+            "display": "Prisoners Discharged With Address",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Discharged] Where([Active Training Address Flag]=\"Y\" Or [Active Employment Address Flag] = \"Y\" Or [Active Flag] = \"Y\")"
+          },
+          {
+            "name": "$ref:V_NFA",
+            "display": "Prisoners Discharged NFA",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Discharged] Where([No Fixed Address Flag]=\"Y\" And [Active Flag]=\"Y\")"
+          },
+          {
+            "name": "$ref:V_TRAINING",
+            "display": "Prisoners Discharged to Training",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Discharged] Where([Discharge to Training Flag] = \"Y\")"
+          },
+          {
+            "name": "$ref:V_FT_EMPLOYMENT_PCT",
+            "display": "Running Total",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([v_FT_Employment])/Sum([v_Discharged])"
+          },
+          {
+            "name": "$ref:V_ADDRESS_PCT",
             "display": "",
             "formula": "",
             "visible": "true",
-            "sortable": true,
-            "defaultsort": false
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([v_Address])/Sum([v_Discharged])"
           },
           {
-            "name": "$ref:v_Address",
+            "name": "$ref:V_NFA_PCT",
             "display": "",
-            "formula": "=[v_Discharged] Where([Active Training Address Flag]=\"Y\" Or [Active Employment Address Flag] = \"Y\" Or [Active Flag] = \"Y\")",
+            "formula": "",
             "visible": "true",
-            "sortable": true,
-            "defaultsort": false
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([v_NFA])/Sum([v_Discharged])"
           },
           {
-            "name": "$ref:v_NFA",
+            "name": "$ref:V_TRAINING_PCT",
             "display": "",
-            "formula": "=[v_Discharged] Where([No Fixed Address Flag]=\"Y\" And [Active Flag]=\"Y\")",
+            "formula": "",
             "visible": "true",
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:v_Training",
-            "display": "",
-            "formula": "=[v_Discharged] Where([Discharge to Training Flag] = \"Y\")",
-            "visible": "true",
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:v_FT_Employment_PCT",
-            "display": "",
-            "formula": "=Sum([v_FT_Employment])/Sum([v_Discharged])",
-            "visible": "true",
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:v_Address_PCT",
-            "display": "",
-            "formula": "=Sum([v_Address])/Sum([v_Discharged])",
-            "visible": "true",
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:v_NFA_PCT",
-            "display": "",
-            "formula": "=Sum([v_NFA])/Sum([v_Discharged])",
-            "visible": "true",
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:v_Training_PCT",
-            "display": "",
-            "formula": "=Sum([v_Training])/Sum([v_Discharged])",
-            "visible": "true",
-            "sortable": true,
-            "defaultsort": false
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([v_Training])/Sum([v_Discharged])"
           }
         ]
       }
