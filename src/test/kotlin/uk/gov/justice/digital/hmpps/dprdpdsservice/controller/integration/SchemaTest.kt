@@ -40,6 +40,6 @@ class SchemaTest {
       assert(report.isSuccess) {
         report.toString()
       }
-      }
+    }
   }
 }
