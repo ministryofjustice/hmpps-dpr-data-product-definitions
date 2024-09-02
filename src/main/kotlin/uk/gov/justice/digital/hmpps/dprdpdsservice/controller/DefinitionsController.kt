@@ -12,7 +12,7 @@ import uk.gov.justice.digital.hmpps.dprdpdsservice.repository.DefinitionsReposit
 @Tag(name = "Data Product Definitions API")
 class DefinitionsController(
   val definitionsRepository: DefinitionsRepository,
-  @Value("\${ENV_NAME:dev}") val env: String? = null,
+  @Value("\${ENVIRONMENT:dev}") val env: String? = null,
 ) {
   @Operation(
     description = "Gets all the definitions by directory",
