@@ -19,6 +19,7 @@ class DefinitionsServiceIntegrationTest {
     val requestPath = "prisons/test"
     val expectedJson1 = this::class.java.classLoader.getResource("dev/definitions/$requestPath/test-report.json")?.readText()
     val expectedJson2 = this::class.java.classLoader.getResource("dev/definitions/$requestPath/external-movements-with-summaries.json")?.readText()
+    val expectedJson3 = this::class.java.classLoader.getResource("dev/definitions/$requestPath/missing-ethnicity-metrics.json")?.readText()
 
     webTestClient.get()
       .uri { uriBuilder: UriBuilder ->
@@ -31,7 +32,7 @@ class DefinitionsServiceIntegrationTest {
       .isOk()
       .expectBody()
       .json(
-        """[$expectedJson1, $expectedJson2]""",
+        """[$expectedJson1, $expectedJson2, $expectedJson3]""",
       )
   }
 
