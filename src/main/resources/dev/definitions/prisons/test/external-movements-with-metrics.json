@@ -1,0 +1,584 @@
+{
+  "id": "external-movements-with-metrics",
+  "name": "External Movements With Metrics",
+  "description": "Reports about prisoner external movements",
+  "metadata": {
+    "author": "Adam",
+    "version": "1.2.3",
+    "owner": "Eve"
+  },
+  "datasource": [
+    {
+      "id": "datamart",
+      "name": "datamart"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "external-movements",
+      "name": "All movements",
+      "datasource": "datamart",
+      "query": "SELECT prisoners.number AS prisonNumber,CONCAT(CONCAT(prisoners.lastname, ', '), substring(prisoners.firstname, 1, 1)) AS name,movements.time AS date,movements.direction,movements.type,movements.origin,movements.origin_code,movements.destination,movements.destination_code,movements.reason\nFROM datamart.domain.movement_movement as movements\nJOIN datamart.domain.prisoner_prisoner as prisoners\nON movements.prisoner = prisoners.id",
+      "schema": {
+        "field": [
+          {
+            "name": "prisonNumber",
+            "type": "string",
+            "display": "Prison Number"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "display": "Name"
+          },
+          {
+            "name": "date",
+            "type": "date",
+            "display": ""
+          },
+          {
+            "name": "origin",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "origin_code",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "destination",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "destination_code",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "direction",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "reason",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "is_closed",
+            "type": "boolean",
+            "display": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisoner-dataset",
+      "name": "prisoner dataset",
+      "datasource": "datamart",
+      "query": "SELECT prisoners.number AS prisonNumber, CONCAT(CONCAT(prisoners.lastname, ', '), substring(prisoners.firstname, 1, 1)) AS name FROM datamart.domain.prisoner_prisoner as prisoners",
+      "schema": {
+        "field": [
+          {
+            "name": "prisonNumber",
+            "type": "string",
+            "display": "Prisoner Number"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "display": "Prisoner Name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "summary-dataset",
+      "name": "Summary Dataset",
+      "datasource": "datamart",
+      "query": "SELECT COUNT(*) AS TOTAL FROM ${tableId}",
+      "schema": {
+        "field": [
+          {
+            "name": "total",
+            "type": "int",
+            "display": "Total"
+          }
+        ]
+      }
+    },
+    {
+      "id": "missing-ethnicity-dataset",
+      "name": "Missing Ethnicity By Establishment Dataset",
+      "datasource": "datamart",
+      "query": "SELECT t1.est_id AS establishment_id,  ROUND(t2.missing_ethnicity_count * 100.0/t1.n, 2) AS missing_ethnicity_percentage, 100 - missing_ethnicity_percentage AS present_ethnicity_percentage   FROM (SELECT establishment_id AS est_id, COUNT(*) AS n  FROM \"datamart\".\"datamart\".\"prisoner_prisoner\"   WHERE establishment_id not in ('TRN', 'ZZGHI', 'OUT')  GROUP BY est_id) AS t1,  (SELECT establishment_id AS est_id, COUNT(*) AS missing_ethnicity_count  FROM \"datamart\".\"datamart\".\"prisoner_prisoner\"   WHERE establishment_id not in ('TRN', 'ZZGHI', 'OUT')  AND ethnicity_code is NULL  GROUP BY est_id) AS t2  WHERE t1.est_id = t2.est_id",
+      "schema": {
+        "field": [
+          {
+            "name": "establishment_id",
+            "type": "string",
+            "display": "Establishment ID"
+          },
+          {
+            "name": "missing_ethnicity_percentage",
+            "type": "long",
+            "display": "Missing Ethnicity Percentage"
+          },
+          {
+            "name": "present_ethnicity_percentage",
+            "type": "long",
+            "display": "present Ethnicity Percentage"
+          }
+        ]
+      }
+    }
+  ],
+  "dashboards": [
+    {
+      "id": "test-dashboard-1",
+      "name": "Test Dashboard 1",
+      "description": "Test Dashboard 1 Description",
+      "metrics": [
+        {
+          "id": "missing-ethnicity-metric",
+          "visualisationType": ["bar"]
+        }
+      ]
+    }
+  ],
+  "metrics": [
+    {
+      "id": "missing-ethnicity-metric",
+      "name": "Missing Ethnicity By Establishment Metric",
+      "dataset": "missing-ethnicity-dataset",
+      "display": "Missing Ethnicity By Establishment Metric",
+      "description": "Missing Ethnicity By Establishment Metric",
+      "visualisationType": ["bar", "doughnut"],
+      "specification": [
+        {
+          "name": "establishment_id",
+          "display": "Establishment ID"
+        },
+        {
+          "name": "missing_ethnicity_percentage",
+          "display": "Missing Ethnicity Percentage",
+          "unit": "percentage"
+        },
+        {
+          "name": "present_ethnicity_percentage",
+          "display": "Present Ethnicity Percentage",
+          "unit": "percentage"
+        }
+      ]
+    }
+  ],
+  "policy": [
+    {
+      "id": "caseload",
+      "type": "row-level",
+      "action": ["(establishment_id='${caseload}')"],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": ["${role}", "ROLE_PRISONS_REPORTING_USER"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "last-month",
+      "name": "Last month",
+      "description": "All movements in the past month",
+      "created": "2023-09-20T14:41:00.000Z",
+      "classification": "report classification",
+      "version": "1.2.3",
+      "dataset": "$ref:external-movements",
+      "policy": [],
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "section": ["$ref:direction"],
+        "field": [
+          {
+            "name": "$ref:prisonNumber",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "radio",
+              "dynamicoptions": {
+                "minimumLength": 2,
+                "returnAsStaticOptions": true,
+                "dataset": "$ref:prisoner-dataset",
+                "name": "$ref:prisonNumber",
+                "display": "$ref:name"
+              }
+            }
+          },
+          {
+            "name": "$ref:name",
+            "display": "Name",
+            "wordWrap": "none",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "autocomplete",
+              "dynamicoptions": {
+                "minimumLength": 2,
+                "returnAsStaticOptions": false
+              }
+            }
+          },
+          {
+            "name": "$ref:date",
+            "display": "Date",
+            "filter": {
+              "mandatory": false,
+              "type": "daterange",
+              "default": "today(-1,months) - today()"
+            },
+            "sortable": true,
+            "defaultsort": true
+          },
+          {
+            "name": "$ref:origin",
+            "display": "From",
+            "filter": {
+              "type": "text"
+            },
+            "wordWrap": "none",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:destination",
+            "display": "To",
+            "wordWrap": "none",
+            "sortable": true,
+            "defaultsort": false,
+            "visible": "true"
+          },
+          {
+            "name": "$ref:direction",
+            "display": "Direction",
+            "wordWrap": "break-words",
+            "filter": {
+              "type": "radio",
+              "staticoptions": [
+                {
+                  "name": "in",
+                  "display": "In"
+                },
+                {
+                  "name": "out",
+                  "display": "Out"
+                }
+              ]
+            },
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:type",
+            "display": "Type",
+            "sortable": true,
+            "defaultsort": false,
+            "visible": "false",
+            "wordWrap": "normal"
+          },
+          {
+            "name": "$ref:reason",
+            "display": "Reason",
+            "sortable": true,
+            "defaultsort": false,
+            "visible": "mandatory",
+            "filter": {
+              "type": "autocomplete",
+              "dynamicoptions": {
+                "minimumLength": 2,
+                "returnAsStaticOptions": true,
+                "maximumOptions": 1
+              }
+            }
+          },
+          {
+            "name": "$ref:is_closed",
+            "display": "Closed",
+            "sortable": true,
+            "filter": {
+              "type": "radio",
+              "default": "false",
+              "staticoptions": [
+                {
+                  "name": "false",
+                  "display": "Only open"
+                },
+                {
+                  "name": "true",
+                  "display": "Only closed"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "destination": [],
+      "summary": [
+        {
+          "id": "summaryId",
+          "template": "page-header",
+          "dataset": "$ref:summary-dataset"
+        }
+      ]
+    },
+    {
+      "id": "last-week",
+      "name": "Last week",
+      "description": "All movements in the past week",
+      "classification": "report classification",
+      "version": "1.2.3",
+      "dataset": "$ref:external-movements",
+      "policy": [],
+      "render": "HTML",
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:prisonNumber",
+            "display": "Prison Number",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:name",
+            "display": "Name",
+            "wordWrap": "none",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "autocomplete",
+              "dynamicoptions": {
+                "minimumLength": 2,
+                "returnAsStaticOptions": false
+              }
+            }
+          },
+          {
+            "name": "$ref:date",
+            "display": "Date",
+            "filter": {
+              "type": "daterange",
+              "default": "today(-1,weeks) - today()",
+              "mandatory": false
+            },
+            "sortable": true,
+            "defaultsort": true
+          },
+          {
+            "name": "$ref:origin",
+            "display": "From",
+            "wordWrap": "none",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:destination",
+            "display": "To",
+            "wordWrap": "none",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:direction",
+            "display": "Direction",
+            "filter": {
+              "type": "radio",
+              "staticoptions": [
+                {
+                  "name": "in",
+                  "display": "In"
+                },
+                {
+                  "name": "out",
+                  "display": "Out"
+                }
+              ]
+            },
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:type",
+            "display": "Type",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:reason",
+            "display": "Reason",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "autocomplete",
+              "dynamicoptions": {
+                "minimumLength": 2,
+                "returnAsStaticOptions": true
+              }
+            }
+          }
+        ]
+      },
+      "destination": []
+    },
+    {
+      "id": "last-year",
+      "name": "Last year",
+      "description": "All movements in the past year",
+      "created": "2023-09-20T14:41:00.000Z",
+      "classification": "report classification",
+      "version": "1.2.3",
+      "dataset": "$ref:external-movements",
+      "policy": [],
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:prisonNumber",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:name",
+            "display": "Name",
+            "wordWrap": "none",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "autocomplete",
+              "dynamicoptions": {
+                "minimumLength": 2,
+                "returnAsStaticOptions": false
+              }
+            }
+          },
+          {
+            "name": "$ref:date",
+            "display": "Date",
+            "filter": {
+              "mandatory": true,
+              "type": "daterange",
+              "default": "today(-1,months) - today()"
+            },
+            "sortable": true,
+            "defaultsort": true
+          },
+          {
+            "name": "$ref:origin",
+            "display": "From",
+            "filter": {
+              "type": "text",
+              "mandatory": true,
+              "pattern": "[A-Z]{3,3}"
+            },
+            "wordWrap": "none",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:destination",
+            "display": "To",
+            "wordWrap": "none",
+            "sortable": true,
+            "defaultsort": false,
+            "visible": "true"
+          },
+          {
+            "name": "$ref:direction",
+            "display": "Direction",
+            "wordWrap": "break-words",
+            "filter": {
+              "type": "radio",
+              "staticoptions": [
+                {
+                  "name": "in",
+                  "display": "In"
+                },
+                {
+                  "name": "out",
+                  "display": "Out"
+                }
+              ]
+            },
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:type",
+            "display": "Type",
+            "sortable": true,
+            "defaultsort": false,
+            "visible": "false",
+            "wordWrap": "normal"
+          },
+          {
+            "name": "$ref:reason",
+            "display": "Reason",
+            "sortable": true,
+            "defaultsort": false,
+            "visible": "mandatory",
+            "filter": {
+              "type": "autocomplete",
+              "dynamicoptions": {
+                "minimumLength": 2,
+                "returnAsStaticOptions": true,
+                "maximumOptions": 1
+              }
+            }
+          },
+          {
+            "name": "$ref:is_closed",
+            "display": "Closed",
+            "sortable": true,
+            "filter": {
+              "type": "radio",
+              "default": "false",
+              "staticoptions": [
+                {
+                  "name": "false",
+                  "display": "Only open"
+                },
+                {
+                  "name": "true",
+                  "display": "Only closed"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "destination": []
+    }
+  ]
+}
