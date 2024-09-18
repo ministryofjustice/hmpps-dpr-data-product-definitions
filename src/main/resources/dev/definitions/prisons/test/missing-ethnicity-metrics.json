@@ -18,7 +18,7 @@
       "id": "missing-ethnicity-dataset",
       "name": "Missing Ethnicity By Establishment Dataset",
       "datasource": "datamart",
-      "query": "SELECT t1.est_id AS establishment_id,  ROUND(t2.missing_ethnicity_count * 100.0/t1.n, 2) AS missing_ethnicity_percentage, 100 - missing_ethnicity_percentage AS present_ethnicity_percentage   FROM (SELECT establishment_id AS est_id, COUNT(*) AS n  FROM \"datamart\".\"datamart\".\"prisoner_prisoner\"   WHERE establishment_id not in ('TRN', 'ZZGHI', 'OUT')  GROUP BY est_id) AS t1,  (SELECT establishment_id AS est_id, COUNT(*) AS missing_ethnicity_count  FROM \"datamart\".\"datamart\".\"prisoner_prisoner\"   WHERE establishment_id not in ('TRN', 'ZZGHI', 'OUT')  AND ethnicity_code is NULL  GROUP BY est_id) AS t2  WHERE t1.est_id = t2.est_id",
+      "query": "SELECT t1.est_id AS establishment_id,  ROUND(t2.missing_ethnicity_count * 100.0/t1.n, 2) AS missing_ethnicity_percentage,    100 - missing_ethnicity_percentage AS present_ethnicity_percentage,   t2.missing_ethnicity_count AS no_of_prisoners_without,   (n - t2.missing_ethnicity_count) AS no_of_prisoners_with   FROM (SELECT establishment_id AS est_id, COUNT(*) AS n  FROM \"datamart\".\"datamart\".\"prisoner_prisoner\"   WHERE establishment_id not in ('TRN', 'ZZGHI', 'OUT')  GROUP BY est_id) AS t1,  (SELECT establishment_id AS est_id, COUNT(*) AS missing_ethnicity_count  FROM \"datamart\".\"datamart\".\"prisoner_prisoner\"   WHERE establishment_id not in ('TRN', 'ZZGHI', 'OUT')  AND ethnicity_code is NULL  GROUP BY est_id) AS t2  WHERE t1.est_id = t2.est_id",
       "schema": {
         "field": [
           {
@@ -35,6 +35,16 @@
             "name": "present_ethnicity_percentage",
             "type": "long",
             "display": "present Ethnicity Percentage"
+          },
+          {
+            "name": "no_of_prisoners_without",
+            "type": "long",
+            "display": "No. of Prisoners without ethnicity"
+          },
+          {
+            "name": "no_of_prisoners_with",
+            "type": "long",
+            "display": "No. of Prisoners with ethnicity"
           }
         ]
       }
@@ -47,8 +57,7 @@
       "description": "Test Dashboard 1 Description",
       "metrics": [
         {
-          "id": "missing-ethnicity-metric",
-          "visualisationType": ["bar"]
+          "id": "missing-ethnicity-metric"
         }
       ]
     }
@@ -60,21 +69,33 @@
       "dataset": "missing-ethnicity-dataset",
       "display": "Missing Ethnicity By Establishment Metric",
       "description": "Missing Ethnicity By Establishment Metric",
-      "visualisationType": ["bar", "doughnut"],
       "specification": [
         {
           "name": "establishment_id",
-          "display": "Establishment ID"
+          "display": "Establishment ID",
+          "group": true
         },
         {
           "name": "missing_ethnicity_percentage",
-          "display": "Missing Ethnicity Percentage",
+          "display": "% Missing Ethnicity",
+          "chart": ["doughnut"],
           "unit": "percentage"
         },
         {
           "name": "present_ethnicity_percentage",
-          "display": "Present Ethnicity Percentage",
+          "display": "% With Ethnicity",
+          "chart": ["doughnut"],
           "unit": "percentage"
+        },
+        {
+          "name": "no_of_prisoners_without",
+          "display": "No. of Prisoners without ethnicity",
+          "chart": ["bar"]
+        },
+        {
+          "name": "no_of_prisoners_with",
+          "display": "No. of Prisoners with ethnicity",
+          "chart": ["bar"]
         }
       ]
     }
@@ -127,6 +148,16 @@
           },
           {
             "name": "$ref:present_ethnicity_percentage",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:no_of_prisoners_without",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:no_of_prisoners_with",
             "sortable": true,
             "defaultsort": false
           }
