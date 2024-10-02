@@ -1,0 +1,188 @@
+{
+  "id": "ok9PWpwAC5SBPEgASNOD8K7BO0I",
+  "name": "ORS IEP Error Report",
+  "description": "A list of active prisoners on a prison roll who have no IEP level at all or do not have an IEP level awarded at their current establishment DQ0011 - v00.00.01 Last Modified: 01/03/12",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": ["DQ0011 v00.00.01 LSRIT037"]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP2",
+      "name": "IEP",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID AS AGY_LOC_ID, DT_IEP_BAND_LAST.AGY_LOC_ID AS IEP_ESTABLISHMENT_CODE, DT_IEP_BAND_LAST.IEP_LEVEL AS IEP_LEVEL FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, (SELECT AT_OFFENDER_IEP_LEVELS.IEP_LEVEL, AT_OFFENDER_IEP_LEVEL_DESC.DESCRIPTION, AT_OFFENDER_IEP_LEVELS.AGY_LOC_ID, AT_OFFENDER_IEP_LEVELS.OFFENDER_BOOK_ID, AT_OFFENDER_IEP_LEVELS.IEP_DATE FROM OMS_OWNER.OFFENDER_IEP_LEVELS AT_OFFENDER_IEP_LEVELS, OMS_OWNER.REFERENCE_CODES AT_OFFENDER_IEP_LEVEL_DESC WHERE (AT_OFFENDER_IEP_LEVEL_DESC.DOMAIN (+) = 'IEP_LEVEL') AND (AT_OFFENDER_IEP_LEVEL_DESC.CODE (+) = AT_OFFENDER_IEP_LEVELS.IEP_LEVEL) AND (AT_OFFENDER_IEP_LEVELS.OFFENDER_BOOK_ID, AT_OFFENDER_IEP_LEVELS.IEP_DATE, AT_OFFENDER_IEP_LEVELS.IEP_LEVEL_SEQ) IN (SELECT OIL.OFFENDER_BOOK_ID, MAX(OIL.IEP_DATE), MAX(iep_level_seq) FROM OMS_OWNER.OFFENDER_IEP_LEVELS OIL WHERE OIL.OFFENDER_BOOK_ID = AT_OFFENDER_IEP_LEVELS.OFFENDER_BOOK_ID GROUP BY OFFENDER_BOOK_ID)) DT_IEP_BAND_LAST, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (DT_IEP_BAND_LAST.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (WING_CASELOAD_SECURITY.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_BOOKING.IN_OUT_STATUS IN ('IN', 'OUT') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, UNIT_DESCRIPTION_4_SHORT, AGY_LOC_ID, IEP_ESTABLISHMENT_CODE, IEP_LEVEL, CASE WHEN IEP_ESTABLISHMENT_CODE = (SELECT ESTABLISHMENT_CODE FROM PROMPT_) THEN 'Match' ELSE 'No Match' END AS V_IEPESTABLISHMENTMATCHESCUR45 FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP2.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP2.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP2.DO427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP2.DO43b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "IEP_ESTABLISHMENT_CODE",
+            "type": "string",
+            "display": "IEP Establishment Code",
+            "legacyId": "DP2.DOf3a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "IEP Level",
+            "legacyId": "DP2.DO715",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "V_IEPESTABLISHMENTMATCHESCUR45",
+            "type": "string",
+            "display": "Match ?",
+            "legacyId": "DP2.DO715",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": ["${role}", "ROLE_PRISONS_REPORTING_USER"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "159356.RS",
+      "name": "IEP Error Report",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (V_IEPESTABLISHMENTMATCHESCUR45 = 'No Match' OR IEP_LEVEL IS NULL))"
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:IEP_ESTABLISHMENT_CODE",
+            "display": "IEP Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:IEP_LEVEL",
+            "display": "IEP Level",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    }
+  ]
+}
