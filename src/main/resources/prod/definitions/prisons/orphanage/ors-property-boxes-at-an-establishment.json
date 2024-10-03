@@ -1,10 +1,10 @@
 {
-  "id": "olAhK3oADeq.cpoAUP_D8K7BDbA",
-  "name": "ORS Property Location History",
-  "description": "The history of property stored at property locations at an establishment ACC0023 - v00.00.01",
+  "id": "olAhB_wAAcH6cpoAIP_D8K7BDbA",
+  "name": "ORS Property Boxes at an Establishment",
+  "description": "All active property boxes recorded at an establishment and the prisoners to whom they are allocated ACC0022 - v00.00.01 Last Modified: 06/08/12",
   "metadata": {
     "version": "1.0.0",
-    "tags": ["ACC0023 v00.00.00 LSRIT039"]
+    "tags": ["ACC0022 v00.00.01 LSRIT039"]
   },
   "datasource": [
     {
@@ -17,10 +17,10 @@
   "dataset": [
     {
       "id": "3377299/DP10",
-      "name": "PB Location History",
+      "name": "Prop Boxes At An Establishment",
       "description": "Demographic",
       "datasource": "nomis",
-      "query": "dataset_base_ AS ( SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_OFFENDER.LAST_NAME AS LAST_NAME, DT_ALL_PROP_BOXES.SEAL_MARK AS SEAL_MARK, DT_ALL_PROP_BOXES.EXPIRY_DATE AS EXPIRY_DATE, AT_ALL_PROP_LOCS.DESCRIPTION AS DESCRIPTION, DT_ALL_PROP_BOXES.ACTIVE_FLAG AS ACTIVE_FLAG, DT_ALL_PROP_BOXES.CONTAINER_CODE AS CONTAINER_CODE, DT_ALL_PROP_BOXES.PROPERTY_CONTAINER_ID AS PROPERTY_CONTAINER_ID FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_ALL_PROP_LOCS, ( SELECT Offender_Book_ID, Property_Container_ID, Active_Flag, Seal_Mark, Agy_Loc_ID, Expiry_Date, Internal_Location_ID, PROPOSED_DISPOSAL_DATE, Container_Code, Property_Only_Flag, Comment_Text FROM oms_owner.offender_ppty_containers ) DT_ALL_PROP_BOXES WHERE ( AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID ) AND ( DT_ALL_PROP_BOXES.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID ) AND ( AT_ALL_PROP_LOCS.INTERNAL_LOCATION_ID = DT_ALL_PROP_BOXES.INTERNAL_LOCATION_ID ) AND ( DT_ALL_PROP_BOXES.AGY_LOC_ID = ( SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\\\\\\\\\\\\\\\Establishment Code',mono,free,,Not_Persistent,,User:3) */ ) ) ), dataset_ AS ( SELECT OFFENDER_ID_DISPLAY, FIRST_NAME, LAST_NAME, SEAL_MARK, EXPIRY_DATE, DESCRIPTION, ACTIVE_FLAG, CONTAINER_CODE, PROPERTY_CONTAINER_ID, CASE WHEN LENGTH(REGEXP_SUBSTR(SUBSTR(DESCRIPTION, 18), '\\d+')) > 0 THEN TO_NUMBER(REGEXP_SUBSTR(SUBSTR(DESCRIPTION, 18), '\\d+')) ELSE 0 END AS PROP_BOX_NO FROM dataset_base_ )",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_HEADER_BLOCK.STATUS_DISPLAY || ' ' || AT_HEADER_BLOCK.IN_OUT_STATUS AS COMMUNITY_STATUS, DT_PROPERTY_BOXES2.EXPIRY_DATE AS EXPIRY_DATE, DT_PROPERTY_BOXES2.SEAL_MARK AS SEAL_MARK, AT_PROP_LOC2.DESCRIPTION AS DESCRIPTION, DT_PROPERTY_BOXES2.ACTIVE_FLAG AS ACTIVE_FLAG FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_PROP_LOC2, (SELECT p.Offender_Book_ID, p.Property_Container_ID, p.Active_Flag, p.Seal_Mark, p.Agy_Loc_ID, p.Expiry_Date, p.Internal_Location_ID, p.PROPOSED_DISPOSAL_DATE, p.Container_Code, p.Property_Only_Flag, p.Comment_Text FROM oms_owner.offender_ppty_containers p, oms_owner.user_accessible_caseloads uac WHERE p.active_flag = 'Y' AND uac.caseload_id = p.agy_loc_id AND p.Agy_Loc_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) DT_PROPERTY_BOXES2 WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (AT_PROP_LOC2.INTERNAL_LOCATION_ID = DT_PROPERTY_BOXES2.INTERNAL_LOCATION_ID) AND (DT_PROPERTY_BOXES2.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID)), dataset_ AS (SELECT FIRST_NAME, OFFENDER_ID_DISPLAY, LAST_NAME, COMMUNITY_STATUS, EXPIRY_DATE, SEAL_MARK, DESCRIPTION, ACTIVE_FLAG, CASE WHEN LENGTH(REGEXP_SUBSTR(SUBSTR(DESCRIPTION,18),'\\d+$')) > 0 THEN TO_NUMBER(REGEXP_SUBSTR(SUBSTR(DESCRIPTION,18),'\\d+$')) ELSE 0 END AS PROP_BOX_NO FROM dataset_base_)",
       "parameters": [
         {
           "index": 0,
@@ -36,18 +36,18 @@
         "field": [
           {
             "index": 0,
-            "name": "OFFENDER_ID_DISPLAY",
-            "type": "string",
-            "display": "NOMS Number",
-            "legacyId": "DP10.DO44",
-            "legacySqlClass": "column"
-          },
-          {
-            "index": 1,
             "name": "FIRST_NAME",
             "type": "string",
             "display": "First Name",
             "legacyId": "DP10.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP10.DO44",
             "legacySqlClass": "column"
           },
           {
@@ -60,10 +60,10 @@
           },
           {
             "index": 3,
-            "name": "SEAL_MARK",
+            "name": "COMMUNITY_STATUS",
             "type": "string",
-            "display": "PB Seal Mark",
-            "legacyId": "DP10.DO101a",
+            "display": "Community Status",
+            "legacyId": "DP10.DOe3a",
             "legacySqlClass": "column"
           },
           {
@@ -71,43 +71,35 @@
             "name": "EXPIRY_DATE",
             "type": "date",
             "display": "PB Deactivation Date",
-            "legacyId": "DP10.DO101c",
+            "legacyId": "DP10.DO1017",
             "legacySqlClass": "column"
           },
           {
             "index": 5,
-            "name": "DESCRIPTION",
+            "name": "SEAL_MARK",
             "type": "string",
-            "display": "PB Location",
-            "legacyId": "DP10.DO101d",
+            "display": "PB Seal Mark",
+            "legacyId": "DP10.DO1015",
             "legacySqlClass": "column"
           },
           {
             "index": 6,
-            "name": "ACTIVE_FLAG",
+            "name": "DESCRIPTION",
             "type": "string",
-            "display": "PB Active Flag",
-            "legacyId": "DP10.DO101e",
+            "display": "PB Location",
+            "legacyId": "DP10.DO1018",
             "legacySqlClass": "column"
           },
           {
             "index": 7,
-            "name": "CONTAINER_CODE",
+            "name": "ACTIVE_FLAG",
             "type": "string",
-            "display": "PB Container Code",
-            "legacyId": "DP10.DO101b",
+            "display": "PB Active Flag",
+            "legacyId": "DP10.DO1019",
             "legacySqlClass": "column"
           },
           {
             "index": 8,
-            "name": "PROPERTY_CONTAINER_ID",
-            "type": "double",
-            "display": "PB  Container Id",
-            "legacyId": "DP10.DO101f",
-            "legacySqlClass": "column"
-          },
-          {
-            "index": 9,
             "name": "PROP_BOX_NO",
             "type": "string",
             "display": "PB Location Number",
@@ -136,8 +128,8 @@
   ],
   "report": [
     {
-      "id": "173977.RS",
-      "name": "Property Location History",
+      "id": "173691.RS",
+      "name": "Property Boxes at an Establishment",
       "classification": "OFFICIAL",
       "version": "1.0.0",
       "render": "HTML",
@@ -162,24 +154,8 @@
             "defaultsort": false
           },
           {
-            "name": "$ref:PROPERTY_CONTAINER_ID",
-            "display": "Id",
-            "formula": "",
-            "visible": "true",
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
             "name": "$ref:SEAL_MARK",
             "display": "Seal Mark",
-            "formula": "",
-            "visible": "true",
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:CONTAINER_CODE",
-            "display": "Type",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -195,7 +171,7 @@
           },
           {
             "name": "$ref:ACTIVE_FLAG",
-            "display": "Active Y/N",
+            "display": "Active Flag?",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -220,6 +196,14 @@
           {
             "name": "$ref:LAST_NAME",
             "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:COMMUNITY_STATUS",
+            "display": "Community Status",
             "formula": "",
             "visible": "true",
             "sortable": true,
