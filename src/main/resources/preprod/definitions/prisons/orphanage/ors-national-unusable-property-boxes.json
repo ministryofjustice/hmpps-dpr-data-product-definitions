@@ -1,0 +1,301 @@
+{
+  "id": "olBAwEgAB4ktTg4AKv_D8K7BtA8",
+  "name": "ORS National Unusable Property Boxes",
+  "description": "A national breakdown of property box capacity and a breakdown of property box allocation to active/inactive/in transfer prisoners in order to show the number of boxes which are unusable PND0018 - v00.00.01 Last Modified: 05/09/12",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": ["PND0018 v00.00.01 LSRIT039.1"]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP10",
+      "name": "Property Allocation",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "PROP_CAPACITY_ AS (SELECT AT_INT_LOC_EST.DESCRIPTION AS DESCRIPTION, AT_INT_LOC_EST.AGY_LOC_ID AS AGY_LOC_ID, SUM(AT_LUL.capacity) AS TOTAL_CAPACITY, DT_PPTY_COUNT.PPTY_COUNT AS PPTY_COUNT FROM OMS_OWNER.AGENCY_LOCATIONS AT_INT_LOC_EST, (SELECT COUNT(DISTINCT p.Property_Container_ID) AS PPTY_COUNT, p.Agy_Loc_ID FROM oms_owner.offender_ppty_containers p, oms_owner.user_accessible_caseloads uac WHERE p.active_flag = 'Y' AND uac.caseload_id = p.agy_loc_id AND uac.username = (SELECT username FROM context_) GROUP BY p.Agy_Loc_ID) DT_PPTY_COUNT, OMS_OWNER.INT_LOC_USAGE_LOCATIONS AT_LUL, OMS_OWNER.INTERNAL_LOCATION_USAGES AT_LU WHERE (AT_LUL.INTERNAL_LOCATION_USAGE_ID = AT_LU.INTERNAL_LOCATION_USAGE_ID) AND (AT_INT_LOC_EST.AGY_LOC_ID = AT_LU.AGY_LOC_ID) AND (AT_INT_LOC_EST.ACTIVE_FLAG = 'Y') AND (AT_INT_LOC_EST.AGENCY_LOCATION_TYPE = 'INST') AND (AT_INT_LOC_EST.AGY_LOC_ID = DT_PPTY_COUNT.AGY_LOC_ID) AND AT_LUL.USAGE_LOCATION_TYPE = 'BOX' GROUP BY AT_INT_LOC_EST.DESCRIPTION, AT_INT_LOC_EST.AGY_LOC_ID, DT_PPTY_COUNT.PPTY_COUNT), dataset_base_ AS (SELECT DISTINCT(AT_OFFENDERS_LOCATIONS.DESCRIPTION) AS DESCRIPTION, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID AS AGY_LOC_ID, DT_RECYLABLE_WITHLOC.COUNT AS COUNT, DT_RECYCLABLE_NO_LOC.COUNT AS PROPERTY_WITHOUT_A_LOCATION_57, DT_PROP_CORRECT_ALLOC.COUNT AS PROPERTY_ALLOCATED_TO_ACTIVE52, PROP_CAPACITY_.TOTAL_CAPACITY FROM OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, PROP_CAPACITY_, (SELECT COUNT(p.Property_Container_ID) AS COUNT, p.Agy_Loc_ID, h.status_display || h.in_out_status AS CommunityStatus FROM oms_owner.offender_ppty_containers p, oms_owner.v_header_block h WHERE p.active_flag = 'Y' AND p.offender_book_id = h.offender_book_id AND p.Internal_Location_ID IS NULL AND h.status_display || h.in_out_status IN ('ActiveIN', 'ActiveOUT') GROUP BY p.agy_loc_id, h.status_display || h.in_out_status) DT_RECYCLABLE_NO_LOC, (SELECT COUNT(p.Property_Container_ID) AS COUNT, p.Agy_Loc_ID FROM oms_owner.offender_ppty_containers p, oms_owner.v_header_block h WHERE p.active_flag = 'Y' AND p.offender_book_id = h.offender_book_id AND NOT p.Internal_Location_ID IS NULL AND h.status_display || h.in_out_status IN ('ActiveIN', 'ActiveOUT') GROUP BY p.agy_loc_id) DT_PROP_CORRECT_ALLOC, USER_ACCESSIBLE_CASELOADS, (SELECT COUNT(p.Property_Container_ID) AS COUNT, p.Agy_Loc_ID, h.status_display || h.in_out_status AS CommunityStatus FROM oms_owner.offender_ppty_containers p, oms_owner.v_header_block h WHERE p.active_flag = 'Y' AND p.offender_book_id = h.offender_book_id AND NOT p.Internal_Location_ID IS NULL AND h.status_display || h.in_out_status IN ('ActiveTRN', 'InactiveOUT') GROUP BY p.Agy_Loc_ID, h.status_display || h.in_out_status) DT_RECYLABLE_WITHLOC WHERE (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND ( PROP_CAPACITY_.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID ) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = DT_RECYLABLE_WITHLOC.AGY_LOC_ID (+)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = DT_RECYCLABLE_NO_LOC.AGY_LOC_ID (+)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = DT_PROP_CORRECT_ALLOC.AGY_LOC_ID (+)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_))), dataset_ AS (SELECT DESCRIPTION, AGY_LOC_ID, COUNT, PROPERTY_WITHOUT_A_LOCATION_57, PROPERTY_ALLOCATED_TO_ACTIVE52, TOTAL_CAPACITY-PROPERTY_ALLOCATED_TO_ACTIVE52 AS V_REMAINING, TOTAL_CAPACITY, (COUNT/(TOTAL_CAPACITY-PROPERTY_ALLOCATED_TO_ACTIVE52)*100) AS V_UNUSABLE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP10.DO33b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP10.DO43b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "COUNT",
+            "type": "double",
+            "display": "Property with a location Allocated to In Transits or Inactives",
+            "legacyId": "DP10.DO103c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "PROPERTY_WITHOUT_A_LOCATION_57",
+            "type": "double",
+            "display": "Property without a Location Allocated to Active Prisoners",
+            "legacyId": "DP10.DO103a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "PROPERTY_ALLOCATED_TO_ACTIVE52",
+            "type": "double",
+            "display": "Property Allocated to Active Prisoners With Location",
+            "legacyId": "DP10.DO1050",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "V_REMAINING",
+            "type": "string",
+            "display": "Remaining",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 6,
+            "name": "TOTAL_CAPACITY",
+            "type": "double",
+            "display": "Total Capacity",
+            "legacyId": "DP16.DO102a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "V_UNUSABLE",
+            "type": "double",
+            "display": "Unusable",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP16",
+      "name": "Property Capacity",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_INT_LOC_EST.DESCRIPTION AS DESCRIPTION, AT_INT_LOC_EST.AGY_LOC_ID AS AGY_LOC_ID, SUM(AT_LUL.capacity) AS TOTAL_CAPACITY, DT_PPTY_COUNT.PPTY_COUNT AS PPTY_COUNT FROM OMS_OWNER.AGENCY_LOCATIONS AT_INT_LOC_EST, (SELECT COUNT(DISTINCT p.Property_Container_ID) AS PPTY_COUNT, p.Agy_Loc_ID FROM oms_owner.offender_ppty_containers p, oms_owner.user_accessible_caseloads uac WHERE p.active_flag = 'Y' AND uac.caseload_id = p.agy_loc_id AND uac.username = (SELECT username FROM context_) GROUP BY p.Agy_Loc_ID) DT_PPTY_COUNT, OMS_OWNER.INT_LOC_USAGE_LOCATIONS AT_LUL, OMS_OWNER.INTERNAL_LOCATION_USAGES AT_LU WHERE (AT_LUL.INTERNAL_LOCATION_USAGE_ID = AT_LU.INTERNAL_LOCATION_USAGE_ID) AND (AT_INT_LOC_EST.AGY_LOC_ID = AT_LU.AGY_LOC_ID) AND (AT_INT_LOC_EST.ACTIVE_FLAG = 'Y') AND (AT_INT_LOC_EST.AGENCY_LOCATION_TYPE = 'INST') AND (AT_INT_LOC_EST.AGY_LOC_ID = DT_PPTY_COUNT.AGY_LOC_ID) AND AT_LUL.USAGE_LOCATION_TYPE = 'BOX' GROUP BY AT_INT_LOC_EST.DESCRIPTION, AT_INT_LOC_EST.AGY_LOC_ID, DT_PPTY_COUNT.PPTY_COUNT), dataset_ AS (SELECT DESCRIPTION, AGY_LOC_ID, TOTAL_CAPACITY, PPTY_COUNT, SUM(NaN) AS V_REMAINING FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP16.DO1008",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP16.DO1009",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "TOTAL_CAPACITY",
+            "type": "double",
+            "display": "Total Capacity",
+            "legacyId": "DP16.DO102a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "PPTY_COUNT",
+            "type": "double",
+            "display": "Property Container Count",
+            "legacyId": "DP16.DO103d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "V_REMAINING",
+            "type": "string",
+            "display": "V_REMAINING",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP17",
+      "name": "All Establishments",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDERS_LOCATIONS.DESCRIPTION AS DESCRIPTION, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID AS AGY_LOC_ID FROM OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND AT_OFFENDERS_LOCATIONS.ACTIVE_FLAG = 'Y' AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_))), dataset_ AS (SELECT DESCRIPTION, AGY_LOC_ID FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP17.DO33b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP17.DO43b",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "legend-summary",
+      "name": "Reason Summary",
+      "datasource": "redshift",
+      "query": "SELECT 'Total Capacity' AS MEASURE, 'The sum of the capacity field in the Maintain Internal Usage screen where the usage=''Property Location'' and the label=''BOX''.' AS DESCRIPTION UNION SELECT 'No. Active Boxes Assigned to Active Prisoners With a Location' AS MEASURE, 'The number of active property boxes allocated to active in or active out prisoners but where the property location is not null.' AS DESCRIPTION UNION SELECT 'No. Active Boxes Assigned to Active Prisoners Without a Location' AS MEASURE, 'The number of active property boxes allocated to active in or active out prisoners but where the property location is null.' AS DESCRIPTION UNION SELECT 'No. Active Boxes Assigned to Inactive/In Transfer Prisoners With a Location' AS MEASURE, 'The number of active property boxes allocated to active in transit or inactive out prisoners but where the property location is not null.' AS DESCRIPTION UNION SELECT 'Remaining' AS MEASURE, 'The Total Capacity minus the No. Boxes Assigned to Active Prisoners without a Property Location.' AS DESCRIPTION UNION SELECT '% Unusable' AS MEASURE, 'The No. Boxes Assigned to Inactive/In Transfer Prisoners with a Property Location expressed as a percentage of the Remaining figure.' AS DESCRIPTION",
+      "schema": {
+        "field": [
+          {
+            "name": "MEASURE",
+            "type": "string",
+            "display": "Measure"
+          },
+          {
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Description"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": ["${role}", "ROLE_PRISONS_REPORTING_USER"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "176484.RS",
+      "name": "National Unusable Property Boxes",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE AGY_LOC_ID <> 'ZZGHI')"
+      },
+      "summary": [
+        {
+          "id": "legend-summary",
+          "template": "page-header",
+          "dataset": "$ref:legend-summary"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true
+          },
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:TOTAL_CAPACITY",
+            "display": "Total Capacity",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:PROPERTY_ALLOCATED_TO_ACTIVE52",
+            "display": "No. Active Boxes Assigned to Active Prisoners With a Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:PROPERTY_WITHOUT_A_LOCATION_57",
+            "display": "No. Boxes Assigned to Active Prisoners without a Property Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:COUNT",
+            "display": "No. Boxes Assigned to Inactive/In Transfer Prisoners with a Property Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:V_REMAINING",
+            "display": "Remaining",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:V_UNUSABLE",
+            "display": "% Unusable",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    }
+  ]
+}
