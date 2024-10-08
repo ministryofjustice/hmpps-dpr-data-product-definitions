@@ -168,13 +168,13 @@
         "field": [
           {
             "name": "DESCRIPTION",
-            "type": "int",
+            "type": "string",
             "display": "Release Type"
           },
           {
             "name": "MOVEMENT_COUNT",
             "type": "int",
-            "display": "Month"
+            "display": "Count"
           }
         ]
       }
@@ -198,14 +198,34 @@
       "id": "reason-by-date-summary",
       "name": "Reason Summary",
       "datasource": "redshift",
-      "query": "SELECT DESCRIPTION, TO_CHAR(MOVEMENT_DATE, 'dd/mm/yyyy') AS MOVEMENT_DATE, COUNT(1) AS MOVEMENT_COUNT FROM ${tableId} GROUP BY DESCRIPTION, MOVEMENT_DATE ORDER BY MOVEMENT_DATE, DESCRIPTION",
+      "query": "SELECT DESCRIPTION, TO_CHAR(MOVEMENT_DATE, 'dd/mm/yyyy') AS MOVEMENT_DATE, COUNT(1) AS MOVEMENT_COUNT FROM ${tableId} GROUP BY DESCRIPTION, TO_CHAR(MOVEMENT_DATE, 'dd/mm/yyyy')",
       "schema": {
         "field": [
           {
+            "name": "MOVEMENT_DATE",
+            "type": "string",
+            "display": "Movement Date"
+          },
+          {
             "name": "DESCRIPTION",
-            "type": "int",
+            "type": "string",
             "display": "Release Type"
           },
+          {
+            "name": "MOVEMENT_COUNT",
+            "type": "int",
+            "display": "Count"
+          }
+        ]
+      }
+    },
+    {
+      "id": "by-date-total",
+      "name": "Reason Summary",
+      "datasource": "redshift",
+      "query": "SELECT TO_CHAR(MOVEMENT_DATE, 'dd/mm/yyyy') AS MOVEMENT_DATE, COUNT(1) AS MOVEMENT_COUNT FROM ${tableId} GROUP BY TO_CHAR(MOVEMENT_DATE, 'dd/mm/yyyy')",
+      "schema": {
+        "field": [
           {
             "name": "MOVEMENT_DATE",
             "type": "string",
@@ -214,7 +234,7 @@
           {
             "name": "MOVEMENT_COUNT",
             "type": "int",
-            "display": "Month"
+            "display": "Count"
           }
         ]
       }
@@ -271,8 +291,13 @@
       "summary": [
         {
           "id": "reason-by-date-summary",
-          "template": "page-header",
+          "template": "section-header",
           "dataset": "$ref:reason-by-date-summary"
+        },
+        {
+          "id": "by-date-total",
+          "template": "section-header",
+          "dataset": "$ref:by-date-total"
         },
         {
           "id": "reason-summary-total",
@@ -281,8 +306,19 @@
         }
       ],
       "specification": {
-        "template": "summary",
-        "field": []
+        "template": "summary-section",
+        "section": ["MOVEMENT_DATE"],
+        "field": [
+          {
+            "name": "MOVEMENT_DATE",
+            "type": "date",
+            "display": "Movement Date",
+            "formula": "format_date(${MOVEMENT_DATE}, 'dd/MM/yyyy')",
+            "visible": "false",
+            "sortable": false,
+            "defaultsort": false
+          }
+        ]
       }
     },
     {
