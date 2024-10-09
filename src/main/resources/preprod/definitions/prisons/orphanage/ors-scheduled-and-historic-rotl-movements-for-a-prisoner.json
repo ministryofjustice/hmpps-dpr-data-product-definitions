@@ -1,0 +1,427 @@
+{
+  "id": "Fq__51zc4AUAPZUBAHC74l8QACJIABRd",
+  "name": "ORS Scheduled and Historic ROTL Movements for a Prisoner",
+  "description": "All Temporary Absence (ROTL) Movements (both Scheduled and Historic) for a prisoner selected at runtime. The report looks across all bookings, not just the active/current booking. . MOV0064 v1.0 Last Modified: 04/06/2019 ",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": ["MOV0064 DPR"]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP3",
+      "name": "Scheduled Movements",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_OFFENDER_IND_SCHEDULES.EVENT_DATE AS EVENT_DATE, AT_OFFENDER_IND_SCHEDULES.EVENT_TYPE AS EVENT_TYPE, AT_OFFENDER_IND_SCHEDULES.START_TIME AS START_TIME, AT_OFFENDER_IND_SCHEDULES.EVENT_STATUS AS EVENT_STATUS, AT_AGENCY_LOCATIONS_SCH_FROM2.DESCRIPTION AS DESCRIPTION, AT_OFFENDER_IND_SCHEDULES.DIRECTION_CODE AS DIRECTION_CODE, CASE WHEN NOT AT_OFFENDER_IND_SCHEDULES.TO_AGY_LOC_ID IS NULL THEN AT_AGENCY_LOCATIONS_SCH_TO.DESCRIPTION WHEN AT_OFFENDER_IND_SCHEDULES.TO_AGY_LOC_ID IS NULL AND NOT AT_OFFENDER_IND_SCHEDULES.TO_ADDRESS_ID IS NULL AND DT_ROTL_ADDRESS_USAGE.ADDRESS_USAGE = 'ROTL' THEN CASE WHEN (ROTL_ADDRESSES.FLAT) IS NULL THEN NULL ELSE (ROTL_ADDRESSES.FLAT) END || ' ' || CASE WHEN (ROTL_ADDRESSES.PREMISE) IS NULL THEN NULL ELSE (ROTL_ADDRESSES.PREMISE) || ' ' END || CASE WHEN (ROTL_ADDRESSES.STREET) IS NULL THEN NULL ELSE (ROTL_ADDRESSES.STREET) || ' ' END WHEN AT_OFFENDER_IND_SCHEDULES.TO_AGY_LOC_ID IS NULL AND AT_OFFENDER_IND_SCHEDULES.TO_ADDRESS_ID IS NULL THEN 'No Location' ELSE AT_CORPORATES.CORPORATE_NAME END AS SCHEDULED_MOVEMENT_DESTINATION, ScheduledMovementReason.DESCRIPTION AS SCHEDULED_MOVEMENT_REASON, AT_OFFENDER_MVT_APPS.COMMENT_TEXT AS COMMENT_TEXT FROM ADDRESSES ROTL_ADDRESSES, OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_IND_SCHEDULES AT_OFFENDER_IND_SCHEDULES, OMS_OWNER.REFERENCE_CODES ScheduledMovementReason, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_AGENCY_LOCATIONS_SCH_FROM2, OMS_OWNER.AGENCY_LOCATIONS AT_AGENCY_LOCATIONS_SCH_TO, OMS_OWNER.AGENCY_LOCATIONS AT_AGENCY_LOCATIONS_SCH_FROM, USER_ACCESSIBLE_CASELOADS USER_ACCESSIBLE_CASELOADS_From, OMS_OWNER.CORPORATES AT_CORPORATES, (SELECT * FROM ADDRESS_USAGES WHERE ADDRESS_USAGE = 'ROTL') DT_ROTL_ADDRESS_USAGE, OMS_OWNER.OFFENDER_MOVEMENT_APPS AT_OFFENDER_MVT_APPS, V_CORPORATE_ADDRESSES AT_V_CORPORATE_ADDRESSES, ADDRESSES AT_CORPORATE_ADDRESSES WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_IND_SCHEDULES.OFFENDER_BOOK_ID) AND (AT_OFFENDER_IND_SCHEDULES.EVENT_SUB_TYPE = ScheduledMovementReason.CODE) AND (ScheduledMovementReason.DOMAIN = 'MOVE_RSN') AND (AT_OFFENDER_IND_SCHEDULES.TO_AGY_LOC_ID = AT_AGENCY_LOCATIONS_SCH_TO.AGY_LOC_ID (+)) AND (AT_OFFENDER_IND_SCHEDULES.AGY_LOC_ID = AT_AGENCY_LOCATIONS_SCH_FROM.AGY_LOC_ID (+)) AND (USER_ACCESSIBLE_CASELOADS_From.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_AGENCY_LOCATIONS_SCH_FROM2.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS_From.CASELOAD_ID) AND (AT_AGENCY_LOCATIONS_SCH_FROM2.AGENCY_LOCATION_TYPE = 'INST') AND (AT_CORPORATE_ADDRESSES.ADDRESS_ID = AT_V_CORPORATE_ADDRESSES.ADDRESS_ID (+)) AND (AT_V_CORPORATE_ADDRESSES.CORPORATE_ID = AT_CORPORATES.CORPORATE_ID (+)) AND (AT_OFFENDER_IND_SCHEDULES.TO_ADDRESS_ID = AT_CORPORATE_ADDRESSES.ADDRESS_ID (+)) AND (AT_OFFENDER_IND_SCHEDULES.TO_ADDRESS_ID = ROTL_ADDRESSES.ADDRESS_ID (+)) AND (AT_OFFENDER_IND_SCHEDULES.TO_ADDRESS_ID = DT_ROTL_ADDRESS_USAGE.ADDRESS_ID (+)) AND (AT_AGENCY_LOCATIONS_SCH_FROM.AGY_LOC_ID = AT_AGENCY_LOCATIONS_SCH_FROM2.AGY_LOC_ID) AND (AT_OFFENDER_IND_SCHEDULES.OFFENDER_MOVEMENT_APP_ID = AT_OFFENDER_MVT_APPS.OFFENDER_MOVEMENT_APP_ID (+)) AND (USER_ACCESSIBLE_CASELOADS_From.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDER.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0) */) AND AT_OFFENDER_IND_SCHEDULES.EVENT_STATUS IN ('SCH') AND AT_OFFENDER_IND_SCHEDULES.EVENT_TYPE IN ('TAP'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, EVENT_DATE, EVENT_TYPE, START_TIME, EVENT_STATUS, DESCRIPTION, DIRECTION_CODE, SCHEDULED_MOVEMENT_DESTINATION, SCHEDULED_MOVEMENT_REASON, COMMENT_TEXT, OFFENDER_ID_DISPLAY AS PRISONER_NUMBER FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "NOMS Number:",
+          "description": "@prompt('NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP3.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP3.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP3.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "EVENT_DATE",
+            "type": "date",
+            "display": "Event Date",
+            "legacyId": "DP3.DO83e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "EVENT_TYPE",
+            "type": "string",
+            "display": "Event Type",
+            "legacyId": "DP3.DO841",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "START_TIME",
+            "type": "date",
+            "display": "Event Start Time",
+            "legacyId": "DP3.DOa03",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "EVENT_STATUS",
+            "type": "string",
+            "display": "Event Status",
+            "legacyId": "DP3.DO842",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Scheduled Departure Establishment Name",
+            "legacyId": "DP3.DO8c0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "DIRECTION_CODE",
+            "type": "string",
+            "display": "Direction Code",
+            "legacyId": "DP3.DO878",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "SCHEDULED_MOVEMENT_DESTINATION",
+            "type": "string",
+            "display": "Scheduled Movement Destination",
+            "legacyId": "DP3.DO8f4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "SCHEDULED_MOVEMENT_REASON",
+            "type": "string",
+            "display": "Scheduled Movement Reason",
+            "legacyId": "DP3.DO892",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "Scheduled Movement Comment Text",
+            "legacyId": "DP3.DO843",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "prisoner_number",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP3.DO44",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP6",
+      "name": "Historic Movements",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_DATE AS MOVEMENT_DATE, COALESCE(AT_EXT_MOV_FROM_AGY.DESCRIPTION, AT_FROM_CITY_CODES.DESCRIPTION, AT_FROM_ADDRESS_ATTENDED.STREET || ' ' || AT_FROM_ADDRESS_ATTENDED.LOCALITY || ' ' || AT_FROM_ADDRESS_ATTENDED.POSTAL_CODE) AS FROM_, COALESCE(AT_EXT_MOV_TO_AGY.DESCRIPTION, AT_TO_CITY_CODES.DESCRIPTION, AT_TO_ADDRESS_ATTENDED.STREET || ' ' || AT_TO_ADDRESS_ATTENDED.LOCALITY || ' ' || AT_TO_ADDRESS_ATTENDED.POSTAL_CODE) AS TO_, AT_MOV_TYPE_DESC.DESCRIPTION AS DESCRIPTION, AT_MOVEMENT_REASONS.DESCRIPTION AS MOVEMENT_REASON_DESCRIPTION FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_FROM_CITY_CODES, OMS_OWNER.REFERENCE_CODES AT_TO_CITY_CODES, OMS_OWNER.REFERENCE_CODES AT_MOV_TYPE_DESC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_EXT_MOV_FROM_AGY, OMS_OWNER.AGENCY_LOCATIONS AT_EXT_MOV_TO_AGY, OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS AT_OFFENDER_EXTERNAL_MOVEMENTS, OMS_OWNER.MOVEMENT_REASONS AT_MOVEMENT_REASONS, ADDRESSES AT_FROM_ADDRESS_ATTENDED, ADDRESSES AT_TO_ADDRESS_ATTENDED WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_EXTERNAL_MOVEMENTS.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_TYPE = AT_MOVEMENT_REASONS.MOVEMENT_TYPE AND AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_REASON_CODE = AT_MOVEMENT_REASONS.MOVEMENT_REASON_CODE) AND (AT_MOV_TYPE_DESC.CODE (+) = AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_TYPE) AND (AT_MOV_TYPE_DESC.DOMAIN (+) = ('MOVE_TYPE')) AND (AT_OFFENDER_EXTERNAL_MOVEMENTS.TO_AGY_LOC_ID = AT_EXT_MOV_TO_AGY.AGY_LOC_ID (+)) AND (AT_OFFENDER_EXTERNAL_MOVEMENTS.FROM_AGY_LOC_ID = AT_EXT_MOV_FROM_AGY.AGY_LOC_ID (+)) AND (AT_OFFENDER_EXTERNAL_MOVEMENTS.TO_CITY = AT_TO_CITY_CODES.CODE (+)) AND (AT_TO_CITY_CODES.DOMAIN = 'CITY' OR AT_TO_CITY_CODES.DOMAIN IS NULL) AND (AT_OFFENDER_EXTERNAL_MOVEMENTS.FROM_CITY = AT_FROM_CITY_CODES.CODE (+)) AND (AT_FROM_CITY_CODES.DOMAIN = 'CITY' OR AT_FROM_CITY_CODES.DOMAIN IS NULL) AND (AT_OFFENDER_EXTERNAL_MOVEMENTS.TO_ADDRESS_ID = AT_TO_ADDRESS_ATTENDED.ADDRESS_ID (+)) AND (AT_OFFENDER_EXTERNAL_MOVEMENTS.FROM_ADDRESS_ID = AT_FROM_ADDRESS_ATTENDED.ADDRESS_ID (+)) AND (AT_OFFENDER.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0) */) AND AT_MOV_TYPE_DESC.CODE IN ('TAP'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, MOVEMENT_DATE, FROM_, TO_, DESCRIPTION, MOVEMENT_REASON_DESCRIPTION, OFFENDER_ID_DISPLAY AS PRISONER_NUMBER FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "NOMS Number:",
+          "description": "@prompt('NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP6.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP6.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP6.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "MOVEMENT_DATE",
+            "type": "date",
+            "display": "Movement Date",
+            "legacyId": "DP6.DO837",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "FROM_",
+            "type": "string",
+            "display": "From",
+            "legacyId": "DP6.DOd98",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "TO_",
+            "type": "string",
+            "display": "To",
+            "legacyId": "DP6.DOd99",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Movement Type  (external)",
+            "legacyId": "DP6.DO599",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "MOVEMENT_REASON_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Reason Description",
+            "legacyId": "DP6.DO83b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "prisoner_number",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP3.DO44",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": ["${role}", "ROLE_PRISONS_REPORTING_USER"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "162991.RS",
+      "name": "Scheduled ",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP3",
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:START_TIME",
+            "display": "Event Start Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP3.DOa03"
+          },
+          {
+            "name": "$ref:EVENT_TYPE",
+            "display": "Event Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO841"
+          },
+          {
+            "name": "$ref:EVENT_STATUS",
+            "display": "Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO842"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "From",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO8c0"
+          },
+          {
+            "name": "$ref:SCHEDULED_MOVEMENT_DESTINATION",
+            "display": "Destination",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO8f4"
+          },
+          {
+            "name": "$ref:SCHEDULED_MOVEMENT_REASON",
+            "display": "Movement Reason",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO892"
+          },
+          {
+            "name": "$ref:COMMENT_TEXT",
+            "display": "Movement Comments",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO843"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO843"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO843"
+          }
+        ]
+      }
+    },
+    {
+      "id": "163240.RS",
+      "name": "Historic",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP6",
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:MOVEMENT_DATE",
+            "display": "Movement Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP6.DO837"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Movement Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP6.DO599"
+          },
+          {
+            "name": "$ref:FROM_",
+            "display": "From",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP6.DOd98"
+          },
+          {
+            "name": "$ref:TO_",
+            "display": "To",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP6.DOd99"
+          },
+          {
+            "name": "$ref:MOVEMENT_REASON_DESCRIPTION",
+            "display": "Movement Reason",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP6.DO83b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO843"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO843"
+          }
+        ]
+      }
+    }
+  ]
+}
