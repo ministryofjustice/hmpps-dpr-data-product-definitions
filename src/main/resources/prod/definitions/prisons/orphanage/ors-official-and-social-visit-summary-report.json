@@ -1,0 +1,352 @@
+{
+  "id": "klgl4sQAApxRTfcBRf8AISgXYiw",
+  "name": "ORS Official and Social Visit Summary Report",
+  "description": "A summary count by year, month and visit status of the number of Social visits and Official visits booked for a date range for a specific establishment VIS0017 - v00.00.02 Last Modified: 11/11/2016",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": ["VIS0017 - v00.00.02"]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP10",
+      "name": "Social Visits",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_HIST_VISITS.OFFENDER_VISIT_ID AS OFFENDER_VISIT_ID, AT_OFFENDER_HIST_VISITS.VISIT_DATE AS VISIT_DATE, TO_NUMBER(TO_CHAR(AT_OFFENDER_HIST_VISITS.VISIT_DATE, 'SYYYY')) AS YEAR_OF_VISIT_DATE, TO_NUMBER(TO_CHAR(AT_OFFENDER_HIST_VISITS.VISIT_DATE, 'MM')) AS MONTH_OF_VISIT_DATE, CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'SCH' THEN 'Scheduled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'NORM' THEN 'Normal Completion' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'CANC' THEN 'Cancelled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'EXP' THEN 'Expired' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'HMPOP' THEN 'Terminated by Staff' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'OFFEND' THEN 'Prisoner Completed Early' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'VISITOR' THEN 'Visitor Completed Early' ELSE AT_OFFENDER_HIST_VISITS.VISIT_STATUS END AS STATUS_OF_VISIT, CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'SCON' THEN 'Social' WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'OFFI' THEN 'Official' ELSE AT_OFFENDER_HIST_VISITS.VISIT_TYPE END AS VISIT_TYPE_HELD FROM OMS_OWNER.AGENCY_LOCATIONS AT_VISIT_HIST_ESTAB, OMS_OWNER.OFFENDER_VISITS AT_OFFENDER_HIST_VISITS, USER_ACCESSIBLE_CASELOADS AT_UAC WHERE (AT_OFFENDER_HIST_VISITS.AGY_LOC_ID = AT_VISIT_HIST_ESTAB.AGY_LOC_ID) AND (AT_VISIT_HIST_ESTAB.AGY_LOC_ID = AT_UAC.CASELOAD_ID) AND (AT_VISIT_HIST_ESTAB.AGY_LOC_ID = ( SELECT ESTABLISHMENT_CODE FROM prompt_ )) AND (AT_UAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((AT_UAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND AT_OFFENDER_HIST_VISITS.VISIT_DATE BETWEEN (SELECT START_DATE FROM prompt_ /* = #prompt('Start Date','D',,Mono,Free,Not_Persistent,,User:0) */) AND (SELECT END_DATE FROM prompt_ /* = #prompt('End Date','D',,Mono,Free,Not_Persistent,,User:1) */) AND CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'SCON' THEN 'Social' WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'OFFI' THEN 'Official' ELSE AT_OFFENDER_HIST_VISITS.VISIT_TYPE END = 'Social')), dataset_ AS (SELECT OFFENDER_VISIT_ID, VISIT_DATE, YEAR_OF_VISIT_DATE, MONTH_OF_VISIT_DATE, STATUS_OF_VISIT, VISIT_TYPE_HELD, CASE WHEN STATUS_OF_VISIT = 'Normal Completion' THEN 'Completed' ELSE CASE WHEN STATUS_OF_VISIT = 'VDE' THEN 'Visitor Declined Entry' ELSE STATUS_OF_VISIT END END AS V_VISIT_STATUS FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Start Date",
+          "description": "@prompt('Start Date','D',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "End Date",
+          "description": "@prompt('End Date','D',,Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter value for Visit Establishment Code",
+          "description": "@prompt('Enter value for Visit Establishment Code','A','Visits\\Visit Establishment Code',Multi,Free,Not_Persistent,,User:2)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_VISIT_ID",
+            "type": "double",
+            "display": "Visit Id",
+            "legacyId": "DP10.DOe38",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "VISIT_DATE",
+            "type": "date",
+            "display": "Date of Visit",
+            "legacyId": "DP10.DOdcf",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "YEAR_OF_VISIT_DATE",
+            "type": "double",
+            "display": "Year of Visit Date",
+            "legacyId": "DP10.DOe93",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "MONTH_OF_VISIT_DATE",
+            "type": "double",
+            "display": "Month of Visit Date",
+            "legacyId": "DP10.DOe95",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "STATUS_OF_VISIT",
+            "type": "string",
+            "display": "Status of Visit",
+            "legacyId": "DP10.DOdd6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "VISIT_TYPE_HELD",
+            "type": "string",
+            "display": "Visit Type Held",
+            "legacyId": "DP10.DOdd3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "V_VISIT_STATUS",
+            "type": "string",
+            "display": "V_VISIT_STATUS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP16",
+      "name": "Official Visits",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_HIST_VISITS.OFFENDER_VISIT_ID AS OFFENDER_VISIT_ID, AT_OFFENDER_HIST_VISITS.VISIT_DATE AS VISIT_DATE, TO_NUMBER(TO_CHAR(AT_OFFENDER_HIST_VISITS.VISIT_DATE, 'SYYYY')) AS YEAR_OF_VISIT_DATE, TO_NUMBER(TO_CHAR(AT_OFFENDER_HIST_VISITS.VISIT_DATE, 'MM')) AS MONTH_OF_VISIT_DATE, CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'SCH' THEN 'Scheduled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'NORM' THEN 'Normal Completion' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'CANC' THEN 'Cancelled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'EXP' THEN 'Expired' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'HMPOP' THEN 'Terminated by Staff' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'OFFEND' THEN 'Prisoner Completed Early' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'VISITOR' THEN 'Visitor Completed Early' ELSE AT_OFFENDER_HIST_VISITS.VISIT_STATUS END AS STATUS_OF_VISIT, CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'SCON' THEN 'Social' WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'OFFI' THEN 'Official' ELSE AT_OFFENDER_HIST_VISITS.VISIT_TYPE END AS VISIT_TYPE_HELD FROM OMS_OWNER.AGENCY_LOCATIONS AT_VISIT_HIST_ESTAB, OMS_OWNER.OFFENDER_VISITS AT_OFFENDER_HIST_VISITS, USER_ACCESSIBLE_CASELOADS AT_UAC WHERE (AT_OFFENDER_HIST_VISITS.AGY_LOC_ID = AT_VISIT_HIST_ESTAB.AGY_LOC_ID) AND (AT_VISIT_HIST_ESTAB.AGY_LOC_ID = AT_UAC.CASELOAD_ID) AND (AT_VISIT_HIST_ESTAB.AGY_LOC_ID = ( SELECT ESTABLISHMENT_CODE FROM prompt_ )) AND (AT_UAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((AT_UAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND AT_OFFENDER_HIST_VISITS.VISIT_DATE BETWEEN (SELECT START_DATE FROM prompt_ /* = #prompt('Start Date','D',,Mono,Free,Not_Persistent,,User:0) */) AND (SELECT END_DATE FROM prompt_ /* = #prompt('End Date','D',,Mono,Free,Not_Persistent,,User:1) */) AND CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'SCON' THEN 'Social' WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'OFFI' THEN 'Official' ELSE AT_OFFENDER_HIST_VISITS.VISIT_TYPE END = 'Official')), dataset_ AS (SELECT OFFENDER_VISIT_ID, VISIT_DATE, YEAR_OF_VISIT_DATE, MONTH_OF_VISIT_DATE, STATUS_OF_VISIT, VISIT_TYPE_HELD, CASE WHEN STATUS_OF_VISIT = 'Normal Completion' THEN 'Completed' ELSE CASE WHEN STATUS_OF_VISIT = 'VDE' THEN 'Visitor Declined Entry' ELSE STATUS_OF_VISIT END END AS V_VISIT_STATUS FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Start Date",
+          "description": "@prompt('Start Date','D',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "End Date",
+          "description": "@prompt('End Date','D',,Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter value for Visit Establishment Code",
+          "description": "@prompt('Enter value for Visit Establishment Code','A','Visits\\Visit Establishment Code',Multi,Free,Not_Persistent,,User:2)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_VISIT_ID",
+            "type": "double",
+            "display": "Visit Id",
+            "legacyId": "DP16.DOe38",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "VISIT_DATE",
+            "type": "date",
+            "display": "Date of Visit",
+            "legacyId": "DP16.DOdcf",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "YEAR_OF_VISIT_DATE",
+            "type": "double",
+            "display": "Year of Visit Date",
+            "legacyId": "DP16.DOe93",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "MONTH_OF_VISIT_DATE",
+            "type": "double",
+            "display": "Month of Visit Date",
+            "legacyId": "DP16.DOe95",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "STATUS_OF_VISIT",
+            "type": "string",
+            "display": "Status of Visit",
+            "legacyId": "DP16.DOdd6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "VISIT_TYPE_HELD",
+            "type": "string",
+            "display": "Visit Type Held",
+            "legacyId": "DP16.DOdd3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "V_VISIT_STATUS",
+            "type": "string",
+            "display": "Visit Status",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "year-month-summary",
+      "name": "Year Month Summary",
+      "datasource": "redshift",
+      "query": "SELECT YEAR_OF_VISIT_DATE, MONTH_OF_VISIT_DATE, V_VISIT_STATUS, COUNT(DISTINCT OFFENDER_VISIT_ID) AS VISITOR_COUNT FROM ${tableId} GROUP BY YEAR_OF_VISIT_DATE, MONTH_OF_VISIT_DATE, V_VISIT_STATUS ORDER BY YEAR_OF_VISIT_DATE, MONTH_OF_VISIT_DATE, V_VISIT_STATUS",
+      "schema": {
+        "field": [
+          {
+            "name": "YEAR_OF_VISIT_DATE",
+            "type": "int",
+            "display": "Year"
+          },
+          {
+            "name": "MONTH_OF_VISIT_DATE",
+            "type": "int",
+            "display": "Month"
+          },
+          {
+            "name": "V_VISIT_STATUS",
+            "type": "string",
+            "display": "Visit Status"
+          },
+          {
+            "name": "VISITOR_COUNT",
+            "type": "int",
+            "display": "Number of Visits"
+          }
+        ]
+      }
+    },
+    {
+      "id": "year-summary",
+      "name": "Year Summary",
+      "datasource": "redshift",
+      "query": "SELECT YEAR_OF_VISIT_DATE, COUNT(DISTINCT OFFENDER_VISIT_ID) AS VISITOR_COUNT FROM ${tableId} GROUP BY YEAR_OF_VISIT_DATE ORDER BY YEAR_OF_VISIT_DATE",
+      "schema": {
+        "field": [
+          {
+            "name": "YEAR_OF_VISIT_DATE",
+            "type": "int",
+            "display": "Year"
+          },
+          {
+            "name": "VISITOR_COUNT",
+            "type": "int",
+            "display": "Number of Visits"
+          }
+        ]
+      }
+    },
+    {
+      "id": "summary",
+      "name": "Summary",
+      "datasource": "redshift",
+      "query": "SELECT COUNT(DISTINCT OFFENDER_VISIT_ID) AS VISITOR_COUNT FROM ${tableId}",
+      "schema": {
+        "field": [
+          {
+            "name": "VISITOR_COUNT",
+            "type": "int",
+            "display": "Total Number of Visits"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": ["${role}", "ROLE_PRISONS_REPORTING_USER"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "167243.RS",
+      "name": "Social Visits",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "summary": [
+        {
+          "id": "year-month-summary",
+          "template": "page-header",
+          "dataset": "$ref:year-month-summary"
+        },
+        {
+          "id": "year-summary",
+          "template": "page-header",
+          "dataset": "$ref:year-summary"
+        },
+        {
+          "id": "summary",
+          "template": "page-header",
+          "dataset": "$ref:summary"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    },
+    {
+      "id": "169070.RS",
+      "name": "Official Visits",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP16",
+      "summary": [
+        {
+          "id": "year-month-summary",
+          "template": "page-header",
+          "dataset": "$ref:year-month-summary"
+        },
+        {
+          "id": "year-summary",
+          "template": "page-header",
+          "dataset": "$ref:year-summary"
+        },
+        {
+          "id": "summary",
+          "template": "page-header",
+          "dataset": "$ref:summary"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    }
+  ]
+}
