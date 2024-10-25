@@ -7,20 +7,37 @@ This is a private repository the contains a set of data product definitions for 
 Data Products are stored under the following hierarchy
 
 ```
-prisons                           <=== this is a namespace
-|-- or                            <=== Operational Reports
-|      wait-lists.json            <=== Data Product Definition
-|      ...
-|-- orphanage                     <=== DPS Reports (NOMIS Lists and DPS Lists) without a DPS Service Home
-|      external-movements.json    <=== Data Product Definition
-|      scheduled-movements.json
-|      demographics.json
-|      ...
-|-- mi                            <=== Management Information Reports
-|      ...
+dev                                       <=== this is the environment
+|-- definitions
+|   |-- prisons                           <=== this is a namespace
+|   |   |-- orphanage                     <=== DPS Reports (NOMIS Lists and DPS Lists) without a DPS Service Home
+|   |   |      external-movements.json    <=== Data Product Definition
+|   |   |      scheduled-movements.json
+|   |   |      demographics.json
+|   |   |      ...
+|   |   |-- dps                           <=== DPS Reports with a DPS Service Home
+|   |   |   | -- activities               <=== DPS Service
+|   |   |   |       waitlists.json        <=== Data Product Definition
+|   |   |      ...
+|   |   |-- test                          <=== Test reports (acceptance and/or smoke tests)
+|   |   |      test-report.json           <=== Data Product Definition
+preprod
+|-- definitions
+...
 ```
 
 ## DPD Schema
 
 All Data Product Definitions are validated against the DPD schema on the main branch during unit testing:
 https://raw.githubusercontent.com/ministryofjustice/hmpps-digital-prison-reporting-data-product-definitions-schema/main/schema/data-product-definition-schema.json
+
+## Environments
+
+All DPDs are stored in one or more environment folders. A DPDs will only be available in an environment if it is in that environment's folder, and the containing version of the service has been deployed to that environment.
+
+- dev: Used for draft DPDs. This environment has automatic deployment of all services, so it can be a little changeable.
+- test: Also used for draft DPDs. This environment is more stable than dev.
+- preprod: Promote DPDs to preprod when they have finished development, and are ready to be tested against prod-like data.
+- prod: The production environment. Once signed off in pre-prod, DPDs can be promoted to the prod folder, to be deployed as a part of a scheduled release.
+
+DPDs should be left in lower environments (but kept up to date) in order to facilitate debugging and further development.
