@@ -14,6 +14,7 @@ configurations {
 dependencies {
   implementation("org.springframework.boot:spring-boot-starter-webflux")
   implementation("org.springframework.boot:spring-boot-starter-security")
+  implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
   // Swagger
   implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
 
@@ -21,6 +22,7 @@ dependencies {
   implementation("com.google.code.gson:gson:2.11.0")
 
   testImplementation("com.github.java-json-tools:json-schema-validator:2.2.14")
+  testImplementation("io.jsonwebtoken:jjwt:0.12.6")
 }
 
 java {
