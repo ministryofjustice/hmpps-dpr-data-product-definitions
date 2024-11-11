@@ -676,6 +676,46 @@
       }
     },
     {
+      "id": "3377299/DP100",
+      "name": "Visit and Disability",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER_HEALTH_ALL.DESCRIPTION AS DISABILITY, CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'SCH' THEN 'Scheduled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'NORM' THEN 'Normal Completion' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'CANC' THEN 'Cancelled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'EXP' THEN 'Expired' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'HMPOP' THEN 'Terminated by Staff' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'OFFEND' THEN 'Prisoner Completed Early' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'VISITOR' THEN 'Visitor Completed Early' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'VDE' THEN 'Visitor Declined Entry' ELSE AT_OFFENDER_HIST_VISITS.VISIT_STATUS END AS STATUS_OF_VISIT, FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, (SELECT AT_OFFENDER_HEALTH.OFFENDER_BOOK_ID, AT_HLTH_PRB_DISAB_DSC.DESCRIPTION FROM OMS_OWNER.REFERENCE_CODES AT_HLTH_PRB_DISAB_DSC, OMS_OWNER.OFFENDER_HEALTH_PROBLEMS AT_OFFENDER_HEALTH WHERE (AT_HLTH_PRB_DISAB_DSC.DOMAIN = 'HEALTH_PBLM') AND (AT_OFFENDER_HEALTH.PROBLEM_CODE = AT_HLTH_PRB_DISAB_DSC.CODE) AND AT_OFFENDER_HEALTH.PROBLEM_STATUS = 'ON' AND AT_HLTH_PRB_DISAB_DSC.PARENT_CODE = 'DISAB' AND NOT AT_HLTH_PRB_DISAB_DSC.CODE IN ('ND', 'NR', 'RD', 'PRD') GROUP BY AT_OFFENDER_HEALTH.OFFENDER_BOOK_ID, AT_HLTH_PRB_DISAB_DSC.DESCRIPTION) AT_OFFENDER_HEALTH_ALL, OMS_OWNER.OFFENDER_VISITS AT_OFFENDER_HIST_VISITS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID(+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (WING_CASELOAD_SECURITY.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y')) AND (AT_OFFENDER_HEALTH_ALL.OFFENDER_BOOK_ID(+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_HIST_VISITS.OFFENDER_BOOK_ID(+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) , dataset_ AS (SELECT DISTINCT OFFENDER_ID_DISPLAY, DISABILITY, STATUS_OF_VISIT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP18.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "name": "DISABILITY",
+            "type": "string",
+            "display": "Disability"
+          },
+          {
+            "name": "STATUS_OF_VISIT",
+            "type": "string",
+            "display": "Visit Status"
+          }
+        ]
+      }
+    },
+    {
       "id": "nationality-summary",
       "name": "Nationality Summary",
       "datasource": "redshift",
@@ -686,6 +726,426 @@
             "name": "DESCRIPTION",
             "type": "string",
             "display": "Nationality"
+          },
+          {
+            "name": "SCH",
+            "type": "int",
+            "display": "Scheduled"
+          },
+          {
+            "name": "NORM",
+            "type": "int",
+            "display": "Normal Completion"
+          },
+          {
+            "name": "CANC",
+            "type": "int",
+            "display": "Cancelled"
+          },
+          {
+            "name": "EXP",
+            "type": "int",
+            "display": "Expired"
+          },
+          {
+            "name": "HMPOP",
+            "type": "int",
+            "display": "Terminated by Staff"
+          },
+          {
+            "name": "OFFEND",
+            "type": "int",
+            "display": "Prisoner Completed Early"
+          },
+          {
+            "name": "VISITOR",
+            "type": "int",
+            "display": "Visitor Completed Early"
+          },
+          {
+            "name": "VDE",
+            "type": "int",
+            "display": "Visitor Declined Entry"
+          },
+          {
+            "name": "Total",
+            "type": "int",
+            "display": "Total"
+          }
+        ]
+      }
+    },
+    {
+      "id": "age-summary",
+      "name": "Age Summary",
+      "datasource": "redshift",
+      "query": "SELECT AGE_IN_YEARS, SCH, NORM, CANC, EXP, HMPOP, OFFEND, VISITOR, VDE, SCH + NORM + CANC + EXP + HMPOP + OFFEND + VISITOR + VDE AS Total FROM (SELECT AGE_IN_YEARS, STATUS_OF_VISIT FROM ${tableId}) PIVOT (COUNT(1) FOR STATUS_OF_VISIT IN ('Scheduled' AS SCH, 'Normal Completion' AS NORM, 'Cancelled' AS CANC, 'Expired' AS EXP, 'Terminated by Staff' AS HMPOP, 'Prisoner Completed Early' AS OFFEND, 'Visitor Completed Early' AS VISITOR, 'Visitor Declined Entry' AS VDE))",
+      "schema": {
+        "field": [
+          {
+            "name": "AGE_IN_YEARS",
+            "type": "int",
+            "display": "Age"
+          },
+          {
+            "name": "SCH",
+            "type": "int",
+            "display": "Scheduled"
+          },
+          {
+            "name": "NORM",
+            "type": "int",
+            "display": "Normal Completion"
+          },
+          {
+            "name": "CANC",
+            "type": "int",
+            "display": "Cancelled"
+          },
+          {
+            "name": "EXP",
+            "type": "int",
+            "display": "Expired"
+          },
+          {
+            "name": "HMPOP",
+            "type": "int",
+            "display": "Terminated by Staff"
+          },
+          {
+            "name": "OFFEND",
+            "type": "int",
+            "display": "Prisoner Completed Early"
+          },
+          {
+            "name": "VISITOR",
+            "type": "int",
+            "display": "Visitor Completed Early"
+          },
+          {
+            "name": "VDE",
+            "type": "int",
+            "display": "Visitor Declined Entry"
+          },
+          {
+            "name": "Total",
+            "type": "int",
+            "display": "Total"
+          }
+        ]
+      }
+    },
+    {
+      "id": "adult-yp-summary",
+      "name": "Adult/You Person Summary",
+      "datasource": "redshift",
+      "query": "SELECT ADULT_YOUNG_PERSON_JUVENILE_37, SCH, NORM, CANC, EXP, HMPOP, OFFEND, VISITOR, VDE, SCH + NORM + CANC + EXP + HMPOP + OFFEND + VISITOR + VDE AS Total FROM (SELECT ADULT_YOUNG_PERSON_JUVENILE_37, STATUS_OF_VISIT FROM ${tableId}) PIVOT (COUNT(1) FOR STATUS_OF_VISIT IN ('Scheduled' AS SCH, 'Normal Completion' AS NORM, 'Cancelled' AS CANC, 'Expired' AS EXP, 'Terminated by Staff' AS HMPOP, 'Prisoner Completed Early' AS OFFEND, 'Visitor Completed Early' AS VISITOR, 'Visitor Declined Entry' AS VDE))",
+      "schema": {
+        "field": [
+          {
+            "name": "ADULT_YOUNG_PERSON_JUVENILE_37",
+            "type": "string",
+            "display": "Adult/Young Person"
+          },
+          {
+            "name": "SCH",
+            "type": "int",
+            "display": "Scheduled"
+          },
+          {
+            "name": "NORM",
+            "type": "int",
+            "display": "Normal Completion"
+          },
+          {
+            "name": "CANC",
+            "type": "int",
+            "display": "Cancelled"
+          },
+          {
+            "name": "EXP",
+            "type": "int",
+            "display": "Expired"
+          },
+          {
+            "name": "HMPOP",
+            "type": "int",
+            "display": "Terminated by Staff"
+          },
+          {
+            "name": "OFFEND",
+            "type": "int",
+            "display": "Prisoner Completed Early"
+          },
+          {
+            "name": "VISITOR",
+            "type": "int",
+            "display": "Visitor Completed Early"
+          },
+          {
+            "name": "VDE",
+            "type": "int",
+            "display": "Visitor Declined Entry"
+          },
+          {
+            "name": "Total",
+            "type": "int",
+            "display": "Total"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ethnicity-summary",
+      "name": "Ethnicity Summary",
+      "datasource": "redshift",
+      "query": "SELECT COALESCE(ETHNIC_DESCRIPTION, '(Unknown)') AS ETHNIC_DESCRIPTION, SCH, NORM, CANC, EXP, HMPOP, OFFEND, VISITOR, VDE, SCH + NORM + CANC + EXP + HMPOP + OFFEND + VISITOR + VDE AS Total FROM (SELECT ETHNIC_DESCRIPTION, STATUS_OF_VISIT FROM ${tableId}) PIVOT (COUNT(1) FOR STATUS_OF_VISIT IN ('Scheduled' AS SCH, 'Normal Completion' AS NORM, 'Cancelled' AS CANC, 'Expired' AS EXP, 'Terminated by Staff' AS HMPOP, 'Prisoner Completed Early' AS OFFEND, 'Visitor Completed Early' AS VISITOR, 'Visitor Declined Entry' AS VDE))",
+      "schema": {
+        "field": [
+          {
+            "name": "ETHNIC_DESCRIPTION",
+            "type": "string",
+            "display": "Ethinicity"
+          },
+          {
+            "name": "SCH",
+            "type": "int",
+            "display": "Scheduled"
+          },
+          {
+            "name": "NORM",
+            "type": "int",
+            "display": "Normal Completion"
+          },
+          {
+            "name": "CANC",
+            "type": "int",
+            "display": "Cancelled"
+          },
+          {
+            "name": "EXP",
+            "type": "int",
+            "display": "Expired"
+          },
+          {
+            "name": "HMPOP",
+            "type": "int",
+            "display": "Terminated by Staff"
+          },
+          {
+            "name": "OFFEND",
+            "type": "int",
+            "display": "Prisoner Completed Early"
+          },
+          {
+            "name": "VISITOR",
+            "type": "int",
+            "display": "Visitor Completed Early"
+          },
+          {
+            "name": "VDE",
+            "type": "int",
+            "display": "Visitor Declined Entry"
+          },
+          {
+            "name": "Total",
+            "type": "int",
+            "display": "Total"
+          }
+        ]
+      }
+    },
+    {
+      "id": "religion-summary",
+      "name": "Religion Summary",
+      "datasource": "redshift",
+      "query": "SELECT COALESCE(RELIGION_DESCRIPTION, '(Unknown)') AS RELIGION_DESCRIPTION, SCH, NORM, CANC, EXP, HMPOP, OFFEND, VISITOR, VDE, SCH + NORM + CANC + EXP + HMPOP + OFFEND + VISITOR + VDE AS Total FROM (SELECT RELIGION_DESCRIPTION, STATUS_OF_VISIT FROM ${tableId}) PIVOT (COUNT(1) FOR STATUS_OF_VISIT IN ('Scheduled' AS SCH, 'Normal Completion' AS NORM, 'Cancelled' AS CANC, 'Expired' AS EXP, 'Terminated by Staff' AS HMPOP, 'Prisoner Completed Early' AS OFFEND, 'Visitor Completed Early' AS VISITOR, 'Visitor Declined Entry' AS VDE))",
+      "schema": {
+        "field": [
+          {
+            "name": "RELIGION_DESCRIPTION",
+            "type": "string",
+            "display": "Religion"
+          },
+          {
+            "name": "SCH",
+            "type": "int",
+            "display": "Scheduled"
+          },
+          {
+            "name": "NORM",
+            "type": "int",
+            "display": "Normal Completion"
+          },
+          {
+            "name": "CANC",
+            "type": "int",
+            "display": "Cancelled"
+          },
+          {
+            "name": "EXP",
+            "type": "int",
+            "display": "Expired"
+          },
+          {
+            "name": "HMPOP",
+            "type": "int",
+            "display": "Terminated by Staff"
+          },
+          {
+            "name": "OFFEND",
+            "type": "int",
+            "display": "Prisoner Completed Early"
+          },
+          {
+            "name": "VISITOR",
+            "type": "int",
+            "display": "Visitor Completed Early"
+          },
+          {
+            "name": "VDE",
+            "type": "int",
+            "display": "Visitor Declined Entry"
+          },
+          {
+            "name": "Total",
+            "type": "int",
+            "display": "Total"
+          }
+        ]
+      }
+    },
+    {
+      "id": "sexual-orientation-summary",
+      "name": "Sexual Orientation Summary",
+      "datasource": "redshift",
+      "query": "SELECT COALESCE(SEXUAL_ORIENTATION_DESCRIPTION, '(Unknown)') AS SEXUAL_ORIENTATION_DESCRIPTION, SCH, NORM, CANC, EXP, HMPOP, OFFEND, VISITOR, VDE, SCH + NORM + CANC + EXP + HMPOP + OFFEND + VISITOR + VDE AS Total FROM (SELECT SEXUAL_ORIENTATION_DESCRIPTION, STATUS_OF_VISIT FROM ${tableId}) PIVOT (COUNT(1) FOR STATUS_OF_VISIT IN ('Scheduled' AS SCH, 'Normal Completion' AS NORM, 'Cancelled' AS CANC, 'Expired' AS EXP, 'Terminated by Staff' AS HMPOP, 'Prisoner Completed Early' AS OFFEND, 'Visitor Completed Early' AS VISITOR, 'Visitor Declined Entry' AS VDE))",
+      "schema": {
+        "field": [
+          {
+            "name": "SEXUAL_ORIENTATION_DESCRIPTION",
+            "type": "string",
+            "display": "Sexual Orientation"
+          },
+          {
+            "name": "SCH",
+            "type": "int",
+            "display": "Scheduled"
+          },
+          {
+            "name": "NORM",
+            "type": "int",
+            "display": "Normal Completion"
+          },
+          {
+            "name": "CANC",
+            "type": "int",
+            "display": "Cancelled"
+          },
+          {
+            "name": "EXP",
+            "type": "int",
+            "display": "Expired"
+          },
+          {
+            "name": "HMPOP",
+            "type": "int",
+            "display": "Terminated by Staff"
+          },
+          {
+            "name": "OFFEND",
+            "type": "int",
+            "display": "Prisoner Completed Early"
+          },
+          {
+            "name": "VISITOR",
+            "type": "int",
+            "display": "Visitor Completed Early"
+          },
+          {
+            "name": "VDE",
+            "type": "int",
+            "display": "Visitor Declined Entry"
+          },
+          {
+            "name": "Total",
+            "type": "int",
+            "display": "Total"
+          }
+        ]
+      }
+    },
+    {
+      "id": "domestic-status-summary",
+      "name": "Domestic Status Summary",
+      "datasource": "redshift",
+      "query": "SELECT COALESCE(DOMESTIC_STATUS, '(Unknown)') AS DOMESTIC_STATUS, SCH, NORM, CANC, EXP, HMPOP, OFFEND, VISITOR, VDE, SCH + NORM + CANC + EXP + HMPOP + OFFEND + VISITOR + VDE AS Total FROM (SELECT DOMESTIC_STATUS, STATUS_OF_VISIT FROM ${tableId}) PIVOT (COUNT(1) FOR STATUS_OF_VISIT IN ('Scheduled' AS SCH, 'Normal Completion' AS NORM, 'Cancelled' AS CANC, 'Expired' AS EXP, 'Terminated by Staff' AS HMPOP, 'Prisoner Completed Early' AS OFFEND, 'Visitor Completed Early' AS VISITOR, 'Visitor Declined Entry' AS VDE))",
+      "schema": {
+        "field": [
+          {
+            "name": "DOMESTIC_STATUS",
+            "type": "string",
+            "display": "Domestic Status"
+          },
+          {
+            "name": "SCH",
+            "type": "int",
+            "display": "Scheduled"
+          },
+          {
+            "name": "NORM",
+            "type": "int",
+            "display": "Normal Completion"
+          },
+          {
+            "name": "CANC",
+            "type": "int",
+            "display": "Cancelled"
+          },
+          {
+            "name": "EXP",
+            "type": "int",
+            "display": "Expired"
+          },
+          {
+            "name": "HMPOP",
+            "type": "int",
+            "display": "Terminated by Staff"
+          },
+          {
+            "name": "OFFEND",
+            "type": "int",
+            "display": "Prisoner Completed Early"
+          },
+          {
+            "name": "VISITOR",
+            "type": "int",
+            "display": "Visitor Completed Early"
+          },
+          {
+            "name": "VDE",
+            "type": "int",
+            "display": "Visitor Declined Entry"
+          },
+          {
+            "name": "Total",
+            "type": "int",
+            "display": "Total"
+          }
+        ]
+      }
+    },
+    {
+      "id": "disability-summary",
+      "name": "Disability Summary",
+      "datasource": "redshift",
+      "query": "SELECT DISABILITY, SCH, NORM, CANC, EXP, HMPOP, OFFEND, VISITOR, VDE, SCH + NORM + CANC + EXP + HMPOP + OFFEND + VISITOR + VDE AS Total FROM (SELECT DISABILITY, STATUS_OF_VISIT FROM ${tableId}) PIVOT (COUNT(1) FOR STATUS_OF_VISIT IN ('Scheduled' AS SCH, 'Normal Completion' AS NORM, 'Cancelled' AS CANC, 'Expired' AS EXP, 'Terminated by Staff' AS HMPOP, 'Prisoner Completed Early' AS OFFEND, 'Visitor Completed Early' AS VISITOR, 'Visitor Declined Entry' AS VDE))",
+      "schema": {
+        "field": [
+          {
+            "name": "DISABILITY",
+            "type": "string",
+            "display": "Disability"
           },
           {
             "name": "SCH",
@@ -1276,8 +1736,42 @@
       }
     },
     {
-      "id": "167540.RS",
-      "name": "Visit Stats",
+      "id": "167540.RS-age",
+      "name": "Visit Stats - Age",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "summary": [
+        {
+          "id": "age-summary",
+          "template": "page-header",
+          "dataset": "$ref:age-summary",
+          "field": [
+            {
+              "name": "$ref:AGE_IN_YEARS",
+              "header": true
+            },
+            {
+              "name": "$ref:Total",
+              "header": true
+            }
+          ]
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    },
+    {
+      "id": "167540.RS-nat",
+      "name": "Visit Stats - Nationality",
       "classification": "OFFICIAL",
       "version": "1.0.0",
       "render": "HTML",
@@ -1310,16 +1804,216 @@
       }
     },
     {
+      "id": "167540.RS-ayp",
+      "name": "Visit Stats - Adult/Young Person",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "summary": [
+        {
+          "id": "adult-yp-summary",
+          "template": "page-header",
+          "dataset": "$ref:adult-yp-summary",
+          "field": [
+            {
+              "name": "$ref:ADULT_YOUNG_PERSON_JUVENILE_37",
+              "header": true
+            },
+            {
+              "name": "$ref:Total",
+              "header": true
+            }
+          ]
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    },
+    {
+      "id": "167540.RS-eth",
+      "name": "Visit Stats - Ethnicity",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "summary": [
+        {
+          "id": "ethnicity-summary",
+          "template": "page-header",
+          "dataset": "$ref:ethnicity-summary",
+          "field": [
+            {
+              "name": "$ref:ETHNIC_CODE",
+              "header": true
+            },
+            {
+              "name": "$ref:Total",
+              "header": true
+            }
+          ]
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    },
+    {
+      "id": "167540.RS-rel",
+      "name": "Visit Stats - Religion",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "summary": [
+        {
+          "id": "religion-summary",
+          "template": "page-header",
+          "dataset": "$ref:religion-summary",
+          "field": [
+            {
+              "name": "$ref:RELIGION",
+              "header": true
+            },
+            {
+              "name": "$ref:Total",
+              "header": true
+            }
+          ]
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    },
+    {
+      "id": "167540.RS-so",
+      "name": "Visit Stats - Sexual Orientation",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "summary": [
+        {
+          "id": "sexual-orientation-summary",
+          "template": "page-header",
+          "dataset": "$ref:sexual-orientation-summary",
+          "field": [
+            {
+              "name": "$ref:SEXUAL_ORIENTATION_CODE",
+              "header": true
+            },
+            {
+              "name": "$ref:Total",
+              "header": true
+            }
+          ]
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    },
+    {
+      "id": "167540.RS-ds",
+      "name": "Visit Stats - Domestic Status",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "summary": [
+        {
+          "id": "domestic-status-summary",
+          "template": "page-header",
+          "dataset": "$ref:domestic-status-summary",
+          "field": [
+            {
+              "name": "$ref:MARITAL_STATUS_CODE",
+              "header": true
+            },
+            {
+              "name": "$ref:Total",
+              "header": true
+            }
+          ]
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    },
+    {
+      "id": "167540.RS-ds",
+      "name": "Visit Stats - Disability",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP16",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "summary": [
+        {
+          "id": "disability-summary",
+          "template": "page-header",
+          "dataset": "$ref:disability-summary",
+          "field": [
+            {
+              "name": "$ref:DISABILITY",
+              "header": true
+            },
+            {
+              "name": "$ref:Total",
+              "header": true
+            }
+          ]
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    },
+    {
       "id": "167742.RS",
       "name": "Population Stats",
       "classification": "OFFICIAL",
       "version": "1.0.0",
       "render": "HTML",
       "dataset": "3377299/DP16",
-      "filter": {
-        "name": "prefilter_",
-        "query": "prefilter_ AS (SELECT * FROM dataset_)"
-      },
       "feature": [
         {
           "type": "print"
