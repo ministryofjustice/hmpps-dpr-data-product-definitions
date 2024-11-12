@@ -31,6 +31,8 @@ preprod
 All Data Product Definitions are validated against the DPD schema on the main branch during unit testing:
 https://raw.githubusercontent.com/ministryofjustice/hmpps-digital-prison-reporting-data-product-definitions-schema/main/schema/data-product-definition-schema.json
 
+Documentation on the DPD schema contents can be found here: https://github.com/ministryofjustice/hmpps-digital-prison-reporting-data-product-definitions-schema?tab=readme-ov-file
+
 ## Environments
 
 All DPDs are stored in one or more environment folders. A DPDs will only be available in an environment if it is in that environment's folder, and the containing version of the service has been deployed to that environment.
