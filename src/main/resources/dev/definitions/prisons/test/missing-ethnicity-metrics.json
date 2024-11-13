@@ -18,7 +18,7 @@
       "id": "missing-ethnicity-dataset",
       "name": "Missing Ethnicity By Establishment Dataset",
       "datasource": "datamart",
-      "query": "SELECT t1.est_id AS establishment_id,  ROUND(t2.missing_ethnicity_count * 100.0/t1.n, 2) AS missing_ethnicity_percentage,    100 - missing_ethnicity_percentage AS present_ethnicity_percentage,   t2.missing_ethnicity_count AS no_of_prisoners_without,   (n - t2.missing_ethnicity_count) AS no_of_prisoners_with   FROM (SELECT establishment_id AS est_id, COUNT(*) AS n  FROM \"datamart\".\"datamart\".\"prisoner_prisoner\"   WHERE establishment_id not in ('TRN', 'ZZGHI', 'OUT')  GROUP BY est_id) AS t1,  (SELECT establishment_id AS est_id, COUNT(*) AS missing_ethnicity_count  FROM \"datamart\".\"datamart\".\"prisoner_prisoner\"   WHERE establishment_id not in ('TRN', 'ZZGHI', 'OUT')  AND ethnicity_code is NULL  GROUP BY est_id) AS t2  WHERE t1.est_id = t2.est_id",
+      "query": "SELECT establishment_id, has_ethnicity, ethnicity_is_missing FROM datamart.metrics.data_quality",
       "schema": {
         "field": [
           {
@@ -27,22 +27,12 @@
             "display": "Establishment ID"
           },
           {
-            "name": "missing_ethnicity_percentage",
-            "type": "long",
-            "display": "Missing Ethnicity Percentage"
-          },
-          {
-            "name": "present_ethnicity_percentage",
-            "type": "long",
-            "display": "present Ethnicity Percentage"
-          },
-          {
-            "name": "no_of_prisoners_without",
+            "name": "has_ethnicity",
             "type": "long",
             "display": "No. of Prisoners without ethnicity"
           },
           {
-            "name": "no_of_prisoners_with",
+            "name": "ethnicity_is_missing",
             "type": "long",
             "display": "No. of Prisoners with ethnicity"
           }
@@ -55,47 +45,51 @@
       "id": "test-dashboard-1",
       "name": "Test Dashboard 1",
       "description": "Test Dashboard 1 Description",
+      "dataset": "missing-ethnicity-dataset",
       "metrics": [
         {
-          "id": "missing-ethnicity-metric"
-        }
-      ]
-    }
-  ],
-  "metrics": [
-    {
-      "id": "missing-ethnicity-metric",
-      "name": "Missing Ethnicity By Establishment Metric",
-      "dataset": "missing-ethnicity-dataset",
-      "display": "Missing Ethnicity By Establishment Metric",
-      "description": "Missing Ethnicity By Establishment Metric",
-      "specification": [
-        {
-          "name": "establishment_id",
-          "display": "Establishment ID",
-          "group": true
-        },
-        {
-          "name": "missing_ethnicity_percentage",
-          "display": "% Missing Ethnicity",
-          "chart": ["doughnut"],
-          "unit": "percentage"
-        },
-        {
-          "name": "present_ethnicity_percentage",
-          "display": "% With Ethnicity",
-          "chart": ["doughnut"],
-          "unit": "percentage"
-        },
-        {
-          "name": "no_of_prisoners_without",
-          "display": "No. of Prisoners without ethnicity",
-          "chart": ["bar"]
-        },
-        {
-          "name": "no_of_prisoners_with",
-          "display": "No. of Prisoners with ethnicity",
-          "chart": ["bar"]
+          "id": "missing-ethnicity-metric",
+          "name": "Missing Ethnicity By Establishment Metric",
+          "display": "Missing Ethnicity By Establishment Metric",
+          "description": "Missing Ethnicity By Establishment Metric",
+          "charts": [
+            {
+              "type": "bar",
+              "label": {
+                "name": "$ref:establishment_id",
+                "display": "Establishment ID"
+              },
+              "unit": "number",
+              "columns": [
+                {
+                  "name": "$ref:has_ethnicity",
+                  "display": "No. of Prisoners with ethnicity"
+                },
+                {
+                  "name": "$ref:has_no_ethnicity",
+                  "display": "No. of Prisoners without ethnicity"
+                }
+              ]
+            },
+            {
+              "type": "doughnut",
+              "label": {
+                "name": "$ref:establishment_id",
+                "display": "Establishment ID"
+              },
+              "unit": "percentage",
+              "columns": [
+                {
+                  "name": "$ref:has_ethnicity",
+                  "display": "No. of Prisoners with ethnicity"
+                },
+                {
+                  "name": "$ref:has_no_ethnicity",
+                  "display": "No. of Prisoners without ethnicity"
+                }
+              ]
+            }
+          ]
         }
       ]
     }
@@ -117,53 +111,5 @@
       ]
     }
   ],
-  "report": [
-    {
-      "id": "missing-ethnicity",
-      "name": "Missing Ethnicity",
-      "description": "Missing Ethnicity Report",
-      "created": "2024-09-16T09:00:00.000Z",
-      "classification": "report classification",
-      "version": "1.2.3",
-      "dataset": "$ref:missing-ethnicity-dataset",
-      "policy": [],
-      "render": "HTML",
-      "feature": [
-        {
-          "type": "print"
-        }
-      ],
-      "specification": {
-        "template": "list",
-        "field": [
-          {
-            "name": "$ref:establishment_id",
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:missing_ethnicity_percentage",
-            "sortable": true,
-            "defaultsort": true
-          },
-          {
-            "name": "$ref:present_ethnicity_percentage",
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:no_of_prisoners_without",
-            "sortable": true,
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:no_of_prisoners_with",
-            "sortable": true,
-            "defaultsort": false
-          }
-        ]
-      },
-      "destination": []
-    }
-  ]
+  "report": []
 }
