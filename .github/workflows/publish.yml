@@ -1,0 +1,40 @@
+name: Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployEnv:
+        description: 'The environment to deploy DPDs to'
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - test
+          - preprod
+          - prod
+
+permissions:
+  id-token: write  # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+
+jobs:
+  publish-package:
+    environment: ${{ inputs.deployEnv }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a  # v4.0.1
+        with:
+          role-to-assume: "arn:aws:iam::${{ secrets.ACCOUNT_NUMBER }}:role/github-actions"
+          role-session-name: githubactionsrolesession
+          aws-region: "eu-west-2"
+
+      - name: Publish to DynamoDB
+        run: |
+          aws dynamodb put-item \
+            --table-name dpr-data-product-definition \
+            --item "{ \"data-product-id\": { \"S\": \"deploy-test\" }, \"category\": { \"S\": \"definitions/test\" }, \"definition\": { \"S\": \"{ \\\"id\\\": \\\"deploy-test\\\" }\" }, \"filename\": { \"S\": \"deploy-test.json\" } }"
