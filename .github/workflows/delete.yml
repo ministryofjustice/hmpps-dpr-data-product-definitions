@@ -1,0 +1,50 @@
+name: Delete
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployEnv:
+        description: 'Environment to delete a DPD from'
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - test
+          - preprod
+          - prod
+      dpdId:
+        description: 'DPD ID'
+        required: true
+        type: text
+      category:
+        description: 'DPD Category/Path'
+        required: true
+        type: text
+
+permissions:
+  id-token: write  # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+
+jobs:
+  delete-dpd:
+    name: Delete DPD from ${{ inputs.deployEnv }} env
+    environment: ${{ inputs.deployEnv }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a  # v4.0.1
+        with:
+          role-to-assume: "arn:aws:iam::${{ secrets.ACCOUNT_NUMBER }}:role/dpr-dpd-table-github-deploy-role"
+          role-session-name: githubactionsrolesession
+          aws-region: "eu-west-2"
+
+      - name: Delete from DynamoDB
+        shell: bash
+        run: |
+          aws dynamodb delete-item \
+            --table-name dpr-data-product-definition \
+            --key "{ \"data-product-id\": { \"S\": \"${{ inputs.dpdId }}\" }, \"category\": { \"S\": \"${{ inputs.category }}\" } }"
