@@ -1,0 +1,152 @@
+{
+  "id": "dpd005-court-movements",
+  "name": "Prisoners at Court",
+  "description": "Data products for Prisoners at court",
+  "metadata": {
+    "author": "Zahoor Hussain",
+    "owner": "Michael Clarke",
+    "version": "1.0.4"
+  },
+  "datasource": [
+    {
+      "id": "datamart",
+      "name": "datamart"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "court-dataset",
+      "name": "court-dataset",
+      "datasource": "datamart",
+      "query": "SELECT prisoners.number AS prison_number,name AS name,movements.time AS date,movements.direction as direction,movements.type as type,movements.origin as origin,movements.origin_code as origin_code,movements.destination as destination,movements.destination_code as destination_code,movements.reason  FROM datamart.movement_movement as movements  JOIN datamart.prisoner_prisoner as prisoners ON movements.prisoner = prisoners.id  and type ='CRT' and lower(direction) = 'out'  JOIN datamart.prisoner_status as status on status.id = prisoners.id  and status.active = 'Y' and status.in_out_status ='OUT' and establishment_id = origin_code",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_number",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "date",
+            "type": "date",
+            "display": ""
+          },
+          {
+            "name": "origin",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "origin_code",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "destination",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "destination_code",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "direction",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "reason",
+            "type": "string",
+            "display": ""
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "caseload",
+      "type": "row-level",
+      "action": ["(origin_code='${caseload}' AND lower(direction)='out') OR (destination_code='${caseload}' AND lower(direction)='in')"],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": ["${caseload}"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "prisoners-at-court--mov0028",
+      "name": "Prisoners at Court",
+      "description": "Prisoners at Court",
+      "classification": "OFFICIAL",
+      "version": "v1.0",
+      "render": "HTML",
+      "dataset": "$ref:court-dataset",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:date",
+            "display": "Date",
+            "formula": "format_date(${date}, 'dd/MM/yyyy')",
+            "visible": "mandatory",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "daterange",
+              "default": "today()- today()"
+            }
+          },
+          {
+            "name": "$ref:prison_number",
+            "display": "Prisoner Number",
+            "formula": "",
+            "visible": "mandatory",
+            "sortable": true,
+            "defaultsort": true
+          },
+          {
+            "name": "$ref:name",
+            "display": "Full Name",
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prison_number}',${name},TRUE)",
+            "visible": "mandatory",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:destination",
+            "display": "To",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    }
+  ]
+}
