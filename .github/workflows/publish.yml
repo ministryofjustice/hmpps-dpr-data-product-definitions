@@ -19,7 +19,8 @@ permissions:
   contents: read  # This is required for actions/checkout
 
 jobs:
-  publish-package:
+  publish-dpds:
+    name: Publish DPDs to ${{ inputs.deployEnv }} env
     environment: ${{ inputs.deployEnv }}
     runs-on: ubuntu-latest
 
@@ -29,12 +30,39 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a  # v4.0.1
         with:
-          role-to-assume: "arn:aws:iam::${{ secrets.ACCOUNT_NUMBER }}:role/github-actions"
+          role-to-assume: "arn:aws:iam::${{ secrets.ACCOUNT_NUMBER }}:role/dpr-dpd-table-github-deploy-role"
           role-session-name: githubactionsrolesession
           aws-region: "eu-west-2"
 
       - name: Publish to DynamoDB
+        shell: bash
         run: |
-          aws dynamodb put-item \
-            --table-name dpr-data-product-definition \
-            --item "{ \"data-product-id\": { \"S\": \"deploy-test\" }, \"category\": { \"S\": \"definitions/test\" }, \"definition\": { \"S\": \"{ \\\"id\\\": \\\"deploy-test\\\" }\" }, \"filename\": { \"S\": \"deploy-test.json\" } }"
+          DPD_FOLDER="$GITHUB_WORKSPACE/src/main/resources/${{ inputs.deployEnv }}/"
+          echo "Searching folder: $DPD_FOLDER"
+         
+          DPDs=($(find $DPD_FOLDER -name "*.json"))
+          
+          mkdir $GITHUB_WORKSPACE/temp
+          
+          for FILE_PATH in "${DPDs[@]}"
+          do
+            FILENAME=$(basename $FILE_PATH)
+            DPD_PATH=${FILE_PATH/$DPD_FOLDER/}
+            DPD_PATH=${DPD_PATH/\/$FILENAME/}
+            DPD_ID=$(jq -r '.id' $FILE_PATH)
+          
+            echo "Path: $DPD_PATH File: $FILENAME ID: $DPD_ID"
+          
+            JSON_TEXT=$(jq -Rsc <$FILE_PATH)
+            JSON_TEXT=$(echo $JSON_TEXT | sed 's/^"//')
+            JSON_TEXT=$(echo $JSON_TEXT | sed 's/"$//')
+
+            echo "{ \"data-product-id\": { \"S\": \"$DPD_ID\" }, \"category\": { \"S\": \"$DPD_PATH\" }, \"definition\": { \"S\": \"$JSON_TEXT\" }, \"filename\": { \"S\": \"$FILENAME\" } }" > $GITHUB_WORKSPACE/temp/$DPD_ID.json
+          
+            aws dynamodb put-item \
+              --table-name dpr-data-product-definition \
+              --item file://$GITHUB_WORKSPACE/temp/$DPD_ID.json
+          
+            rm -f file://$GITHUB_WORKSPACE/temp/$DPD_ID.json
+            
+          done
