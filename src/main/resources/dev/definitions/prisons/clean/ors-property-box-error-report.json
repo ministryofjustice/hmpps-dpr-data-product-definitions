@@ -1,0 +1,255 @@
+{
+  "id": "olB0JKAAA8_VFWMALf_D8K7Boi4",
+  "name": "ORS Property Box Error Report",
+  "description": "This report returns a list of active property boxes allocated to active in/out prisoners but which do not have a property box location. The report also returns a list of active property boxes allocated to prisoners in transfer or who have been released.<br/>DQ0015 - v00.00.01 Last Modified: 10/10/12",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "DQ0015 - v00.00.01 LSRIT039"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP10",
+      "name": "Prop Box Recycling",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DT_PROPERTY_BOXES.SEAL_MARK AS SEAL_MARK, AT_PROP_LOC.DESCRIPTION AS DESCRIPTION, DT_PROPERTY_BOXES.PROPERTY_CONTAINER_ID AS PROPERTY_CONTAINER_ID, AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_HEADER_BLOCK.STATUS_DISPLAY || ' ' || AT_HEADER_BLOCK.IN_OUT_STATUS AS COMMUNITY_STATUS FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_PROP_LOC, (SELECT Offender_Book_ID, Property_Container_ID, Active_Flag, Seal_Mark, Agy_Loc_ID, Expiry_Date, Internal_Location_ID, PROPOSED_DISPOSAL_DATE, Container_Code, Property_Only_Flag, Comment_Text FROM oms_owner.offender_ppty_containers WHERE active_flag = 'Y' AND Agy_Loc_ID = 'CHI') DT_PROPERTY_BOXES WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_PROPERTY_BOXES.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (DT_PROPERTY_BOXES.INTERNAL_LOCATION_ID = AT_PROP_LOC.INTERNAL_LOCATION_ID (+)) AND DT_PROPERTY_BOXES.ACTIVE_FLAG = 'Y'), dataset_ AS (SELECT SEAL_MARK, DESCRIPTION, PROPERTY_CONTAINER_ID, OFFENDER_ID_DISPLAY, LAST_NAME, COMMUNITY_STATUS FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "SEAL_MARK",
+            "type": "string",
+            "display": "Seal Mark",
+            "legacyId": "DP10.DOc3c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Property Box Location",
+            "legacyId": "DP10.DOe5b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "PROPERTY_CONTAINER_ID",
+            "type": "double",
+            "display": "Property Container ID",
+            "legacyId": "DP10.DOc3d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP10.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP10.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "COMMUNITY_STATUS",
+            "type": "string",
+            "display": "Community Status",
+            "legacyId": "DP10.DOe3a",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "174992.RS",
+      "name": "Missing Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (PROPERTY_BOX_LOCATION IS NULL AND COMMUNITY_STATUS IN ('Active IN','Active OUT')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COMMUNITY_STATUS",
+            "display": "Community Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOe3a"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Property Box Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOe5b"
+          },
+          {
+            "name": "$ref:SEAL_MARK",
+            "display": "Seal Mark",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOc3c"
+          },
+          {
+            "name": "$ref:PROPERTY_CONTAINER_ID",
+            "display": "Property Container ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOc3d"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO44"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO45"
+          }
+        ]
+      }
+    },
+    {
+      "id": "175168.RS",
+      "name": "Assigned to Historic or In Transfer",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (PROPERTY_BOX_LOCATION IS NOT NULL AND COMMUNITY_STATUS IN ('Historic IN','Historic OUT','Inactive OUT','Active TRN')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COMMUNITY_STATUS",
+            "display": "Community Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOe3a"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Property Box Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOe5b"
+          },
+          {
+            "name": "$ref:SEAL_MARK",
+            "display": "Seal Mark",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOc3c"
+          },
+          {
+            "name": "$ref:PROPERTY_CONTAINER_ID",
+            "display": "Property Container ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOc3d"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO44"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO45"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

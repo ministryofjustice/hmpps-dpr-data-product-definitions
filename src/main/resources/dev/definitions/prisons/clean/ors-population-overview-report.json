@@ -1,0 +1,209 @@
+{
+  "id": "FgFWKlscBg8AXs8BAHALtl8KACJIAAzC",
+  "name": "ORS Population Overview Report",
+  "description": "This report returns all prisoners in an Establishment, along with Cell Location, Age, IEP level and Ethnicity.  The report is over 3 tabs by Surname, Location and Ethnic Code order. <br/>PDD0086 v00.00.01 Last Modified: 20/06/2018",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0086 v00.00.01",
+      "Population"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP3",
+      "name": "Sorted by Cell Location",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION AS DESCRIPTION, TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) AS AGE_IN_YEARS, COALESCE(DT_IEP_BAND_LAST.DESCRIPTION, 'Missing') AS IEP_LEVEL, CASE WHEN AT_OFFENDER.RACE_CODE = 'W8' THEN 'W3' WHEN AT_OFFENDER.RACE_CODE = 'O1' THEN 'A4' ELSE AT_OFFENDER.RACE_CODE END AS ETHNIC_CODE, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID AS AGY_LOC_ID, CASE WHEN AT_ETHNICITY_DESC.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_ETHNICITY_DESC.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_ETHNICITY_DESC.DESCRIPTION END AS ETHNIC_DESC_ FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.REFERENCE_CODES AT_ETHNICITY_DESC, (SELECT iep_level, description, agy_loc_id, offender_book_id, iep_date FROM (SELECT iep.iep_level, rc.description, iep.agy_loc_id, iep.offender_book_id, iep.iep_date, ROW_NUMBER() OVER (PARTITION BY iep.offender_book_id ORDER BY iep.iep_time DESC, iep.iep_level_seq DESC) AS row_seq_filter FROM oms_owner.offender_iep_levels iep LEFT OUTER JOIN oms_owner.reference_codes rc ON iep.iep_level = rc.code AND rc.domain = 'IEP_LEVEL') WHERE row_seq_filter = 1) DT_IEP_BAND_LAST, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, USER_ACCESSIBLE_CASELOADS, OMS_OWNER.LIVING_UNITS AT_LIVING_UNITS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_ETHNICITY_DESC.DOMAIN (+) = 'ETHNICITY') AND (AT_ETHNICITY_DESC.CODE (+) = AT_OFFENDER.RACE_CODE) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (DT_IEP_BAND_LAST.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('SQZ39G')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID = AT_LIVING_UNITS.LIVING_UNIT_ID) AND (NOT AT_LIVING_UNITS.HOUSING_UNIT_TYPE IN ('OU', 'REC')) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (WING_CASELOAD_SECURITY.USERNAME = UPPER('SQZ39G')) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('SQZ39G')) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = 'BFI') AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_LIVING_UNITS.AGY_LOC_ID || '-' || AT_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, DESCRIPTION, AGE_IN_YEARS, IEP_LEVEL, ETHNIC_CODE, AGY_LOC_ID, ETHNIC_DESC_ FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP3.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP3.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Given Name 1",
+            "legacyId": "DP3.DO1066",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Unit Description 4",
+            "legacyId": "DP3.DO42a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "AGE_IN_YEARS",
+            "type": "double",
+            "display": "Age in Years",
+            "legacyId": "DP3.DOa15",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "IEP Level",
+            "legacyId": "DP3.DO521",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP3.DO88",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP3.DO43b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "ETHNIC_DESC_",
+            "type": "string",
+            "display": "Ethnic Desc.",
+            "legacyId": "DP3.DOc28",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "166972.RS",
+      "name": "By Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP3",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO43b"
+          }
+        ]
+      }
+    },
+    {
+      "id": "170207.RS",
+      "name": "By Cell Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP3",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO43b"
+          }
+        ]
+      }
+    },
+    {
+      "id": "170256.RS",
+      "name": "By Ethnic Code",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP3",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO43b"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

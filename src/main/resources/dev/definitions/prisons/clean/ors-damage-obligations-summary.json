@@ -1,0 +1,175 @@
+{
+  "id": "olJf5WgABYcGCOcAKACDfRXJhCs",
+  "name": "ORS Damage Obligations Summary",
+  "description": "This report prompts for a date range and returns the total number of obligations created, amount requested, amount paid and amount outstanding for each caseload.<br/>FIN0065 - v00.00.01 Last Modified: 22/10/13",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "FIN0065 v00.00.01"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376816/DP1",
+      "name": "Damages Financial Summary",
+      "description": "Finance",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_DAMOBL_CASELOAD.DESCRIPTION AS DESCRIPTION, COUNT(AT_OFF_DAMAGE_OBL.OFFENDER_DMG_OBLIGATION_ID) AS OFFENDER_DMG_OBLIGATION_ID_C32, SUM(AT_OFF_DAMAGE_OBL.AMOUNT_TO_PAY) AS AMOUNT_TO_PAY_WITH_SUM, SUM(AT_OFF_DAMAGE_OBL.PAID_AMOUNT) AS PAID_AMOUNT_WITH_SUM FROM OMS_OWNER.OFFENDER_DAMAGE_OBLIGATIONS AT_OFF_DAMAGE_OBL, CASELOADS AT_DAMOBL_CASELOAD WHERE (AT_DAMOBL_CASELOAD.CASELOAD_ID = AT_OFF_DAMAGE_OBL.AGY_LOC_ID) AND (AT_DAMOBL_CASELOAD.CASELOAD_TYPE = 'INST') AND (AT_DAMOBL_CASELOAD.ACTIVE_FLAG = 'Y') AND (AT_DAMOBL_CASELOAD.TRUST_ACCOUNTS_FLAG = 'Y') AND (AT_OFF_DAMAGE_OBL.START_DATE >= (SELECT START_DATE FROM prompt_ /* = #prompt('Enter Start Date','D',,Mono,Free,Not_Persistent,,User:0) */) AND AT_OFF_DAMAGE_OBL.START_DATE <= (SELECT END_DATE FROM prompt_ /* = #prompt('Enter End Date','D',,Mono,Free,Not_Persistent,,User:1) */)) GROUP BY AT_DAMOBL_CASELOAD.DESCRIPTION), dataset_ AS (SELECT DESCRIPTION, OFFENDER_DMG_OBLIGATION_ID_C32, AMOUNT_TO_PAY_WITH_SUM, PAID_AMOUNT_WITH_SUM FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Start Date",
+          "description": "@prompt('Enter Start Date','D',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter End Date",
+          "description": "@prompt('Enter End Date','D',,Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Caseload Desc",
+            "legacyId": "DP1.DO47e0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_DMG_OBLIGATION_ID_C32",
+            "type": "double",
+            "display": "Offender Dmg Obligation Id Count",
+            "legacyId": "DP1.DO47e1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "AMOUNT_TO_PAY_WITH_SUM",
+            "type": "double",
+            "display": "Amount To Pay with SUM",
+            "legacyId": "DP1.DO47da",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "PAID_AMOUNT_WITH_SUM",
+            "type": "double",
+            "display": "Paid Amount with SUM",
+            "legacyId": "DP1.DO47db",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376816/DP2",
+      "name": "All Caseloads",
+      "description": "Finance",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_DAMOBL_CASELOAD.DESCRIPTION AS DESCRIPTION FROM CASELOADS AT_DAMOBL_CASELOAD WHERE (AT_DAMOBL_CASELOAD.CASELOAD_TYPE = 'INST') AND (AT_DAMOBL_CASELOAD.ACTIVE_FLAG = 'Y') AND (AT_DAMOBL_CASELOAD.TRUST_ACCOUNTS_FLAG = 'Y')), dataset_ AS (SELECT DESCRIPTION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Caseload Desc",
+            "legacyId": "DP2.DO47e0",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "170935.RS",
+      "name": "Damage Obligations Summary",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376816/DP1",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE CASELOAD_DESC NOT(IN ('Central Administration Caseload for HMPS','GHOST HOLDING ESTABLISHMENT','REF- INSTITUTIONAL ADMIN CASELOAD','TRANSFER')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_DMG_OBLIGATION_ID_C32",
+            "display": "Offender Dmg Obligation Id Count",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP1.DO47e1"
+          },
+          {
+            "name": "$ref:AMOUNT_TO_PAY_WITH_SUM",
+            "display": "Amount To Pay with SUM",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP1.DO47da"
+          },
+          {
+            "name": "$ref:PAID_AMOUNT_WITH_SUM",
+            "display": "Paid Amount with SUM",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP1.DO47db"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}
