@@ -1,0 +1,593 @@
+{
+  "id": "okm6KJ4ADIRYKQAAPP6EcEP62Og",
+  "name": "ORS Contingency_Visits_List",
+  "description": "This report provides a list of prisoners to be visited today and tomorrow along with details of all their visitors for use by staff in the Visit Hall and a list of prisoners to be unlocked for their visits.<br/><br/><br/><br/>CON0004 - v00.01.09 Last Modified:19/08/13",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "CON0004 - v00.01.09 LSRIT44"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376551/DP10",
+      "name": "Prisoners to be Visited",
+      "description": "Visits",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) = 0 THEN NULL ELSE SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) + 1, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) = 0 THEN LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION) ELSE INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) - INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) END - 1) END AS UNIT_CODE_1, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, DT_IEP_BAND_LAST.IEP_LEVEL AS IEP_LEVEL, CASE WHEN MAX(CASE WHEN AT_OFFENDER_ALERTS.ALERT_CODE = 'HA' THEN CASE WHEN AT_OFFENDER_ALERTS.ALERT_TYPE = 'H' THEN CASE WHEN AT_OFFENDER_ALERTS.ALERT_STATUS = 'ACTIVE' THEN 2 ELSE 1 END ELSE 1 END ELSE 1 END) OVER (PARTITION BY (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID)) = 2 THEN 'Y' ELSE 'N' END AS ACCT, CASE WHEN AT_OFFENDER_VISITS.VISIT_TYPE = 'OFFI' THEN 'Official' ELSE 'Social/Family' END AS VISIT_TYPE, SUBSTR(TO_CHAR(AT_AGENCY_VISIT_TIMES.START_TIME), 11, 6) AS VISIT_SLOT_START_TIME, AT_OFFENDER_VISITS.START_TIME AS START_TIME, AT_OFFENDER_VISITS.VISIT_DATE AS VISIT_DATE, SUBSTR(AT_OFFENDER_VISIT_ORDERS.VISIT_ORDER_NUMBER || '', 9, 5) AS VISIT_ORDER_NUMBER_LAST_5_DI32, DT_VISIT_RSTR_CON0004.DESCRIPTION AS DESCRIPTION, TO_CHAR(AT_AGENCY_VISIT_TIMES.START_TIME, 'AM') AS AM_OR_PM, TO_CHAR(AT_OFFENDER_VISITS.START_TIME, 'HH24:mi') AS VISIT_START_TIME_, TO_DATE(TO_CHAR(CURRENT_TIMESTAMP, 'DD/MM/YYYY'), 'DD/MM/YYYY') AS CONTINGENCY_TODAY_, TO_DATE(TO_CHAR(CURRENT_TIMESTAMP + 3, 'DD/MM/YYYY'), 'DD/MM/YYYY') AS CONTINGENCY_NEXT_3_DAYS, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID AS AGY_LOC_ID, AT_VISIT_LOCATION.DESCRIPTION AS VISIT_LOCATION, AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID AS OFFENDER_BOOK_ID, AT_OFFENDER_VISITS.COMMENT_TEXT AS COMMENT_TEXT FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, (SELECT iep_level, description, agy_loc_id, offender_book_id, iep_date FROM (SELECT iep.iep_level, rc.description, iep.agy_loc_id, iep.offender_book_id, iep.iep_date, ROW_NUMBER() OVER (PARTITION BY iep.offender_book_id ORDER BY iep.iep_time DESC, iep.iep_level_seq DESC) AS row_seq_filter FROM oms_owner.offender_iep_levels iep LEFT OUTER JOIN oms_owner.reference_codes rc ON iep.iep_level = rc.code AND rc.domain = 'IEP_LEVEL') WHERE row_seq_filter = 1) DT_IEP_BAND_LAST, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_VISIT_LOCATION, OMS_OWNER.OFFENDER_ALERTS AT_OFFENDER_ALERTS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, OMS_OWNER.OFFENDER_VISITS AT_OFFENDER_VISITS, OMS_OWNER.AGENCY_VISIT_TIMES AT_AGENCY_VISIT_TIMES, OFFENDER_VISIT_ORDERS AT_OFFENDER_VISIT_ORDERS, (SELECT off_rest.offender_book_id, ref_code.description FROM oms_owner.offender_restrictions off_rest, oms_owner.reference_codes ref_code WHERE off_rest.restriction_type = ref_code.code AND ref_code.domain = 'VST_RST_TYPE' AND (off_rest.EXPIRY_DATE IS NULL OR off_rest.EXPIRY_DATE >= TRUNC(CURRENT_TIMESTAMP))) DT_VISIT_RSTR_CON0004, USER_ACCESSIBLE_CASELOADS, OMS_OWNER.AGENCY_VISIT_SLOTS AT_AGENCY_VISIT_SLOTS WHERE (AT_AGENCY_VISIT_SLOTS.AGENCY_VISIT_SLOT_ID = AT_OFFENDER_VISITS.AGENCY_VISIT_SLOT_ID AND AT_AGENCY_VISIT_SLOTS.AGY_LOC_ID = AT_OFFENDER_VISITS.AGY_LOC_ID) AND (AT_AGENCY_VISIT_TIMES.AGY_LOC_ID = AT_AGENCY_VISIT_SLOTS.AGY_LOC_ID AND AT_AGENCY_VISIT_TIMES.WEEK_DAY = AT_AGENCY_VISIT_SLOTS.WEEK_DAY AND AT_AGENCY_VISIT_TIMES.TIME_SLOT_SEQ = AT_AGENCY_VISIT_SLOTS.TIME_SLOT_SEQ) AND (AT_OFFENDER_VISIT_ORDERS.OFFENDER_VISIT_ORDER_ID (+) = AT_OFFENDER_VISITS.OFFENDER_VISIT_ORDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_VISIT_RSTR_CON0004.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_VISITS.AGY_LOC_ID = AT_VISIT_LOCATION.AGY_LOC_ID AND AT_OFFENDER_VISITS.VISIT_INTERNAL_LOCATION_ID = AT_VISIT_LOCATION.INTERNAL_LOCATION_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_ALERTS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (DT_IEP_BAND_LAST.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_VISITS.OFFENDER_BOOK_ID) AND (AT_OFFENDER_VISITS.VISIT_INTERNAL_LOCATION_ID = AT_VISIT_LOCATION.INTERNAL_LOCATION_ID) AND (AT_OFFENDER_VISITS.VISIT_STATUS = 'SCH') AND (WING_CASELOAD_SECURITY.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (WING_CASELOAD_SECURITY.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = SUBSTR((SELECT username FROM context_ /* = #Variable('BOUSER') */), 1, 3)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_VISITS.VISIT_STATUS <> 'CANC') AND AT_OFFENDER_VISITS.VISIT_DATE BETWEEN TO_DATE(TO_CHAR(CURRENT_TIMESTAMP, 'DD/MM/YYYY'), 'DD/MM/YYYY') AND TO_DATE(TO_CHAR(CURRENT_TIMESTAMP + 3, 'DD/MM/YYYY'), 'DD/MM/YYYY') AND NOT CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) = 0 THEN NULL ELSE SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) + 1, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) = 0 THEN LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION) ELSE INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) - INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) END - 1) END IS NULL AND (WING_CASELOAD_SECURITY.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, UNIT_CODE_1, UNIT_DESCRIPTION_4_SHORT, LAST_NAME, FIRST_NAME, IEP_LEVEL, ACCT, VISIT_TYPE, VISIT_SLOT_START_TIME, START_TIME, VISIT_DATE, VISIT_ORDER_NUMBER_LAST_5_DI32, DESCRIPTION, AM_OR_PM, VISIT_START_TIME_, CONTINGENCY_TODAY_, CONTINGENCY_NEXT_3_DAYS, AGY_LOC_ID, VISIT_LOCATION, OFFENDER_BOOK_ID, COMMENT_TEXT FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP10.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "UNIT_CODE_1",
+            "type": "string",
+            "display": "Unit Code 1",
+            "legacyId": "DP10.DO10472",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP10.DO10427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP10.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP10.DO10046",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "IEP Level",
+            "legacyId": "DP10.DO10715",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ACCT",
+            "type": "string",
+            "display": "ACCT",
+            "legacyId": "DP10.DO10585",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "VISIT_TYPE",
+            "type": "string",
+            "display": "Visit Type",
+            "legacyId": "DP10.DO6c8",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "VISIT_SLOT_START_TIME",
+            "type": "string",
+            "display": "Visit Slot Start Time",
+            "legacyId": "DP10.DO6ce",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "START_TIME",
+            "type": "date",
+            "display": "Visit Start Time",
+            "legacyId": "DP10.DO6cc",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "VISIT_DATE",
+            "type": "date",
+            "display": "Visit Date",
+            "legacyId": "DP10.DO6cb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "VISIT_ORDER_NUMBER_LAST_5_DI32",
+            "type": "string",
+            "display": "Visit Order Number  - Last 5 Digits",
+            "legacyId": "DP10.DO739",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "C4 Visit Restriction Description",
+            "legacyId": "DP10.DO7da",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "AM_OR_PM",
+            "type": "string",
+            "display": "AM or PM",
+            "legacyId": "DP10.DO7b4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "VISIT_START_TIME_",
+            "type": "string",
+            "display": "Visit Start Time (Time Only)",
+            "legacyId": "DP10.DO7b5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "CONTINGENCY_TODAY_",
+            "type": "date",
+            "display": "Contingency Today (Date Only)",
+            "legacyId": "DP10.DO78d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "CONTINGENCY_NEXT_3_DAYS",
+            "type": "date",
+            "display": "Contingency Next 3 Days",
+            "legacyId": "DP10.DO7fb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP10.DO1043b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 18,
+            "name": "VISIT_LOCATION",
+            "type": "string",
+            "display": "Visit Location",
+            "legacyId": "DP10.DO7fc",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 19,
+            "name": "OFFENDER_BOOK_ID",
+            "type": "double",
+            "display": "Offender Book Id",
+            "legacyId": "DP10.DO10898",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 20,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "Visit Comment Text",
+            "legacyId": "DP10.DO80c",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376551/DP11",
+      "name": "Visitors",
+      "description": "Visits",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, DT_ALL_VISITORS.OFFENDER_VISIT_VISITOR_ID AS OFFENDER_VISIT_VISITOR_ID, CASE WHEN TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_PERSONS.BIRTHDATE) / 12) < 18 THEN 'Y' WHEN TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_PERSONS.BIRTHDATE) / 12) >= 18 THEN 'N' ELSE '-' END AS IS_VISITOR_PERSON_UNDER_18_, DT_ALL_VISITORS.FIRST_NAME AS VISITOR_FIRST_NAME, DT_ALL_VISITORS.LAST_NAME AS VISITOR_LAST_NAME, CASE WHEN DT_VO_GROUP_LEADERS.GROUP_LEADER_FLAG = 'Y' THEN 'Yes' WHEN DT_VO_GROUP_LEADERS.GROUP_LEADER_FLAG = 'N' THEN 'No' ELSE 'No' END AS GROUP_LEADER_FLAG, DT_ALL_VISITORS.OFFENDER_ID_DISPLAY AS NOMS_NUMBER_OF_VISITING_PRIS32, DT_ALL_VSTR_RSTS_CON0004.DESCRIPTION AS DESCRIPTION, TO_CHAR(AT_AGENCY_VISIT_TIMES.START_TIME, 'AM') AS AM_OR_PM, CASE WHEN AT_OFFENDER_VISITS.VISIT_TYPE = 'OFFI' THEN 'Official' ELSE 'Social/Family' END AS VISIT_TYPE, TO_DATE(TO_CHAR(CURRENT_TIMESTAMP, 'DD/MM/YYYY'), 'DD/MM/YYYY') AS CONTINGENCY_TODAY_, TO_DATE(TO_CHAR(CURRENT_TIMESTAMP + 3, 'DD/MM/YYYY'), 'DD/MM/YYYY') AS CONTINGENCY_NEXT_3_DAYS, AT_OFFENDER_VISITS.VISIT_DATE AS VISIT_DATE, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID AS AGY_LOC_ID, DT_ALL_VISITORS.PERSONID AS PERSONID, TO_CHAR(AT_OFFENDER_VISITS.START_TIME, 'HH24:mi') AS VISIT_START_TIME_, AT_PERSONS.BIRTHDATE AS BIRTHDATE, DT_CON0004_VISADD.FULL_ADDRESS AS FULL_ADDRESS, AT_VISIT_LOCATION.DESCRIPTION AS VISIT_LOCATION, DT_ALL_VSTR_RSTS_CON0004.VR_OFFENDER_BOOK_ID AS VR_OFFENDER_BOOK_ID, DT_ALL_VSTR_RSTS_CON0004.VISITOR_RESTRICTION_ID AS VISITOR_RESTRICTION_ID, DT_ALL_VSTR_RSTS_CON0004.TYPE AS TYPE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, (SELECT offender_visit_orders.offender_visit_order_id, offender_vo_visitors.person_id, offender_vo_visitors.group_leader_flag, offender_visits.offender_visit_id, offender_visits.offender_book_id FROM offender_visit_orders, offender_vo_visitors, offender_visits WHERE offender_visit_orders.offender_visit_order_id = offender_vo_visitors.offender_visit_order_id AND offender_vo_visitors.offender_visit_order_id = offender_visits.offender_visit_order_id AND NOT offender_vo_visitors.person_id IS NULL AND NOT offender_vo_visitors.group_leader_flag IS NULL) DT_VO_GROUP_LEADERS, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_VISIT_LOCATION, (SELECT off_vis.offender_visit_id AS VisitID, off_vis_vis.offender_visit_visitor_id, TO_CHAR(off_vis_vis.person_id) AS PersonID, NULL AS Offender_ID_Display, 'PERSON' AS vistor_type, per.last_name, per.first_name, per.middle_name, RC.description, off_vis.offender_visit_id FROM offender_visit_visitors off_vis_vis, offender_visits off_vis, reference_codes RC, persons per, offender_contact_persons ocp WHERE per.person_id = off_vis_vis.person_id AND NOT off_vis_vis.person_id IS NULL AND off_vis_vis.person_id = ocp.person_id AND off_vis.offender_book_id = ocp.offender_book_id AND off_vis.offender_visit_id = off_vis_vis.offender_visit_id AND ocp.relationship_type = RC.code AND RC.domain = 'RELATIONSHIP' UNION ALL SELECT off_vis.offender_visit_id, off_vis_vis.offender_visit_visitor_id, NULL, vns.offender_id_display AS Offender_ID_Display, 'OFFENDER' AS vistor_type, vns.last_name, vns.first_name, vns.middle_name, RC.description, off_vis.offender_visit_id FROM offender_visit_visitors off_vis_vis, offender_visits off_vis, reference_codes RC, v_name_search2 vns, offender_contact_persons ocp, offender_bookings ob WHERE off_vis.offender_visit_id = off_vis_vis.offender_visit_id AND NOT off_vis_vis.offender_book_id IS NULL AND ob.offender_book_id = off_vis_vis.offender_book_id AND ocp.contact_root_offender_id = ob.root_offender_id AND ocp.relationship_type = RC.code AND ocp.offender_book_id = off_vis.offender_book_id AND vns.root_offender_id = ocp.contact_root_offender_id AND RC.domain = 'RELATIONSHIP' AND ob.ACTIVE_FLAG = 'Y') DT_ALL_VISITORS, OMS_OWNER.PERSONS AT_PERSONS, (SELECT vt_rst.person_id, 0 AS VR_Offender_Book_Id, vt_rst.visitor_restriction_id, vt_rst.effective_date, vt_rst.expiry_date, ref_code.code, ref_code.description, 'Estate' AS Type FROM oms_owner.visitor_restrictions vt_rst, oms_owner.reference_codes ref_code WHERE vt_rst.visit_restriction_type = ref_code.code AND ref_code.domain = 'VST_RST_TYPE' AND (vt_rst.effective_date <= TRUNC(CURRENT_TIMESTAMP)) AND (vt_rst.expiry_date IS NULL OR vt_rst.expiry_date >= TRUNC(CURRENT_TIMESTAMP)) UNION ALL SELECT OCP.person_id, OCP.offender_book_id, offpr.offender_person_restrict_id AS visitor_restrict_id, offpr.restriction_effective_date AS effective_date, offpr.restriction_expiry_date AS expiry_date, ref_code.code, ref_code.description, 'Restriction' AS Type FROM oms_owner.offender_person_restricts offpr, oms_owner.reference_codes ref_code, OMS_OWNER.OFFENDER_CONTACT_PERSONS OCP WHERE OCP.OFFENDER_CONTACT_PERSON_ID = offpr.offender_contact_person_id AND offpr.restriction_type = ref_code.code AND ref_code.domain = 'VST_RST_TYPE' AND (offpr.restriction_effective_date <= TRUNC(CURRENT_TIMESTAMP)) AND (offpr.restriction_expiry_date IS NULL OR offpr.restriction_expiry_date >= TRUNC(CURRENT_TIMESTAMP))) DT_ALL_VSTR_RSTS_CON0004, OMS_OWNER.AGENCY_VISIT_TIMES AT_AGENCY_VISIT_TIMES, OMS_OWNER.OFFENDER_VISITS AT_OFFENDER_VISITS, USER_ACCESSIBLE_CASELOADS, (SELECT ADDRESS_TYPE AS ADDRESS_TYPE, CASE WHEN NO_FIXED_ADDRESS_FLAG = 'Y' THEN 'No fixed address' ELSE SUBSTR(CASE WHEN FLAT IS NULL THEN NULL ELSE FLAT || '  ' END || CASE WHEN PREMISE IS NULL THEN NULL ELSE PREMISE || '  ' END || CASE WHEN STREET IS NULL THEN NULL ELSE STREET || '  ' END || CASE WHEN LOCALITY IS NULL THEN NULL ELSE LOCALITY || '  ' END || CASE WHEN city_name IS NULL THEN OMS_MISCELLANEOUS.GETDESCCODE('CITY', CITY_CODE) ELSE city_name END || '  ' || CASE WHEN COUNTY_CODE IS NULL THEN NULL ELSE OMS_MISCELLANEOUS.GETDESCCODE('COUNTY', COUNTY_CODE) || '  ' END, 1, 200) || CASE WHEN POSTAL_CODE IS NULL THEN NULL ELSE POSTAL_CODE || '  ' END || SUBSTR(CASE WHEN COUNTRY_CODE IS NULL THEN NULL ELSE OMS_MISCELLANEOUS.GETDESCCODE('COUNTRY', COUNTRY_CODE) END, 1, 40) END AS FULL_ADDRESS, OWNER_ID, start_date AS AddressStartDate, TRUNC(ADD_MONTHS(LAST_DAY(end_date), -1) - 1) AS AddressEndDate FROM oms_owner.addresses WHERE OWNER_CLASS = 'PER' AND start_date <= TO_DATE(TO_CHAR(CURRENT_TIMESTAMP + 4, 'DD/MM/YYYY'), 'DD/MM/YYYY') AND end_date IS NULL OR TO_DATE(TO_CHAR(CURRENT_TIMESTAMP + 4, 'DD/MM/YYYY'), 'DD/MM/YYYY') <= TRUNC(ADD_MONTHS(LAST_DAY(end_date), -1) - 1)) DT_CON0004_VISADD, OMS_OWNER.AGENCY_VISIT_SLOTS AT_AGENCY_VISIT_SLOTS WHERE (AT_AGENCY_VISIT_SLOTS.AGENCY_VISIT_SLOT_ID = AT_OFFENDER_VISITS.AGENCY_VISIT_SLOT_ID AND AT_AGENCY_VISIT_SLOTS.AGY_LOC_ID = AT_OFFENDER_VISITS.AGY_LOC_ID) AND (AT_AGENCY_VISIT_TIMES.AGY_LOC_ID = AT_AGENCY_VISIT_SLOTS.AGY_LOC_ID AND AT_AGENCY_VISIT_TIMES.WEEK_DAY = AT_AGENCY_VISIT_SLOTS.WEEK_DAY AND AT_AGENCY_VISIT_TIMES.TIME_SLOT_SEQ = AT_AGENCY_VISIT_SLOTS.TIME_SLOT_SEQ) AND (DT_ALL_VISITORS.OFFENDER_VISIT_ID (+) = AT_OFFENDER_VISITS.OFFENDER_VISIT_ID) AND (DT_ALL_VISITORS.PERSONID = DT_VO_GROUP_LEADERS.PERSON_ID (+)) AND (DT_ALL_VISITORS.OFFENDER_VISIT_ID = DT_VO_GROUP_LEADERS.OFFENDER_VISIT_ID (+)) AND (AT_PERSONS.PERSON_ID (+) = DT_ALL_VISITORS.PERSONID) AND (DT_ALL_VSTR_RSTS_CON0004.PERSON_ID (+) = AT_PERSONS.PERSON_ID) AND (AT_OFFENDER_VISITS.AGY_LOC_ID = AT_VISIT_LOCATION.AGY_LOC_ID AND AT_OFFENDER_VISITS.VISIT_INTERNAL_LOCATION_ID = AT_VISIT_LOCATION.INTERNAL_LOCATION_ID) AND (DT_CON0004_VISADD.OWNER_ID (+) = AT_PERSONS.PERSON_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_VISITS.OFFENDER_BOOK_ID) AND (AT_OFFENDER_VISITS.VISIT_INTERNAL_LOCATION_ID = AT_VISIT_LOCATION.INTERNAL_LOCATION_ID) AND (AT_OFFENDER_VISITS.VISIT_STATUS = 'SCH') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = SUBSTR('DPRWS', 1, 3)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_VISITS.VISIT_DATE BETWEEN TO_DATE(TO_CHAR(CURRENT_TIMESTAMP, 'DD/MM/YYYY'), 'DD/MM/YYYY') AND TO_DATE(TO_CHAR(CURRENT_TIMESTAMP + 3, 'DD/MM/YYYY'), 'DD/MM/YYYY') AND (AT_OFFENDER_VISITS.VISIT_STATUS <> 'CANC') AND NOT DT_ALL_VISITORS.OFFENDER_VISIT_VISITOR_ID IS NULL AND NOT DT_ALL_VISITORS.PERSONID IS NULL) UNION SELECT DISTINCT AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, DT_ALL_VISITORS.OFFENDER_VISIT_VISITOR_ID AS OFFENDER_VISIT_VISITOR_ID, CASE WHEN TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_VISITING_OFFENDERS.BIRTH_DATE) / 12) < 18 THEN 'Y' WHEN TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_VISITING_OFFENDERS.BIRTH_DATE) / 12) >= 18 THEN 'N' ELSE '-' END AS IS_VISITOR_PERSON_UNDER_18_, AT_VISITING_OFFENDERS.FIRST_NAME AS VISITOR_FIRST_NAME, AT_VISITING_OFFENDERS.LAST_NAME AS VISITOR_LAST_NAME, CASE WHEN DT_VO_GROUP_LEADERS.GROUP_LEADER_FLAG = 'Y' THEN 'Yes' WHEN DT_VO_GROUP_LEADERS.GROUP_LEADER_FLAG = 'N' THEN 'No' ELSE 'No' END AS GROUP_LEADER_FLAG, DT_ALL_VISITORS.OFFENDER_ID_DISPLAY AS NOMS_NUMBER_OF_VISITING_PRIS32, DT_PRISONER_RSTS_CON0004.DESCRIPTION AS DESCRIPTION, TO_CHAR(AT_AGENCY_VISIT_TIMES.START_TIME, 'AM') AS AM_OR_PM, CASE WHEN AT_OFFENDER_VISITS.VISIT_TYPE = 'OFFI' THEN 'Official' ELSE 'Social/Family' END AS VISIT_TYPE, TO_DATE(TO_CHAR(CURRENT_TIMESTAMP, 'DD/MM/YYYY'), 'DD/MM/YYYY') AS CONTINGENCY_TODAY_, TO_DATE(TO_CHAR(CURRENT_TIMESTAMP + 3, 'DD/MM/YYYY'), 'DD/MM/YYYY') AS CONTINGENCY_NEXT_3_DAYS, AT_OFFENDER_VISITS.VISIT_DATE AS VISIT_DATE, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID AS AGY_LOC_ID, DT_ALL_VISITORS.PERSONID AS PERSONID, TO_CHAR(AT_OFFENDER_VISITS.START_TIME, 'HH24:mi') AS VISIT_START_TIME_, AT_VISITING_OFFENDERS.BIRTH_DATE AS BIRTHDATE, AT_OFFENDERS_LOCATIONS2.DESCRIPTION AS FULL_ADDRESS, AT_VISIT_LOCATION.DESCRIPTION AS VISIT_LOCATION, DT_PRISONER_RSTS_CON0004.OFFENDER_BOOK_ID AS VR_OFFENDER_BOOK_ID, DT_PRISONER_RSTS_CON0004.OFFENDER_RESTRICTION_ID AS VISITOR_RESTRICTION_ID, '' AS TYPE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, (SELECT offender_visit_orders.offender_visit_order_id, offender_vo_visitors.person_id, offender_vo_visitors.group_leader_flag, offender_visits.offender_visit_id, offender_visits.offender_book_id FROM offender_visit_orders, offender_vo_visitors, offender_visits WHERE offender_visit_orders.offender_visit_order_id = offender_vo_visitors.offender_visit_order_id AND offender_vo_visitors.offender_visit_order_id = offender_visits.offender_visit_order_id AND NOT offender_vo_visitors.person_id IS NULL AND NOT offender_vo_visitors.group_leader_flag IS NULL) DT_VO_GROUP_LEADERS, OMS_OWNER.OFFENDER_BOOKINGS AT_VISTING_OFFENDERS_BOOKINGS, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS2, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDERS AT_VISITING_OFFENDERS, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_VISIT_LOCATION, (SELECT off_vis.offender_visit_id AS VisitID, off_vis_vis.offender_visit_visitor_id, TO_CHAR(off_vis_vis.person_id) AS PersonID, NULL AS Offender_ID_Display, 'PERSON' AS vistor_type, per.last_name, per.first_name, per.middle_name, RC.description, off_vis.offender_visit_id FROM offender_visit_visitors off_vis_vis, offender_visits off_vis, reference_codes RC, persons per, offender_contact_persons ocp WHERE per.person_id = off_vis_vis.person_id AND NOT off_vis_vis.person_id IS NULL AND off_vis_vis.person_id = ocp.person_id AND off_vis.offender_book_id = ocp.offender_book_id AND off_vis.offender_visit_id = off_vis_vis.offender_visit_id AND ocp.relationship_type = RC.code AND RC.domain = 'RELATIONSHIP' UNION ALL SELECT off_vis.offender_visit_id, off_vis_vis.offender_visit_visitor_id, NULL, vns.offender_id_display AS Offender_ID_Display, 'OFFENDER' AS vistor_type, vns.last_name, vns.first_name, vns.middle_name, RC.description, off_vis.offender_visit_id FROM offender_visit_visitors off_vis_vis, offender_visits off_vis, reference_codes RC, v_name_search2 vns, offender_contact_persons ocp, offender_bookings ob WHERE off_vis.offender_visit_id = off_vis_vis.offender_visit_id AND NOT off_vis_vis.offender_book_id IS NULL AND ob.offender_book_id = off_vis_vis.offender_book_id AND ocp.contact_root_offender_id = ob.root_offender_id AND ocp.relationship_type = RC.code AND ocp.offender_book_id = off_vis.offender_book_id AND vns.root_offender_id = ocp.contact_root_offender_id AND RC.domain = 'RELATIONSHIP' AND ob.ACTIVE_FLAG = 'Y') DT_ALL_VISITORS, (SELECT DISTINCT off_rest.offender_book_id, off_rest.offender_restriction_id, off_rest.restriction_type, off_rest.effective_date, off_rest.expiry_date, ref_code.code, ref_code.description FROM oms_owner.offender_restrictions off_rest, oms_owner.reference_codes ref_code WHERE off_rest.restriction_type = ref_code.code AND ref_code.domain = 'VST_RST_TYPE' AND (off_rest.effective_date <= TRUNC(CURRENT_TIMESTAMP)) AND (off_rest.expiry_date IS NULL OR off_rest.expiry_date >= TRUNC(CURRENT_TIMESTAMP))) DT_PRISONER_RSTS_CON0004, OMS_OWNER.AGENCY_VISIT_TIMES AT_AGENCY_VISIT_TIMES, OMS_OWNER.OFFENDER_VISITS AT_OFFENDER_VISITS, USER_ACCESSIBLE_CASELOADS, OMS_OWNER.AGENCY_VISIT_SLOTS AT_AGENCY_VISIT_SLOTS WHERE (AT_AGENCY_VISIT_SLOTS.AGENCY_VISIT_SLOT_ID = AT_OFFENDER_VISITS.AGENCY_VISIT_SLOT_ID AND AT_AGENCY_VISIT_SLOTS.AGY_LOC_ID = AT_OFFENDER_VISITS.AGY_LOC_ID) AND (AT_AGENCY_VISIT_TIMES.AGY_LOC_ID = AT_AGENCY_VISIT_SLOTS.AGY_LOC_ID AND AT_AGENCY_VISIT_TIMES.WEEK_DAY = AT_AGENCY_VISIT_SLOTS.WEEK_DAY AND AT_AGENCY_VISIT_TIMES.TIME_SLOT_SEQ = AT_AGENCY_VISIT_SLOTS.TIME_SLOT_SEQ) AND (DT_ALL_VISITORS.OFFENDER_VISIT_ID (+) = AT_OFFENDER_VISITS.OFFENDER_VISIT_ID) AND (DT_ALL_VISITORS.PERSONID = DT_VO_GROUP_LEADERS.PERSON_ID (+)) AND (AT_VISITING_OFFENDERS.OFFENDER_ID_DISPLAY (+) = DT_ALL_VISITORS.OFFENDER_ID_DISPLAY) AND (AT_VISTING_OFFENDERS_BOOKINGS.OFFENDER_ID (+) = AT_VISITING_OFFENDERS.OFFENDER_ID) AND (DT_ALL_VISITORS.OFFENDER_VISIT_ID = DT_VO_GROUP_LEADERS.OFFENDER_VISIT_ID (+)) AND (AT_VISTING_OFFENDERS_BOOKINGS.ACTIVE_FLAG = 'Y') AND (DT_PRISONER_RSTS_CON0004.OFFENDER_BOOK_ID (+) = AT_VISTING_OFFENDERS_BOOKINGS.OFFENDER_BOOK_ID) AND (AT_OFFENDERS_LOCATIONS2.AGY_LOC_ID = AT_VISTING_OFFENDERS_BOOKINGS.AGY_LOC_ID) AND (AT_OFFENDER_VISITS.AGY_LOC_ID = AT_VISIT_LOCATION.AGY_LOC_ID AND AT_OFFENDER_VISITS.VISIT_INTERNAL_LOCATION_ID = AT_VISIT_LOCATION.INTERNAL_LOCATION_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_VISITS.OFFENDER_BOOK_ID) AND (AT_OFFENDER_VISITS.VISIT_INTERNAL_LOCATION_ID = AT_VISIT_LOCATION.INTERNAL_LOCATION_ID) AND (AT_OFFENDER_VISITS.VISIT_STATUS = 'SCH') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = SUBSTR('DPRWS', 1, 3)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_VISITS.VISIT_DATE BETWEEN TO_DATE(TO_CHAR(CURRENT_TIMESTAMP, 'DD/MM/YYYY'), 'DD/MM/YYYY') AND TO_DATE(TO_CHAR(CURRENT_TIMESTAMP + 3, 'DD/MM/YYYY'), 'DD/MM/YYYY') AND (AT_OFFENDER_VISITS.VISIT_STATUS <> 'CANC') AND NOT DT_ALL_VISITORS.OFFENDER_VISIT_VISITOR_ID IS NULL)), dataset_ AS (SELECT LAST_NAME, FIRST_NAME, OFFENDER_ID_DISPLAY, OFFENDER_VISIT_VISITOR_ID, IS_VISITOR_PERSON_UNDER_18_, VISITOR_FIRST_NAME, VISITOR_LAST_NAME, GROUP_LEADER_FLAG, NOMS_NUMBER_OF_VISITING_PRIS32, DESCRIPTION, AM_OR_PM, VISIT_TYPE, CONTINGENCY_TODAY_, CONTINGENCY_NEXT_3_DAYS, VISIT_DATE, AGY_LOC_ID, PERSONID, VISIT_START_TIME_, BIRTHDATE, FULL_ADDRESS, VISIT_LOCATION, VR_OFFENDER_BOOK_ID, VISITOR_RESTRICTION_ID, TYPE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP11.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP11.DO10046",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP11.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "OFFENDER_VISIT_VISITOR_ID",
+            "type": "double",
+            "display": "Visit Visitor Id",
+            "legacyId": "DP11.DO778",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "IS_VISITOR_PERSON_UNDER_18_",
+            "type": "string",
+            "display": "Is Visitor Person Under 18?",
+            "legacyId": "DP11.DO6ff",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "VISITOR_FIRST_NAME",
+            "type": "string",
+            "display": "Visitor First Name",
+            "legacyId": "DP11.DO6da",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "VISITOR_LAST_NAME",
+            "type": "string",
+            "display": "Visitor Last Name",
+            "legacyId": "DP11.DO6d9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "GROUP_LEADER_FLAG",
+            "type": "string",
+            "display": "Group Leader Flag",
+            "legacyId": "DP11.DO6dc",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "NOMS_NUMBER_OF_VISITING_PRIS32",
+            "type": "string",
+            "display": "NOMS Number of Visiting Prisoner",
+            "legacyId": "DP11.DO755",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "C4 Visiting Person Restriction Description",
+            "legacyId": "DP11.DO7ce",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "AM_OR_PM",
+            "type": "string",
+            "display": "AM or PM",
+            "legacyId": "DP11.DO7b4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "VISIT_TYPE",
+            "type": "string",
+            "display": "Visit Type",
+            "legacyId": "DP11.DO6c8",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "CONTINGENCY_TODAY_",
+            "type": "date",
+            "display": "Contingency Today (Date Only)",
+            "legacyId": "DP11.DO78d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "CONTINGENCY_NEXT_3_DAYS",
+            "type": "date",
+            "display": "Contingency Next 3 Days",
+            "legacyId": "DP11.DO7fb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "VISIT_DATE",
+            "type": "date",
+            "display": "Visit Date",
+            "legacyId": "DP11.DO6cb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP11.DO1043b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "PERSONID",
+            "type": "string",
+            "display": "Person Id",
+            "legacyId": "DP11.DO78e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "VISIT_START_TIME_",
+            "type": "string",
+            "display": "Visit Start Time (Time Only)",
+            "legacyId": "DP11.DO7b5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 18,
+            "name": "BIRTHDATE",
+            "type": "date",
+            "display": "Visitor Person's Birth Date",
+            "legacyId": "DP11.DO6e0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 19,
+            "name": "FULL_ADDRESS",
+            "type": "string",
+            "display": "Full Address",
+            "legacyId": "DP11.DO800",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 20,
+            "name": "VISIT_LOCATION",
+            "type": "string",
+            "display": "Visit Location",
+            "legacyId": "DP11.DO7fc",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 21,
+            "name": "VR_OFFENDER_BOOK_ID",
+            "type": "double",
+            "display": "C4 Visitor Restrictions Offender Book Id",
+            "legacyId": "DP11.DO806",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 22,
+            "name": "VISITOR_RESTRICTION_ID",
+            "type": "double",
+            "display": "C4 Visitor Restriction Id",
+            "legacyId": "DP11.DO7ca",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 23,
+            "name": "TYPE",
+            "type": "string",
+            "display": "C4 Visiting Person Restriction Type",
+            "legacyId": "DP11.DO80a",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "172695.RS",
+      "name": "By Time and NOMS Number",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376551/DP10",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:VISIT_DATE",
+            "display": "Visit Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP10.DO6cb"
+          }
+        ]
+      }
+    },
+    {
+      "id": "160907.RS",
+      "name": "By Time and Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376551/DP10",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:VISIT_DATE",
+            "display": "Visit Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP10.DO6cb"
+          }
+        ]
+      }
+    },
+    {
+      "id": "152989.RS",
+      "name": "Unlock List By Wing",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376551/DP10",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:VISIT_DATE",
+            "display": "Visit Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP10.DO6cb"
+          }
+        ]
+      }
+    },
+    {
+      "id": "161464.RS",
+      "name": "Unlock List By Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376551/DP10",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:VISIT_DATE",
+            "display": "Visit Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP10.DO6cb"
+          }
+        ]
+      }
+    },
+    {
+      "id": "163398.RS",
+      "name": "By Internal Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376551/DP10",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:VISIT_DATE",
+            "display": "Visit Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP10.DO6cb"
+          }
+        ]
+      }
+    },
+    {
+      "id": "173717.RS",
+      "name": "Comments",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376551/DP10",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE VISIT_COMMENT_TEXT IS NOT NULL)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:VISIT_DATE",
+            "display": "Visit Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP10.DO6cb"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

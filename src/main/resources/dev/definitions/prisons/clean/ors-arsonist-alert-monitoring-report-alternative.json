@@ -1,0 +1,352 @@
+{
+  "id": "klhs1TIAAeMKcDQBTP8AISgXYiw",
+  "name": "ORS Arsonist Alert Monitoring Report Alternative",
+  "description": "PDD0076 - The report returns a list of Prisoners who have an active Arsonist Alert (XA) on their record - This is a simplified version of the report which contains less data as requested by some establishments.  The comments field for the Arsonist Alert is also displayed to assist in monitoring these cases.<br/>v00.00.01 Last Modified: 04/01/2017",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0076 Arson",
+      "Arsonist"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP3",
+      "name": "Prisoners",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_OFFENDER.BIRTH_DATE AS BIRTH_DATE, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_OFFENDER_ALERTS.ALERT_DATE AS ALERT_DATE, DT_OFFENDER_CSR_ASSESSMENT.APPROVED_RESULT AS APPROVED_RESULT, DT_OFFENDER_CSR_ASSESSMENT.CALC_SUP_LEVEL_TYPE AS CALC_SUP_LEVEL_TYPE, DT_OFFENDER_CSR_ASSESSMENT.OVERRIDED_SUP_LEVEL_TYPE AS OVERRIDED_SUP_LEVEL_TYPE, CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END AS CURRENT_RELEASE_DATE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDER_ALERTS AT_OFFENDER_ALERTS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, (SELECT offender_book_id, assessment_date, assessment_type, calc_sup_level_type, overrided_sup_level_type, approved_result, authority, next_review_date, assessment_seq, assess_status, score, coalesced_result, coalesced_result_description, row_seq_filter FROM (SELECT v.*, rc.description AS coalesced_result_description FROM (SELECT offender_book_id, assessment_date, assessment_type, calc_sup_level_type, overrided_sup_level_type, approved_result, authority, next_review_date, assessment_seq, assess_status, score, coalesced_result, CASE WHEN row_seq_filter_latest = 1 THEN 1 ELSE row_seq_filter_previous END AS row_seq_filter FROM (SELECT offender_book_id, assessment_date, assessment_type, calc_sup_level_type, overrided_sup_level_type, approved_result, authority, next_review_date, assessment_seq, assess_status, score, coalesced_result, CASE WHEN row_seq_filter_latest = 1 AND assess_status = 'A' THEN 1 ELSE 0 END AS row_seq_filter_latest, COUNT(CASE WHEN row_seq_filter_previous = 1 AND assess_status <> 'A' THEN 1 END) OVER (PARTITION BY offender_book_id) + row_seq_filter_previous AS row_seq_filter_previous FROM (SELECT oa.offender_book_id, oa.assessment_date, a.description AS assessment_type, oa.calc_sup_level_type, oa.overrided_sup_level_type, oa.review_sup_level_type AS approved_result, oa.review_committe_code AS authority, oa.next_review_date, oa.assessment_seq, oa.assess_status, oa.score, COALESCE(oa.review_sup_level_type, oa.overrided_sup_level_type, oa.calc_sup_level_type) AS coalesced_result, ROW_NUMBER() OVER (PARTITION BY oa.offender_book_id ORDER BY oa.assess_status, oa.assessment_date DESC, oa.assessment_seq DESC) AS row_seq_filter_latest, ROW_NUMBER() OVER (PARTITION BY oa.offender_book_id ORDER BY oa.assessment_date DESC, oa.assessment_seq DESC) AS row_seq_filter_previous FROM offender_assessments oa INNER JOIN assessments a ON a.assessment_id = oa.assessment_type_id AND a.assessment_class = 'TYPE' AND a.cell_sharing_alert_flag = 'Y'))) v LEFT OUTER JOIN reference_codes rc ON rc.code = v.coalesced_result AND rc.domain = 'SUP_LVL_TYPE')) DT_OFFENDER_CSR_ASSESSMENT, OMS_OWNER.OFFENDER_RELEASE_DETAILS AT_OFFENDER_RELEASE_DETAILS, (SELECT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID, CASE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE /* when AT_OFFENDER_SENT_CALCULATIONS.ETD_OVERRIDED_DATE is not null then AT_OFFENDER_SENT_CALCULATIONS.ETD_OVERRIDED_DATE when AT_OFFENDER_SENT_CALCULATIONS.ETD_CALCULATED_DATE is not null then AT_OFFENDER_SENT_CALCULATIONS.ETD_CALCULATED_DATE when AT_OFFENDER_SENT_CALCULATIONS.LTD_OVERRIDED_DATE is not null then AT_OFFENDER_SENT_CALCULATIONS.LTD_OVERRIDED_DATE when AT_OFFENDER_SENT_CALCULATIONS.LTD_CALCULATED_DATE is not null then AT_OFFENDER_SENT_CALCULATIONS.LTD_CALCULATED_DATE */ ELSE NULL END AS Last_Rel_Date, EFFECTIVE_SENTENCE_LENGTH FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) DT_LAST_RELEASE_DATE, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_ALERTS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_RELEASE_DETAILS.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_LAST_RELEASE_DATE.OFFENDER_BOOK_ID (+)) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_OFFENDER_CSR_ASSESSMENT.OFFENDER_BOOK_ID (+)) AND (WING_CASELOAD_SECURITY.USERNAME = UPPER('CQE98K')) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = 'BAI') AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')) AND ((AT_OFFENDER_ALERTS.ALERT_STATUS = 'ACTIVE') AND (DT_OFFENDER_CSR_ASSESSMENT.row_seq_filter = 1 OR DT_OFFENDER_CSR_ASSESSMENT.row_seq_filter IS NULL)) AND AT_OFFENDER_ALERTS.ALERT_CODE = 'XA')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, BIRTH_DATE, UNIT_DESCRIPTION_4_SHORT, ALERT_DATE, APPROVED_RESULT, CALC_SUP_LEVEL_TYPE, OVERRIDED_SUP_LEVEL_TYPE, CURRENT_RELEASE_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP3.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP3.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP3.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "BIRTH_DATE",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP3.DO75",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP3.DO427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ALERT_DATE",
+            "type": "date",
+            "display": "Alert Effective Date",
+            "legacyId": "DP3.DO59e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "APPROVED_RESULT",
+            "type": "string",
+            "display": "CSRA Approved Result",
+            "legacyId": "DP3.DOc50",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "CALC_SUP_LEVEL_TYPE",
+            "type": "string",
+            "display": "CSRA Calculated Result",
+            "legacyId": "DP3.DOc2f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "OVERRIDED_SUP_LEVEL_TYPE",
+            "type": "string",
+            "display": "CSRA Override Result",
+            "legacyId": "DP3.DOc4e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "CURRENT_RELEASE_DATE",
+            "type": "date",
+            "display": "Current Release Date",
+            "legacyId": "DP3.DOb29",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "168585.RS",
+      "name": "By Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP3",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO44"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO45"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO46"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO75"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO427"
+          },
+          {
+            "name": "$ref:CURRENT_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DOb29"
+          },
+          {
+            "name": "$ref:ALERT_DATE",
+            "display": "Alert Effective Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO59e"
+          },
+          {
+            "name": "$ref:CALC_SUP_LEVEL_TYPE",
+            "display": "CSRA Calculated Result",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DOc2f"
+          },
+          {
+            "name": "$ref:APPROVED_RESULT",
+            "display": "CSRA Approved Result",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DOc50"
+          },
+          {
+            "name": "$ref:OVERRIDED_SUP_LEVEL_TYPE",
+            "display": "CSRA Override Result",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DOc4e"
+          }
+        ]
+      }
+    },
+    {
+      "id": "169618.RS",
+      "name": "By Cell Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP3",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO44"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO45"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO46"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO75"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO427"
+          },
+          {
+            "name": "$ref:CURRENT_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DOb29"
+          },
+          {
+            "name": "$ref:ALERT_DATE",
+            "display": "Alert Effective Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO59e"
+          },
+          {
+            "name": "$ref:CALC_SUP_LEVEL_TYPE",
+            "display": "CSRA Calculated Result",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DOc2f"
+          },
+          {
+            "name": "$ref:APPROVED_RESULT",
+            "display": "CSRA Approved Result",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DOc50"
+          },
+          {
+            "name": "$ref:OVERRIDED_SUP_LEVEL_TYPE",
+            "display": "CSRA Override Result",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DOc4e"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

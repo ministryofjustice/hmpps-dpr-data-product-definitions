@@ -1,0 +1,265 @@
+{
+  "id": "ok7pyCsAAvgkIjQAnv_FFfm0Gvk",
+  "name": "MIS ROTL Releases and Failures Report",
+  "description": "This report provides a count of absconds which have occurred at establishments between the first of the month (derived from the date entered by the user) and up to 12 months later. The 2nd Tab shows the number of releases accross establishments/dates selected at runtime. In order or provide a direct comparison of absconds against Temp Releases the user should ensure that the movement dates selected match the Incident Period.<br/>HQ9002 v1.0 ",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "HQ9002"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375377/DP3",
+      "name": "Incidents",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC) AS INCIDENT_TYPE, TO_DATE('01/' || TO_CHAR(AT_INCIDENT_DATE.DAY_DATE, 'MM/YYYY'), 'DD/MM/YYYY') AS 1ST_OF_THE_MONTH, AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION AS ESTABLISHMENT_DESCRIPTION, COUNT(DISTINCT (AT_INCIDENT.INCIDENT_CASE_ID)) AS NUMBER_OF_INCIDENTS, AT_INCIDENT_DATE.DAY_DATE AS DAY_DATE FROM BODIMIS.FACT_INCIDENT AT_INCIDENT, BODIMIS.DIM_ESTABLISHMENT AT_INCIDENT_ESTABLISHMENT, BODIMIS.DIM_INCIDENT_STATUS AT_INCIDENT_STATUS, BODIMIS.DIM_DATE AT_INCIDENT_DATE, BODIMIS.DIM_INCIDENT_TYPE AT_INCIDENT_TYPE WHERE (AT_INCIDENT.INCIDENT_STATUS_SK = AT_INCIDENT_STATUS.INCIDENT_STATUS_SK) AND (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_SK = AT_INCIDENT.ESTABLISHMENT_SK) AND (AT_INCIDENT_DATE.DATE_SK = AT_INCIDENT.INCIDENT_DATE_SK) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_TYPE.INCIDENT_TYPE_SK = AT_INCIDENT.INCIDENT_TYPE_SK) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND ((AT_INCIDENT_DATE.DAY_DATE >= TO_DATE('01/' || TO_CHAR(ADD_MONTHS((SELECT START_DATE FROM prompt_ /* = #Prompt('Incident Date From:','D',,mono,free,Not_Persistent,User:253) */), 0), 'MM/YYYY'), 'DD/MM/YYYY') AND AT_INCIDENT_DATE.DAY_DATE <= LAST_DAY(ADD_MONTHS(CURRENT_TIMESTAMP, -1)) AND AT_INCIDENT_DATE.DAY_DATE <= LAST_DAY(ADD_MONTHS((SELECT START_DATE FROM prompt_ /* = #Prompt('Incident Date From:','D',,mono,free,Not_Persistent,User:253) */), 11))) AND AT_INCIDENT_TYPE.INCIDENT_TYPE_CODE_NK IN ('ABSCOND')) GROUP BY INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC), TO_DATE('01/' || TO_CHAR(AT_INCIDENT_DATE.DAY_DATE, 'MM/YYYY'), 'DD/MM/YYYY'), AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_INCIDENT_DATE.DAY_DATE), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Incident Date From:",
+          "description": "@Prompt('Incident Date From:','D',,mono,free,Not_Persistent,User:253)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3375377/DP5",
+      "name": "Incident Types",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC) AS INCIDENT_TYPE FROM BODIMIS.DIM_INCIDENT_TYPE AT_INCIDENT_TYPE WHERE AT_INCIDENT_TYPE.INCIDENT_TYPE_CODE_NK IN ('ABSCOND', 'ASSAULT', 'ATT_ESC_E', 'ATT_ESCAPE', 'SELF_HARM', 'DRUGS', 'TRF', 'CON_INDISC', 'DEATH')), dataset_ AS (SELECT INCIDENT_TYPE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "INCIDENT_TYPE",
+            "type": "string",
+            "display": "Incident Type",
+            "legacyId": "DP5.DO9",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DP4",
+      "name": "MIS Load",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE AS BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP4.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DP6",
+      "name": "Query 7",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK AS ESTABLISHMENT_CODE_NK, AT_FACT_MOV_EXT.TYPE AS TYPE, COUNT(DISTINCT (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY)) AS COUNT_OF_OFFENDERS, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_DESCRIPTION AS ESTABLISHMENT_DESCRIPTION, AT_DIM_DATE_EXT_MOV.DAY_DATE AS DAY_DATE FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_FROM, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV WHERE (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (CASE WHEN AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.FROM_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK IN (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter value(s) for Movement Location From Code (External):','A','External Movements\\Movement Location From Code (External)',Multi,Free,Not_Persistent,,User:0) */) AND AT_DIM_DATE_EXT_MOV.DAY_DATE BETWEEN (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter Movement Date:','D',,Mono,Free,Not_Persistent,,User:1) */) AND (SELECT END_DATE FROM prompt_ /* = #prompt('Enter Movement Date (End):','D',,Mono,Free,Not_Persistent,,User:2) */) AND AT_FACT_MOV_EXT.TYPE IN ('Temporary Absence / Home Leave', 'Temporary Absence')) GROUP BY AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK, AT_FACT_MOV_EXT.TYPE, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_DESCRIPTION, AT_DIM_DATE_EXT_MOV.DAY_DATE), dataset_ AS (SELECT ESTABLISHMENT_CODE_NK, TYPE, COUNT_OF_OFFENDERS, ESTABLISHMENT_DESCRIPTION, DAY_DATE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "unknown_parameter",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter value(s) for Movement Location From Code (External):",
+          "description": "@prompt('Enter value(s) for Movement Location From Code (External):','A','External Movements\\Movement Location From Code (External)',Multi,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Movement Date (End):",
+          "description": "@prompt('Enter Movement Date (End):','D',,Mono,Free,Not_Persistent,,User:2)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Movement Location From Code (External)",
+            "legacyId": "DP6.DO103ff",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "TYPE",
+            "type": "string",
+            "display": "Movement Type (External)",
+            "legacyId": "DP6.DO103ec",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "COUNT_OF_OFFENDERS",
+            "type": "double",
+            "display": "Count of Offenders",
+            "legacyId": "DP6.DO10655",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Location From Description (External)",
+            "legacyId": "DP6.DO1015d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Movement Date Only (External)",
+            "legacyId": "DP6.DO1015c",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "134363.RS",
+      "name": "Monthly Incident Report",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP3",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "crosstab",
+        "field": [
+          {
+            "name": "$ref:DP3_DOC9",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP3_DOC9",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP3_DOCB",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP3_DO20",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "134411.RS",
+      "name": "Monthly Temp Releases",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP6",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Movement Location From Description (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP6.DO1015d"
+          },
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP6.DO10655"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,436 @@
+{
+  "id": "klhH6h4ADKYvSfACL.8AISgWcQA",
+  "name": "ORS Police Intelligence Unit Visit Booking Analysis",
+  "description": "This report is for police intelligence purposes only and provides details of visits booked for a date range for specific establishments along with details of visitor addresses. Do not send this report to solicitors or other third parties.<br/>VIS0009 - v00.00.02 Last Modified: 07/12/16",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "VIS0009 v00.00.02 LSRIT039"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP10",
+      "name": "Visits Booked",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER_HIST_VISITS.VISIT_DATE AS VISIT_DATE, AT_OFFENDER_HIST_VISITS.START_TIME AS START_TIME, CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'SCON' THEN 'Social' WHEN AT_OFFENDER_HIST_VISITS.VISIT_TYPE = 'OFFI' THEN 'Official' ELSE AT_OFFENDER_HIST_VISITS.VISIT_TYPE END AS VISIT_TYPE_HELD, CASE WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'SCH' THEN 'Scheduled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'NORM' THEN 'Normal Completion' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'CANC' THEN 'Cancelled' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'EXP' THEN 'Expired' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'HMPOP' THEN 'Terminated by Staff' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'OFFEND' THEN 'Prisoner Completed Early' WHEN AT_OFFENDER_HIST_VISITS.VISIT_STATUS = 'VISITOR' THEN 'Visitor Completed Early' ELSE AT_OFFENDER_HIST_VISITS.VISIT_STATUS END AS STATUS_OF_VISIT, DT_BOOKED_VISITORS.FIRST_NAME AS FIRST_NAME_OF_VISITOR, DT_BOOKED_VISITORS.LAST_NAME AS LAST_NAME_OF_VISITOR, DT_BOOKED_VISITORS.VISITOR_TYPE AS VISITOR_TYPE, DT_BOOKED_VISITORS.DESCRIPTION AS DESCRIPTION, DT_BOOKED_VISITORS.BIRTHDATE AS BIRTHDATE, DT_BOOKED_VISITOR_ADDRESS.FULL_ADDRESS AS FULL_ADDRESS, AT_VISIT_HIST_ESTAB.AGY_LOC_ID AS AGY_LOC_ID FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_VISIT_HIST_ESTAB, OMS_OWNER.OFFENDER_VISITS AT_OFFENDER_HIST_VISITS, (SELECT off_vis.offender_visit_id AS VisitID, off_vis_vis.offender_visit_visitor_id, TO_CHAR(off_vis_vis.person_id) AS PersonID, NULL AS Offender_ID_Display, 'PERSON' AS visitor_type, per.last_name, per.first_name, per.birthdate, per.middle_name, RC.description, off_vis.offender_visit_id FROM offender_visit_visitors off_vis_vis, offender_visits off_vis, reference_codes RC, persons per, offender_contact_persons ocp WHERE per.person_id = off_vis_vis.person_id AND NOT off_vis_vis.person_id IS NULL AND off_vis_vis.person_id = ocp.person_id AND off_vis.offender_book_id = ocp.offender_book_id AND off_vis.offender_visit_id = off_vis_vis.offender_visit_id AND ocp.relationship_type = RC.code AND RC.domain = 'RELATIONSHIP' UNION ALL SELECT off_vis.offender_visit_id, off_vis_vis.offender_visit_visitor_id, NULL, vns.offender_id_display AS Offender_ID_Display, 'OFFENDER' AS visitor_type, vns.last_name, vns.first_name, vns.birth_date, vns.middle_name, RC.description, off_vis.offender_visit_id FROM offender_visit_visitors off_vis_vis, offender_visits off_vis, reference_codes RC, v_name_search2 vns, offender_contact_persons ocp, offender_bookings ob WHERE off_vis.offender_visit_id = off_vis_vis.offender_visit_id AND NOT off_vis_vis.offender_book_id IS NULL AND ob.offender_book_id = off_vis_vis.offender_book_id AND ocp.contact_root_offender_id = ob.root_offender_id AND ocp.relationship_type = RC.code AND ocp.offender_book_id = off_vis.offender_book_id AND vns.root_offender_id = ocp.contact_root_offender_id AND RC.domain = 'RELATIONSHIP' AND ob.ACTIVE_FLAG = 'Y') DT_BOOKED_VISITORS, (SELECT ADDRESS_TYPE AS ADDRESS_TYPE, CASE WHEN NO_FIXED_ADDRESS_FLAG = 'Y' THEN 'No fixed address' ELSE SUBSTR(CASE WHEN FLAT IS NULL THEN NULL ELSE FLAT || '  ' END || CASE WHEN PREMISE IS NULL THEN NULL ELSE PREMISE || '  ' END || CASE WHEN STREET IS NULL THEN NULL ELSE STREET || '  ' END || CASE WHEN LOCALITY IS NULL THEN NULL ELSE LOCALITY || '  ' END || CASE WHEN city_name IS NULL THEN OMS_MISCELLANEOUS.GETDESCCODE('CITY', CITY_CODE) ELSE city_name END || '  ' || CASE WHEN COUNTY_CODE IS NULL THEN NULL ELSE OMS_MISCELLANEOUS.GETDESCCODE('COUNTY', COUNTY_CODE) || '  ' END, 1, 200) || CASE WHEN POSTAL_CODE IS NULL THEN NULL ELSE POSTAL_CODE || '  ' END || SUBSTR(CASE WHEN COUNTRY_CODE IS NULL THEN NULL ELSE OMS_MISCELLANEOUS.GETDESCCODE('COUNTRY', COUNTRY_CODE) END, 1, 40) END AS FULL_ADDRESS, OWNER_ID, start_date AS AddressStartDate, TRUNC(ADD_MONTHS(LAST_DAY(end_date), -1) - 1) AS AddressEndDate FROM oms_owner.addresses WHERE OWNER_CLASS = 'PER') DT_BOOKED_VISITOR_ADDRESS, USER_ACCESSIBLE_CASELOADS AT_UAC WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_HIST_VISITS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_HIST_VISITS.AGY_LOC_ID = AT_VISIT_HIST_ESTAB.AGY_LOC_ID) AND (AT_OFFENDER_HIST_VISITS.OFFENDER_VISIT_ID = DT_BOOKED_VISITORS.VISITID (+)) AND (AT_VISIT_HIST_ESTAB.AGY_LOC_ID = AT_UAC.CASELOAD_ID) AND (AT_UAC.USERNAME = UPPER('CQE98K')) AND (DT_BOOKED_VISITOR_ADDRESS.OWNER_ID (+) = DT_BOOKED_VISITORS.PERSONID) AND (AT_UAC.USERNAME = UPPER('CQE98K')) AND (AT_VISIT_HIST_ESTAB.AGY_LOC_ID IN ('BXI') AND (AT_UAC.USERNAME = UPPER('CQE98K')) AND AT_OFFENDER_HIST_VISITS.VISIT_DATE BETWEEN TO_DATE('28-11-2016 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('02-12-2016 00:00:00', 'DD-MM-YYYY HH24:MI:SS'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FIRST_NAME, LAST_NAME, VISIT_DATE, START_TIME, VISIT_TYPE_HELD, STATUS_OF_VISIT, FIRST_NAME_OF_VISITOR, LAST_NAME_OF_VISITOR, VISITOR_TYPE, DESCRIPTION, BIRTHDATE, FULL_ADDRESS, AGY_LOC_ID, CASE WHEN VISITOR_TYPE = 'OFFENDER' THEN 'Inter-Prison Visitor ' || DESCRIPTION ELSE DESCRIPTION END AS V_RELATIONSHIP FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP10.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP10.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP10.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "VISIT_DATE",
+            "type": "date",
+            "display": "Date of Visit",
+            "legacyId": "DP10.DOdcf",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "START_TIME",
+            "type": "date",
+            "display": "Visit Started Time",
+            "legacyId": "DP10.DOdd0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "VISIT_TYPE_HELD",
+            "type": "string",
+            "display": "Visit Type Held",
+            "legacyId": "DP10.DOdd3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "STATUS_OF_VISIT",
+            "type": "string",
+            "display": "Status of Visit",
+            "legacyId": "DP10.DOdd6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "FIRST_NAME_OF_VISITOR",
+            "type": "string",
+            "display": "First Name of Visitor",
+            "legacyId": "DP10.DOe18",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "LAST_NAME_OF_VISITOR",
+            "type": "string",
+            "display": "Last Name of Visitor",
+            "legacyId": "DP10.DOe19",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "VISITOR_TYPE",
+            "type": "string",
+            "display": "Visitor Type",
+            "legacyId": "DP10.DOe59",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Visitor Description",
+            "legacyId": "DP10.DOe5a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "BIRTHDATE",
+            "type": "date",
+            "display": "Visitor DOB",
+            "legacyId": "DP10.DOf8b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "FULL_ADDRESS",
+            "type": "string",
+            "display": "Full Address of Person Visitor",
+            "legacyId": "DP10.DOf8a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code Where Visit Held",
+            "legacyId": "DP10.DOdd4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "V_RELATIONSHIP",
+            "type": "string",
+            "display": "V_RELATIONSHIP",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "170617.RS",
+      "name": "By Date",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code Where Visit Held",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOdd4"
+          },
+          {
+            "name": "$ref:VISIT_DATE",
+            "display": "Date of Visit",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOdcf"
+          },
+          {
+            "name": "$ref:START_TIME",
+            "display": "Visit Started Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOdd0"
+          },
+          {
+            "name": "$ref:VISIT_TYPE_HELD",
+            "display": "Visit Type Held",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOdd3"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO44"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO46"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO45"
+          },
+          {
+            "name": "$ref:FIRST_NAME_OF_VISITOR",
+            "display": "First Name of Visitor",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOe18"
+          },
+          {
+            "name": "$ref:LAST_NAME_OF_VISITOR",
+            "display": "Last Name of Visitor",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOe19"
+          },
+          {
+            "name": "$ref:BIRTHDATE",
+            "display": "Visitor DOB",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOf8b"
+          },
+          {
+            "name": "$ref:V_RELATIONSHIP",
+            "display": "Visitor D.O.B",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Visitor Type]=\"OFFENDER\";\"Inter-Prison Visitor \" +[Visitor Description];[Visitor Description])"
+          },
+          {
+            "name": "$ref:FULL_ADDRESS",
+            "display": "Full Address of Person Visitor",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOf8a"
+          }
+        ]
+      }
+    },
+    {
+      "id": "170803.RS",
+      "name": "By Prisoner",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP10",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO44"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO46"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO45"
+          },
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code Where Visit Held",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOdd4"
+          },
+          {
+            "name": "$ref:VISIT_TYPE_HELD",
+            "display": "Visit Type Held",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOdd3"
+          },
+          {
+            "name": "$ref:VISIT_DATE",
+            "display": "Date of Visit",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOdcf"
+          },
+          {
+            "name": "$ref:START_TIME",
+            "display": "Visit Started Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOdd0"
+          },
+          {
+            "name": "$ref:STATUS_OF_VISIT",
+            "display": "Status of Visit",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOdd6"
+          },
+          {
+            "name": "$ref:FIRST_NAME_OF_VISITOR",
+            "display": "First Name of Visitor",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOe18"
+          },
+          {
+            "name": "$ref:LAST_NAME_OF_VISITOR",
+            "display": "Last Name of Visitor",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOe19"
+          },
+          {
+            "name": "$ref:BIRTHDATE",
+            "display": "Visitor DOB",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOf8b"
+          },
+          {
+            "name": "$ref:V_RELATIONSHIP",
+            "display": "Relationship",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Visitor Type]=\"OFFENDER\";\"Inter-Prison Visitor \" +[Visitor Description];[Visitor Description])"
+          },
+          {
+            "name": "$ref:FULL_ADDRESS",
+            "display": "Full Address of Person Visitor",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DOf8a"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,310 @@
+{
+  "id": "olJYESgADmQcAikARAWD8K.FqmQ",
+  "name": "ORS Convicted Prisoners Missing Entry IEP",
+  "description": "This report returns convicted prisoners (based on current legal status) who have not been given an Entry level IEP after the conviction status effective date if after 1st November 2013. Prisoners aged under 18 at the time of the legal status effective date are excluded.<br/>PDD0049 - v00.00.01 Last Modified: 23/10/13",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0049 v00.00.01 LSRIT043"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP11",
+      "name": "All Convicted Prisoners",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_OFFENDER.BIRTH_DATE AS BIRTH_DATE, AT_OFFENDER_BOOKING.BOOKING_BEGIN_DATE AS BOOKING_BEGIN_DATE, DT_ADMISSION.ADMISSION_DATE AS ADMISSION_DATE, TRUNC(MONTHS_BETWEEN(AT_OFFENDER_IMPRISON_STATUSES.EFFECTIVE_DATE, AT_OFFENDER.BIRTH_DATE) / 12) AS AGE_AT_LEGAL_STATUS, AT_IMPRISON_STATUSES.DESCRIPTION AS DESCRIPTION, AT_OFFENDER_IMPRISON_STATUSES.EFFECTIVE_DATE AS EFFECTIVE_DATE, DT_IEP_BAND_LAST.IEP_LEVEL AS IEP_LEVEL, DT_IEP_BAND_LAST.IEP_DATE AS IEP_DATE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, (SELECT iep_level, description, agy_loc_id, offender_book_id, iep_date FROM (SELECT iep.iep_level, rc.description, iep.agy_loc_id, iep.offender_book_id, iep.iep_date, ROW_NUMBER() OVER (PARTITION BY iep.offender_book_id ORDER BY iep.iep_time DESC, iep.iep_level_seq DESC) AS row_seq_filter FROM oms_owner.offender_iep_levels iep LEFT OUTER JOIN oms_owner.reference_codes rc ON iep.iep_level = rc.code AND rc.domain = 'IEP_LEVEL') WHERE row_seq_filter = 1) DT_IEP_BAND_LAST, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.IMPRISONMENT_STATUSES AT_IMPRISON_STATUSES, OMS_OWNER.IMPRISONMENT_STATUSES AT_IMPRISON_STATUSES_SEQ, (SELECT DISTINCT m.OFFENDER_BOOK_ID, MAX(m.MOVEMENT_TIME) AS ADMISSION_DATE FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS m, OMS_OWNER.offender_bookings h WHERE h.booking_status = 'O' AND h.active_flag = 'Y' AND m.direction_code = 'IN' AND m.Movement_reason_code <> 'R' AND m.Movement_type = 'ADM' AND m.to_agy_loc_id = h.agy_loc_id AND h.offender_book_id = m.offender_book_id GROUP BY m.OFFENDER_BOOK_ID) DT_ADMISSION, OMS_OWNER.OFFENDER_IMPRISON_STATUSES AT_OFFENDER_IMPRISON_STATUSES, OMS_OWNER.OFFENDER_IMPRISON_STATUSES AT_OFFENDER_IMPRISON_STS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_IMPRISON_STATUSES.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_IMPRISON_STATUSES.LATEST_STATUS = 'Y' OR AT_OFFENDER_IMPRISON_STATUSES.LATEST_STATUS IS NULL) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (DT_IEP_BAND_LAST.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_IMPRISON_STATUSES.IMPRISONMENT_STATUS (+) = AT_OFFENDER_IMPRISON_STATUSES.IMPRISONMENT_STATUS) AND (AT_OFFENDER_IMPRISON_STS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_IMPRISON_STATUSES_SEQ.IMPRISONMENT_STATUS = AT_OFFENDER_IMPRISON_STS.IMPRISONMENT_STATUS) AND (AT_OFFENDER_IMPRISON_STS.LATEST_STATUS = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_ADMISSION.OFFENDER_BOOK_ID (+)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) AND CASE WHEN AT_IMPRISON_STATUSES_SEQ.BAND_CODE IN ('9', '10', '11', '12', '13') THEN 'Unconvicted' WHEN AT_IMPRISON_STATUSES_SEQ.IMPRISONMENT_STATUS IN ('SINE DIE', 'DISCONT', 'POLICE', 'DISCHARGED', 'RX', 'S48MHA') THEN 'Unconvicted' WHEN AT_IMPRISON_STATUSES_SEQ.IMPRISONMENT_STATUS IN ('UNKNOWN', 'BOBC', 'UNFIT', 'UNK_CUST', 'DIED') THEN 'Check Record' ELSE 'Convicted' END = 'Convicted' AND AT_OFFENDER_IMPRISON_STATUSES.EFFECTIVE_DATE >= TO_DATE('01-11-2013 00:00:00', 'DD-MM-YYYY HH24:MI:SS'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, BIRTH_DATE, BOOKING_BEGIN_DATE, ADMISSION_DATE, AGE_AT_LEGAL_STATUS, DESCRIPTION, EFFECTIVE_DATE, IEP_LEVEL, IEP_DATE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP11.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP11.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP11.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "BIRTH_DATE",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP11.DO75",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "BOOKING_BEGIN_DATE",
+            "type": "date",
+            "display": "Booking Begin Date",
+            "legacyId": "DP11.DOb97",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ADMISSION_DATE",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DP11.DOc6a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "AGE_AT_LEGAL_STATUS",
+            "type": "double",
+            "display": "Age at Legal Status",
+            "legacyId": "DP11.DO10d5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Main Legal Status - Description",
+            "legacyId": "DP11.DO4b6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "EFFECTIVE_DATE",
+            "type": "date",
+            "display": "Main Legal Status Effective Date",
+            "legacyId": "DP11.DObb5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "IEP Level",
+            "legacyId": "DP11.DO715",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "IEP_DATE",
+            "type": "date",
+            "display": "IEP Effective Date",
+            "legacyId": "DP11.DO10bf",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP1c",
+      "name": "Convicted Prisoners Awarded Entry Level",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER_IMPRISON_STATUSES.EFFECTIVE_DATE AS EFFECTIVE_DATE, COALESCE(AT_ALL_IEPLEVELS.IEP_LEVEL, 'Missing') AS IEP_LEVEL, AT_ALL_IEPLEVELS.IEP_DATE AS IEP_DATE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.IMPRISONMENT_STATUSES AT_IMPRISON_STATUSES_SEQ, OMS_OWNER.OFFENDER_IMPRISON_STATUSES AT_OFFENDER_IMPRISON_STATUSES, OMS_OWNER.OFFENDER_IEP_LEVELS AT_ALL_IEPLEVELS, OMS_OWNER.OFFENDER_IMPRISON_STATUSES AT_OFFENDER_IMPRISON_STS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_IMPRISON_STATUSES.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_IMPRISON_STATUSES.LATEST_STATUS = 'Y' OR AT_OFFENDER_IMPRISON_STATUSES.LATEST_STATUS IS NULL) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_IMPRISON_STS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_IMPRISON_STATUSES_SEQ.IMPRISONMENT_STATUS = AT_OFFENDER_IMPRISON_STS.IMPRISONMENT_STATUS) AND (AT_OFFENDER_IMPRISON_STS.LATEST_STATUS = 'Y') AND (AT_ALL_IEPLEVELS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) AND CASE WHEN AT_IMPRISON_STATUSES_SEQ.BAND_CODE IN ('9', '10', '11', '12', '13') THEN 'Unconvicted' WHEN AT_IMPRISON_STATUSES_SEQ.IMPRISONMENT_STATUS IN ('SINE DIE', 'DISCONT', 'POLICE', 'DISCHARGED', 'RX', 'S48MHA') THEN 'Unconvicted' WHEN AT_IMPRISON_STATUSES_SEQ.IMPRISONMENT_STATUS IN ('UNKNOWN', 'BOBC', 'UNFIT', 'UNK_CUST', 'DIED') THEN 'Check Record' ELSE 'Convicted' END = 'Convicted' AND AT_OFFENDER_IMPRISON_STATUSES.EFFECTIVE_DATE >= TO_DATE('01-11-2013 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_ALL_IEPLEVELS.IEP_DATE >= AT_OFFENDER_IMPRISON_STATUSES.EFFECTIVE_DATE AND COALESCE(AT_ALL_IEPLEVELS.IEP_LEVEL, 'Missing') = 'ENT')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, EFFECTIVE_DATE, IEP_LEVEL, IEP_DATE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP1c.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "EFFECTIVE_DATE",
+            "type": "date",
+            "display": "Main Legal Status Effective Date",
+            "legacyId": "DP1c.DObb5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "Iep Level",
+            "legacyId": "DP1c.DO10d4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "IEP_DATE",
+            "type": "date",
+            "display": "Iep Date",
+            "legacyId": "DP1c.DO10d3",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "166934.RS",
+      "name": "Convicted Prisoners Missing Entry IEP",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP11",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (V_IEPLEVELHISTORY IS NULL AND AGE_AT_LEGAL_STATUS >= 18 AND V_EXCLUDECONVICTIONSWITHIN1442 IS NULL))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO46"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO45"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO75"
+          },
+          {
+            "name": "$ref:BOOKING_BEGIN_DATE",
+            "display": "Booking Begin Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DOb97"
+          },
+          {
+            "name": "$ref:ADMISSION_DATE",
+            "display": "Admission Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DOc6a"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Main Legal Status - Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO4b6"
+          },
+          {
+            "name": "$ref:EFFECTIVE_DATE",
+            "display": "Main Legal Status Effective Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DObb5"
+          },
+          {
+            "name": "$ref:IEP_LEVEL",
+            "display": "IEP Level",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO715"
+          },
+          {
+            "name": "$ref:IEP_DATE",
+            "display": "IEP Effective Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO10bf"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

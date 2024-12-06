@@ -1,0 +1,316 @@
+{
+  "id": "FvgynWBS1AoAP3cBAHBrTF9LACJIABRd",
+  "name": "ORS National Alerts Report",
+  "description": "The report returns a list of all prisoners in each establishment selected who have active alerts.<br/> <br/>NAT00005 - v1.0 Last Modified: 13/05/2021",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "NAT00005 v1.0",
+      "National",
+      "Alerts"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP3",
+      "name": "Alerts",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDERS_LOCATIONS.AGY_LOC_ID AS AGY_LOC_ID, AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER.BIRTH_DATE AS BIRTH_DATE, AT_OFFENDER_ALERTS.ALERT_DATE AS ALERT_DATE, AT_ALERT_CATEGORY_DESC.DESCRIPTION AS DESCRIPTION, AT_ALERT_TYPE_DESC.DESCRIPTION AS ALERT_DESCRIPTION, AT_OFFENDER_ALERTS.EXPIRY_DATE AS EXPIRY_DATE, AT_OFFENDER_ALERTS.COMMENT_TEXT AS COMMENT_TEXT, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_OFFENDER_ALERTS.ALERT_STATUS AS ALERT_STATUS FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_ALERT_CATEGORY_DESC, OMS_OWNER.REFERENCE_CODES AT_ALERT_TYPE_DESC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDER_ALERTS AT_OFFENDER_ALERTS, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_ALERTS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_ALERT_CATEGORY_DESC.DOMAIN = 'ALERT' OR AT_ALERT_CATEGORY_DESC.DOMAIN IS NULL) AND (AT_ALERT_TYPE_DESC.CODE (+) = AT_OFFENDER_ALERTS.ALERT_CODE) AND (AT_ALERT_TYPE_DESC.PARENT_CODE = AT_ALERT_CATEGORY_DESC.CODE) AND (AT_ALERT_TYPE_DESC.DOMAIN = 'ALERT_CODE' OR AT_ALERT_TYPE_DESC.DOMAIN IS NULL) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_ALERTS.ALERT_STATUS = 'ACTIVE') AND (AT_ALERT_TYPE_DESC.DESCRIPTION IN (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #Prompt('Alert (All for all)','A','Alerts\\Alert Description',multi,free,,Not_Persistent,,User:400) */) OR 'All' IN (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #Prompt('Alert (All for all)','A','Alerts\\Alert Description',multi,free,,Not_Persistent,,User:400) */) OR (AT_ALERT_TYPE_DESC.DESCRIPTION IS NULL AND 'All' IN (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #Prompt('Alert (All for all)','A','Alerts\\Alert Description',multi,free,,Not_Persistent,,User:400) */))))), dataset_ AS (SELECT AGY_LOC_ID, OFFENDER_ID_DISPLAY, LAST_NAME, BIRTH_DATE, ALERT_DATE, DESCRIPTION, ALERT_DESCRIPTION, EXPIRY_DATE, COMMENT_TEXT, FIRST_NAME, ALERT_STATUS, COUNT(OFFENDER_ID_DISPLAY) AS V_COUNT_NOMSNUMBER FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code (All for all)",
+          "description": "@Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "unknown_parameter",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Alert (All for all)",
+          "description": "@Prompt('Alert (All for all)','A','Alerts\\Alert Description',multi,free,,Not_Persistent,,User:400)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP3.DO43b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP3.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP3.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "BIRTH_DATE",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP3.DO75",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ALERT_DATE",
+            "type": "date",
+            "display": "Alert Effective Date",
+            "legacyId": "DP3.DO59e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Alert Category Description",
+            "legacyId": "DP3.DO99",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ALERT_DESCRIPTION",
+            "type": "string",
+            "display": "Alert Description",
+            "legacyId": "DP3.DO97",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "EXPIRY_DATE",
+            "type": "date",
+            "display": "Expiry Date",
+            "legacyId": "DP3.DO82",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "Alert Comment Text",
+            "legacyId": "DP3.DO10eb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP3.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ALERT_STATUS",
+            "type": "string",
+            "display": "Alert Status",
+            "legacyId": "DP3.DO80",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "V_COUNT_NOMSNUMBER",
+            "type": "string",
+            "display": "V_COUNT_NOMSNUMBER",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "162991.RS",
+      "name": "Alerts by Type",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP3",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:ALERT_DESCRIPTION",
+            "display": "Alert Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO97"
+          },
+          {
+            "name": "$ref:V_COUNT_NOMSNUMBER",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "163634.RS",
+      "name": "Alerts by Prisoner",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP3",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO43b"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO44"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO45"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO46"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO75"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Alert Category Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO99"
+          },
+          {
+            "name": "$ref:ALERT_DESCRIPTION",
+            "display": "Alert Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO97"
+          },
+          {
+            "name": "$ref:COMMENT_TEXT",
+            "display": "Alert Comment Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO10eb"
+          },
+          {
+            "name": "$ref:ALERT_DATE",
+            "display": "Alert Effective Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO59e"
+          },
+          {
+            "name": "$ref:V_COUNT_NOMSNUMBER",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

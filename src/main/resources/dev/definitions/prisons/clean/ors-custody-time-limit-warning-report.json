@@ -1,0 +1,259 @@
+{
+  "id": "okhJVe0ADF0zI30ALgeEcEP6Ot0",
+  "name": "ORS Custody Time Limit Warning Report",
+  "description": "This report lists prisoners with a Custody Time Limit (CTL) up to 30 days in the future and those prisoners with a CTL which have passed but whose records have not yet been updated.<br/>SEN0012  - v00.00.06 Last Modified: 07/02/09",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "SEN0012 v00.00.06 drop9.6"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376286/DP3",
+      "name": "CTL",
+      "description": "Sentence",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, SUBSTR(AT_OFFENDER.FIRST_NAME, 1, 1) || '.' || CASE WHEN AT_OFFENDER.MIDDLE_NAME IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME, 1, 1) || '.' || CASE WHEN AT_OFFENDER.MIDDLE_NAME_2 IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME_2, 1, 1) || '.' END END AS INITIALS, AT_OFFENDER.BIRTH_DATE AS BIRTH_DATE, CASE WHEN TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) <= 17 THEN 'Juvenile' WHEN TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) >= 18 AND TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) <= 20 THEN 'Young Person' ELSE 'Adult' END AS ADULT_YOUNG_PERSON_JUVENILE_37, AT_OFFENDER_CASES.CASE_INFO_NUMBER AS CASE_INFO_NUMBER, TO_DATE(TO_CHAR(TRUNC(AT_OFFENDER_COURT_EVENTS.EVENT_DATE), 'dd/mm/yyyy'), 'dd/mm/yyyy') AS EVENT_DATE, AT_OFF_CRT_EVENT_DESC.DESCRIPTION AS DESCRIPTION, AT_ORDERS_CUST_TIME_LIMIT.DUE_DATE AS DUE_DATE, AT_OFFENCE_RESULT_CODES.DISPOSITION_CODE AS DISPOSITION_CODE, AT_OFFENCE_RESULT_CODES.DESCRIPTION AS OUTCOME, DT_COMMITTED_TO_COURT.COMMITTED_TO_COURT AS COMMITTED_TO_COURT FROM OMS_OWNER.COURT_EVENTS AT_OFFENDER_COURT_EVENTS, OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.REFERENCE_CODES AT_OFF_CRT_EVENT_DESC, OMS_OWNER.ORDERS AT_ORDERS_CUST_TIME_LIMIT, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.OFFENDER_CASES AT_OFFENDER_CASES, OMS_OWNER.OFFENCE_RESULT_CODES AT_OFFENCE_RESULT_CODES, (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID, AT_OFFENDER_COURT_EVENTS.CASE_ID, AT_AGENCY_LOCATIONS.DESCRIPTION AS COMMITTED_TO_COURT FROM OMS_OWNER.COURT_EVENTS AT_OFFENDER_COURT_EVENTS, OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_AGENCY_LOCATIONS, OMS_OWNER.OFFENDER_CASES AT_OFFENDER_CASES WHERE (AT_AGENCY_LOCATIONS.AGY_LOC_ID (+) = AT_OFFENDER_COURT_EVENTS.AGY_LOC_ID) AND (AT_OFFENDER_COURT_EVENTS.CASE_ID = AT_OFFENDER_CASES.CASE_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_CASES.OFFENDER_BOOK_ID (+)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_AGENCY_LOCATIONS.DESCRIPTION LIKE '%Crown%' AND AT_OFFENDER_CASES.CASE_ID = AT_OFFENDER_COURT_EVENTS.CASE_ID AND AT_OFFENDER.OFFENDER_ID_DISPLAY IN (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY FROM OMS_OWNER.COURT_EVENTS AT_OFFENDER_COURT_EVENTS, OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.ORDERS AT_ORDERS_CUST_TIME_LIMIT, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.OFFENCE_RESULT_CODES AT_OFFENCE_RESULT_CODES, OMS_OWNER.OFFENDER_CASES AT_OFFENDER_CASES WHERE (AT_OFFENCE_RESULT_CODES.RESULT_CODE (+) = AT_OFFENDER_COURT_EVENTS.OUTCOME_REASON_CODE) AND (AT_ORDERS_CUST_TIME_LIMIT.CASE_ID = AT_OFFENDER_COURT_EVENTS.CASE_ID AND AT_ORDERS_CUST_TIME_LIMIT.EVENT_ID = AT_OFFENDER_COURT_EVENTS.EVENT_ID) AND (AT_OFFENDER_COURT_EVENTS.CASE_ID = AT_OFFENDER_CASES.CASE_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_CASES.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_COURT_EVENTS.OUTCOME_REASON_CODE IN ('4014', '4015', '4016', '4017', '4020', '4021', '4558', '4559', '4560', '4561', '4562', '4563', '4564', '45654014', '4015', '4016', '4017', '4020', '4021', '4558', '4559', '4560', '4561', '4562', '4563', '4564', '4565') AND AT_OFFENDER_COURT_EVENTS.HOLD_FLAG = 'Y' AND AT_ORDERS_CUST_TIME_LIMIT.DUE_DATE <= TRUNC(CURRENT_TIMESTAMP) + 30 AND AT_OFFENCE_RESULT_CODES.DISPOSITION_CODE <> 'F')) AND NOT AT_OFFENDER.OFFENDER_ID_DISPLAY IN (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY FROM OMS_OWNER.COURT_EVENTS AT_OFFENDER_COURT_EVENTS, OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS, OMS_OWNER.COURT_EVENT_CHARGES AT_COURT_EVENT_CHARGES, OMS_OWNER.OFFENDER_CASES AT_OFFENDER_CASES WHERE (AT_COURT_EVENT_CHARGES.EVENT_ID (+) = AT_OFFENDER_COURT_EVENTS.EVENT_ID) AND (AT_OFFENDER_COURT_EVENTS.CASE_ID = AT_OFFENDER_CASES.CASE_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_CASES.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID (+)) AND (NOT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID IS NULL) AND (NOT AT_OFFENDER_SENT_CALCULATIONS.EFFECTIVE_SENTENCE_LENGTH IS NULL AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) AND NOT AT_COURT_EVENT_CHARGES.RESULT_CODE_1_INDICATOR IS NULL)))) DT_COMMITTED_TO_COURT, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFF_CRT_EVENT_DESC.DOMAIN = 'MOVE_RSN') AND (AT_OFF_CRT_EVENT_DESC.CODE (+) = AT_OFFENDER_COURT_EVENTS.COURT_EVENT_TYPE) AND (AT_OFFENCE_RESULT_CODES.RESULT_CODE (+) = AT_OFFENDER_COURT_EVENTS.OUTCOME_REASON_CODE) AND (AT_ORDERS_CUST_TIME_LIMIT.CASE_ID = AT_OFFENDER_COURT_EVENTS.CASE_ID AND AT_ORDERS_CUST_TIME_LIMIT.EVENT_ID = AT_OFFENDER_COURT_EVENTS.EVENT_ID) AND (AT_OFFENDER_COURT_EVENTS.CASE_ID = AT_OFFENDER_CASES.CASE_ID) AND (DT_COMMITTED_TO_COURT.OFFENDER_BOOK_ID (+) = AT_OFFENDER_CASES.OFFENDER_BOOK_ID) AND (DT_COMMITTED_TO_COURT.CASE_ID (+) = AT_OFFENDER_CASES.CASE_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_CASES.OFFENDER_BOOK_ID (+)) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('RRUSSELL')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = 'ALI') AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('RRUSSELL')) AND AT_OFFENDER_COURT_EVENTS.HOLD_FLAG = 'Y' AND AT_OFFENCE_RESULT_CODES.DISPOSITION_CODE <> 'F' AND AT_ORDERS_CUST_TIME_LIMIT.DUE_DATE <= TRUNC(CURRENT_TIMESTAMP) + 30 AND NOT AT_OFFENDER.OFFENDER_ID_DISPLAY IN (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY FROM OMS_OWNER.COURT_EVENTS AT_OFFENDER_COURT_EVENTS, OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS, OMS_OWNER.COURT_EVENT_CHARGES AT_COURT_EVENT_CHARGES, OMS_OWNER.OFFENDER_CASES AT_OFFENDER_CASES WHERE (AT_COURT_EVENT_CHARGES.EVENT_ID (+) = AT_OFFENDER_COURT_EVENTS.EVENT_ID) AND (AT_OFFENDER_COURT_EVENTS.CASE_ID = AT_OFFENDER_CASES.CASE_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_CASES.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID (+)) AND (NOT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID IS NULL) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND NOT AT_OFFENDER_SENT_CALCULATIONS.EFFECTIVE_SENTENCE_LENGTH IS NULL AND (AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) AND NOT AT_COURT_EVENT_CHARGES.RESULT_CODE_1_INDICATOR IS NULL)))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, INITIALS, BIRTH_DATE, ADULT_YOUNG_PERSON_JUVENILE_37, CASE_INFO_NUMBER, EVENT_DATE, DESCRIPTION, DUE_DATE, DISPOSITION_CODE, OUTCOME, COMMITTED_TO_COURT FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP3.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP3.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "INITIALS",
+            "type": "string",
+            "display": "Initials",
+            "legacyId": "DP3.DO10071",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "BIRTH_DATE",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP3.DO10075",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ADULT_YOUNG_PERSON_JUVENILE_37",
+            "type": "string",
+            "display": "Adult / Young Person / Juvenile Indicator",
+            "legacyId": "DP3.DO108b9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "CASE_INFO_NUMBER",
+            "type": "string",
+            "display": "Case Info Number",
+            "legacyId": "DP3.DO81f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "EVENT_DATE",
+            "type": "date",
+            "display": "Event Date",
+            "legacyId": "DP3.DO51f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Hearing Type",
+            "legacyId": "DP3.DO53d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "DUE_DATE",
+            "type": "date",
+            "display": "Detention Expiry Date",
+            "legacyId": "DP3.DO992",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "DISPOSITION_CODE",
+            "type": "string",
+            "display": "Disposition Code",
+            "legacyId": "DP3.DO988",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "OUTCOME",
+            "type": "string",
+            "display": "Outcome",
+            "legacyId": "DP3.DO986",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "COMMITTED_TO_COURT",
+            "type": "string",
+            "display": "Committed To Court",
+            "legacyId": "DP3.DO9a8",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "79687.RS",
+      "name": "CTL Warning",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP3",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DUE_DATE",
+            "display": "Detention Expiry Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO992"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO10045"
+          },
+          {
+            "name": "$ref:INITIALS",
+            "display": "Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO10071"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO10075"
+          },
+          {
+            "name": "$ref:ADULT_YOUNG_PERSON_JUVENILE_37",
+            "display": "Adult / Young Person / Juvenile Indicator",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO108b9"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Hearing Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO53d"
+          },
+          {
+            "name": "$ref:CASE_INFO_NUMBER",
+            "display": "Case Info Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO81f"
+          },
+          {
+            "name": "$ref:EVENT_DATE",
+            "display": "Event Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO51f"
+          },
+          {
+            "name": "$ref:COMMITTED_TO_COURT",
+            "display": "Committed To Court",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO9a8"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,392 @@
+{
+  "id": "kleQhMEAATb7V2oA1twAISgWcQA",
+  "name": "ORS Count of Prisoners with Disabilities",
+  "description": "This report displays the number of prisoners who have a disability, how many have more than one disability and the total number of current prisoners.<br/>The report prompts for Establishment Code(s) and Disability(s) at runtime.<br/>PDD0023 - v00.00.07 Last Modified: 02/06/16",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0023 v00.00.07"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP11",
+      "name": "Count of Disabilities",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDERS_LOCATIONS.DESCRIPTION AS DESCRIPTION, AT_HLTH_PRB_DISAB_DSC.DESCRIPTION AS DISABILITY, COUNT(DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY) AS COUNT_NOMS_NUMBER FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_HLTH_PRB_DISAB_DSC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.OFFENDER_HEALTH_PROBLEMS AT_OFFENDER_HEALTH, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_HEALTH.OFFENDER_BOOK_ID) AND (AT_HLTH_PRB_DISAB_DSC.DOMAIN = 'HEALTH_PBLM') AND (AT_OFFENDER_HEALTH.PROBLEM_CODE = AT_HLTH_PRB_DISAB_DSC.CODE) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (NOT AT_HLTH_PRB_DISAB_DSC.CODE IN ('ND', 'NR', 'RD', 'PRD') AND AT_HLTH_PRB_DISAB_DSC.PARENT_CODE = 'DISAB' AND AT_HLTH_PRB_DISAB_DSC.DOMAIN = 'HEALTH_PBLM') AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' AND AT_OFFENDER_HEALTH.PROBLEM_TYPE = 'DISAB' AND AT_OFFENDER_HEALTH.PROBLEM_STATUS = 'ON' AND ((AT_HLTH_PRB_DISAB_DSC.DESCRIPTION IN (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #Prompt('Disability (All for all)','A','Personal Care Needs\\Disability',multi,free,,Not_Persistent,,User:3) */) OR 'All' IN (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #Prompt('Disability (All for all)','A','Personal Care Needs\\Disability',multi,free,,Not_Persistent,,User:3) */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */) GROUP BY AT_OFFENDERS_LOCATIONS.DESCRIPTION, AT_HLTH_PRB_DISAB_DSC.DESCRIPTION), dataset_ AS (SELECT DESCRIPTION, DISABILITY, COUNT_NOMS_NUMBER FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "unknown_parameter",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Disability (All for all)",
+          "description": "@Prompt('Disability (All for all)','A','Personal Care Needs\\Disability',multi,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code (All for all)",
+          "description": "@Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP11.DO33b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DISABILITY",
+            "type": "string",
+            "display": "Disability",
+            "legacyId": "DP11.DOc87",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "COUNT_NOMS_NUMBER",
+            "type": "double",
+            "display": "Count NOMS Number",
+            "legacyId": "DP11.DO5e4",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP1a",
+      "name": "Count Offenders by Establishment",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDERS_LOCATIONS.DESCRIPTION AS DESCRIPTION, COUNT(DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY) AS COUNT_NOMS_NUMBER FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */) GROUP BY AT_OFFENDERS_LOCATIONS.DESCRIPTION), dataset_ AS (SELECT DESCRIPTION, COUNT_NOMS_NUMBER FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code (All for all)",
+          "description": "@Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP1a.DO33b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "COUNT_NOMS_NUMBER",
+            "type": "double",
+            "display": "Count NOMS Number",
+            "legacyId": "DP1a.DO5e4",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP1b",
+      "name": "Unique Disabilities",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDERS_LOCATIONS.DESCRIPTION AS DESCRIPTION, COUNT(DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY) AS COUNT_NOMS_NUMBER FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_HLTH_PRB_DISAB_DSC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.OFFENDER_HEALTH_PROBLEMS AT_OFFENDER_HEALTH, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_HEALTH.OFFENDER_BOOK_ID) AND (AT_HLTH_PRB_DISAB_DSC.DOMAIN = 'HEALTH_PBLM') AND (AT_OFFENDER_HEALTH.PROBLEM_CODE = AT_HLTH_PRB_DISAB_DSC.CODE) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' AND AT_OFFENDER_HEALTH.PROBLEM_TYPE = 'DISAB' AND AT_OFFENDER_HEALTH.PROBLEM_STATUS = 'ON' AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */ AND (AT_HLTH_PRB_DISAB_DSC.DOMAIN = 'HEALTH_PBLM' AND AT_HLTH_PRB_DISAB_DSC.PARENT_CODE = 'DISAB' AND NOT AT_HLTH_PRB_DISAB_DSC.CODE IN ('ND', 'NR', 'PRD', 'RD'))) GROUP BY AT_OFFENDERS_LOCATIONS.DESCRIPTION), dataset_ AS (SELECT DESCRIPTION, COUNT_NOMS_NUMBER FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code (All for all)",
+          "description": "@Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP1b.DO33b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "COUNT_NOMS_NUMBER",
+            "type": "double",
+            "display": "Count NOMS Number",
+            "legacyId": "DP1b.DO5e4",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP1e",
+      "name": "Count of No Disability",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDERS_LOCATIONS.DESCRIPTION AS DESCRIPTION, COUNT(DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY) AS COUNT_NOMS_NUMBER FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_HLTH_PRB_DISAB_DSC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.OFFENDER_HEALTH_PROBLEMS AT_OFFENDER_HEALTH, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_HEALTH.OFFENDER_BOOK_ID) AND (AT_HLTH_PRB_DISAB_DSC.DOMAIN = 'HEALTH_PBLM') AND (AT_OFFENDER_HEALTH.PROBLEM_CODE = AT_HLTH_PRB_DISAB_DSC.CODE) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' AND AT_OFFENDER_HEALTH.PROBLEM_TYPE = 'DISAB' AND AT_HLTH_PRB_DISAB_DSC.DESCRIPTION IN ('No Disability', 'No Disability Recorded') AND (AT_OFFENDER_HEALTH.PROBLEM_STATUS IN ('ON') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */)) GROUP BY AT_OFFENDERS_LOCATIONS.DESCRIPTION), dataset_ AS (SELECT DESCRIPTION, COUNT_NOMS_NUMBER FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code (All for all)",
+          "description": "@Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP1e.DO33b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "COUNT_NOMS_NUMBER",
+            "type": "double",
+            "display": "Count NOMS Number",
+            "legacyId": "DP1e.DO5e4",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP1f",
+      "name": "Total No Offndrs with disblty",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDERS_LOCATIONS.DESCRIPTION AS DESCRIPTION, COUNT(DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY) AS COUNT_NOMS_NUMBER FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.OFFENDER_HEALTH_PROBLEMS AT_OFFENDER_HEALTH, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_HEALTH.OFFENDER_BOOK_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */ AND AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' AND AT_OFFENDER_HEALTH.PROBLEM_TYPE = 'DISAB') GROUP BY AT_OFFENDERS_LOCATIONS.DESCRIPTION), dataset_ AS (SELECT DESCRIPTION, COUNT_NOMS_NUMBER FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code (All for all)",
+          "description": "@Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP1f.DO33b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "COUNT_NOMS_NUMBER",
+            "type": "double",
+            "display": "Count NOMS Number",
+            "legacyId": "DP1f.DO5e4",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP20",
+      "name": "Estalishment Name",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDERS_LOCATIONS.DESCRIPTION AS DESCRIPTION FROM OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */))), dataset_ AS (SELECT DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code (All for all)",
+          "description": "@Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP20.DO33b",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP21",
+      "name": "No Disability info on NOMIS",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, COUNT(DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY) AS COUNT_NOMS_NUMBER FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */ AND NOT AT_OFFENDER.OFFENDER_ID_DISPLAY IN (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.OFFENDER_HEALTH_PROBLEMS AT_OFFENDER_HEALTH WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_HEALTH.OFFENDER_BOOK_ID) AND NOT AT_OFFENDER_HEALTH.PROBLEM_TYPE IS NULL)) GROUP BY AT_OFFENDER.OFFENDER_ID_DISPLAY), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, COUNT_NOMS_NUMBER FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code (All for all)",
+          "description": "@Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP21.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "COUNT_NOMS_NUMBER",
+            "type": "double",
+            "display": "Count NOMS Number",
+            "legacyId": "DP21.DO5e4",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP22",
+      "name": "Query 35",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, COUNT(DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY) AS COUNT_NOMS_NUMBER FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_HLTH_PRB_DISAB_DSC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.OFFENDER_HEALTH_PROBLEMS AT_OFFENDER_HEALTH, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_HEALTH.OFFENDER_BOOK_ID) AND (AT_HLTH_PRB_DISAB_DSC.DOMAIN = 'HEALTH_PBLM') AND (AT_OFFENDER_HEALTH.PROBLEM_CODE = AT_HLTH_PRB_DISAB_DSC.CODE) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */ AND AT_OFFENDER_HEALTH.PROBLEM_TYPE IN ('DISAB') AND AT_HLTH_PRB_DISAB_DSC.DESCRIPTION IN ('Refusal to Disclose', 'Refused to Disclose')) GROUP BY AT_OFFENDER.OFFENDER_ID_DISPLAY), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, COUNT_NOMS_NUMBER FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code (All for all)",
+          "description": "@Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP22.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "COUNT_NOMS_NUMBER",
+            "type": "double",
+            "display": "Count NOMS Number",
+            "legacyId": "DP22.DO5e4",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "165998.RS",
+      "name": "Count of Prisoners with Disabilities",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP11",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:COUNT_NOMS_NUMBER",
+            "display": "Count NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP21.DO5e4"
+          },
+          {
+            "name": "$ref:COUNT_NOMS_NUMBER",
+            "display": "Count NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP22.DO5e4"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}
