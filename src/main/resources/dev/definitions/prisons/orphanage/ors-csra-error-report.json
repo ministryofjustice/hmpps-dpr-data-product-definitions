@@ -22,8 +22,18 @@
       "name": "Header Block CSRA",
       "description": "Demographic",
       "datasource": "nomis",
-      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_HEADER_BLOCK.LIV_UNIT_DESC AS LIV_UNIT_DESC, AT_HEADER_BLOCK.STATUS_3 AS STATUS_3 FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('LQL54L')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_BOOKING.IN_OUT_STATUS IN ('IN', 'OUT') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = 'BAI') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('LQL54L')))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, LIV_UNIT_DESC, STATUS_3 FROM dataset_base_)",
-      "parameters": [],
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_HEADER_BLOCK.LIV_UNIT_DESC AS LIV_UNIT_DESC, AT_HEADER_BLOCK.STATUS_3 AS STATUS_3 FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username from context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_BOOKING.IN_OUT_STATUS IN ('IN', 'OUT') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code from prompt_)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username from context_)))), dataset_ AS (SELECT DISTINCT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, LIV_UNIT_DESC, STATUS_3 FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
       "schema": {
         "field": [
           {
@@ -74,8 +84,18 @@
       "name": "Latest CSRA",
       "description": "Demographic",
       "datasource": "nomis",
-      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_HEADER_BLOCK.LIV_UNIT_DESC AS LIV_UNIT_DESC, DT_OFFENDER_CSR_ASSESSMENT.APPROVED_RESULT AS APPROVED_RESULT, DT_OFFENDER_CSR_ASSESSMENT.CALC_SUP_LEVEL_TYPE AS CALC_SUP_LEVEL_TYPE, DT_OFFENDER_CSR_ASSESSMENT.OVERRIDED_SUP_LEVEL_TYPE AS OVERRIDED_SUP_LEVEL_TYPE, DT_OFFENDER_CSR_ASSESSMENT.COALESCED_RESULT AS COALESCED_RESULT, DT_OFFENDER_CSR_ASSESSMENT.NEXT_REVIEW_DATE AS NEXT_REVIEW_DATE, TRUNC(CURRENT_TIMESTAMP - 1) AS YESTERDAY_ FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, (SELECT offender_book_id, assessment_date, assessment_type, calc_sup_level_type, overrided_sup_level_type, approved_result, authority, next_review_date, assessment_seq, assess_status, score, coalesced_result, coalesced_result_description, row_seq_filter FROM (SELECT v.*, rc.description AS coalesced_result_description FROM (SELECT offender_book_id, assessment_date, assessment_type, calc_sup_level_type, overrided_sup_level_type, approved_result, authority, next_review_date, assessment_seq, assess_status, score, coalesced_result, CASE WHEN row_seq_filter_latest = 1 THEN 1 ELSE row_seq_filter_previous END AS row_seq_filter FROM (SELECT offender_book_id, assessment_date, assessment_type, calc_sup_level_type, overrided_sup_level_type, approved_result, authority, next_review_date, assessment_seq, assess_status, score, coalesced_result, CASE WHEN row_seq_filter_latest = 1 AND assess_status = 'A' THEN 1 ELSE 0 END AS row_seq_filter_latest, COUNT(CASE WHEN row_seq_filter_previous = 1 AND assess_status <> 'A' THEN 1 END) OVER (PARTITION BY offender_book_id) + row_seq_filter_previous AS row_seq_filter_previous FROM (SELECT oa.offender_book_id, oa.assessment_date, a.description AS assessment_type, oa.calc_sup_level_type, oa.overrided_sup_level_type, oa.review_sup_level_type AS approved_result, oa.review_committe_code AS authority, oa.next_review_date, oa.assessment_seq, oa.assess_status, oa.score, COALESCE(oa.review_sup_level_type, oa.overrided_sup_level_type, oa.calc_sup_level_type) AS coalesced_result, ROW_NUMBER() OVER (PARTITION BY oa.offender_book_id ORDER BY oa.assess_status, oa.assessment_date DESC, oa.assessment_seq DESC) AS row_seq_filter_latest, ROW_NUMBER() OVER (PARTITION BY oa.offender_book_id ORDER BY oa.assessment_date DESC, oa.assessment_seq DESC) AS row_seq_filter_previous FROM offender_assessments oa INNER JOIN assessments a ON a.assessment_id = oa.assessment_type_id AND a.assessment_class = 'TYPE' AND a.cell_sharing_alert_flag = 'Y'))) v LEFT OUTER JOIN reference_codes rc ON rc.code = v.coalesced_result AND rc.domain = 'SUP_LVL_TYPE')) DT_OFFENDER_CSR_ASSESSMENT, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('LQL54L')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_OFFENDER_CSR_ASSESSMENT.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_BOOKING.IN_OUT_STATUS IN ('IN', 'OUT') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = 'BAI') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('LQL54L')) AND (DT_OFFENDER_CSR_ASSESSMENT.row_seq_filter = 1))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, LIV_UNIT_DESC, APPROVED_RESULT, CALC_SUP_LEVEL_TYPE, OVERRIDED_SUP_LEVEL_TYPE, COALESCED_RESULT, NEXT_REVIEW_DATE, YESTERDAY_ FROM dataset_base_)",
-      "parameters": [],
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_HEADER_BLOCK.LIV_UNIT_DESC AS LIV_UNIT_DESC, DT_OFFENDER_CSR_ASSESSMENT.APPROVED_RESULT AS APPROVED_RESULT, DT_OFFENDER_CSR_ASSESSMENT.CALC_SUP_LEVEL_TYPE AS CALC_SUP_LEVEL_TYPE, DT_OFFENDER_CSR_ASSESSMENT.OVERRIDED_SUP_LEVEL_TYPE AS OVERRIDED_SUP_LEVEL_TYPE, DT_OFFENDER_CSR_ASSESSMENT.COALESCED_RESULT AS COALESCED_RESULT, DT_OFFENDER_CSR_ASSESSMENT.NEXT_REVIEW_DATE AS NEXT_REVIEW_DATE, TRUNC(CURRENT_TIMESTAMP - 1) AS YESTERDAY_ FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, (SELECT offender_book_id, assessment_date, assessment_type, calc_sup_level_type, overrided_sup_level_type, approved_result, authority, next_review_date, assessment_seq, assess_status, score, coalesced_result, coalesced_result_description, row_seq_filter FROM (SELECT v.*, rc.description AS coalesced_result_description FROM (SELECT offender_book_id, assessment_date, assessment_type, calc_sup_level_type, overrided_sup_level_type, approved_result, authority, next_review_date, assessment_seq, assess_status, score, coalesced_result, CASE WHEN row_seq_filter_latest = 1 THEN 1 ELSE row_seq_filter_previous END AS row_seq_filter FROM (SELECT offender_book_id, assessment_date, assessment_type, calc_sup_level_type, overrided_sup_level_type, approved_result, authority, next_review_date, assessment_seq, assess_status, score, coalesced_result, CASE WHEN row_seq_filter_latest = 1 AND assess_status = 'A' THEN 1 ELSE 0 END AS row_seq_filter_latest, COUNT(CASE WHEN row_seq_filter_previous = 1 AND assess_status <> 'A' THEN 1 END) OVER (PARTITION BY offender_book_id) + row_seq_filter_previous AS row_seq_filter_previous FROM (SELECT oa.offender_book_id, oa.assessment_date, a.description AS assessment_type, oa.calc_sup_level_type, oa.overrided_sup_level_type, oa.review_sup_level_type AS approved_result, oa.review_committe_code AS authority, oa.next_review_date, oa.assessment_seq, oa.assess_status, oa.score, COALESCE(oa.review_sup_level_type, oa.overrided_sup_level_type, oa.calc_sup_level_type) AS coalesced_result, ROW_NUMBER() OVER (PARTITION BY oa.offender_book_id ORDER BY oa.assess_status, oa.assessment_date DESC, oa.assessment_seq DESC) AS row_seq_filter_latest, ROW_NUMBER() OVER (PARTITION BY oa.offender_book_id ORDER BY oa.assessment_date DESC, oa.assessment_seq DESC) AS row_seq_filter_previous FROM offender_assessments oa INNER JOIN assessments a ON a.assessment_id = oa.assessment_type_id AND a.assessment_class = 'TYPE' AND a.cell_sharing_alert_flag = 'Y'))) v LEFT OUTER JOIN reference_codes rc ON rc.code = v.coalesced_result AND rc.domain = 'SUP_LVL_TYPE')) DT_OFFENDER_CSR_ASSESSMENT, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username from context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_OFFENDER_CSR_ASSESSMENT.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_BOOKING.IN_OUT_STATUS IN ('IN', 'OUT') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code from prompt_)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username from context_)) AND (DT_OFFENDER_CSR_ASSESSMENT.row_seq_filter = 1))), dataset_ AS (SELECT DISTINCT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, LIV_UNIT_DESC, APPROVED_RESULT, CALC_SUP_LEVEL_TYPE, OVERRIDED_SUP_LEVEL_TYPE, COALESCED_RESULT, NEXT_REVIEW_DATE, YESTERDAY_ FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Establishment Code",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
       "schema": {
         "field": [
           {
@@ -160,6 +180,21 @@
           }
         ]
       }
+    },
+    {
+      "id": "report-total-distinct-prisoner-count",
+      "name": "Total prisoner count",
+      "datasource": "redshift",
+      "query": "select count(distinct OFFENDER_ID_DISPLAY) as PRISONER_COUNT from ${tableId}",
+      "schema": {
+        "field": [
+          {
+            "name": "PRISONER_COUNT",
+            "type": "int",
+            "display": "Total Prisoner Count"
+          }
+        ]
+      }
     }
   ],
   "policy": [
@@ -189,9 +224,16 @@
       "version": "1.0.0",
       "render": "HTML",
       "dataset": "3377299/DP2",
+      "summary": [
+        {
+          "id": "report-total-distinct-prisoner-count",
+          "template": "page-header",
+          "dataset": "$ref:report-total-distinct-prisoner-count"
+        }
+      ],
       "filter": {
         "name": "prefilter_",
-        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE OFFENDER_HEADER_BLOCK_CSRA IS NULL)"
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE STATUS_3 IS NULL)"
       },
       "feature": [
         {
@@ -225,12 +267,12 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
+            "defaultsort": true,
             "legacyId": "DP2.DO45"
           },
           {
             "name": "$ref:LIV_UNIT_DESC",
-            "display": "Liv Unit Desc",
+            "display": "Location",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -246,10 +288,16 @@
       "classification": "OFFICIAL",
       "version": "1.0.0",
       "render": "HTML",
-      "dataset": "3377299/DP3",
+      "dataset": "3377299/DP3","summary": [
+        {
+          "id": "report-total-distinct-prisoner-count",
+          "template": "page-header",
+          "dataset": "$ref:report-total-distinct-prisoner-count"
+        }
+      ],
       "filter": {
         "name": "prefilter_",
-        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (CSRA_APPROVED_RESULT IS NULL AND CSRA_CALCULATED_RESULT IS NOT NULL AND (CSRA_CALCULATED_RESULT IN ('High','HI','HIGH') OR CSRA_OVERRIDE_RESULT IN ('High','HI','HIGH'))))"
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (APPROVED_RESULT IS NULL AND CALC_SUP_LEVEL_TYPE IS NOT NULL AND (CALC_SUP_LEVEL_TYPE IN ('High','HI','HIGH') OR OVERRIDED_SUP_LEVEL_TYPE IN ('High','HI','HIGH'))))"
       },
       "feature": [
         {
@@ -283,12 +331,12 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
+            "defaultsort": true,
             "legacyId": "DP3.DO45"
           },
           {
             "name": "$ref:LIV_UNIT_DESC",
-            "display": "Liv Unit Desc",
+            "display": "Location",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -304,10 +352,16 @@
       "classification": "OFFICIAL",
       "version": "1.0.0",
       "render": "HTML",
-      "dataset": "3377299/DP3",
+      "dataset": "3377299/DP3","summary": [
+        {
+          "id": "report-total-distinct-prisoner-count",
+          "template": "page-header",
+          "dataset": "$ref:report-total-distinct-prisoner-count"
+        }
+      ],
       "filter": {
         "name": "prefilter_",
-        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE CSRA_COALESCED_RESULT IN ('LOW','MEDIUM','MED','Medium','Low'))"
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE COALESCED_RESULT IN ('LOW','MEDIUM','MED','Medium','Low'))"
       },
       "feature": [
         {
@@ -341,12 +395,12 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
+            "defaultsort": true,
             "legacyId": "DP3.DO45"
           },
           {
             "name": "$ref:LIV_UNIT_DESC",
-            "display": "Liv Unit Desc",
+            "display": "Location",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -362,10 +416,16 @@
       "classification": "OFFICIAL",
       "version": "1.0.0",
       "render": "HTML",
-      "dataset": "3377299/DP3",
+      "dataset": "3377299/DP3","summary": [
+        {
+          "id": "report-total-distinct-prisoner-count",
+          "template": "page-header",
+          "dataset": "$ref:report-total-distinct-prisoner-count"
+        }
+      ],
       "filter": {
         "name": "prefilter_",
-        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (VISOVERDUE = 'Overdue' AND CSRA_COALESCED_RESULT IN ('HI','HIGH','High')))"
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (TRUNC(NEXT_REVIEW_DATE) <= YESTERDAY_ AND COALESCED_RESULT IN ('HI','HIGH','High')))"
       },
       "feature": [
         {
@@ -399,12 +459,12 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
+            "defaultsort": true,
             "legacyId": "DP3.DO45"
           },
           {
             "name": "$ref:LIV_UNIT_DESC",
-            "display": "Liv Unit Desc",
+            "display": "Location",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -420,10 +480,16 @@
       "classification": "OFFICIAL",
       "version": "1.0.0",
       "render": "HTML",
-      "dataset": "3377299/DP3",
+      "dataset": "3377299/DP3","summary": [
+        {
+          "id": "report-total-distinct-prisoner-count",
+          "template": "page-header",
+          "dataset": "$ref:report-total-distinct-prisoner-count"
+        }
+      ],
       "filter": {
         "name": "prefilter_",
-        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (CSRA_APPROVED_RESULT IS NULL AND CSRA_CALCULATED_RESULT IS NOT NULL AND (CSRA_CALCULATED_RESULT IN ('STANDARD') OR CSRA_OVERRIDE_RESULT IN ('STANDARD'))))"
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (APPROVED_RESULT IS NULL AND CALC_SUP_LEVEL_TYPE IS NOT NULL AND (CALC_SUP_LEVEL_TYPE IN ('STANDARD') OR OVERRIDED_SUP_LEVEL_TYPE IN ('STANDARD'))))"
       },
       "feature": [
         {
@@ -457,12 +523,12 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
+            "defaultsort": true,
             "legacyId": "DP3.DO45"
           },
           {
             "name": "$ref:LIV_UNIT_DESC",
-            "display": "Liv Unit Desc",
+            "display": "Location",
             "formula": "",
             "visible": "true",
             "sortable": true,
