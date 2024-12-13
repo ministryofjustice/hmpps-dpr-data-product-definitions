@@ -45,8 +45,10 @@ jobs:
       - name: Publish to DynamoDB
         shell: bash
         run: |
-          DPD_FOLDER="$GITHUB_WORKSPACE/src/main/resources/${{ inputs.deployEnv || 'dev' }}/definitions/prisons/${{ inputs.deployFolder || 'orphanage' }}/"
+          DPD_PATH="definitions/prisons/${{ inputs.deployFolder || 'orphanage' }}"
+          DPD_FOLDER="$GITHUB_WORKSPACE/src/main/resources/${{ inputs.deployEnv || 'dev' }}/$DPD_PATH/"
           echo "Searching folder: $DPD_FOLDER"
+          echo "Path: $DPD_PATH"
          
           DPDs=($(find $DPD_FOLDER -name "*.json"))
           
@@ -55,11 +57,9 @@ jobs:
           for FILE_PATH in "${DPDs[@]}"
           do
             FILENAME=$(basename $FILE_PATH)
-            DPD_PATH=${FILE_PATH/$DPD_FOLDER/}
-            DPD_PATH=${DPD_PATH/\/$FILENAME/}
             DPD_ID=$(jq -r '.id' $FILE_PATH)
           
-            echo "Path: $DPD_PATH File: $FILENAME ID: $DPD_ID"
+            echo "File: $FILENAME ID: $DPD_ID"
           
             JSON_TEXT=$(jq -Rsc <$FILE_PATH)
             JSON_TEXT=$(echo $JSON_TEXT | sed 's/^"//')
