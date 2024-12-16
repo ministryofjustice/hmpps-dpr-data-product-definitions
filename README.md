@@ -43,3 +43,11 @@ All DPDs are stored in one or more environment folders. A DPDs will only be avai
 - prod: The production environment. Once signed off in pre-prod, DPDs can be promoted to the prod folder, to be deployed as a part of a scheduled release.
 
 DPDs should be left in lower environments (but kept up to date) in order to facilitate debugging and further development.
+
+## Deployment
+
+As of DPR2-1514, DPDs no longer have a dedicated API. Instead, they are deployed to and retrieved from DynamoDB in the Modernisation platform.
+
+To deploy DPDs to an environment, use this GitHub Action (being sure to approve the deployment to the environment): https://github.com/ministryofjustice/hmpps-dpr-data-product-definitions/actions/workflows/publish.yml
+
+To remove an individual DPD from an environment, use this GitHub Action: https://github.com/ministryofjustice/hmpps-dpr-data-product-definitions/actions/workflows/delete.yml
