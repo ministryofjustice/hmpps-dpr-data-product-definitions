@@ -1,0 +1,1415 @@
+{
+  "id": "kljJSDIADZ1BWFsBM.8AISgXYiw",
+  "name": "ORS Alpha List",
+  "description": "This report outputs all active prisoners on the prison roll of an establishment, it is designed to replace the many Alpha List reports located within Establishment 950 folders. <br/><br/>The data is presented over 7 tabs -  Basic List (Portrait), By Surname, By Location, By NOMS, By Security Cat, By Sentence Length with Main Offence and By Release Date with ERSED.<br/><br/>The following fields are contained within the report - Prison Number, NOMS Number, Surname, First Name, Date of Birth, Location, CAT, Religion, Eth Code, In/Out, Diet, Nationality, Main Legal Status, Sentence Length and release date.<br/>ACC0046 - v00.00.01 Last Modified: 15/03/2017",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACC0046",
+      "Alpha",
+      "Release Date",
+      "ERSED",
+      "Main Offence"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376286/DP0",
+      "name": "Prisoner Location",
+      "description": "Sentence",
+      "datasource": "nomis",
+      "query": "DP3_ AS ( SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END AS CURRENT_RELEASE_DATE, CURR_EFF_SENT_LEN.CURR_EFF_SENT_LEN, AT_OFFENCES.DESCRIPTION AS OFFENCE_DESCRIPTION, AT_OFFENDER_SENT_CALCULATIONS.ERSED_OVERRIDED_DATE FROM OMS_OWNER.COURT_EVENTS AT_OFFENDER_COURT_EVENTS, OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDER_RELEASE_DETAILS AT_OFFENDER_RELEASE_DETAILS, ( SELECT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID, CASE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE ELSE NULL END AS Last_Rel_Date, EFFECTIVE_SENTENCE_LENGTH FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = ( SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID ) ) DT_LAST_RELEASE_DATE, ( SELECT OFF_BOOK.OFFENDER_BOOK_ID, CASE WHEN LIFE_FLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' ELSE SENT_CALC.EFFECTIVE_SENTENCE_LENGTH END AS CURR_EFF_SENT_LEN FROM ( SELECT DISTINCT OFFENDER_SENTENCE_TERMS.OFFENDER_BOOK_ID, OFFENDER_SENTENCE_TERMS.LIFE_SENTENCE_FLAG FROM OFFENDER_SENTENCE_TERMS WHERE OFFENDER_SENTENCE_TERMS.LIFE_SENTENCE_FLAG = 'Y' ) LIFE_FLAG, OMS_OWNER.OFFENDER_SENT_CALCULATIONS SENT_CALC, OMS_OWNER.OFFENDER_BOOKINGS OFF_BOOK WHERE ( OFF_BOOK.OFFENDER_BOOK_ID = SENT_CALC.OFFENDER_BOOK_ID (+) ) AND ( LIFE_FLAG.OFFENDER_BOOK_ID (+) = SENT_CALC.OFFENDER_BOOK_ID ) AND SENT_CALC.OFFENDER_SENT_CALCULATION_ID = ( SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE SENT_CALC.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID ) ) CURR_EFF_SENT_LEN, USER_ACCESSIBLE_CASELOADS, OMS_OWNER.OFFENCES AT_OFFENCES, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS, OMS_OWNER.COURT_EVENT_CHARGES AT_COURT_EVENT_CHARGES, OMS_OWNER.OFFENDER_CHARGES AT_OFFENDER_CHARGES, OMS_OWNER.OFFENDER_CASES AT_OFFENDER_CASES WHERE ( AT_COURT_EVENT_CHARGES.EVENT_ID (+) = AT_OFFENDER_COURT_EVENTS.EVENT_ID ) AND ( AT_OFFENDER_CHARGES.OFFENDER_CHARGE_ID (+) = AT_COURT_EVENT_CHARGES.OFFENDER_CHARGE_ID ) AND ( AT_OFFENDER_COURT_EVENTS.CASE_ID = AT_OFFENDER_CASES.CASE_ID ) AND ( AT_OFFENCES.OFFENCE_CODE = AT_OFFENDER_CHARGES.OFFENCE_CODE ) AND ( AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_CASES.OFFENDER_BOOK_ID (+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID (+) ) AND ( AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_RELEASE_DETAILS.OFFENDER_BOOK_ID (+) ) AND ( USER_ACCESSIBLE_CASELOADS.USERNAME = ( SELECT username FROM context_ ) ) AND ( AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID ) AND ( AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_LAST_RELEASE_DATE.OFFENDER_BOOK_ID (+) ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+) ) AND ( NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI') ) AND ( CURR_EFF_SENT_LEN.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID ) AND ( USER_ACCESSIBLE_CASELOADS.USERNAME = ( SELECT username FROM context_ ) ) AND ( (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND ( AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ( SELECT ESTABLISHMENT_CODE FROM prompt_ ) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */ ) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */ AND ( AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All') ) AND AT_COURT_EVENT_CHARGES.MOST_SERIOUS_FLAG IN ('Y') ) ), DP_BASE_ AS ( SELECT DISTINCT AT_OFFENDER_BOOKING.BOOKING_NO, AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.BIRTH_DATE, AT_HEADER_BLOCK.IN_OUT_STATUS, AT_OFFENDER_DIET.PROFILE_CODE, AT_IMPRISON_STATUSES.IMPRISONMENT_STATUS, SUBSTR( AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION) ) AS UNIT_DESCRIPTION_4_SHORT, AT_OFFENDERS_LOCATIONS.DESCRIPTION, AT_HEADER_BLOCK.STATUS_2, DT_IEP_BAND_LAST.IEP_LEVEL, AT_OFFENDER_RELIGION.PROFILE_CODE AS RELIGION, AT_NATIONALITY.DESCRIPTION AS NATIONALITY, CASE WHEN AT_OFFENDER.RACE_CODE = 'W8' THEN 'W3' WHEN AT_OFFENDER.RACE_CODE = 'O1' THEN 'A4' ELSE AT_OFFENDER.RACE_CODE END AS ETHNIC_CODE, TRUNC( MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12 ) AS AGE_IN_YEARS, DP3_.CURRENT_RELEASE_DATE, DP3_.OFFENCE_DESCRIPTION, DP3_.ERSED_OVERRIDED_DATE, DP3_.CURR_EFF_SENT_LEN FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, ( SELECT iep_level, description, agy_loc_id, offender_book_id, iep_date FROM ( SELECT iep.iep_level, rc.description, iep.agy_loc_id, iep.offender_book_id, iep.iep_date, ROW_NUMBER() OVER ( PARTITION BY iep.offender_book_id ORDER BY iep.iep_time DESC, iep.iep_level_seq DESC ) AS row_seq_filter FROM oms_owner.offender_iep_levels iep LEFT OUTER JOIN oms_owner.reference_codes rc ON iep.iep_level = rc.code AND rc.domain = 'IEP_LEVEL' ) WHERE row_seq_filter = 1 ) DT_IEP_BAND_LAST, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFFENDER_DIET, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFFENDER_RELIGION, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFF_PROF_DET_NAT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.IMPRISONMENT_STATUSES AT_IMPRISON_STATUSES, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, USER_ACCESSIBLE_CASELOADS, OMS_OWNER.PROFILE_CODES AT_NATIONALITY, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS, OMS_OWNER.OFFENDER_IMPRISON_STATUSES AT_OFFENDER_IMPRISON_STATUSES, DP3_ WHERE ( ( AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID ) AND ( AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID ) AND ( AT_OFFENDER_RELIGION.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID ) AND (AT_OFFENDER_RELIGION.PROFILE_TYPE = 'RELF') AND (AT_OFFENDER_DIET.PROFILE_TYPE = 'DIET') AND ( AT_OFFENDER_DIET.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID ) AND ( AT_OFFENDER_IMPRISON_STATUSES.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID ) AND ( AT_OFFENDER_IMPRISON_STATUSES.LATEST_STATUS = 'Y' OR AT_OFFENDER_IMPRISON_STATUSES.LATEST_STATUS IS NULL ) AND ( AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST' ) AND ( DT_IEP_BAND_LAST.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID ) AND ( USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER( ( SELECT username FROM context_ /* = #Variable('BOUSER') */ ) ) ) AND ( AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID ) AND ( AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID ) AND ( AT_OFF_PROF_DET_NAT.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID ) AND (AT_OFF_PROF_DET_NAT.PROFILE_TYPE = ('NAT')) AND ( AT_NATIONALITY.PROFILE_TYPE = AT_OFF_PROF_DET_NAT.PROFILE_TYPE AND AT_NATIONALITY.PROFILE_CODE = AT_OFF_PROF_DET_NAT.PROFILE_CODE ) AND (AT_NATIONALITY.PROFILE_TYPE = ('NAT')) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID ) AND ( NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI') ) AND ( AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID ) AND ( AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID ) AND ( AT_IMPRISON_STATUSES.IMPRISONMENT_STATUS = AT_OFFENDER_IMPRISON_STATUSES.IMPRISONMENT_STATUS ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID ) AND ( WING_CASELOAD_SECURITY.USERNAME = UPPER( ( SELECT username FROM context_ /* = #Variable('BOUSER') */ ) ) ) AND ( USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER( ( SELECT username FROM context_ /* = #Variable('BOUSER') */ ) ) ) AND ( (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND ( AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ( SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code(s)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */ ) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */ ) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */ AND ( AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE IN ( SELECT WING FROM prompt_ /* = #Prompt('Wing (All for all)','A','Cell\\Location LOV',multi,free,,Not_Persistent,,User:4) */ ) OR 'All' IN ( SELECT WING FROM prompt_ /* = #Prompt('Wing (All for all)','A','Cell\\Location LOV',multi,free,,Not_Persistent,,User:4) */ ) ) ) ) AND (DP3_.OFFENDER_ID_DISPLAY(+) = AT_OFFENDER.OFFENDER_ID_DISPLAY) ), dataset_base_ AS ( SELECT dbs.* FROM ( SELECT BOOKING_NO, OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, BIRTH_DATE, IN_OUT_STATUS, PROFILE_CODE, IMPRISONMENT_STATUS, UNIT_DESCRIPTION_4_SHORT, DESCRIPTION, STATUS_2, IEP_LEVEL, RELIGION, NATIONALITY, ETHNIC_CODE, AGE_IN_YEARS, CURR_EFF_SENT_LEN, CURRENT_RELEASE_DATE, OFFENCE_DESCRIPTION, ERSED_OVERRIDED_DATE, row_number() over ( partition by OFFENDER_ID_DISPLAY order by ERSED_OVERRIDED_DATE ) as rn FROM DP_BASE_ ) dbs WHERE rn=1 ), dataset_ AS (SELECT BOOKING_NO, OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, BIRTH_DATE, IN_OUT_STATUS, PROFILE_CODE, IMPRISONMENT_STATUS, UNIT_DESCRIPTION_4_SHORT, DESCRIPTION, STATUS_2, IEP_LEVEL, RELIGION, NATIONALITY, ETHNIC_CODE, AGE_IN_YEARS, CURR_EFF_SENT_LEN AS V_CURRENTSENTENCELENGTH, CURRENT_RELEASE_DATE AS V_CURRENTRELEASEDATE, OFFENCE_DESCRIPTION AS V_MAIN_OFFENCE, ERSED_OVERRIDED_DATE AS V_ERSED FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "referenceType": "establishment",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "wing",
+          "filterType": "autocomplete",
+          "referenceType": "wing",
+          "reportFieldType": "string",
+          "display": "Wing (All for all)",
+          "description": "@Prompt('Wing (All for all)','A','Cell\\Level 1 Living Unit LOV',multi,free,,Not_Persistent,,User:4)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BOOKING_NO",
+            "type": "string",
+            "display": "Booking No",
+            "legacyId": "DP0.DO10c23",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP0.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP0.DO10046",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "BIRTH_DATE",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP0.DO10075",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "IN_OUT_STATUS",
+            "type": "string",
+            "display": "In Out Status",
+            "legacyId": "DP0.DO10cde",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "PROFILE_CODE",
+            "type": "string",
+            "display": "Diet",
+            "legacyId": "DP0.DO1010a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "IMPRISONMENT_STATUS",
+            "type": "string",
+            "display": "Main Legal Status",
+            "legacyId": "DP0.DO103c7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP0.DO10427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP0.DO1033b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "STATUS_2",
+            "type": "string",
+            "display": "Header Block Category",
+            "legacyId": "DP0.DO11051",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "IEP Level",
+            "legacyId": "DP0.DO10715",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "RELIGION",
+            "type": "string",
+            "display": "Religion",
+            "legacyId": "DP0.DO100b0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "NATIONALITY",
+            "type": "string",
+            "display": "Nationality",
+            "legacyId": "DP0.DO10b7e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP0.DO10088",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "AGE_IN_YEARS",
+            "type": "double",
+            "display": "Age in Years",
+            "legacyId": "DP0.DO10a15",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "V_CURRENTSENTENCELENGTH",
+            "type": "string",
+            "display": "V_CURRENTSENTENCELENGTH",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 17,
+            "name": "V_CURRENTRELEASEDATE",
+            "type": "string",
+            "display": "V_CURRENTRELEASEDATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 18,
+            "name": "V_MAIN_OFFENCE",
+            "type": "string",
+            "display": "V_MAIN_OFFENCE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 19,
+            "name": "V_ERSED",
+            "type": "string",
+            "display": "V_ERSED",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376286/DP3",
+      "name": "Sentencing and Release",
+      "description": "Sentence",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END AS CURRENT_RELEASE_DATE, CURR_EFF_SENT_LEN.CURR_EFF_SENT_LEN AS CURR_EFF_SENT_LEN, AT_OFFENDERS_LOCATIONS.DESCRIPTION AS DESCRIPTION, AT_OFFENCES.DESCRIPTION AS OFFENCE_DESCRIPTION, AT_OFFENDER_SENT_CALCULATIONS.ERSED_OVERRIDED_DATE AS ERSED_OVERRIDED_DATE FROM OMS_OWNER.COURT_EVENTS AT_OFFENDER_COURT_EVENTS, OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDER_RELEASE_DETAILS AT_OFFENDER_RELEASE_DETAILS, (SELECT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID, CASE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE ELSE NULL END AS Last_Rel_Date, EFFECTIVE_SENTENCE_LENGTH FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) DT_LAST_RELEASE_DATE, (SELECT OFF_BOOK.OFFENDER_BOOK_ID, CASE WHEN LIFE_FLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' ELSE SENT_CALC.EFFECTIVE_SENTENCE_LENGTH END AS CURR_EFF_SENT_LEN FROM (SELECT DISTINCT OFFENDER_SENTENCE_TERMS.OFFENDER_BOOK_ID, OFFENDER_SENTENCE_TERMS.LIFE_SENTENCE_FLAG FROM OFFENDER_SENTENCE_TERMS WHERE OFFENDER_SENTENCE_TERMS.LIFE_SENTENCE_FLAG = 'Y') LIFE_FLAG, OMS_OWNER.OFFENDER_SENT_CALCULATIONS SENT_CALC, OMS_OWNER.OFFENDER_BOOKINGS OFF_BOOK WHERE (OFF_BOOK.OFFENDER_BOOK_ID = SENT_CALC.OFFENDER_BOOK_ID (+)) AND (LIFE_FLAG.OFFENDER_BOOK_ID (+) = SENT_CALC.OFFENDER_BOOK_ID) AND SENT_CALC.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE SENT_CALC.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) CURR_EFF_SENT_LEN, USER_ACCESSIBLE_CASELOADS, OMS_OWNER.OFFENCES AT_OFFENCES, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS, OMS_OWNER.COURT_EVENT_CHARGES AT_COURT_EVENT_CHARGES, OMS_OWNER.OFFENDER_CHARGES AT_OFFENDER_CHARGES, OMS_OWNER.OFFENDER_CASES AT_OFFENDER_CASES WHERE (AT_COURT_EVENT_CHARGES.EVENT_ID (+) = AT_OFFENDER_COURT_EVENTS.EVENT_ID) AND (AT_OFFENDER_CHARGES.OFFENDER_CHARGE_ID (+) = AT_COURT_EVENT_CHARGES.OFFENDER_CHARGE_ID) AND (AT_OFFENDER_COURT_EVENTS.CASE_ID = AT_OFFENDER_CASES.CASE_ID) AND (AT_OFFENCES.OFFENCE_CODE = AT_OFFENDER_CHARGES.OFFENCE_CODE) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_CASES.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_RELEASE_DETAILS.OFFENDER_BOOK_ID (+)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_LAST_RELEASE_DATE.OFFENDER_BOOK_ID (+)) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (CURR_EFF_SENT_LEN.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN (SELECT ESTABLISHMENT_CODE FROM prompt_ ) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */ AND (AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')) AND AT_COURT_EVENT_CHARGES.MOST_SERIOUS_FLAG IN ('Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, CURRENT_RELEASE_DATE, CURR_EFF_SENT_LEN, DESCRIPTION, OFFENCE_DESCRIPTION, ERSED_OVERRIDED_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP3.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "CURRENT_RELEASE_DATE",
+            "type": "date",
+            "display": "Current Release Date",
+            "legacyId": "DP3.DO10b29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "CURR_EFF_SENT_LEN",
+            "type": "string",
+            "display": "Current Effective Sentence Length",
+            "legacyId": "DP3.DO10bf6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP3.DO1033b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "OFFENCE_DESCRIPTION",
+            "type": "string",
+            "display": "Offence Description",
+            "legacyId": "DP3.DO974",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ERSED_OVERRIDED_DATE",
+            "type": "date",
+            "display": "ERSED Date",
+            "legacyId": "DP3.DO110e9",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "176845.RS",
+      "name": "Basic List (Portrait)",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:BOOKING_NO",
+            "display": "Booking No",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10c23"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "format_date(${BIRTH_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          }
+        ]
+      }
+    },
+    {
+      "id": "165584.RS",
+      "name": "By Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:BOOKING_NO",
+            "display": "Booking No",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10c23"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "format_date(${BIRTH_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "ULocation",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:STATUS_2",
+            "display": "CAT",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO11051"
+          },
+          {
+            "name": "$ref:RELIGION",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO100b0"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10088"
+          },
+          {
+            "name": "$ref:IN_OUT_STATUS",
+            "display": "In Out Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10cde"
+          },
+          {
+            "name": "$ref:PROFILE_CODE",
+            "display": "Diet",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1010a"
+          },
+          {
+            "name": "$ref:NATIONALITY",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          },
+          {
+            "name": "$ref:IMPRISONMENT_STATUS",
+            "display": "Main Legal Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO103c7"
+          },
+          {
+            "name": "$ref:V_CURRENTSENTENCELENGTH",
+            "display": "Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Effective Sentence Length]"
+          },
+          {
+            "name": "$ref:V_CURRENTRELEASEDATE",
+            "display": "Release Date",
+            "formula": "format_date(${V_CURRENTRELEASEDATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Release Date]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "177410.RS",
+      "name": "By Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:BOOKING_NO",
+            "display": "Booking No",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10c23"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "format_date(${BIRTH_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:STATUS_2",
+            "display": "CAT",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO11051"
+          },
+          {
+            "name": "$ref:RELIGION",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO100b0"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10088"
+          },
+          {
+            "name": "$ref:IN_OUT_STATUS",
+            "display": "In Out Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10cde"
+          },
+          {
+            "name": "$ref:NATIONALITY",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          },
+          {
+            "name": "$ref:IMPRISONMENT_STATUS",
+            "display": "Main Legal Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO103c7"
+          },
+          {
+            "name": "$ref:V_CURRENTSENTENCELENGTH",
+            "display": "Main Legal Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Effective Sentence Length]"
+          },
+          {
+            "name": "$ref:V_CURRENTRELEASEDATE",
+            "display": "Sentence Length",
+            "formula": "format_date(${V_CURRENTRELEASEDATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Release Date]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "177489.RS",
+      "name": "By NOMS",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:BOOKING_NO",
+            "display": "Booking No",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10c23"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "format_date(${BIRTH_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:STATUS_2",
+            "display": "CAT",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO11051"
+          },
+          {
+            "name": "$ref:RELIGION",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO100b0"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10088"
+          },
+          {
+            "name": "$ref:IN_OUT_STATUS",
+            "display": "In Out Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10cde"
+          },
+          {
+            "name": "$ref:NATIONALITY",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          },
+          {
+            "name": "$ref:IMPRISONMENT_STATUS",
+            "display": "Main Legal Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO103c7"
+          },
+          {
+            "name": "$ref:V_CURRENTSENTENCELENGTH",
+            "display": "Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Effective Sentence Length]"
+          },
+          {
+            "name": "$ref:V_CURRENTRELEASEDATE",
+            "display": "Release Date",
+            "formula": "format_date(${V_CURRENTRELEASEDATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Release Date]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "177024.RS",
+      "name": "By Security Cat",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:BOOKING_NO",
+            "display": "Booking No",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10c23"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "format_date(${BIRTH_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:STATUS_2",
+            "display": "CAT",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP0.DO11051"
+          },
+          {
+            "name": "$ref:RELIGION",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO100b0"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10088"
+          },
+          {
+            "name": "$ref:IN_OUT_STATUS",
+            "display": "In Out Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10cde"
+          },
+          {
+            "name": "$ref:NATIONALITY",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          },
+          {
+            "name": "$ref:IMPRISONMENT_STATUS",
+            "display": "Main Legal Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO103c7"
+          },
+          {
+            "name": "$ref:V_CURRENTSENTENCELENGTH",
+            "display": "Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Effective Sentence Length]"
+          },
+          {
+            "name": "$ref:V_CURRENTRELEASEDATE",
+            "display": "Release Date",
+            "formula": "format_date(${V_CURRENTRELEASEDATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Release Date]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "177686.RS",
+      "name": "By Age ",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:BOOKING_NO",
+            "display": "Booking No",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10c23"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:AGE_IN_YEARS",
+            "display": "Age in Years",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP0.DO10a15"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:STATUS_2",
+            "display": "CAT",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO11051"
+          },
+          {
+            "name": "$ref:RELIGION",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO100b0"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10088"
+          },
+          {
+            "name": "$ref:IN_OUT_STATUS",
+            "display": "In Out Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10cde"
+          },
+          {
+            "name": "$ref:PROFILE_CODE",
+            "display": "Diet",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1010a"
+          },
+          {
+            "name": "$ref:NATIONALITY",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          },
+          {
+            "name": "$ref:IMPRISONMENT_STATUS",
+            "display": "Main Legal Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO103c7"
+          },
+          {
+            "name": "$ref:V_CURRENTSENTENCELENGTH",
+            "display": "Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Effective Sentence Length]"
+          },
+          {
+            "name": "$ref:V_CURRENTRELEASEDATE",
+            "display": "Release Date",
+            "formula": "format_date(${V_CURRENTRELEASEDATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Release Date]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "177199.RS",
+      "name": "By Sent Length with Main Off",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:BOOKING_NO",
+            "display": "Booking No",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10c23"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:STATUS_2",
+            "display": "Cat",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO11051"
+          },
+          {
+            "name": "$ref:RELIGION",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO100b0"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10088"
+          },
+          {
+            "name": "$ref:IN_OUT_STATUS",
+            "display": "In Out Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10cde"
+          },
+          {
+            "name": "$ref:IMPRISONMENT_STATUS",
+            "display": "Main Legal Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO103c7"
+          },
+          {
+            "name": "$ref:V_MAIN_OFFENCE",
+            "display": "Main Offence",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacySql": "=[Offence Description]"
+          },
+          {
+            "name": "$ref:V_CURRENTSENTENCELENGTH",
+            "display": "Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacySql": "=[Current Effective Sentence Length]"
+          },
+          {
+            "name": "$ref:V_CURRENTRELEASEDATE",
+            "display": "Release Date",
+            "formula": "format_date(${V_CURRENTRELEASEDATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Release Date]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "177581.RS",
+      "name": "By Release Date with ERSED",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:BOOKING_NO",
+            "display": "Booking No",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10c23"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "format_date(${BIRTH_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:AGE_IN_YEARS",
+            "display": "Age in Years",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10a15"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:STATUS_2",
+            "display": "Cat",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO11051"
+          },
+          {
+            "name": "$ref:RELIGION",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO100b0"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10088"
+          },
+          {
+            "name": "$ref:IN_OUT_STATUS",
+            "display": "In Out Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10cde"
+          },
+          {
+            "name": "$ref:NATIONALITY",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          },
+          {
+            "name": "$ref:IMPRISONMENT_STATUS",
+            "display": "Main Legal Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO103c7"
+          },
+          {
+            "name": "$ref:V_CURRENTSENTENCELENGTH",
+            "display": "Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Effective Sentence Length]"
+          },
+          {
+            "name": "$ref:V_CURRENTRELEASEDATE",
+            "display": "Release Date",
+            "formula": "format_date(${V_CURRENTRELEASEDATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacySql": "=[Current Release Date]"
+          },
+          {
+            "name": "$ref:V_ERSED",
+            "display": "ERSED",
+            "formula": "format_date(${V_ERSED}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacySql": "=[ERSED Date]"
+          }
+        ]
+      }
+    }
+  ]
+}
