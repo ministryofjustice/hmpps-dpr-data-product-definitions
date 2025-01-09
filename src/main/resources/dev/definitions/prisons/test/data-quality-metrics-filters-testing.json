@@ -1,0 +1,260 @@
+{
+  "id" : "data-quality-metrics",
+  "name" : "Measures missing data",
+  "description" : "Dashboard to show missing data quality measures",
+  "metadata" : {
+    "author" : "Zahoor",
+    "version" : "1.2.3",
+    "owner" : "DPR"
+  },
+  "datasource" : [
+    {
+      "id" : "datamart",
+      "name" : "datamart"
+    }
+  ],
+  "dataset" : [
+    {
+      "id" : "establishments",
+      "name" : "Establishments",
+      "datasource" : "datamart",
+      "query" : "SELECT id as establishment_id,name as establishment_name FROM datamart.establishment_establishment where id in ('BWI','ESI','LT4','RDI','LT3','ALI','MWI')",
+      "schema" : {
+        "field" : [
+          {
+            "name" : "establishment_id",
+            "type" : "string",
+            "display" : "Establishment ID"
+          },
+          {
+            "name" : "establishment_name",
+            "type" : "string",
+            "display" : "Establishment Name"
+          }
+        ]
+      }
+    },
+    {
+      "id" : "data-quality-dataset",
+      "name" : "Data quality dataset",
+      "datasource" : "datamart",
+      "query" : " SELECT establishment_id,(ethnicity_is_missing *100 / count) as ethnicity_missing, 100 - ethnicity_missing as has_ethnicity, (religion_is_missing *100 / count) as religion_missing, 100 - religion_missing as has_religion, (nationality_is_missing *100 / count) as nationality_missing, 100 - nationality_missing as has_nationality FROM datamart.metrics.data_quality where establishment_id not in ('OUT') and (has_ethnicity < 100 OR has_religion < 100 OR has_nationality < 100) AND Length(establishment_id) = 3",
+      "schema" : {
+        "field" : [
+          {
+            "name" : "establishment_id",
+            "type" : "string",
+            "display" : "Establishment ID",
+            "filter" : {
+              "type" : "select",
+              "dynamicoptions" : {
+                "returnAsStaticOptions" : true,
+                "dataset" : "establishments",
+                "name" : "establishment_id",
+                "display" : "establishment_name",
+                "maximumOptions" : 123
+              },
+              "interactive" : true
+            }
+          },
+	{
+            "name" : "has_ethnicity",
+            "type" : "long",
+            "display" : "% prisoners with ethnicity"
+          },
+          {
+            "name" : "ethnicity_missing",
+            "type" : "long",
+            "display" : "% prisoners without ethnicity"
+          },
+          {
+            "name" : "has_religion",
+            "type" : "long",
+            "display" : "% prisoners with religion"
+          },
+          {
+            "name" : "religion_missing",
+            "type" : "long",
+            "display" : "% of prisoners without religion"
+          },
+          {
+            "name" : "has_nationality",
+            "type" : "long",
+            "display" : "% prisoners with nationality"
+          },
+          {
+            "name" : "nationality_missing",
+            "type" : "long",
+            "display" : "% prisoners without nationality"
+          }
+        ]
+      }
+    }
+  ],
+  "dashboards" : [
+    {
+      "id" : "data-quality-dashboard-test",
+      "name" : "Data quality dashboard",
+      "description" : "Data quality dashboard",
+      "dataset" : "data-quality-dataset",
+      "metrics" : [
+        {
+          "id" : "missing-ethnicity-metric",
+          "name" : "Missing ethnicity",
+          "display" : "Missing ethnicity",
+          "description" : "Number of prisoner with missing or present ethnicity data",
+          "charts" : [
+            {
+              "type" : "bar",
+              "label" : {
+                "name" : "$ref:establishment_id",
+                "display" : "Establishment ID"
+              },
+              "unit" : "number",
+              "columns" : [
+                {
+                  "name" : "$ref:has_ethnicity",
+                  "display" : "% of prisoners with ethnicity"
+
+                },
+                {
+                  "name" : "$ref:ethnicity_missing",
+                  "display" : "% of prisoners without ethnicity"
+
+                }
+              ]
+            },
+            {
+              "type" : "doughnut",
+              "label" : {
+                "name" : "$ref:establishment_id",
+                "display" : "Establishment ID"
+              },
+              "unit" : "number",
+              "columns" : [
+                {
+                  "name" : "$ref:has_ethnicity",
+                  "display" : "% of prisoners with ethnicity"
+                },
+                {
+                  "name" : "$ref:ethnicity_missing",
+                  "display" : "% of prisoners without ethnicity"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id" : "missing-nationality-metric",
+          "name" : "Missing nationality",
+          "display" : "Missing nationality",
+          "description" : "Number of prisoner with missing or present nationality data",
+          "charts" : [
+            {
+              "type" : "bar",
+              "label" : {
+                "name" : "$ref:establishment_id",
+                "display" : "Establishment ID"
+              },
+              "unit" : "number",
+              "columns" : [
+                {
+                  "name" : "$ref:has_nationality",
+                  "display" : "% of prisoners with nationality"
+
+                },
+                {
+                  "name" : "$ref:nationality_missing",
+                  "display" : "% of prisoners without nationality"
+
+                }
+              ]
+            },
+            {
+              "type" : "doughnut",
+              "label" : {
+                "name" : "$ref:establishment_id",
+                "display" : "Establishment ID"
+              },
+              "unit" : "number",
+              "columns" : [
+                {
+                  "name" : "$ref:has_nationality",
+                  "display" : "% of prisoners with nationality"
+                },
+                {
+                  "name" : "$ref:nationality_missing",
+                  "display" : "% of prisoners without nationality"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id" : "missing-religion-metric",
+          "name" : "Missing religion",
+          "display" : "Missing religion",
+          "description" : "Number of prisoner with missing or present religion data",
+          "charts" : [
+            {
+              "type" : "bar",
+              "label" : {
+                "name" : "$ref:establishment_id",
+                "display" : "Establishment ID"
+              },
+              "unit" : "number",
+              "columns" : [
+                {
+                  "name" : "$ref:has_religion",
+                  "display" : "% of prisoners with religion"
+		},
+                {
+                  "name" : "$ref:religion_missing",
+                  "display" : "% of prisoners without religion"
+                }
+              ]
+            },
+            {
+              "type" : "doughnut",
+              "label" : {
+                "name" : "$ref:establishment_id",
+                "display" : "Establishment ID"
+              },
+              "unit" : "number",
+              "columns" : [
+                {
+                  "name" : "$ref:has_religion",
+                  "display" : "% of prisoners with religion"
+                },
+                {
+                  "name" : "$ref:religion_missing",
+                  "display" : "% of prisoners without religion"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "policy" : [
+    {
+      "id" : "access",
+      "type" : "access",
+      "rule" : [
+        {
+          "effect" : "permit",
+          "condition" : [
+            {
+              "match" : [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report" : []
+}
