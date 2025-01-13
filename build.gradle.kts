@@ -16,7 +16,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
   // Swagger
-  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.1")
+  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.3")
 
   implementation("com.h2database:h2")
   implementation("com.google.code.gson:gson:2.11.0")
