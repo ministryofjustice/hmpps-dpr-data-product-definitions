@@ -6,46 +6,29 @@ on:
       - opened
       - synchronize
 
+
+
 jobs:
-  preparation:
+  verify-json-validation:
     runs-on: ubuntu-latest
-
-    permissions:
-      pull-requests: write
-      contents: write
-
+    env:
+      SCHEMA_LOCATION: "${{ env.GITHUB_WORKSPACE }}/schema.json"
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
+      - name: Download schema
+        run: curl https://raw.githubusercontent.com/ministryofjustice/hmpps-digital-prison-reporting-data-product-definitions-schema/main/schema/data-product-definition-schema.json -o $SCHEMA_LOCATION
+
+      - name: Validate JSON
+        id: validate-json
+        uses: ammarlakis/action-ajv@master
         with:
-          java-version: '21'
-          distribution: 'corretto'
+          schema: {{ env.SCHEMA_LOCATION }}
+          data: "${{ env.GITHUB_WORKSPACE }}/dpd/**/*.json"
+          allErrors: true
 
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v3
-
-      - name: Add linting fixes
-        run: ./gradlew ktlintFormat
-
-      - name: Commit linting fixes
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: Linting fixes
-
-      #- uses: ministryofjustice/github-actions/code-formatter@v18.5.0
-      #  env:
-      #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Calculate test coverage
-        id: calculate-test-coverage
+      - name: Fail if invalid files found
+        if: ${{ steps.validate-json.outputs.valid }}
         run: |
-          ./gradlew jacocoTestReport > logs.txt
-          grep 'Test Coverage:' logs.txt -A6 > message.txt
-
-      - name: PR comment
-        uses: thollander/actions-comment-pull-request@v3
-        with:
-          comment-tag: coverage
-          file-path: message.txt
+          echo "${{ steps.validate-json.outputs.valid }}"
+          if [[ ${{ steps.validate-json.outputs.valid }} ]]; then exit 0; else exit 1; fi
