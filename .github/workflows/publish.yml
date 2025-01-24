@@ -84,15 +84,16 @@ jobs:
           do
             FILENAME=$(basename $FILE_PATH)
             DPD_ID=$(jq -r '.id' $FILE_PATH)
-          
-            echo "File: $FILENAME ID: $DPD_ID"
+            SCHEDULED=$(jq -r '.scheduled //false' $FILE_PATH)
+           
+            echo "File: $FILENAME ID: $DPD_ID SCHEDULED: $SCHEDULED"
           
             JSON_TEXT=$(jq -Rsc <$FILE_PATH)
             JSON_TEXT=$(echo "$JSON_TEXT" | sed 's/\/\*[^*]+\*\///')
             JSON_TEXT=$(echo "$JSON_TEXT" | sed 's/^"//')
             JSON_TEXT=$(echo "$JSON_TEXT" | sed 's/"$//')
 
-            echo "{ \"data-product-id\": { \"S\": \"$DPD_ID\" }, \"category\": { \"S\": \"$DPD_PATH\" }, \"definition\": { \"S\": \"$JSON_TEXT\" }, \"filename\": { \"S\": \"$FILENAME\" } }" > $GITHUB_WORKSPACE/temp/$DPD_ID.json
+            echo "{ \"data-product-id\": { \"S\": \"$DPD_ID\" }, \"category\": { \"S\": \"$DPD_PATH\" }, \"definition\": { \"S\": \"$JSON_TEXT\" }, \"filename\": { \"S\": \"$FILENAME\" }, \"scheduled\": { \"S\": \"$SCHEDULED\" } }" > $GITHUB_WORKSPACE/temp/$DPD_ID.json
           
             aws dynamodb put-item \
               --table-name dpr-data-product-definition \
