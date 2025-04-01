@@ -1,0 +1,296 @@
+{
+  "id": "ok_.e2EAAS0vKLIAlf_E63FUUjA",
+  "name": "MIS Activity Attendance Analysis",
+  "description": "HQ9005 v00.00.04 This report analyses activity sessions for a single establishment. The report prompts for a date range, typically a date range for a month is entered. The report shows the data for each activity session and counts the number prisoners scheduled, attended, not recorded, cancelled etc.",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "HQ9005 v00.00.04"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP0",
+      "name": "Activities",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_DIM_PROGRAMME_SERVICE.CODE, AT_DIM_PROGRAMME_SERVICE.DESCRIPTION, AT_DIM_PROGRAMME_TYPE.DESCRIPTION AS ACTIVITY_DESCRIPTION, AT_DIM_PROGRAMME_TYPE.CODE AS ACTIVITY_CODE, TRUNC(AT_FACT_OFFENDER_ACTIVITY.START_TIME) AS ACTIVITY_SESSION_DATE, AT_FACT_OFFENDER_ACTIVITY.STATUS, AT_FACT_OFFENDER_ACTIVITY.START_TIME, AT_FACT_OFFENDER_ACTIVITY.END_TIME, ((AT_FACT_OFFENDER_ACTIVITY.OFFENDER_END_TIME - AT_FACT_OFFENDER_ACTIVITY.OFFENDER_START_TIME) * 24 * 60 * 60) / 60 / 60 AS ACTIVITY_ATTENDED_SESSION_DU34, ((AT_FACT_OFFENDER_ACTIVITY.END_TIME - AT_FACT_OFFENDER_ACTIVITY.START_TIME) * 24 * 60 * 60) / 60 / 60 AS ACTIVITY_SESSION_DURATION, COALESCE(AT_FACT_OFFENDER_ACTIVITY.SLOT_CATEGORY_CODE, 'No Slot') AS SLOT_AS_DIMENSION, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY FROM BODIMIS.FACT_OFFENDER_ACTIVITY AT_FACT_OFFENDER_ACTIVITY, BODIMIS.DIM_ESTABLISHMENT AT_ACTIVITY_ESTABLISHMENT, BODIMIS.DIM_PROGRAMME_SERVICE AT_DIM_PROGRAMME_SERVICE, BODIMIS.DIM_PROGRAMME_TYPE AT_DIM_PROGRAMME_TYPE, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_FACT_OFFENDER_ACTIVITY.OFFENDER_BOOKING_SK) AND (AT_DIM_PROGRAMME_TYPE.PROGRAMME_TYPE_SK = AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_TYPE_SK) AND (AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_SK = AT_FACT_OFFENDER_ACTIVITY.ESTABLISHMENT_SK) AND (AT_DIM_PROGRAMME_SERVICE.PROGRAMME_SERVICE_SK = AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_SERVICE_SK) AND (AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #prompt('Enter Establishment Code','A','Activities\\Activity Establishment Code',Mono,Free,Not_Persistent,,User:0) */) AND TRUNC(AT_FACT_OFFENDER_ACTIVITY.START_TIME) BETWEEN (SELECT START_DATE FROM prompt_ /* = #prompt('Enter Start Date','D',,Mono,Free,Not_Persistent,,User:1) */) AND (SELECT END_DATE FROM prompt_ /* = #prompt('Enter End Date','D',,Mono,Free,Not_Persistent,,User:2) */) AND AT_FACT_OFFENDER_ACTIVITY.ALLOCATED_FLAG = 'Y')), dataset_ AS (SELECT ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION, CODE, DESCRIPTION, ACTIVITY_DESCRIPTION, ACTIVITY_CODE, ACTIVITY_SESSION_DATE, STATUS, START_TIME, END_TIME, ACTIVITY_ATTENDED_SESSION_DU34, ACTIVITY_SESSION_DURATION, SLOT_AS_DIMENSION, OFFENDER_ID_DISPLAY, INITCAP(ACTIVITY_DESCRIPTION) AS VACTIVITYDESC FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@prompt('Enter Establishment Code','A','Activities\\Activity Establishment Code',Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Start Date",
+          "description": "@prompt('Enter Start Date','D',,Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter End Date",
+          "description": "@prompt('Enter End Date','D',,Mono,Free,Not_Persistent,,User:2)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Activity Establishment Code",
+            "legacyId": "DP0.DO6b1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Activity Establishment Name",
+            "legacyId": "DP0.DO6b2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "CODE",
+            "type": "string",
+            "display": "Activity Service Code",
+            "legacyId": "DP0.DO7e9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Activity Service Description",
+            "legacyId": "DP0.DO650",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ACTIVITY_DESCRIPTION",
+            "type": "string",
+            "display": "Activity Description",
+            "legacyId": "DP0.DO64c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ACTIVITY_CODE",
+            "type": "string",
+            "display": "Activity Code",
+            "legacyId": "DP0.DO7e7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ACTIVITY_SESSION_DATE",
+            "type": "date",
+            "display": "Activity Session Date",
+            "legacyId": "DP0.DO70c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "STATUS",
+            "type": "string",
+            "display": "Activity Session Status Code",
+            "legacyId": "DP0.DO64f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "START_TIME",
+            "type": "date",
+            "display": "Activity Session Start Date/Time",
+            "legacyId": "DP0.DO9d7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "END_TIME",
+            "type": "date",
+            "display": "Activity Session End Time",
+            "legacyId": "DP0.DOa68",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ACTIVITY_ATTENDED_SESSION_DU34",
+            "type": "double",
+            "display": "Activity Attended Session Duration",
+            "legacyId": "DP0.DO9fb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "ACTIVITY_SESSION_DURATION",
+            "type": "double",
+            "display": "Activity Session Duration",
+            "legacyId": "DP0.DO799",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "SLOT_AS_DIMENSION",
+            "type": "string",
+            "display": "Slot as Dimension",
+            "legacyId": "DP0.DOa63",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "VACTIVITYDESC",
+            "type": "string",
+            "display": "VACTIVITYDESC",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP1",
+      "name": "MIS Load",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DP1.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "224321.RS",
+      "name": "Activity Attendance Analysis",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Activity Service Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO650"
+          },
+          {
+            "name": "$ref:VACTIVITYDESC",
+            "display": "=Count([NOMS Number]) Where([Activity Session Status Code]=\"ATT\")",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([Activity Description])"
+          },
+          {
+            "name": "$ref:START_TIME",
+            "display": "Activity Session Start Date/Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9d7"
+          },
+          {
+            "name": "$ref:END_TIME",
+            "display": "Activity Session End Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOa68"
+          },
+          {
+            "name": "$ref:SLOT_AS_DIMENSION",
+            "display": "Slot as Dimension",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOa63"
+          },
+          {
+            "name": "$ref:ACTIVITY_SESSION_DURATION",
+            "display": "Activity Session Duration",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO799"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

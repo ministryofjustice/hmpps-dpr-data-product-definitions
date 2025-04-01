@@ -1,0 +1,152 @@
+{
+  "id": "FsrqOl0z_QEAg8sAAHALtF4KACJIAFe4",
+  "name": "MIS DARU National Key Worker Sessions",
+  "description": "The report provides a list of offenders with Key Worker Session case notes entered at each Establishment in a date range. The report can be run for one, multiple or All establishments, and provides a total number of offenders with a case note, not a number of individual case notes.",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PPAS"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP7",
+      "name": "Case note",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_CASE_NOTE_CONTACT_DATE.DAY_DATE, AT_CASE_NOTE_SUB_TYPE.DESCRIPTION, AT_ESTABLISHMENT_OFF_CASE_NOTE.ESTABLISHMENT_DESCRIPTION FROM BODIMIS.DIM_DATE AT_CASE_NOTE_CONTACT_DATE, BODIMIS.DIM_REFERENCE_CODES AT_CASE_NOTE_SUB_TYPE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_OFF_CASE_NOTE, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_OFFENDER_CASE_NOTE AT_FACT_OFFENDER_CASE_NOTE WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_CASE_NOTE_CONTACT_DATE.DATE_SK = AT_FACT_OFFENDER_CASE_NOTE.CONTACT_DATE_SK) AND (AT_CASE_NOTE_SUB_TYPE.REFERENCE_CODE_SK = AT_FACT_OFFENDER_CASE_NOTE.CASE_NOTE_SUB_TYPE_CODE_SK) AND (AT_CASE_NOTE_SUB_TYPE.CODE_DOMAIN = 'TASK_SUBTYPE') AND (AT_FACT_OFFENDER_CASE_NOTE.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_ESTABLISHMENT_OFF_CASE_NOTE.ESTABLISHMENT_SK = AT_FACT_OFFENDER_CASE_NOTE.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_OFF_CASE_NOTE.ESTABLISHMENT_CODE_NK IN (SELECT SAC.CASELOAD_ID FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC WHERE SAC.USERNAME = (SELECT username FROM context_))) AND ((AT_ESTABLISHMENT_OFF_CASE_NOTE.ESTABLISHMENT_CODE_NK IN ('All') OR 'All' IN ('All')) AND AT_CASE_NOTE_CONTACT_DATE.DAY_DATE >= TO_DATE('01-06-2019 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_CASE_NOTE_CONTACT_DATE.DAY_DATE <= TO_DATE('30-06-3019 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_CASE_NOTE_SUB_TYPE.CODE = 'KS')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, DAY_DATE, DESCRIPTION, ESTABLISHMENT_DESCRIPTION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP7.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Case Note Contact Date",
+            "legacyId": "DP7.DOae0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Case Note Sub Type Description",
+            "legacyId": "DP7.DOaf6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Case Note Establishment Description",
+            "legacyId": "DP7.DOb71",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP3",
+      "name": "MIS Load Log",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP3.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "220142.RS",
+      "name": "Key Worker Sessions",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP7",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Case Note Establishment Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DOb71"
+          },
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Case Note Contact Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DOae0"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO76"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

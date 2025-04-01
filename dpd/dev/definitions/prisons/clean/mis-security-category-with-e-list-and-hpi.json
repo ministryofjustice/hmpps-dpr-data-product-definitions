@@ -1,0 +1,761 @@
+{
+  "id": "ok6YUE4ABFSjRA8AKdaD8K7BL38",
+  "name": "MIS Security Category with E List and HPI",
+  "description": "This report provides a list of prisoners on a prison roll and various attributes including security category. Different views of the data are given i.e. all prisoners in category order, all prisoners in location order, Category A prisoners only, E (Escape) List prisoners only and finally HPI (High Public Profile) prisoners only.<br/>ACC0018 - v00.00.02 Last Modified: 20/04/12",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACC0018  v00.00.02 LSRIT037"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP0",
+      "name": "Prisoners",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_CELL.UNIT_4_SHORT_DESCRIPTION, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, COALESCE(AT_OFFENDER_BOOKING.IEP_BAND, '** Incentive Level Missing **') AS IEP_BAND, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION END AS ETHNIC_DESCRIPTION, AT_OFFENDER_BOOKING.IN_OUT, CASE WHEN AT_DIM_OFFENDER_ASSESSMENTS.CURRENT_SEC_CAT_LEVEL IS NULL THEN 'Unclassfied' ELSE AT_DIM_OFFENDER_ASSESSMENTS.CURRENT_SEC_CAT_LEVEL END AS SECURITY_CATEGORY_CURRENT_LE31, AT_DIM_OFFENDER_ASSESSMENTS.CURRENT_SEC_CAT_REVIEW_DATE, AT_ALERT.ALERT_CODE_NK, AT_OFFENDER_ALERT.ALERT_STATUS FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_CELL AT_CELL, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_OFFENDER_ASSESSMENT AT_DIM_OFFENDER_ASSESSMENTS, BODIMIS.DIM_ALERT AT_ALERT, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK (+)) AND (AT_ALERT.ALERT_SK (+) = AT_OFFENDER_ALERT.ALERT_SK) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_DIM_OFFENDER_ASSESSMENTS.OFFENDER_BOOKING_SK (+)) AND ((AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O') AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND AT_OFFENDER_BOOKING.LIVING_UNIT_SK >= 1 AND (AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,Not_Persistent,User:70) */))) UNION SELECT '-', AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, COALESCE(AT_OFFENDER_BOOKING.IEP_BAND, '** Incentive Level Missing **') AS IEP_BAND, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION END AS ETHNIC_DESCRIPTION, AT_OFFENDER_BOOKING.IN_OUT, CASE WHEN AT_DIM_OFFENDER_ASSESSMENTS.CURRENT_SEC_CAT_LEVEL IS NULL THEN 'Unclassfied' ELSE AT_DIM_OFFENDER_ASSESSMENTS.CURRENT_SEC_CAT_LEVEL END AS SECURITY_CATEGORY_CURRENT_LE31, AT_DIM_OFFENDER_ASSESSMENTS.CURRENT_SEC_CAT_REVIEW_DATE, AT_ALERT.ALERT_CODE_NK, AT_OFFENDER_ALERT.ALERT_STATUS FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_OFFENDER_ASSESSMENT AT_DIM_OFFENDER_ASSESSMENTS, BODIMIS.DIM_ALERT AT_ALERT, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK (+)) AND (AT_ALERT.ALERT_SK (+) = AT_OFFENDER_ALERT.ALERT_SK) AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_DIM_OFFENDER_ASSESSMENTS.OFFENDER_BOOKING_SK (+)) AND ((AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O') AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND AT_OFFENDER_BOOKING.LIVING_UNIT_SK < 1 AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Associated Establishment\\Associated Establishment Code',mono,free,Not_Persistent,User:69) */)))), dataset_ AS (SELECT UNIT_4_SHORT_DESCRIPTION, OFFENDER_ID_DISPLAY, SURNAME, FIRST_NAME, IEP_BAND, MAIN_LEGAL_STATUS_DESCRIPTION, ETHNIC_DESCRIPTION, IN_OUT, SECURITY_CATEGORY_CURRENT_LE31, CURRENT_SEC_CAT_REVIEW_DATE, ALERT_CODE_NK, ALERT_STATUS FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,Not_Persistent,User:70)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "UNIT_4_SHORT_DESCRIPTION",
+            "type": "string",
+            "display": "Unit Description 4 - Short",
+            "legacyId": "DP0.DO4c2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP0.DO7b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP0.DO80",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "IEP_BAND",
+            "type": "string",
+            "display": "IEP Band",
+            "legacyId": "DP0.DOe4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "MAIN_LEGAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Main Legal Status Description",
+            "legacyId": "DP0.DOdf",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ETHNIC_DESCRIPTION",
+            "type": "string",
+            "display": "Ethnic Description",
+            "legacyId": "DP0.DO9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "IN_OUT",
+            "type": "string",
+            "display": "In Out",
+            "legacyId": "DP0.DO4d4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "SECURITY_CATEGORY_CURRENT_LE31",
+            "type": "string",
+            "display": "Security Category - Current Level",
+            "legacyId": "DP0.DO832",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "CURRENT_SEC_CAT_REVIEW_DATE",
+            "type": "date",
+            "display": "Security Category - Current Review Date",
+            "legacyId": "DP0.DO830",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ALERT_CODE_NK",
+            "type": "string",
+            "display": "Alert Code",
+            "legacyId": "DP0.DO8e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "ALERT_STATUS",
+            "type": "string",
+            "display": "Alert Status",
+            "legacyId": "DP0.DO94",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP1",
+      "name": "MIS Load",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DP1.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "61729.RS",
+      "name": "By Category",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:SECURITY_CATEGORY_CURRENT_LE31",
+            "display": "Security Category - Current Level",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO832"
+          }
+        ]
+      }
+    },
+    {
+      "id": "62436.RS",
+      "name": "By Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO76"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO7b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO80"
+          },
+          {
+            "name": "$ref:ETHNIC_DESCRIPTION",
+            "display": "Ethnic Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9d"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Unit Description 4 - Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4c2"
+          },
+          {
+            "name": "$ref:IN_OUT",
+            "display": "In Out",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4d4"
+          },
+          {
+            "name": "$ref:SECURITY_CATEGORY_CURRENT_LE31",
+            "display": "Security Category - Current Level",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO832"
+          },
+          {
+            "name": "$ref:CURRENT_SEC_CAT_REVIEW_DATE",
+            "display": "Security Category - Current Review Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO830"
+          },
+          {
+            "name": "$ref:IEP_BAND",
+            "display": "IEP Band",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOe4"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_DESCRIPTION",
+            "display": "Main Legal Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOdf"
+          }
+        ]
+      }
+    },
+    {
+      "id": "62178.RS",
+      "name": "By Review Date",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO76"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO7b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO80"
+          },
+          {
+            "name": "$ref:ETHNIC_DESCRIPTION",
+            "display": "Ethnic Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9d"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Unit Description 4 - Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4c2"
+          },
+          {
+            "name": "$ref:IN_OUT",
+            "display": "In Out",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4d4"
+          },
+          {
+            "name": "$ref:SECURITY_CATEGORY_CURRENT_LE31",
+            "display": "Security Category - Current Level",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO832"
+          },
+          {
+            "name": "$ref:CURRENT_SEC_CAT_REVIEW_DATE",
+            "display": "Security Category - Current Review Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO830"
+          },
+          {
+            "name": "$ref:IEP_BAND",
+            "display": "IEP Band",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOe4"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_DESCRIPTION",
+            "display": "Main Legal Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOdf"
+          }
+        ]
+      }
+    },
+    {
+      "id": "62324.RS",
+      "name": "Cat A",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE SECURITY_CATEGORY_CURRENT_LE31 IN ('Cat A','Prov A','Cat A High','Cat A Ex','Cat A Hi'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO76"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO7b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO80"
+          },
+          {
+            "name": "$ref:ETHNIC_DESCRIPTION",
+            "display": "Ethnic Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9d"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Unit Description 4 - Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4c2"
+          },
+          {
+            "name": "$ref:IN_OUT",
+            "display": "In Out",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4d4"
+          },
+          {
+            "name": "$ref:SECURITY_CATEGORY_CURRENT_LE31",
+            "display": "Security Category - Current Level",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO832"
+          },
+          {
+            "name": "$ref:CURRENT_SEC_CAT_REVIEW_DATE",
+            "display": "Security Category - Current Review Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO830"
+          },
+          {
+            "name": "$ref:IEP_BAND",
+            "display": "IEP Band",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOe4"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_DESCRIPTION",
+            "display": "Main Legal Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOdf"
+          }
+        ]
+      }
+    },
+    {
+      "id": "62383.RS",
+      "name": "E List",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (ALERT_STATUS = 'ACTIVE' AND ALERT_CODE = 'XEL'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO76"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO7b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO80"
+          },
+          {
+            "name": "$ref:ETHNIC_DESCRIPTION",
+            "display": "Ethnic Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9d"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Unit Description 4 - Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4c2"
+          },
+          {
+            "name": "$ref:IN_OUT",
+            "display": "In Out",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4d4"
+          },
+          {
+            "name": "$ref:SECURITY_CATEGORY_CURRENT_LE31",
+            "display": "Security Category - Current Level",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO832"
+          },
+          {
+            "name": "$ref:CURRENT_SEC_CAT_REVIEW_DATE",
+            "display": "Security Category - Current Review Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO830"
+          },
+          {
+            "name": "$ref:IEP_BAND",
+            "display": "IEP Band",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOe4"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_DESCRIPTION",
+            "display": "Main Legal Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOdf"
+          }
+        ]
+      }
+    },
+    {
+      "id": "62573.RS",
+      "name": "HPI",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (ALERT_STATUS = 'ACTIVE' AND ALERT_CODE = 'HPI'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO76"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO7b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO80"
+          },
+          {
+            "name": "$ref:ETHNIC_DESCRIPTION",
+            "display": "Ethnic Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9d"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Unit Description 4 - Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4c2"
+          },
+          {
+            "name": "$ref:IN_OUT",
+            "display": "In Out",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4d4"
+          },
+          {
+            "name": "$ref:SECURITY_CATEGORY_CURRENT_LE31",
+            "display": "Security Category - Current Level",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO832"
+          },
+          {
+            "name": "$ref:CURRENT_SEC_CAT_REVIEW_DATE",
+            "display": "Security Category - Current Review Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO830"
+          },
+          {
+            "name": "$ref:IEP_BAND",
+            "display": "IEP Band",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOe4"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_DESCRIPTION",
+            "display": "Main Legal Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOdf"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

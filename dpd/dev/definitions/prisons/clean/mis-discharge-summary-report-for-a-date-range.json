@@ -1,0 +1,201 @@
+{
+  "id": "Fu_mHV5HiAYA8B0AAHDbal8KACJIAFe4",
+  "name": "MIS Discharge Summary Report For a Date Range",
+  "description": "This report provides a list of prisoner discharge details bwtween two dates specified at runtime. The process identifies prisoners who have been discharged that day and reports on the total discharge balance, the discharge grant, travel grant and subsistence grant.<br/>FIN0007 - v01.00.00",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "FIN0007 v01.00.00 drop8.6"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376115/DP0",
+      "name": "Discharge Summary",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.INITIALS, AT_DISCH_EVENT_DATE.DAY_DATE, CASE WHEN AT_FACT_DISCHARGE_TXN.EVENT_TYPE = 'TA' THEN 'Temp Absence' WHEN AT_FACT_DISCHARGE_TXN.EVENT_TYPE = 'CRT' THEN 'Court' WHEN AT_FACT_DISCHARGE_TXN.EVENT_TYPE = 'REL' THEN 'Release' END AS MOVEMENT_EVENT_TYPE, AT_FACT_DISCHARGE_TXN.EVENT_DESCRIPTION, SUM(CASE WHEN AT_DISCHARGE_TXN_TYPE.TRANSACTION_TYPE = 'DISCP' THEN AT_FACT_DISCHARGE_TXN.TRANSACTION_ENTRY_AMOUNT ELSE 0 END) AS DISCHARGE_PAYMENT_AMOUNT, SUM(CASE WHEN AT_DISCHARGE_TXN_TYPE.TRANSACTION_TYPE = 'DGRNT' THEN AT_FACT_DISCHARGE_TXN.TRANSACTION_ENTRY_AMOUNT ELSE 0 END) AS DISCHARGE_GRANT, SUM(CASE WHEN AT_DISCHARGE_TXN_TYPE.TRANSACTION_TYPE = 'SGRNT' THEN AT_FACT_DISCHARGE_TXN.TRANSACTION_ENTRY_AMOUNT ELSE 0 END) AS SUBSISTENCE_GRANT, SUM(CASE WHEN AT_DISCHARGE_TXN_TYPE.TRANSACTION_TYPE = 'TGRNT' THEN AT_FACT_DISCHARGE_TXN.TRANSACTION_ENTRY_AMOUNT ELSE 0 END) AS TRAVEL_GRANT, SUM(CASE WHEN AT_DISCHARGE_TXN_TYPE.TRANSACTION_TYPE = 'TAP' THEN AT_FACT_DISCHARGE_TXN.TRANSACTION_ENTRY_AMOUNT ELSE 0 END) AS TEMP_ABSENCE_GRANT FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DISCH_EVENT_DATE, BODIMIS.FACT_DISCHARGE_TRANSACTION AT_FACT_DISCHARGE_TXN, BODIMIS.DIM_TRANSACTION_TYPE AT_DISCHARGE_TXN_TYPE, BODIMIS.DIM_ESTABLISHMENT AT_DISCHARGE_TXN_ESTABLISHMENT, BODIMIS.DIM_DATE AT_DISCH_TXN_DATE WHERE (AT_FACT_DISCHARGE_TXN.EVENT_DATE_SK = AT_DISCH_EVENT_DATE.DATE_SK) AND (AT_FACT_DISCHARGE_TXN.TRANSACTION_ENTRY_DATE_SK = AT_DISCH_TXN_DATE.DATE_SK) AND (AT_FACT_DISCHARGE_TXN.TRANSACTION_TYPE_SK = AT_DISCHARGE_TXN_TYPE.TRANSACTION_TYPE_SK) AND (AT_FACT_DISCHARGE_TXN.ESTABLISHMENT_SK = AT_DISCHARGE_TXN_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_DISCHARGE_TXN_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_FACT_DISCHARGE_TXN.OFFENDER_BOOKING_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_DISCHARGE_TXN_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_) AND (AT_DISCHARGE_TXN_TYPE.TRANSACTION_TYPE IN ('DISCP', 'DGRNT', 'TGRNT', 'SGRNT', 'TAP')) AND AT_DISCH_TXN_DATE.DAY_DATE BETWEEN TO_DATE('01-01-2020 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('22-01-2020 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_FACT_DISCHARGE_TXN.Event_ID IN (SELECT AT_FACT_DISCHARGE_GRANT_MVMTS.EVENT_ID FROM BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_DISCHARGE_GRANT_MVMTS WHERE (AT_FACT_DISCHARGE_GRANT_MVMTS.DIRECTION_CODE = 'OUT') AND AT_FACT_DISCHARGE_GRANT_MVMTS.DIRECTION_CODE = 'OUT')) GROUP BY AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.INITIALS, AT_DISCH_EVENT_DATE.DAY_DATE, CASE WHEN AT_FACT_DISCHARGE_TXN.EVENT_TYPE = 'TA' THEN 'Temp Absence' WHEN AT_FACT_DISCHARGE_TXN.EVENT_TYPE = 'CRT' THEN 'Court' WHEN AT_FACT_DISCHARGE_TXN.EVENT_TYPE = 'REL' THEN 'Release' END, AT_FACT_DISCHARGE_TXN.EVENT_DESCRIPTION), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, INITIALS, DAY_DATE, MOVEMENT_EVENT_TYPE, EVENT_DESCRIPTION, DISCHARGE_PAYMENT_AMOUNT, DISCHARGE_GRANT, SUBSISTENCE_GRANT, TRAVEL_GRANT, TEMP_ABSENCE_GRANT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP0.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "INITIALS",
+            "type": "string",
+            "display": "Offender Initials",
+            "legacyId": "DP0.DO1012d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Movement Event Date",
+            "legacyId": "DP0.DO588",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "MOVEMENT_EVENT_TYPE",
+            "type": "string",
+            "display": "Movement Event Type",
+            "legacyId": "DP0.DO575",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "EVENT_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Event Description",
+            "legacyId": "DP0.DO592",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DISCHARGE_PAYMENT_AMOUNT",
+            "type": "double",
+            "display": "Discharge Payment Amount",
+            "legacyId": "DP0.DO589",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "DISCHARGE_GRANT",
+            "type": "double",
+            "display": "Discharge Grant",
+            "legacyId": "DP0.DO58a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "SUBSISTENCE_GRANT",
+            "type": "double",
+            "display": "Subsistence Grant",
+            "legacyId": "DP0.DO58b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "TRAVEL_GRANT",
+            "type": "double",
+            "display": "Travel Grant",
+            "legacyId": "DP0.DO58c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "TEMP_ABSENCE_GRANT",
+            "type": "double",
+            "display": "Temp Absence Grant",
+            "legacyId": "DP0.DO58d",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376115/DP2",
+      "name": "MIS Load Log",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP2.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "129243.RS",
+      "name": "Discharge Summary Report",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376115/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:MOVEMENT_EVENT_TYPE",
+            "display": "Movement Event Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO575"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

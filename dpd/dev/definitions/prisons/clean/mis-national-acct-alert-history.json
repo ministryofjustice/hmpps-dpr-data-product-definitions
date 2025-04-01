@@ -1,0 +1,196 @@
+{
+  "id": "Fu7UrGAGkAgAlNsBAHBLtF4dACJIAFJ8",
+  "name": "MIS National ACCT Alert History",
+  "description": "<br/>Displays Offenders who have, or have had, an ACCT Alert opened in a date range.<br/>NAT0006 - v1.0 Last Modified: 14/05/2021",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "NAT0006 v1.0",
+      "ACCT"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP4",
+      "name": "ACCT Alerts",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_ALERT.ALERT_DESCRIPTION, AT_OFFENDER_ALERT.ALERT_STATUS, CASE WHEN AT_ALERT_EFFECT_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EFFECT_DATE.DAY_DATE ELSE NULL END AS ALERT_EFFECTIVE_DATE, CASE WHEN AT_ALERT_EXPIRY_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EXPIRY_DATE.DAY_DATE ELSE NULL END AS ALERT_EXPIRY_DATE FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_ALERT AT_ALERT, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT, BODIMIS.DIM_DATE AT_ALERT_EFFECT_DATE, BODIMIS.DIM_DATE AT_ALERT_EXPIRY_DATE WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK (+)) AND (AT_ALERT.ALERT_SK (+) = AT_OFFENDER_ALERT.ALERT_SK) AND (AT_OFFENDER_ALERT.ALERT_DATE_SK = AT_ALERT_EFFECT_DATE.DATE_SK (+)) AND (AT_OFFENDER_ALERT.ALERT_EXPIRY_DATE_SK = AT_ALERT_EXPIRY_DATE.DATE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND AT_ALERT.ALERT_CODE_NK IN ('HA') AND CASE WHEN AT_ALERT_EFFECT_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EFFECT_DATE.DAY_DATE ELSE NULL END BETWEEN TO_DATE('01-02-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('15-03-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, ALERT_DESCRIPTION, ALERT_STATUS, ALERT_EFFECTIVE_DATE, ALERT_EXPIRY_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP4.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP4.DO7b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ALERT_DESCRIPTION",
+            "type": "string",
+            "display": "Alert Description",
+            "legacyId": "DP4.DO90",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ALERT_STATUS",
+            "type": "string",
+            "display": "Alert Status",
+            "legacyId": "DP4.DO94",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ALERT_EFFECTIVE_DATE",
+            "type": "date",
+            "display": "Alert Effective Date",
+            "legacyId": "DP4.DO95",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ALERT_EXPIRY_DATE",
+            "type": "date",
+            "display": "Alert Expiry Date",
+            "legacyId": "DP4.DO96",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DPa",
+      "name": "MIS Load",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DPa.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "113787.RS",
+      "name": "ACCT Alerts",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP4",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO76"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO7b"
+          },
+          {
+            "name": "$ref:ALERT_DESCRIPTION",
+            "display": "Alert Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO90"
+          },
+          {
+            "name": "$ref:ALERT_EFFECTIVE_DATE",
+            "display": "Alert Effective Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO95"
+          },
+          {
+            "name": "$ref:ALERT_EXPIRY_DATE",
+            "display": "Alert Expiry Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO96"
+          },
+          {
+            "name": "$ref:ALERT_STATUS",
+            "display": "Alert Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO94"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

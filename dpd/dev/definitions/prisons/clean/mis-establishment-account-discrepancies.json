@@ -1,0 +1,329 @@
+{
+  "id": "klLzmEgACNyPUJUA0f8AFE.rcVQ",
+  "name": "MIS Establishment Account Discrepancies",
+  "description": "HQ9012 - v1.0 Outputs prisoners inter establishment account discrepancies",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "HQ9012"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376115/DP0",
+      "name": "Discrepancies",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_FACT_OFF_ACC_CURR_BALANCE.CASELOAD_ID, AT_DIM_ACCOUNT_CODE_currrent.ACCOUNT_NAME, AT_DIM_ACCOUNT_CODE_currrent.ACCOUNT_CODE, AT_FACT_OFF_ACC_CURR_BALANCE.CURRENT_BALANCE, AT_OFFENDER_BOOKING.SURNAME, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_OFFENDER_BOOKING.INITIALS, AT_CELL.UNIT_4_SHORT_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_OFF_ACC_CURR_BALANCE AT_FACT_OFF_ACC_CURR_BALANCE, BODIMIS.DIM_ACCOUNT_CODE AT_DIM_ACCOUNT_CODE_currrent, BODIMIS.DIM_CELL AT_CELL WHERE (AT_FACT_OFF_ACC_CURR_BALANCE.OFFENDER_BOOKING_SK = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK (+)) AND (AT_DIM_ACCOUNT_CODE_currrent.ACCOUNT_CODE_SK = AT_FACT_OFF_ACC_CURR_BALANCE.ACCOUNT_CODE_SK) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK <> AT_FACT_OFF_ACC_CURR_BALANCE.CASELOAD_ID AND AT_FACT_OFF_ACC_CURR_BALANCE.CURRENT_BALANCE > 0 AND (AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #prompt('Select Establishment Code','A','Establishment\\Establishment Code',Mono,Free,Not_Persistent,,User:0) */) OR AT_FACT_OFF_ACC_CURR_BALANCE.CASELOAD_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #prompt('Select Establishment Code','A','Offender Current Account Balances\\Account Caseload ID',Mono,Free,Not_Persistent,,User:0) */)))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, CASELOAD_ID, ACCOUNT_NAME, ACCOUNT_CODE, CURRENT_BALANCE, SURNAME, ESTABLISHMENT_DESCRIPTION, INITIALS, UNIT_4_SHORT_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@prompt('Select Establishment Code','A','Establishment\\Establishment Code',Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "CASELOAD_ID",
+            "type": "string",
+            "display": "Account Caseload ID",
+            "legacyId": "DP0.DOb8",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ACCOUNT_NAME",
+            "type": "string",
+            "display": "Current Account Name",
+            "legacyId": "DP0.DO56",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ACCOUNT_CODE",
+            "type": "double",
+            "display": "Current Account Code",
+            "legacyId": "DP0.DO54",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "CURRENT_BALANCE",
+            "type": "double",
+            "display": "Current Account Balance",
+            "legacyId": "DP0.DO55",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP0.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP0.DO10129",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "INITIALS",
+            "type": "string",
+            "display": "Offender Initials",
+            "legacyId": "DP0.DO1012d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "UNIT_4_SHORT_DESCRIPTION",
+            "type": "string",
+            "display": "Unit Description 4 - Short",
+            "legacyId": "DP0.DO104c2",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376115/DP1",
+      "name": "MIS Load",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DP1.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "2.RS",
+      "name": "Inter Estabilshment Account Discrepancies by Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376115/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1007b"
+          },
+          {
+            "name": "$ref:INITIALS",
+            "display": "Offender Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1012d"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Unit Description 4 - Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO104c2"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10129"
+          },
+          {
+            "name": "$ref:CASELOAD_ID",
+            "display": "Account Caseload ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOb8"
+          },
+          {
+            "name": "$ref:ACCOUNT_NAME",
+            "display": "Current Account Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO56"
+          },
+          {
+            "name": "$ref:CURRENT_BALANCE",
+            "display": "Current Account Balance",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO55"
+          }
+        ]
+      }
+    },
+    {
+      "id": "435.RS",
+      "name": "Inter Estabilshment Account Discrepancies by Establishment",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376115/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1007b"
+          },
+          {
+            "name": "$ref:INITIALS",
+            "display": "Offender Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1012d"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Unit Description 4 - Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO104c2"
+          },
+          {
+            "name": "$ref:CASELOAD_ID",
+            "display": "Account Caseload ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOb8"
+          },
+          {
+            "name": "$ref:ACCOUNT_NAME",
+            "display": "Current Account Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO56"
+          },
+          {
+            "name": "$ref:CURRENT_BALANCE",
+            "display": "Current Account Balance",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO55"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

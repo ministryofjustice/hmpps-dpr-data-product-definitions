@@ -1,0 +1,770 @@
+{
+  "id": "ok_.ewEACJSWKLIAnf_E63FUUjA",
+  "name": "MIS Quarterly Activity Attendance Analysis",
+  "description": "HQ9005 v00.00.03                        This report analyses activity sessions scheduled vs held for a single establishment. The report prompts for the Year and Quarter of the activity.",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "HQ9005 v00.00.03"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP0",
+      "name": "Activities",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_DIM_PROGRAMME_SERVICE.CODE, AT_DIM_PROGRAMME_SERVICE.DESCRIPTION, AT_DIM_PROGRAMME_TYPE.DESCRIPTION AS ACTIVITY_DESCRIPTION, TRUNC(AT_FACT_OFFENDER_ACTIVITY.START_TIME) AS ACTIVITY_SESSION_DATE, AT_FACT_OFFENDER_ACTIVITY.SLOT_CATEGORY_CODE, AT_FACT_OFFENDER_ACTIVITY.START_TIME, AT_FACT_OFFENDER_ACTIVITY.END_TIME, ((AT_FACT_OFFENDER_ACTIVITY.END_TIME - AT_FACT_OFFENDER_ACTIVITY.START_TIME) * 24 * 60 * 60) / 60 / 60 AS NUMBER_OF_PREVIOUS_CONVICTIONS, AT_FACT_OFFENDER_ACTIVITY.STATUS, ((AT_FACT_OFFENDER_ACTIVITY.OFFENDER_END_TIME - AT_FACT_OFFENDER_ACTIVITY.OFFENDER_START_TIME) * 24 * 60 * 60) / 60 / 60 AS ABSCONDS, ((AT_FACT_OFFENDER_ACTIVITY.OFFENDER_END_TIME - AT_FACT_OFFENDER_ACTIVITY.OFFENDER_START_TIME) * 24 * 60 * 60) / 60 / 60 AS LIVING_UNIT_SK, AT_ACTIVITY_START_DATE.QUARTER_NUMBER, AT_ACTIVITY_START_DATE.MONTH_NAME, AT_ACTIVITY_START_DATE.MONTH_NUMBER, AT_ACTIVITY_START_DATE.WEEK_NUMBER, COUNT(DISTINCT (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY)) AS COUNT_OF_OFFENDERS, SUM(((AT_FACT_OFFENDER_ACTIVITY.END_TIME - AT_FACT_OFFENDER_ACTIVITY.START_TIME) * 24 * 60 * 60) / 60 / 60) AS OFFENDER_BOOKING_SK FROM BODIMIS.FACT_OFFENDER_ACTIVITY AT_FACT_OFFENDER_ACTIVITY, BODIMIS.DIM_ESTABLISHMENT AT_ACTIVITY_ESTABLISHMENT, BODIMIS.DIM_PROGRAMME_SERVICE AT_DIM_PROGRAMME_SERVICE, BODIMIS.DIM_PROGRAMME_TYPE AT_DIM_PROGRAMME_TYPE, BODIMIS.DIM_DATE AT_ACTIVITY_START_DATE, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('sso_mis_jqb29y') AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_FACT_OFFENDER_ACTIVITY.OFFENDER_BOOKING_SK) AND (AT_DIM_PROGRAMME_TYPE.PROGRAMME_TYPE_SK = AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_TYPE_SK) AND (AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_SK = AT_FACT_OFFENDER_ACTIVITY.ESTABLISHMENT_SK) AND (AT_DIM_PROGRAMME_SERVICE.PROGRAMME_SERVICE_SK = AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_SERVICE_SK) AND (AT_ACTIVITY_START_DATE.DAY_DATE (+) = TRUNC(AT_FACT_OFFENDER_ACTIVITY.START_TIME)) AND (AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_) AND CASE WHEN AT_DIM_PROGRAMME_TYPE.SCHEDULE_END_DATE IS NULL THEN 'Y' WHEN AT_DIM_PROGRAMME_TYPE.SCHEDULE_END_DATE > TRUNC(CURRENT_TIMESTAMP) THEN 'Y' ELSE 'N' END = 'Y' AND AT_ACTIVITY_START_DATE.YEAR = 2012 AND AT_ACTIVITY_START_DATE.QUARTER_NUMBER = 2) GROUP BY AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_DIM_PROGRAMME_SERVICE.CODE, AT_DIM_PROGRAMME_SERVICE.DESCRIPTION, AT_DIM_PROGRAMME_TYPE.DESCRIPTION, TRUNC(AT_FACT_OFFENDER_ACTIVITY.START_TIME), AT_FACT_OFFENDER_ACTIVITY.SLOT_CATEGORY_CODE, AT_FACT_OFFENDER_ACTIVITY.START_TIME, AT_FACT_OFFENDER_ACTIVITY.END_TIME, ((AT_FACT_OFFENDER_ACTIVITY.END_TIME - AT_FACT_OFFENDER_ACTIVITY.START_TIME) * 24 * 60 * 60) / 60 / 60, AT_FACT_OFFENDER_ACTIVITY.STATUS, ((AT_FACT_OFFENDER_ACTIVITY.OFFENDER_END_TIME - AT_FACT_OFFENDER_ACTIVITY.OFFENDER_START_TIME) * 24 * 60 * 60) / 60 / 60, ((AT_FACT_OFFENDER_ACTIVITY.OFFENDER_END_TIME - AT_FACT_OFFENDER_ACTIVITY.OFFENDER_START_TIME) * 24 * 60 * 60) / 60 / 60, AT_ACTIVITY_START_DATE.QUARTER_NUMBER, AT_ACTIVITY_START_DATE.MONTH_NAME, AT_ACTIVITY_START_DATE.MONTH_NUMBER, AT_ACTIVITY_START_DATE.WEEK_NUMBER), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION, CODE, DESCRIPTION, ACTIVITY_DESCRIPTION, ACTIVITY_SESSION_DATE, SLOT_CATEGORY_CODE, START_TIME, END_TIME, NUMBER_OF_PREVIOUS_CONVICTIONS, STATUS, ABSCONDS, LIVING_UNIT_SK, QUARTER_NUMBER, MONTH_NAME, MONTH_NUMBER, WEEK_NUMBER, COUNT_OF_OFFENDERS, OFFENDER_BOOKING_SK, INITCAP(ACTIVITY_DESCRIPTION) AS VACTIVITYDESC, COUNT(START_TIME) AS NO_SESSIONS, COUNT(ACTIVITIES.OFFENDER_ID_DISPLAY) OVER (PARTITION BY STATUS = 'ATT') AS PRISONERS_ATTENDED, SUM(NaN) AS V_TOTALSCHEDDUR, CASE WHEN STATUS = 'ATT' THEN COUNT_OF_OFFENDERS END AS V_ATTTOTAL FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Activity Establishment Code",
+            "legacyId": "DP0.DO6b1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Activity Establishment Name",
+            "legacyId": "DP0.DO6b2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "CODE",
+            "type": "string",
+            "display": "Activity Service Code",
+            "legacyId": "DP0.DO7e9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Activity Service Description",
+            "legacyId": "DP0.DO650",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ACTIVITY_DESCRIPTION",
+            "type": "string",
+            "display": "Activity Description",
+            "legacyId": "DP0.DO64c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ACTIVITY_SESSION_DATE",
+            "type": "date",
+            "display": "Activity Session Date",
+            "legacyId": "DP0.DO70c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "SLOT_CATEGORY_CODE",
+            "type": "string",
+            "display": "Offender Initials",
+            "legacyId": "DP0.DO12d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "START_TIME",
+            "type": "date",
+            "display": "Date First Reception",
+            "legacyId": "DP0.DO106",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "END_TIME",
+            "type": "date",
+            "display": "Date Re-Classified",
+            "legacyId": "DP0.DO10a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "NUMBER_OF_PREVIOUS_CONVICTIONS",
+            "type": "double",
+            "display": "Number of Previous Convictions",
+            "legacyId": "DP0.DO16b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "STATUS",
+            "type": "string",
+            "display": "Activity Session Status Code",
+            "legacyId": "DP0.DO64f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "ABSCONDS",
+            "type": "double",
+            "display": "Absconds",
+            "legacyId": "DP0.DO7aa",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "LIVING_UNIT_SK",
+            "type": "double",
+            "display": "Living Unit Sk",
+            "legacyId": "DP0.DO716",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "QUARTER_NUMBER",
+            "type": "double",
+            "display": "Quarter Number",
+            "legacyId": "DP0.DO9c0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "MONTH_NAME",
+            "type": "string",
+            "display": "Month Name",
+            "legacyId": "DP0.DO9be",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "MONTH_NUMBER",
+            "type": "double",
+            "display": "Month Number",
+            "legacyId": "DP0.DO9bf",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "WEEK_NUMBER",
+            "type": "double",
+            "display": "Week Number",
+            "legacyId": "DP0.DO9bd",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 18,
+            "name": "COUNT_OF_OFFENDERS",
+            "type": "double",
+            "display": "Count of Offenders",
+            "legacyId": "DP0.DO655",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 19,
+            "name": "OFFENDER_BOOKING_SK",
+            "type": "double",
+            "display": "Offender Booking Sk",
+            "legacyId": "DP0.DO710",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 20,
+            "name": "VACTIVITYDESC",
+            "type": "string",
+            "display": "VACTIVITYDESC",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 21,
+            "name": "NO_SESSIONS",
+            "type": "string",
+            "display": "NO_SESSIONS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 22,
+            "name": "PRISONERS_ATTENDED",
+            "type": "string",
+            "display": "PRISONERS_ATTENDED",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 23,
+            "name": "V_TOTALSCHEDDUR",
+            "type": "string",
+            "display": "V_TOTALSCHEDDUR",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 24,
+            "name": "V_ATTTOTAL",
+            "type": "string",
+            "display": "V_ATTTOTAL",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP1",
+      "name": "MIS Load",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION FROM BODIMIS.ETL_LOAD_LOG, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_CELL AT_CELL WHERE (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999')))), dataset_ AS (SELECT LOAD_END_DATE, OFFENDER_ID_DISPLAY, ESTABLISHMENT_DESCRIPTION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DP1.DO4dd",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP1.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP1.DO129",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "222617.RS",
+      "name": "Summary",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Activity Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO6b1"
+          },
+          {
+            "name": "$ref:QUARTER_NUMBER",
+            "display": "Quarter Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9c0"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Activity Service Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO650"
+          },
+          {
+            "name": "$ref:VACTIVITYDESC",
+            "display": "=[Count of Offenders] Where([Activity Session Status Code]=\"ATT\")/Sum([No. Sessions])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([Activity Description])"
+          },
+          {
+            "name": "$ref:NO_SESSIONS",
+            "display": "=[Count of Offenders] Where([Activity Session Status Code] InList(\"ACCAB\";\"CANC\";\"NREQ\";\"UNACAB\"))",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Date First Reception])"
+          },
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO655"
+          },
+          {
+            "name": "$ref:NUMBER_OF_PREVIOUS_CONVICTIONS",
+            "display": "Number of Previous Convictions",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO16b"
+          }
+        ]
+      }
+    },
+    {
+      "id": "221605.RS",
+      "name": "By Month",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Activity Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO6b1"
+          },
+          {
+            "name": "$ref:QUARTER_NUMBER",
+            "display": "Quarter Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9c0"
+          },
+          {
+            "name": "$ref:MONTH_NUMBER",
+            "display": "Month Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9bf"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Activity Service Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO650"
+          },
+          {
+            "name": "$ref:VACTIVITYDESC",
+            "display": "=[Count of Offenders] Where([Activity Session Status Code] InList(\"ACCAB\";\"CANC\";\"NREQ\";\"UNACAB\"))",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([Activity Description])"
+          },
+          {
+            "name": "$ref:NO_SESSIONS",
+            "display": "=Sum([Count of Offenders]-[Count of Offenders] Where([Activity Session Status Code]=\"ATT\"))/Sum([No. Sessions])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Date First Reception])"
+          },
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO655"
+          },
+          {
+            "name": "$ref:NUMBER_OF_PREVIOUS_CONVICTIONS",
+            "display": "Number of Previous Convictions",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO16b"
+          }
+        ]
+      }
+    },
+    {
+      "id": "221756.RS",
+      "name": "By Week",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Activity Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO6b1"
+          },
+          {
+            "name": "$ref:QUARTER_NUMBER",
+            "display": "Quarter Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9c0"
+          },
+          {
+            "name": "$ref:MONTH_NUMBER",
+            "display": "Month Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9bf"
+          },
+          {
+            "name": "$ref:WEEK_NUMBER",
+            "display": "Week Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9bd"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Activity Service Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO650"
+          },
+          {
+            "name": "$ref:VACTIVITYDESC",
+            "display": "Actual",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([Activity Description])"
+          },
+          {
+            "name": "$ref:SLOT_CATEGORY_CODE",
+            "display": "Offender Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO12d"
+          },
+          {
+            "name": "$ref:START_TIME",
+            "display": "Date First Reception",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO106"
+          },
+          {
+            "name": "$ref:END_TIME",
+            "display": "Date Re-Classified",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10a"
+          },
+          {
+            "name": "$ref:NO_SESSIONS",
+            "display": "Wk",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Date First Reception])"
+          },
+          {
+            "name": "$ref:NUMBER_OF_PREVIOUS_CONVICTIONS",
+            "display": "Number of Previous Convictions",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO16b"
+          },
+          {
+            "name": "$ref:PRISONERS_ATTENDED",
+            "display": "Session End",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where([Activity Session Status Code]=\"ATT\")"
+          },
+          {
+            "name": "$ref:NO_SESSIONS",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Date First Reception])"
+          },
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO655"
+          }
+        ]
+      }
+    },
+    {
+      "id": "217146.RS",
+      "name": "By Activity",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Activity Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO6b1"
+          },
+          {
+            "name": "$ref:QUARTER_NUMBER",
+            "display": "Quarter Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9c0"
+          },
+          {
+            "name": "$ref:MONTH_NUMBER",
+            "display": "Month Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9bf"
+          },
+          {
+            "name": "$ref:WEEK_NUMBER",
+            "display": "Week Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9bd"
+          },
+          {
+            "name": "$ref:VACTIVITYDESC",
+            "display": "Scheduled",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([Activity Description])"
+          },
+          {
+            "name": "$ref:SLOT_CATEGORY_CODE",
+            "display": "Offender Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO12d"
+          },
+          {
+            "name": "$ref:START_TIME",
+            "display": "Date First Reception",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO106"
+          },
+          {
+            "name": "$ref:END_TIME",
+            "display": "Date Re-Classified",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10a"
+          },
+          {
+            "name": "$ref:NO_SESSIONS",
+            "display": "MM",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Date First Reception])"
+          },
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO655"
+          },
+          {
+            "name": "$ref:NUMBER_OF_PREVIOUS_CONVICTIONS",
+            "display": "Number of Previous Convictions",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO16b"
+          },
+          {
+            "name": "$ref:V_TOTALSCHEDDUR",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([Number of Previous Convictions]*[Count of Offenders])"
+          },
+          {
+            "name": "$ref:V_ATTTOTAL",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Count of Offenders] Where([Activity Session Status Code]=\"ATT\")"
+          },
+          {
+            "name": "$ref:NO_SESSIONS",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Date First Reception])"
+          },
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO655"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

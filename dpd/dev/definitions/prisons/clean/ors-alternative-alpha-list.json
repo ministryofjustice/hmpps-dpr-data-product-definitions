@@ -1,0 +1,1122 @@
+{
+  "id": "Fr_nmQKZkQsA.O4MAAAnbA..ACJIAGc1",
+  "name": "ORS Alternative Alpha List ",
+  "description": "This report outputs all active prisoners on the prison roll of an establishment and is an Alternative to ACC0046 Alpha List. The report includes Nationality, Ethnic Code, Religion, HDCED and Release Date.  Input Controls are available to be used to filter by Religion Description.  V3 New tab added 15/03/24 showing workplace assessments <br/> ACC0053 - v00.00.03 Last Modified: 15/03/2024",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACC0053",
+      "Alternative",
+      "Alpha",
+      "Release Date",
+      ""
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376286/DP0",
+      "name": "Prisoner Location",
+      "description": "OR - Sentence",
+      "datasource": "nomis",
+      "query": "DP5_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, COALESCE(AT_OFFENDER_SENT_CALCULATIONS.HDCED_OVERRIDED_DATE, AT_OFFENDER_SENT_CALCULATIONS.HDCED_CALCULATED_DATE) AS HDCED_DATE, CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END AS CURRENT_RELEASE_DATE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDER_RELEASE_DETAILS AT_OFFENDER_RELEASE_DETAILS, (SELECT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID, CASE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE ELSE NULL END AS Last_Rel_Date, EFFECTIVE_SENTENCE_LENGTH FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) DT_LAST_RELEASE_DATE, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_RELEASE_DETAILS.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_LAST_RELEASE_DATE.OFFENDER_BOOK_ID (+)) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND ((AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ((SELECT establishment_code FROM prompt_)) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */ AND (AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')))), DP7_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_ALERT_TYPE_DESC.DESCRIPTION AS ALERT_DESCRIPTION, AT_OFFENDER_ALERTS.ALERT_CODE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_ALERT_TYPE_DESC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDER_ALERTS AT_OFFENDER_ALERTS, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_ALERTS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_ALERT_TYPE_DESC.CODE (+) = AT_OFFENDER_ALERTS.ALERT_CODE) AND (AT_ALERT_TYPE_DESC.DOMAIN = 'ALERT_CODE' OR AT_ALERT_TYPE_DESC.DOMAIN IS NULL) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ((SELECT establishment_code FROM prompt_)) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */ AND (AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')) AND (AT_OFFENDER_ALERTS.ALERT_STATUS = 'ACTIVE') AND AT_OFFENDER_ALERTS.ALERT_CODE IN ((SELECT establishment_code FROM prompt_), 'RME', 'RLO'))), dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.BIRTH_DATE, TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) AS AGE, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_OFFENDERS_LOCATIONS.DESCRIPTION, AT_OFFENDER_RELIGION.PROFILE_CODE, AT_RELIGION.DESCRIPTION AS RELIGION_DESCRIPTION, AT_NATIONALITY.DESCRIPTION AS NATIONALITY, CASE WHEN AT_OFFENDER.RACE_CODE = 'W8' THEN 'W3' WHEN AT_OFFENDER.RACE_CODE = 'O1' THEN 'A4' ELSE AT_OFFENDER.RACE_CODE END AS ETHNIC_CODE, DP5_.HDCED_DATE, DP5_.CURRENT_RELEASE_DATE, DP7_.ALERT_DESCRIPTION FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFFENDER_RELIGION, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFF_PROF_DET_NAT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, USER_ACCESSIBLE_CASELOADS, OMS_OWNER.PROFILE_CODES AT_RELIGION, OMS_OWNER.PROFILE_CODES AT_NATIONALITY, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS, DP5_, DP7_ WHERE (((AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDER_RELIGION.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_RELIGION.PROFILE_TYPE = 'RELF') AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_OFF_PROF_DET_NAT.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFF_PROF_DET_NAT.PROFILE_TYPE = ('NAT')) AND (AT_NATIONALITY.PROFILE_TYPE = AT_OFF_PROF_DET_NAT.PROFILE_TYPE AND AT_NATIONALITY.PROFILE_CODE = AT_OFF_PROF_DET_NAT.PROFILE_CODE) AND (AT_NATIONALITY.PROFILE_TYPE = ('NAT')) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (AT_RELIGION.PROFILE_CODE = AT_OFFENDER_RELIGION.PROFILE_CODE) AND (AT_RELIGION.PROFILE_TYPE = AT_OFFENDER_RELIGION.PROFILE_TYPE) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ((SELECT establishment_code FROM prompt_)) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */ AND (AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')))) AND (DP5_.OFFENDER_ID_DISPLAY = AT_OFFENDER.OFFENDER_ID_DISPLAY)) AND (DP7_.OFFENDER_ID_DISPLAY = AT_OFFENDER.OFFENDER_ID_DISPLAY)), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, BIRTH_DATE, AGE, UNIT_DESCRIPTION_4_SHORT, DESCRIPTION, PROFILE_CODE, RELIGION_DESCRIPTION, NATIONALITY, ETHNIC_CODE, HDCED_DATE AS V_HDCED, CURRENT_RELEASE_DATE AS V_CURRENTRELEASEDATE, ALERT_DESCRIPTION AS V_ALERT_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP0.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP0.DO10046",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "BIRTH_DATE",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP0.DO10075",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "AGE",
+            "type": "double",
+            "display": "Age",
+            "legacyId": "DP0.DO10072",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP0.DO10427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP0.DO1033b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "PROFILE_CODE",
+            "type": "string",
+            "display": "Religion",
+            "legacyId": "DP0.DO100b0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "RELIGION_DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DP0.DO10c29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "NATIONALITY",
+            "type": "string",
+            "display": "Nationality",
+            "legacyId": "DP0.DO10b7e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP0.DO10088",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "V_HDCED",
+            "type": "string",
+            "display": "V_HDCED",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 12,
+            "name": "V_CURRENTRELEASEDATE",
+            "type": "string",
+            "display": "V_CURRENTRELEASEDATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 13,
+            "name": "V_ALERT_DESCRIPTION",
+            "type": "string",
+            "display": "V_ALERT_DESCRIPTION",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376286/DP5",
+      "name": "Sentence",
+      "description": "OR - Sentence",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, COALESCE(AT_OFFENDER_SENT_CALCULATIONS.HDCED_OVERRIDED_DATE, AT_OFFENDER_SENT_CALCULATIONS.HDCED_CALCULATED_DATE) AS HDCED_DATE, CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END AS CURRENT_RELEASE_DATE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDER_RELEASE_DETAILS AT_OFFENDER_RELEASE_DETAILS, (SELECT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID, CASE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE ELSE NULL END AS Last_Rel_Date, EFFECTIVE_SENTENCE_LENGTH FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) DT_LAST_RELEASE_DATE, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_RELEASE_DETAILS.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_LAST_RELEASE_DATE.OFFENDER_BOOK_ID (+)) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND ((AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ((SELECT establishment_code FROM prompt_)) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */ AND (AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, HDCED_DATE, CURRENT_RELEASE_DATE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP5.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "HDCED_DATE",
+            "type": "date",
+            "display": "HDCED Date",
+            "legacyId": "DP5.DO10463",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "CURRENT_RELEASE_DATE",
+            "type": "date",
+            "display": "Current Release Date",
+            "legacyId": "DP5.DO10b29",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376286/DP7",
+      "name": "Alerts",
+      "description": "OR - Sentence",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_ALERT_TYPE_DESC.DESCRIPTION, AT_OFFENDER_ALERTS.ALERT_CODE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_ALERT_TYPE_DESC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDER_ALERTS AT_OFFENDER_ALERTS, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_ALERTS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_ALERT_TYPE_DESC.CODE (+) = AT_OFFENDER_ALERTS.ALERT_CODE) AND (AT_ALERT_TYPE_DESC.DOMAIN = 'ALERT_CODE' OR AT_ALERT_TYPE_DESC.DOMAIN IS NULL) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ((SELECT establishment_code FROM prompt_)) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */ AND (AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')) AND (AT_OFFENDER_ALERTS.ALERT_STATUS = 'ACTIVE') AND AT_OFFENDER_ALERTS.ALERT_CODE IN ((SELECT establishment_code FROM prompt_), 'RME', 'RLO'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, DESCRIPTION, ALERT_CODE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP7.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Alert Description",
+            "legacyId": "DP7.DO10097",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ALERT_CODE",
+            "type": "string",
+            "display": "Alert Type Code",
+            "legacyId": "DP7.DO1007e",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "165584.RS",
+      "name": "By Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:NATIONALITY",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10088"
+          },
+          {
+            "name": "$ref:PROFILE_CODE",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO100b0"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:V_HDCED",
+            "display": "HDCED",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[HDCED Date]"
+          },
+          {
+            "name": "$ref:V_CURRENTRELEASEDATE",
+            "display": "Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Release Date]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "178461.RS",
+      "name": "By NOMS Number",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:NATIONALITY",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10088"
+          },
+          {
+            "name": "$ref:PROFILE_CODE",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO100b0"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:V_HDCED",
+            "display": "HDCED",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[HDCED Date]"
+          },
+          {
+            "name": "$ref:V_CURRENTRELEASEDATE",
+            "display": "Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Release Date]"
+          },
+          {
+            "name": "$ref:V_ALERT_DESCRIPTION",
+            "display": "=NameOf([v_Alert_Description])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Alert Description]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "177905.RS",
+      "name": "By Religion",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:NATIONALITY",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10088"
+          },
+          {
+            "name": "$ref:PROFILE_CODE",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO100b0"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:V_HDCED",
+            "display": "HDCED",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[HDCED Date]"
+          },
+          {
+            "name": "$ref:V_CURRENTRELEASEDATE",
+            "display": "Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Release Date]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "178264.RS",
+      "name": "Basic List with Religion",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:PROFILE_CODE",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO100b0"
+          }
+        ]
+      }
+    },
+    {
+      "id": "177971.RS",
+      "name": "By Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:NATIONALITY",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10088"
+          },
+          {
+            "name": "$ref:PROFILE_CODE",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO100b0"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:V_HDCED",
+            "display": "HDCED",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[HDCED Date]"
+          },
+          {
+            "name": "$ref:V_CURRENTRELEASEDATE",
+            "display": "Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Release Date]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "178064.RS",
+      "name": "By Release Date",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:NATIONALITY",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10088"
+          },
+          {
+            "name": "$ref:PROFILE_CODE",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO100b0"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:V_HDCED",
+            "display": "HDCED",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[HDCED Date]"
+          },
+          {
+            "name": "$ref:V_CURRENTRELEASEDATE",
+            "display": "Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Release Date]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "178369.RS",
+      "name": "By Age",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:AGE",
+            "display": "Age",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10072"
+          },
+          {
+            "name": "$ref:NATIONALITY",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10088"
+          },
+          {
+            "name": "$ref:PROFILE_CODE",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO100b0"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:V_HDCED",
+            "display": "HDCED",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[HDCED Date]"
+          },
+          {
+            "name": "$ref:V_CURRENTRELEASEDATE",
+            "display": "Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Release Date]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "178821.RS",
+      "name": "Workplace RA",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:NATIONALITY",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10088"
+          },
+          {
+            "name": "$ref:PROFILE_CODE",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO100b0"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:V_HDCED",
+            "display": "HDCED",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[HDCED Date]"
+          },
+          {
+            "name": "$ref:V_CURRENTRELEASEDATE",
+            "display": "Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Release Date]"
+          },
+          {
+            "name": "$ref:V_ALERT_DESCRIPTION",
+            "display": "Workplace RA",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Alert Description]"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}
