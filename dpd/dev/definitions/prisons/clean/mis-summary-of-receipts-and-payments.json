@@ -1,0 +1,340 @@
+{
+  "id": "okZTBVUAAf3mHR0ARReD8K7B948",
+  "name": "MIS Summary of Receipts and Payments",
+  "description": "This daily report produces a summary of all receipts and payments for an establishment. The figures are divided by type of account. A second tab has been added to the report to include Transaction date against Business date.<br/><br/>FIN0030 - v00.00.09 Last Modified 08/06/2018",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "FIN0030 v00.00.09"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376115/DP4",
+      "name": "Transactions",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_DIM_TRANSACTION_TYPE.DESCRIPTION, AT_BUSINESS_DATE.DAY_DATE, SUM(CASE WHEN (AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE) = 'CR' THEN (CASE WHEN (AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE) = '2102' THEN (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT) ELSE 0 END) ELSE 0 END) AS CREDIT_SPEND_TRANSACTION, SUM(CASE WHEN (AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE) = 'CR' THEN (CASE WHEN (AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE) = '2101' THEN (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT) ELSE 0 END) ELSE 0 END) AS CREDIT_PRIVATE_CASH_TRANSACT31, SUM(CASE WHEN (AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE) = 'CR' THEN (CASE WHEN (AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE) = '2103' THEN (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT) ELSE 0 END) ELSE 0 END) AS CREDIT_SAVINGS, SUM(CASE WHEN (AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE) = 'DR' THEN (CASE WHEN (AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE) = '2102' THEN (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT) ELSE 0 END) ELSE 0 END) AS DEBIT_SPEND_TRANSACTION, SUM(CASE WHEN (AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE) = 'DR' THEN (CASE WHEN (AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE) = '2103' THEN (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT) ELSE 0 END) ELSE 0 END) AS DEBIT_SAVINGS_TRANSACTION, SUM(CASE WHEN (AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE) = 'DR' THEN (CASE WHEN (AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE) = '2101' THEN (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT) ELSE 0 END) ELSE 0 END) AS DEBIT_PRIVATE_CASH, AT_DIM_DATE_TRANSACTIONS.DAY_DATE AS TRANSACTION_DATE_ FROM BODIMIS.FACT_OFFENDER_TRANSACTION AT_FACT_OFFENDER_TRANSACTION, BODIMIS.DIM_ESTABLISHMENT AT_CASELOADS, BODIMIS.DIM_TRANSACTION_TYPE AT_DIM_TRANSACTION_TYPE, BODIMIS.DIM_DATE AT_BUSINESS_DATE, BODIMIS.DIM_TXN_POSTING_TYPE AT_DIM_TXN_POSTING_TYPE, BODIMIS.DIM_ACCOUNT_CODE AT_DIM_ACCOUNT_CODE_TXN, BODIMIS.DIM_DATE AT_DIM_DATE_TRANSACTIONS WHERE (AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_TYPE_SK) AND (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_POSTING_TYPE_SK = AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_SK) AND (AT_DIM_DATE_TRANSACTIONS.DATE_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_DATE_SK) AND (AT_FACT_OFFENDER_TRANSACTION.ACCOUNT_CODE_SK = AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE_SK) AND (AT_CASELOADS.ESTABLISHMENT_SK = AT_FACT_OFFENDER_TRANSACTION.ESTABLISHMENT_SK) AND (AT_BUSINESS_DATE.DATE_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_BUSINESS_DATE_SK) AND (AT_CASELOADS.ESTABLISHMENT_CODE_NK IN ((SELECT establishment_code FROM prompt_)) AND ((AT_BUSINESS_DATE.DAY_DATE) = (TO_DATE('01-03-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS')))) GROUP BY AT_DIM_TRANSACTION_TYPE.DESCRIPTION, AT_BUSINESS_DATE.DAY_DATE, AT_DIM_DATE_TRANSACTIONS.DAY_DATE), dataset_ AS (SELECT DESCRIPTION, DAY_DATE, CREDIT_SPEND_TRANSACTION, CREDIT_PRIVATE_CASH_TRANSACT31, CREDIT_SAVINGS, DEBIT_SPEND_TRANSACTION, DEBIT_SAVINGS_TRANSACTION, DEBIT_PRIVATE_CASH, TRANSACTION_DATE_, DEBIT_PRIVATE_CASH || DEBIT_SPEND_TRANSACTION || DEBIT_SAVINGS_TRANSACTION AS V_TOTAL_DEBITS_OF_3_ACCOUNTS, CREDIT_PRIVATE_CASH_TRANSACT31 || CREDIT_SPEND_TRANSACTION || CREDIT_SAVINGS AS V_TOTAL_CREDITS_OF_3_ACCOUNTS FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Transaction Type Description",
+            "legacyId": "DP4.DO7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Business Date (Date Only)",
+            "legacyId": "DP4.DO602",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "CREDIT_SPEND_TRANSACTION",
+            "type": "double",
+            "display": "Credit Spend Transaction",
+            "legacyId": "DP4.DO15d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "CREDIT_PRIVATE_CASH_TRANSACT31",
+            "type": "double",
+            "display": "Credit Private Cash Transaction",
+            "legacyId": "DP4.DO15c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "CREDIT_SAVINGS",
+            "type": "double",
+            "display": "Credit Savings",
+            "legacyId": "DP4.DO159",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "DEBIT_SPEND_TRANSACTION",
+            "type": "double",
+            "display": "Debit Spend Transaction",
+            "legacyId": "DP4.DO15a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DEBIT_SAVINGS_TRANSACTION",
+            "type": "double",
+            "display": "Debit Savings Transaction",
+            "legacyId": "DP4.DO15b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "DEBIT_PRIVATE_CASH",
+            "type": "double",
+            "display": "Debit Private Cash",
+            "legacyId": "DP4.DO158",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "TRANSACTION_DATE_",
+            "type": "date",
+            "display": "Transaction Date (Date Only)",
+            "legacyId": "DP4.DO39",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "V_TOTAL_DEBITS_OF_3_ACCOUNTS",
+            "type": "string",
+            "display": "V_TOTAL_DEBITS_OF_3_ACCOUNTS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 10,
+            "name": "V_TOTAL_CREDITS_OF_3_ACCOUNTS",
+            "type": "string",
+            "display": "V_TOTAL_CREDITS_OF_3_ACCOUNTS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376115/DPa",
+      "name": "MIS Load End Date",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DPa.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "116965.RS",
+      "name": "Receipts and Payments",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376115/DP4",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_EXCLUDE_ALL_ZERO_RECEIPTS <> 0)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Transaction Type Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO7"
+          },
+          {
+            "name": "$ref:DEBIT_PRIVATE_CASH",
+            "display": "Debit Private Cash",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP4.DO158"
+          },
+          {
+            "name": "$ref:DEBIT_SPEND_TRANSACTION",
+            "display": "Debit Spend Transaction",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP4.DO15a"
+          },
+          {
+            "name": "$ref:DEBIT_SAVINGS_TRANSACTION",
+            "display": "Debit Savings Transaction",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP4.DO15b"
+          },
+          {
+            "name": "$ref:V_TOTAL_DEBITS_OF_3_ACCOUNTS",
+            "display": "Savings",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Debit Private Cash]+[Debit Spend Transaction]+[Debit Savings Transaction]"
+          },
+          {
+            "name": "$ref:DEBIT_PRIVATE_CASH",
+            "display": "Debit Private Cash",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP4.DO158"
+          },
+          {
+            "name": "$ref:DEBIT_SPEND_TRANSACTION",
+            "display": "Debit Spend Transaction",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP4.DO15a"
+          },
+          {
+            "name": "$ref:DEBIT_SAVINGS_TRANSACTION",
+            "display": "Debit Savings Transaction",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP4.DO15b"
+          },
+          {
+            "name": "$ref:V_TOTAL_DEBITS_OF_3_ACCOUNTS",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Debit Private Cash]+[Debit Spend Transaction]+[Debit Savings Transaction]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "138779.RS",
+      "name": "Transaction Dates",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376115/DP4",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:TRANSACTION_DATE_",
+            "display": "Transaction Date (Date Only)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO39"
+          },
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Business Date (Date Only)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO602"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Transaction Type Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO7"
+          },
+          {
+            "name": "$ref:V_TOTAL_CREDITS_OF_3_ACCOUNTS",
+            "display": "Credits",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Credit Private Cash Transaction]+[Credit Spend Transaction]+[Credit Savings]"
+          },
+          {
+            "name": "$ref:V_TOTAL_DEBITS_OF_3_ACCOUNTS",
+            "display": "Debits",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Debit Private Cash]+[Debit Spend Transaction]+[Debit Savings Transaction]"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

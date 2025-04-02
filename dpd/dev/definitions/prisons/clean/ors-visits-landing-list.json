@@ -1,0 +1,218 @@
+{
+  "id": "klmeqkcAAF9mRroA..8AISgXYiw",
+  "name": "ORS Visits Landing List",
+  "description": "VIS0013 - v1.2 Last Modified: 26/09/2017 This report returns a list of prisoners to be visited, showing NOMS Number, First Name, Surname and current cell location. The data is grouped by visits to be held in the AM and PM. Now uses full VO number",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "VIS0013 v1.2"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376551/DP0",
+      "name": "Prisoners to be Visited",
+      "description": "OR - Visits",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, SUBSTR(TO_CHAR(AT_AGENCY_VISIT_TIMES.START_TIME), 11, 6) AS VISIT_SLOT_START_TIME, AT_OFFENDER_VISITS.START_TIME, TO_CHAR(AT_OFFENDER_VISITS.START_TIME, 'HH24:mi') AS VISIT_START_TIME_, AT_OFFENDER_VISITS.VISIT_DATE, TO_CHAR(AT_AGENCY_VISIT_TIMES.START_TIME, 'AM') AS AM_OR_PM, AT_OFFENDER_VISIT_ORDERS.VISIT_ORDER_NUMBER FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, OMS_OWNER.AGENCY_VISIT_TIMES AT_AGENCY_VISIT_TIMES, OMS_OWNER.OFFENDER_VISITS AT_OFFENDER_VISITS, OFFENDER_VISIT_ORDERS AT_OFFENDER_VISIT_ORDERS, OMS_OWNER.AGENCY_VISIT_SLOTS AT_AGENCY_VISIT_SLOTS WHERE (AT_AGENCY_VISIT_SLOTS.AGENCY_VISIT_SLOT_ID = AT_OFFENDER_VISITS.AGENCY_VISIT_SLOT_ID AND AT_AGENCY_VISIT_SLOTS.AGY_LOC_ID = AT_OFFENDER_VISITS.AGY_LOC_ID) AND (AT_AGENCY_VISIT_TIMES.AGY_LOC_ID = AT_AGENCY_VISIT_SLOTS.AGY_LOC_ID AND AT_AGENCY_VISIT_TIMES.WEEK_DAY = AT_AGENCY_VISIT_SLOTS.WEEK_DAY AND AT_AGENCY_VISIT_TIMES.TIME_SLOT_SEQ = AT_AGENCY_VISIT_SLOTS.TIME_SLOT_SEQ) AND (AT_OFFENDER_VISIT_ORDERS.OFFENDER_VISIT_ORDER_ID (+) = AT_OFFENDER_VISITS.OFFENDER_VISIT_ORDER_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_VISITS.OFFENDER_BOOK_ID) AND (AT_OFFENDER_VISITS.VISIT_STATUS = 'SCH') AND (WING_CASELOAD_SECURITY.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) AND (AT_OFFENDER_VISITS.VISIT_STATUS <> 'CANC') AND (TRUNC(AT_OFFENDER_VISITS.VISIT_DATE) = (SELECT VISIT_DATE FROM prompt_ /* = #Prompt('Enter Date of Visit','D',,,,Not_Persistent,) */)))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, UNIT_DESCRIPTION_4_SHORT, VISIT_SLOT_START_TIME, START_TIME, VISIT_START_TIME_, VISIT_DATE, AM_OR_PM, VISIT_ORDER_NUMBER FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "visit_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Date of Visit",
+          "description": "@Prompt('Enter Date of Visit','D',,,,Not_Persistent,)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP0.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP0.DO10046",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP0.DO10427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "VISIT_SLOT_START_TIME",
+            "type": "string",
+            "display": "Visit Slot Start Time",
+            "legacyId": "DP0.DO6ce",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "START_TIME",
+            "type": "date",
+            "display": "Visit Start Time",
+            "legacyId": "DP0.DO6cc",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "VISIT_START_TIME_",
+            "type": "string",
+            "display": "Visit Start Time (Time Only)",
+            "legacyId": "DP0.DO7b5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "VISIT_DATE",
+            "type": "date",
+            "display": "Visit Date",
+            "legacyId": "DP0.DO6cb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "AM_OR_PM",
+            "type": "string",
+            "display": "AM or PM",
+            "legacyId": "DP0.DO7b4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "VISIT_ORDER_NUMBER",
+            "type": "double",
+            "display": "Visit Order Number",
+            "legacyId": "DP0.DO6f9",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "173311.RS",
+      "name": "Visits Landing List",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376551/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:VISIT_ORDER_NUMBER",
+            "display": "Visit Order Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO6f9"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

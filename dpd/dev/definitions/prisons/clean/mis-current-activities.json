@@ -1,0 +1,316 @@
+{
+  "id": "oky8HaoABoMBFm8A1f_FFfm0Vos",
+  "name": "MIS Current Activities",
+  "description": "v1.0 List of prisoners latest ethnicity wing activity. Created for Vantive case 2032392 ",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "Activity"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376115/DP4",
+      "name": "Activitiy",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.BOOKING_NUMBER, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, CASE WHEN AT_DOB.DAY_DATE <> '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, COALESCE(AT_OFFENDER_BOOKING.IEP_BAND, '** Incentive Level Missing **') AS IEP_BAND, AT_OFFENDER_BOOKING.NATIONALITY_DESCRIPTION, COALESCE(AT_OFFENDER_BOOKING.RELIGION_DESCRIPTION, 'Not Specified') AS RELIGION_DESCRIPTION, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION END AS ETHNIC_DESCRIPTION, AT_CELL.UNIT_2_DESCRIPTION, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_FACT_OFFENDER_ACTIVITY.ACTIVITY_LOCATION, TRUNC(AT_FACT_OFFENDER_ACTIVITY.START_TIME) AS ACTIVITY_SESSION_DATE FROM BODIMIS.FACT_OFFENDER_ACTIVITY AT_FACT_OFFENDER_ACTIVITY, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_ESTABLISHMENT AT_ACTIVITY_ESTABLISHMENT, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_CELL AT_CELL WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_FACT_OFFENDER_ACTIVITY.OFFENDER_BOOKING_SK) AND (AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_SK = AT_FACT_OFFENDER_ACTIVITY.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #prompt('Establishment Code','A','Establishment\\Establishment Code',Mono,Free,Not_Persistent,,User:0) */) AND ((AT_FACT_OFFENDER_ACTIVITY.ACTIVITY_LOCATION) IN (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #Prompt('Activity Place (All for all)','A','Activities\\Activity Location',multi,free,Not_Persistent,User:85) */) OR 'All' IN (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #Prompt('Activity Place (All for all)','A','Activities\\Activity Location',multi,free,Not_Persistent,User:85) */)) AND (AT_FACT_OFFENDER_ACTIVITY.ALLOCATED_FLAG = 'Y') AND AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #prompt('Establishment Code','A','Activities\\Activity Establishment Code',Mono,Free,Not_Persistent,,User:0) */) AND TRUNC(AT_FACT_OFFENDER_ACTIVITY.START_TIME) <= TRUNC(CURRENT_TIMESTAMP) AND (CASE WHEN AT_FACT_OFFENDER_ACTIVITY.ALLOCATED_FLAG = 'Y' THEN AT_FACT_OFFENDER_ACTIVITY.OFFENDER_END_DATE END > CURRENT_TIMESTAMP))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, BOOKING_NUMBER, SURNAME, FIRST_NAME, DATE_OF_BIRTH, IEP_BAND, NATIONALITY_DESCRIPTION, RELIGION_DESCRIPTION, ETHNIC_DESCRIPTION, UNIT_2_DESCRIPTION, ESTABLISHMENT_DESCRIPTION, ACTIVITY_LOCATION, ACTIVITY_SESSION_DATE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@prompt('Establishment Code','A','Establishment\\Establishment Code',Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "unknown_parameter",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Activity Place (All for all)",
+          "description": "@Prompt('Activity Place (All for all)','A','Activities\\Activity Location',multi,free,Not_Persistent,User:85)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP4.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "BOOKING_NUMBER",
+            "type": "string",
+            "display": "Booking Number",
+            "legacyId": "DP4.DO10077",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP4.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP4.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP4.DO10085",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "IEP_BAND",
+            "type": "string",
+            "display": "IEP Band",
+            "legacyId": "DP4.DO100e4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "NATIONALITY_DESCRIPTION",
+            "type": "string",
+            "display": "Nationality Description",
+            "legacyId": "DP4.DO100b5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "RELIGION_DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DP4.DO100b3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "ETHNIC_DESCRIPTION",
+            "type": "string",
+            "display": "Ethnic Description",
+            "legacyId": "DP4.DO1009d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "UNIT_2_DESCRIPTION",
+            "type": "string",
+            "display": "Unit Description 2",
+            "legacyId": "DP4.DO10138",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP4.DO10129",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "ACTIVITY_LOCATION",
+            "type": "string",
+            "display": "Activity Location",
+            "legacyId": "DP4.DO107b5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "ACTIVITY_SESSION_DATE",
+            "type": "date",
+            "display": "Activity Session Date",
+            "legacyId": "DP4.DO1070c",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376115/DPa",
+      "name": "MIS Load End Date",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DPa.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "139695.RS",
+      "name": "Current Activities",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376115/DP4",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO1007b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10080"
+          },
+          {
+            "name": "$ref:UNIT_2_DESCRIPTION",
+            "display": "Unit Description 2",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10138"
+          },
+          {
+            "name": "$ref:IEP_BAND",
+            "display": "IEP Band",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO100e4"
+          },
+          {
+            "name": "$ref:ETHNIC_DESCRIPTION",
+            "display": "Ethnic Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO1009d"
+          },
+          {
+            "name": "$ref:RELIGION_DESCRIPTION",
+            "display": "Religion Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO100b3"
+          },
+          {
+            "name": "$ref:NATIONALITY_DESCRIPTION",
+            "display": "Nationality Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO100b5"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10085"
+          },
+          {
+            "name": "$ref:ACTIVITY_LOCATION",
+            "display": "Activity Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO107b5"
+          },
+          {
+            "name": "$ref:ACTIVITY_SESSION_DATE",
+            "display": "Activity Session Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO1070c"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

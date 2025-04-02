@@ -1,0 +1,186 @@
+{
+  "id": "olJEO4MACrlCaqsARgGD8K.FoJY",
+  "name": "MIS National IEP Levels",
+  "description": "This report summarises prisoner IEP levels nationally and by establishment.<br/><br/>PDD0050 - v00.00.01 Last Modified: 15/10/13",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0050  v00.00.01 LSRIT0043"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP1",
+      "name": "MIS Load",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DP1.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP3",
+      "name": "Current IEP Levels",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_DESCRIPTION, COALESCE(AT_OFFENDER_BOOKING.IEP_BAND, 'IEP Missing') AS IEP_LEVEL_ALT, CASE WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('A_CFINE', 'BOBC', 'CIV_RMD', 'CIVIL', 'CIVIL_CON', 'CIVIL_DT', 'DEF_SENT', 'DEPORT', 'DET', 'DISCHARGED', 'DISCONT', 'DTTO', 'EXTRAD', 'POLICE', 'NON-CUST', 'REC_DEP', 'REFER', 'REST_ORD', 'RX', 'S35MHA', 'S36MHA', 'S48MHA', 'SEC43', 'SUP_ORD', 'SUSP_SEN', 'SINE_DIE', 'TRL', 'UNFIT', 'UNKNOWN', 'YO_CFINE', 'YOC_CONT', 'UNK_CUST', 'UNFIT', 'SINE_DIE') THEN 'Unconvicted' ELSE 'Convicted' END AS CONVICTED_UNCONVICTED, COUNT(DISTINCT (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY)) AS COUNT_OF_OFFENDERS FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O') AND NOT AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK IN ('ZZGHI', 'TRN')) GROUP BY AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_DESCRIPTION, COALESCE(AT_OFFENDER_BOOKING.IEP_BAND, 'IEP Missing'), CASE WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('A_CFINE', 'BOBC', 'CIV_RMD', 'CIVIL', 'CIVIL_CON', 'CIVIL_DT', 'DEF_SENT', 'DEPORT', 'DET', 'DISCHARGED', 'DISCONT', 'DTTO', 'EXTRAD', 'POLICE', 'NON-CUST', 'REC_DEP', 'REFER', 'REST_ORD', 'RX', 'S35MHA', 'S36MHA', 'S48MHA', 'SEC43', 'SUP_ORD', 'SUSP_SEN', 'SINE_DIE', 'TRL', 'UNFIT', 'UNKNOWN', 'YO_CFINE', 'YOC_CONT', 'UNK_CUST', 'UNFIT', 'SINE_DIE') THEN 'Unconvicted' ELSE 'Convicted' END), dataset_ AS (SELECT ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION, IEP_LEVEL_ALT, CONVICTED_UNCONVICTED, COUNT_OF_OFFENDERS FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Associated Establishment Code",
+            "legacyId": "DP3.DO7b2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Associated Establishment Name",
+            "legacyId": "DP3.DO7b1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "IEP_LEVEL_ALT",
+            "type": "string",
+            "display": "IEP Level Alt",
+            "legacyId": "DP3.DOafd",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "CONVICTED_UNCONVICTED",
+            "type": "string",
+            "display": "Convicted\\Unconvicted",
+            "legacyId": "DP3.DOaff",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "COUNT_OF_OFFENDERS",
+            "type": "double",
+            "display": "Count of Offenders",
+            "legacyId": "DP3.DO655",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP4",
+      "name": "All IEP Bands",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DT_ALL_IEP.IEP FROM (SELECT 'Basic' AS IEP FROM dual UNION SELECT 'Entry' AS IEP FROM dual UNION SELECT 'Standard' AS IEP FROM dual UNION SELECT 'Enhanced' AS IEP FROM dual UNION SELECT 'IEP Missing' AS IEP FROM dual) DT_ALL_IEP), dataset_ AS (SELECT IEP FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "IEP",
+            "type": "string",
+            "display": "NOMS HMPS Details.All IEP Bands",
+            "legacyId": "DP4.DOafc",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP5",
+      "name": "All Con Uncon Headings",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DT_CON_STAT.CON_STAT FROM (SELECT 'Convicted' AS CON_STAT FROM dual UNION SELECT 'Unconvicted' AS CON_STAT FROM dual) DT_CON_STAT), dataset_ AS (SELECT CON_STAT FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "CON_STAT",
+            "type": "string",
+            "display": "Convicted/Unconvicted All",
+            "legacyId": "DP5.DOafe",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "64167.RS",
+      "name": "National IEP Levels",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP3",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE COUNT_OF_OFFENDERS > 6)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP3.DO655"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,160 @@
+{
+  "id": "klbDDyAAC5cMKaIBLP8AFE.rcVQ",
+  "name": "MIS Occupation List",
+  "description": "V00.00.02 PDD0058 Report to list Occupations for an establishment",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0058 Occupation"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP2",
+      "name": "Activities",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_EMPLOYMENT.OCCUPATION_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_OFFENDER_EMPLOYMENT AT_OFFENDER_EMPLOYMENT, BODIMIS.DIM_CELL AT_CELL WHERE (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_OFFENDER_EMPLOYMENT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O') AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,Not_Persistent,User:70) */))) UNION SELECT DISTINCT AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_EMPLOYMENT.OCCUPATION_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_OFFENDER_EMPLOYMENT AT_OFFENDER_EMPLOYMENT WHERE (AT_OFFENDER_EMPLOYMENT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O') AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Associated Establishment\\Associated Establishment Code',mono,free,Not_Persistent,User:69) */)))), dataset_ AS (SELECT SURNAME, FIRST_NAME, OFFENDER_ID_DISPLAY, OCCUPATION_DESCRIPTION, CASE WHEN OCCUPATION_DESCRIPTION = V_MAX_OD THEN V_CONCAT_OD END AS V_MAX_CONCAT_OD FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,Not_Persistent,User:70)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP2.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP2.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "OCCUPATION_DESCRIPTION",
+            "type": "string",
+            "display": "Occupation Description",
+            "legacyId": "DP2.DO100b7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "V_MAX_CONCAT_OD",
+            "type": "string",
+            "display": "V_MAX_CONCAT_OD",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "210171.RS",
+      "name": "Occupation List",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10080"
+          },
+          {
+            "name": "$ref:V_MAX_CONCAT_OD",
+            "display": "Occupations",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Concat_OD] Where ([Occupation Description]= [v_Max_OD])\n"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

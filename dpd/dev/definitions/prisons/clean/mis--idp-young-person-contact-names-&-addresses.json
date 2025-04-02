@@ -1,0 +1,532 @@
+{
+  "id": "klIN648ADIqQLEcA1RIAISgV_bQ",
+  "name": "MIS - IDP Young person Contact Names & Addresses",
+  "description": "IDP0001 v1.0 This report is for the sole use of Intelligence Directed Placement (NOMS Young Peoples Group)",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "SNI-IDP Young Person"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP1",
+      "name": "Query 1 (1)",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, DT_OFFENDER_CONTACT_ADDRESS.NAME, DT_OFFENDER_CONTACT_ADDRESS.RELATIONSHIP, DT_OFFENDER_CONTACT_ADDRESS.PREMISE, DT_OFFENDER_CONTACT_ADDRESS.STREET, DT_OFFENDER_CONTACT_ADDRESS.LOCALITY, DT_OFFENDER_CONTACT_ADDRESS.CITY, DT_OFFENDER_CONTACT_ADDRESS.COUNTY, DT_OFFENDER_CONTACT_ADDRESS.COUNTRY, DT_OFFENDER_CONTACT_ADDRESS.POST_CODE, DT_OFFENDER_CONTACT_ADDRESS.TEL_NO, DT_OFFENDER_CONTACT_ADDRESS.CON_ADDR_TYPE, DT_OFFENDER_CONTACT_ADDRESS.CONADDRTYPEDESC, DT_OFFENDER_CONTACT_ADDRESS.ACTIVE_FLAG, DT_OFFENDER_CONTACT_ADDRESS.CONTACT_DESCRIPTION, AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, DT_OFFENDER_CONTACT_ADDRESS.FLAT FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT ROW_NUMBER() OVER (PARTITION BY dooc.offender_booking_sk, dooc.relationship ORDER BY dooc.active_flag DESC, dooc.address_flag DESC, dooc.mis_load_id DESC) AS row_seq_filter, dooc.*, CASE WHEN dooc.next_of_kin_flag = 'Y' THEN 'NEXTOFKIN' ELSE 'CONTACT' END AS Con_Addr_Type, CASE WHEN dooc.next_of_kin_flag = 'Y' THEN 'Next of Kin' ELSE 'Contact' END AS ConAddrTypeDesc FROM bodimis.dim_offender_other_contacts dooc) DT_OFFENDER_CONTACT_ADDRESS, BODIMIS.DIM_CELL AT_CELL WHERE (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK (+)) AND (DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK IS NULL OR DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,Not_Persistent,User:69) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,Not_Persistent,User:69) */)))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, FIRST_NAME, NAME, RELATIONSHIP, PREMISE, STREET, LOCALITY, CITY, COUNTY, COUNTRY, POST_CODE, TEL_NO, CON_ADDR_TYPE, CONADDRTYPEDESC, ACTIVE_FLAG, CONTACT_DESCRIPTION, ESTABLISHMENT_CODE_NK, FLAT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,Not_Persistent,User:69)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP1.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP1.DO7b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP1.DO80",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "NAME",
+            "type": "string",
+            "display": "Contact Name",
+            "legacyId": "DP1.DO747",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "RELATIONSHIP",
+            "type": "string",
+            "display": "Contact Relationship",
+            "legacyId": "DP1.DO748",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "PREMISE",
+            "type": "string",
+            "display": "Contact Address Premise",
+            "legacyId": "DP1.DO74a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "STREET",
+            "type": "string",
+            "display": "Contact Address Street",
+            "legacyId": "DP1.DO74b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "LOCALITY",
+            "type": "string",
+            "display": "Contact Address Locality",
+            "legacyId": "DP1.DO74c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "CITY",
+            "type": "string",
+            "display": "Contact Address City",
+            "legacyId": "DP1.DO74d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "COUNTY",
+            "type": "string",
+            "display": "Contact Address County",
+            "legacyId": "DP1.DO74e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "COUNTRY",
+            "type": "string",
+            "display": "Contact Address Country",
+            "legacyId": "DP1.DO74f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "POST_CODE",
+            "type": "string",
+            "display": "Contact Address Post Code",
+            "legacyId": "DP1.DO750",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "TEL_NO",
+            "type": "string",
+            "display": "Contact Address Telephone Number",
+            "legacyId": "DP1.DO753",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "CON_ADDR_TYPE",
+            "type": "string",
+            "display": "Contact Address Type",
+            "legacyId": "DP1.DO755",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "CONADDRTYPEDESC",
+            "type": "string",
+            "display": "Contact Address Type Description",
+            "legacyId": "DP1.DO75a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "ACTIVE_FLAG",
+            "type": "string",
+            "display": "Contact Address Active Flag",
+            "legacyId": "DP1.DO752",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "CONTACT_DESCRIPTION",
+            "type": "string",
+            "display": "Contact Type",
+            "legacyId": "DP1.DOa2b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP1.DO139",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 18,
+            "name": "FLAT",
+            "type": "string",
+            "display": "Contact Address Flat",
+            "legacyId": "DP1.DO749",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "132398.RS",
+      "name": "Contacts",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP1",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (CONTACT_ADDRESS_TYPE = 'CONTACT' AND CONTACT_ADDRESS_ACTIVE_FLAG = 'Y'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO139"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO76"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO7b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO80"
+          },
+          {
+            "name": "$ref:NAME",
+            "display": "Contact Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO747"
+          },
+          {
+            "name": "$ref:RELATIONSHIP",
+            "display": "Contact Relationship",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO748"
+          },
+          {
+            "name": "$ref:FLAT",
+            "display": "Contact Address Flat",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO749"
+          },
+          {
+            "name": "$ref:PREMISE",
+            "display": "Contact Address Premise",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO74a"
+          },
+          {
+            "name": "$ref:STREET",
+            "display": "Contact Address Street",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO74b"
+          },
+          {
+            "name": "$ref:LOCALITY",
+            "display": "Contact Address Locality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO74c"
+          },
+          {
+            "name": "$ref:CITY",
+            "display": "Contact Address City",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO74d"
+          },
+          {
+            "name": "$ref:COUNTY",
+            "display": "Contact Address County",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO74e"
+          },
+          {
+            "name": "$ref:COUNTRY",
+            "display": "Contact Address Country",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO74f"
+          },
+          {
+            "name": "$ref:POST_CODE",
+            "display": "Contact Address Post Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO750"
+          },
+          {
+            "name": "$ref:TEL_NO",
+            "display": "Contact Address Telephone Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO753"
+          }
+        ]
+      }
+    },
+    {
+      "id": "132609.RS",
+      "name": "Next of Kin",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP1",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (CONTACT_ADDRESS_TYPE = 'NEXTOFKIN' AND CONTACT_ADDRESS_ACTIVE_FLAG = 'Y'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO139"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO76"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO7b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO80"
+          },
+          {
+            "name": "$ref:NAME",
+            "display": "Contact Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO747"
+          },
+          {
+            "name": "$ref:RELATIONSHIP",
+            "display": "Contact Relationship",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO748"
+          },
+          {
+            "name": "$ref:FLAT",
+            "display": "Contact Address Flat",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO749"
+          },
+          {
+            "name": "$ref:PREMISE",
+            "display": "Contact Address Premise",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO74a"
+          },
+          {
+            "name": "$ref:STREET",
+            "display": "Contact Address Street",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO74b"
+          },
+          {
+            "name": "$ref:LOCALITY",
+            "display": "Contact Address Locality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO74c"
+          },
+          {
+            "name": "$ref:CITY",
+            "display": "Contact Address City",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO74d"
+          },
+          {
+            "name": "$ref:COUNTY",
+            "display": "Contact Address County",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO74e"
+          },
+          {
+            "name": "$ref:COUNTRY",
+            "display": "Contact Address Country",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO74f"
+          },
+          {
+            "name": "$ref:POST_CODE",
+            "display": "Contact Address Post Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO750"
+          },
+          {
+            "name": "$ref:TEL_NO",
+            "display": "Contact Address Telephone Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO753"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

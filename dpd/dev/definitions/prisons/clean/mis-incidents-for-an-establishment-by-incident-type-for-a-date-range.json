@@ -1,0 +1,381 @@
+{
+  "id": "Fl7bwl0TEwAAPa4BAHALxF4KACJIAFe4",
+  "name": "MIS Incidents for an Establishment by Incident Type For a Date Range",
+  "description": "<br/>Incidents that have occurred at establishments for a date range and Incident type selected at Runtime. Includes Incident Text.<br/>INC0028 v00.00.02 Last Modified: 21/11/2019",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "INC0028"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375377/DP2",
+      "name": "Prisoner related",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC) AS INCIDENT_TYPE, AT_INCIDENT.INCIDENT_CASE_ID, AT_INCIDENT_DATE.DAY_DATE, AT_INCIDENT.INCIDENT_TEXT, AT_INCIDENT.INCIDENT_TITLE, AT_INCIDENT.INCIDENT_TIME, TO_NUMBER(SUBSTR(AT_INCIDENT.INCIDENT_TIME, 12, 2)) AS INCIDENT_HOUR, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION FROM BODIMIS.DIM_CELL AT_DIM_LOCATION, BODIMIS.FACT_INCIDENT AT_INCIDENT, BODIMIS.DIM_ESTABLISHMENT AT_INCIDENT_ESTABLISHMENT, BODIMIS.DIM_INCIDENT_STATUS AT_INCIDENT_STATUS, BODIMIS.DIM_DATE AT_INCIDENT_DATE, BODIMIS.FACT_INCIDENT_PARTICIPATION AT_INCIDENT_PARTICIPATION, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_INCIDENT_TYPE AT_INCIDENT_TYPE WHERE (AT_INCIDENT.INCIDENT_STATUS_SK = AT_INCIDENT_STATUS.INCIDENT_STATUS_SK) AND (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_SK = AT_INCIDENT.ESTABLISHMENT_SK) AND (AT_INCIDENT_DATE.DATE_SK = AT_INCIDENT.INCIDENT_DATE_SK) AND (AT_INCIDENT.INCIDENT_CASE_ID = AT_INCIDENT_PARTICIPATION.INCIDENT_CASE_ID) AND (AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK IS NULL OR AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_SK = AT_DIM_LOCATION.UNIT_4_SK (+)) AND (AT_INCIDENT_TYPE.INCIDENT_TYPE_SK = AT_INCIDENT.INCIDENT_TYPE_SK) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (((AT_INCIDENT_DATE.DAY_DATE) BETWEEN TO_DATE('01-11-2019 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('21-11-2019 00:00:00', 'DD-MM-YYYY HH24:MI:SS')) AND ((INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC)) IN ('All') OR 'All' IN ('All')) AND (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, FIRST_NAME, INCIDENT_TYPE, INCIDENT_CASE_ID, DAY_DATE, INCIDENT_TEXT, INCIDENT_TITLE, INCIDENT_TIME, INCIDENT_HOUR, UNIT_4_SHORT_DESCRIPTION, SUBSTR(INCIDENT_TEXT, 1, 1000) AS V_INCIDENT_TEXT_LEFT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP2.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP2.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "INCIDENT_TYPE",
+            "type": "string",
+            "display": "Incident Type",
+            "legacyId": "DP2.DO9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "INCIDENT_CASE_ID",
+            "type": "double",
+            "display": "Incident Number",
+            "legacyId": "DP2.DOb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Incident Date (Date Only)",
+            "legacyId": "DP2.DO1b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "INCIDENT_TEXT",
+            "type": "string",
+            "display": "Incident Text",
+            "legacyId": "DP2.DO297",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "INCIDENT_TITLE",
+            "type": "string",
+            "display": "Incident Title",
+            "legacyId": "DP2.DO69e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "INCIDENT_TIME",
+            "type": "date",
+            "display": "Incident Time",
+            "legacyId": "DP2.DO290",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "INCIDENT_HOUR",
+            "type": "double",
+            "display": "Incident Hour",
+            "legacyId": "DP2.DO699",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "UNIT_4_SHORT_DESCRIPTION",
+            "type": "string",
+            "display": "Prisoner Location",
+            "legacyId": "DP2.DO10a7c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "V_INCIDENT_TEXT_LEFT",
+            "type": "string",
+            "display": "V_INCIDENT_TEXT_LEFT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP3",
+      "name": "MIS Load Log",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP3.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DP4",
+      "name": "All Incidents ",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC) AS INCIDENT_TYPE, AT_INCIDENT.INCIDENT_CASE_ID, AT_INCIDENT_DATE.DAY_DATE, AT_INCIDENT.INCIDENT_TEXT, AT_INCIDENT.INCIDENT_TITLE, AT_INCIDENT.INCIDENT_TIME, TO_NUMBER(SUBSTR(AT_INCIDENT.INCIDENT_TIME, 12, 2)) AS INCIDENT_HOUR, '-' AS DUMMY_CELL, '-' AS DUMMY_UNIT_DESCRIPTION_4, '' AS OFFENCES_DUMMY_MAIN_OFFENCE, '' AS INCIDENT_PARTICIPANT_MAIN_OF52, '' AS PROPERTY_BOX_TYPE FROM BODIMIS.FACT_INCIDENT AT_INCIDENT, BODIMIS.DIM_ESTABLISHMENT AT_INCIDENT_ESTABLISHMENT, BODIMIS.DIM_INCIDENT_STATUS AT_INCIDENT_STATUS, BODIMIS.DIM_DATE AT_INCIDENT_DATE, BODIMIS.DIM_INCIDENT_TYPE AT_INCIDENT_TYPE WHERE (AT_INCIDENT.INCIDENT_STATUS_SK = AT_INCIDENT_STATUS.INCIDENT_STATUS_SK) AND (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_SK = AT_INCIDENT.ESTABLISHMENT_SK) AND (AT_INCIDENT_DATE.DATE_SK = AT_INCIDENT.INCIDENT_DATE_SK) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_TYPE.INCIDENT_TYPE_SK = AT_INCIDENT.INCIDENT_TYPE_SK) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (((AT_INCIDENT_DATE.DAY_DATE) BETWEEN TO_DATE('01-11-2019 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('21-11-2019 00:00:00', 'DD-MM-YYYY HH24:MI:SS')) AND ((INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC)) IN ('All') OR 'All' IN ('All')) AND (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)))), dataset_ AS (SELECT INCIDENT_TYPE, INCIDENT_CASE_ID, DAY_DATE, INCIDENT_TEXT, INCIDENT_TITLE, INCIDENT_TIME, INCIDENT_HOUR, DUMMY_CELL, DUMMY_UNIT_DESCRIPTION_4, OFFENCES_DUMMY_MAIN_OFFENCE, INCIDENT_PARTICIPANT_MAIN_OF52, PROPERTY_BOX_TYPE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "INCIDENT_TYPE",
+            "type": "string",
+            "display": "Incident Type",
+            "legacyId": "DP4.DO9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "INCIDENT_CASE_ID",
+            "type": "double",
+            "display": "Incident Number",
+            "legacyId": "DP4.DOb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Incident Date (Date Only)",
+            "legacyId": "DP4.DO1b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "INCIDENT_TEXT",
+            "type": "string",
+            "display": "Incident Text",
+            "legacyId": "DP4.DO297",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "INCIDENT_TITLE",
+            "type": "string",
+            "display": "Incident Title",
+            "legacyId": "DP4.DO69e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "INCIDENT_TIME",
+            "type": "date",
+            "display": "Incident Time",
+            "legacyId": "DP4.DO290",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "INCIDENT_HOUR",
+            "type": "double",
+            "display": "Incident Hour",
+            "legacyId": "DP4.DO699",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "DUMMY_CELL",
+            "type": "string",
+            "display": "Dummy Cell",
+            "legacyId": "DP4.DO10714",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "DUMMY_UNIT_DESCRIPTION_4",
+            "type": "string",
+            "display": "Dummy Unit Description 4",
+            "legacyId": "DP4.DO107b0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "OFFENCES_DUMMY_MAIN_OFFENCE",
+            "type": "string",
+            "display": "Offences.Dummy Main Offence",
+            "legacyId": "DP4.DO734",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "INCIDENT_PARTICIPANT_MAIN_OF52",
+            "type": "string",
+            "display": "Incident Participant Main Offence.Dummy Main Offence",
+            "legacyId": "DP4.DO735",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "PROPERTY_BOX_TYPE",
+            "type": "string",
+            "display": "Property Box Type",
+            "legacyId": "DP4.DO1078d",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "118582.RS",
+      "name": "Incidents by Date",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_EXCLUDE_ NOT(IN ('Exclude')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10080"
+          },
+          {
+            "name": "$ref:V_INCIDENT_TEXT_LEFT",
+            "display": "Incident Text (First 1000 chars)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Left([Incident Text];1000)"
+          }
+        ]
+      }
+    },
+    {
+      "id": "119119.RS",
+      "name": "Incidents by Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_EXCLUDE_ NOT(IN ('Exclude')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10080"
+          },
+          {
+            "name": "$ref:V_INCIDENT_TEXT_LEFT",
+            "display": "Incident Text (First 1000 chars)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Left([Incident Text];1000)"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

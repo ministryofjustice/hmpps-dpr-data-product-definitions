@@ -1,0 +1,313 @@
+{
+  "id": "klITOg0AC3LYCv0A1v8AFE.rcVQ",
+  "name": "MIS Incident Details by Area",
+  "description": "This report return incident details such as Incident Date, Type, Description (text) and Establishment. Prompts for area, incident type(s) and an incident reported date range.<br/>HQ9000 v1.0 ",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "HQ9000"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP5",
+      "name": "MIS Load",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DP5.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DP7",
+      "name": "Incidents",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC) AS INCIDENT_TYPE, AT_INCIDENT.INCIDENT_CASE_ID, AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_INCIDENT.INCIDENT_TEXT, AT_INCIDENT_ESTABLISHMENT.AREA_DESCRIPTION, AT_INCIDENT.REPORT_DATE, TO_DATE(TO_CHAR(AT_INCIDENT_DATE.DAY_DATE, 'DD/MM/YYYY'), 'DD/MM/YYYY') AS INCIDENT_DATE_ FROM BODIMIS.FACT_INCIDENT AT_INCIDENT, BODIMIS.DIM_ESTABLISHMENT AT_INCIDENT_ESTABLISHMENT, BODIMIS.DIM_INCIDENT_STATUS AT_INCIDENT_STATUS, BODIMIS.DIM_DATE AT_INCIDENT_DATE, BODIMIS.DIM_INCIDENT_TYPE AT_INCIDENT_TYPE WHERE (AT_INCIDENT.INCIDENT_STATUS_SK = AT_INCIDENT_STATUS.INCIDENT_STATUS_SK) AND (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_SK = AT_INCIDENT.ESTABLISHMENT_SK) AND (AT_INCIDENT_DATE.DATE_SK = AT_INCIDENT.INCIDENT_DATE_SK) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_TYPE.INCIDENT_TYPE_SK = AT_INCIDENT.INCIDENT_TYPE_SK) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_ESTABLISHMENT.AREA_DESCRIPTION IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #prompt('Enter value(s) for Incident Establishment Area:','A','Incidents\\Incident Establishment Area',Multi,Free,Not_Persistent,,User:0) */) AND AT_INCIDENT.REPORT_DATE BETWEEN (SELECT START_DATE FROM prompt_ /* = #prompt('Enter Incident Reported Date (Start):','D',,Mono,Free,Not_Persistent,,User:1) */) AND (SELECT END_DATE FROM prompt_ /* = #prompt('Enter Incident Reported Date (End):','D',,Mono,Free,Not_Persistent,,User:2) */) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND ((INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC)) IN (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #Prompt('Incident Type (All for all)','A','Incidents\\Incident Type',multi,free,Not_Persistent,User:254) */) OR 'All' IN (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #Prompt('Incident Type (All for all)','A','Incidents\\Incident Type',multi,free,Not_Persistent,User:254) */)))), dataset_ AS (SELECT INCIDENT_TYPE, INCIDENT_CASE_ID, ESTABLISHMENT_DESCRIPTION, INCIDENT_TEXT, AREA_DESCRIPTION, REPORT_DATE, INCIDENT_DATE_ FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@prompt('Enter value(s) for Incident Establishment Area:','A','Incidents\\Incident Establishment Area',Multi,Free,Not_Persistent,,User:0)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "unknown_parameter",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Incident Type (All for all)",
+          "description": "@Prompt('Incident Type (All for all)','A','Incidents\\Incident Type',multi,free,Not_Persistent,User:254)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Incident Reported Date (Start):",
+          "description": "@prompt('Enter Incident Reported Date (Start):','D',,Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        },
+        {
+          "index": 3,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Incident Reported Date (End):",
+          "description": "@prompt('Enter Incident Reported Date (End):','D',,Mono,Free,Not_Persistent,,User:2)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "INCIDENT_TYPE",
+            "type": "string",
+            "display": "Incident Type",
+            "legacyId": "DP7.DO9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "INCIDENT_CASE_ID",
+            "type": "double",
+            "display": "Incident Number",
+            "legacyId": "DP7.DOb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Establishment Name",
+            "legacyId": "DP7.DO20",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "INCIDENT_TEXT",
+            "type": "string",
+            "display": "Incident Text",
+            "legacyId": "DP7.DO297",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "AREA_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Establishment Area",
+            "legacyId": "DP7.DOc7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "REPORT_DATE",
+            "type": "date",
+            "display": "Incident Reported Date",
+            "legacyId": "DP7.DO69c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "INCIDENT_DATE_",
+            "type": "date",
+            "display": "Incident Date (Date Only)",
+            "legacyId": "DP7.DO1b",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "215381.RS",
+      "name": "By Establishment",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP7",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Incident Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO20"
+          },
+          {
+            "name": "$ref:INCIDENT_TYPE",
+            "display": "Incident Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO9"
+          },
+          {
+            "name": "$ref:REPORT_DATE",
+            "display": "Incident Reported Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO69c"
+          },
+          {
+            "name": "$ref:INCIDENT_DATE_",
+            "display": "Incident Date (Date Only)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO1b"
+          },
+          {
+            "name": "$ref:INCIDENT_CASE_ID",
+            "display": "Incident Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DOb"
+          },
+          {
+            "name": "$ref:INCIDENT_TEXT",
+            "display": "Incident Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO297"
+          }
+        ]
+      }
+    },
+    {
+      "id": "215500.RS",
+      "name": "By Incident Date",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP7",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Incident Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO20"
+          },
+          {
+            "name": "$ref:INCIDENT_TYPE",
+            "display": "Incident Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO9"
+          },
+          {
+            "name": "$ref:REPORT_DATE",
+            "display": "Incident Reported Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO69c"
+          },
+          {
+            "name": "$ref:INCIDENT_DATE_",
+            "display": "Incident Date (Date Only)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO1b"
+          },
+          {
+            "name": "$ref:INCIDENT_CASE_ID",
+            "display": "Incident Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DOb"
+          },
+          {
+            "name": "$ref:INCIDENT_TEXT",
+            "display": "Incident Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO297"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

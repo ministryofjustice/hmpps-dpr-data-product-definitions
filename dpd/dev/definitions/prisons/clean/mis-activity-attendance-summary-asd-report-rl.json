@@ -1,0 +1,161 @@
+{
+  "id": "klZuuakABvDUIhkBPkkAISgV_bQ",
+  "name": "MIS Activity Attendance Summary ASD Report RL",
+  "description": "HQ9006 v00.00.00                        This report prompts for a date range, typically a date range for a month is entered and an establishment code, and all activity session data for the period is returned. The data returned is at the individual session and prisoner level and therefore is the lowest level of detail available.",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "aad"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP0",
+      "name": "Activities",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_DIM_PROGRAMME_SERVICE.DESCRIPTION, AT_DIM_PROGRAMME_TYPE.DESCRIPTION AS ACTIVITY_DESCRIPTION, COUNT(DISTINCT AT_FACT_OFFENDER_ACTIVITY.START_TIME) AS COUNT_OF_SESSIONS_SCHEDULED FROM BODIMIS.FACT_OFFENDER_ACTIVITY AT_FACT_OFFENDER_ACTIVITY, BODIMIS.DIM_ESTABLISHMENT AT_ACTIVITY_ESTABLISHMENT, BODIMIS.DIM_PROGRAMME_SERVICE AT_DIM_PROGRAMME_SERVICE, BODIMIS.DIM_PROGRAMME_TYPE AT_DIM_PROGRAMME_TYPE WHERE (AT_DIM_PROGRAMME_TYPE.PROGRAMME_TYPE_SK = AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_TYPE_SK) AND (AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_SK = AT_FACT_OFFENDER_ACTIVITY.ESTABLISHMENT_SK) AND (AT_DIM_PROGRAMME_SERVICE.PROGRAMME_SERVICE_SK = AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_SERVICE_SK) AND (TRUNC(AT_FACT_OFFENDER_ACTIVITY.START_TIME) BETWEEN TO_DATE('22-11-2015 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('28-11-2015 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_FACT_OFFENDER_ACTIVITY.ALLOCATED_FLAG = 'Y') GROUP BY AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_DIM_PROGRAMME_SERVICE.DESCRIPTION, AT_DIM_PROGRAMME_TYPE.DESCRIPTION), dataset_ AS (SELECT ESTABLISHMENT_DESCRIPTION, DESCRIPTION, ACTIVITY_DESCRIPTION, COUNT_OF_SESSIONS_SCHEDULED FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Activity Establishment Name",
+            "legacyId": "DP0.DO6b2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Activity Service Description",
+            "legacyId": "DP0.DO650",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ACTIVITY_DESCRIPTION",
+            "type": "string",
+            "display": "Activity Description",
+            "legacyId": "DP0.DO64c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "COUNT_OF_SESSIONS_SCHEDULED",
+            "type": "double",
+            "display": "Count of Sessions Scheduled",
+            "legacyId": "DP0.DOa6a",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP1",
+      "name": "MIS Load",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP1.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "225979.RS",
+      "name": "Activity Attendance Detail",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Activity Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO6b2"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Activity Service Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO650"
+          },
+          {
+            "name": "$ref:ACTIVITY_DESCRIPTION",
+            "display": "Activity Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO64c"
+          },
+          {
+            "name": "$ref:COUNT_OF_SESSIONS_SCHEDULED",
+            "display": "Count of Sessions Scheduled",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DOa6a"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

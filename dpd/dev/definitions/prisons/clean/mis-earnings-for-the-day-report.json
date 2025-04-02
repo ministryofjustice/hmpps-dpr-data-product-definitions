@@ -1,0 +1,286 @@
+{
+  "id": "okZTBVQADSDUHR0AOheD8K7B948",
+  "name": "MIS Earnings for the Day Report ",
+  "description": "This report is in the form of a certificate to be printed and signed by the earnings clerk to verify entries made in ledgers.<br/>FIN0010 - v00.00.07 Last Modified: 26-Nov-2012 ",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "FIN0010 v00.00.07 LSRT019"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376115/DP2",
+      "name": "Earnings",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT SUM(CASE WHEN AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE = 'BONUS' AND AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE = 'CR' THEN AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT ELSE 0 END - CASE WHEN AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE = 'BONUS' AND AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE = 'DR' THEN AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT ELSE 0 END) AS BONUS_AMOUNT_WITH_HINT_, AT_BUSINESS_DATE.DAY_DATE, AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE, AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT, SUM(CASE WHEN AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE = 'ADV' AND AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE = 'CR' THEN AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT ELSE 0 END - CASE WHEN AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE = 'ADV' AND AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE = 'DR' THEN AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT ELSE 0 END) AS ADVANCE_AMOUNT, SUM(CASE WHEN AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE = 'DED' AND AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE = 'CR' THEN AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT ELSE 0 END - CASE WHEN AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE = 'DED' AND AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE = 'DR' THEN AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT ELSE 0 END) AS REPAYMENT_OF_ADVANCE_AMOUNT, SUM(CASE WHEN AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE IN ('A_EARN', 'EARN', 'UPAY', 'RUPAY') AND AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE = 'CR' THEN AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT ELSE 0 END - CASE WHEN AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE IN ('A_EARN', 'EARN', 'UPAY', 'RUPAY') AND AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE = 'DR' THEN AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT ELSE 0 END) AS ACCOUNT_TRANSACTION_AMOUNTS_36, SUM(CASE WHEN AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE = 'ADJ' AND AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE = 'CR' THEN AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT ELSE 0 END - CASE WHEN AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE = 'ADJ' AND AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE = 'DR' THEN AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT ELSE 0 END) AS LOSS_OF_EARNINGS, AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE FROM BODIMIS.FACT_OFFENDER_TRANSACTION AT_FACT_OFFENDER_TRANSACTION, BODIMIS.CASELOADS AT_CASELOADS, BODIMIS.DIM_TRANSACTION_TYPE AT_DIM_TRANSACTION_TYPE, BODIMIS.DIM_TXN_POSTING_TYPE AT_DIM_TXN_POSTING_TYPE, BODIMIS.DIM_DATE AT_BUSINESS_DATE WHERE (AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_TYPE_SK) AND (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_POSTING_TYPE_SK = AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_SK) AND (AT_CASELOADS.CASELOAD_ID = AT_FACT_OFFENDER_TRANSACTION.CASELOAD_ID) AND (AT_BUSINESS_DATE.DATE_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_BUSINESS_DATE_SK) AND (((AT_BUSINESS_DATE.DAY_DATE) = (TO_DATE('08-06-2010 00:00:00', 'DD-MM-YYYY HH24:MI:SS'))) AND AT_CASELOADS.CASELOAD_ID = (SELECT establishment_code FROM prompt_)) GROUP BY AT_BUSINESS_DATE.DAY_DATE, AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE, AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT, AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE), dataset_ AS (SELECT BONUS_AMOUNT_WITH_HINT_, DAY_DATE, TRANSACTION_TYPE, TRANSACTION_ENTRY_AMOUNT, ADVANCE_AMOUNT, REPAYMENT_OF_ADVANCE_AMOUNT, ACCOUNT_TRANSACTION_AMOUNTS_36, LOSS_OF_EARNINGS, TRANSACTION_POSTING_TYPE_CODE, ACCOUNT_TRANSACTION_AMOUNTS.EARNINGS || BONUS_AMOUNT_WITH_HINT_ || ADVANCE_AMOUNT AS V_TOTAL, V_TOTAL || REPAYMENT_OF_ADVANCE_AMOUNT || LOSS_OF_EARNINGS AS V_NET_AMOUNT_FROM_SUBHEAD FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BONUS_AMOUNT_WITH_HINT_",
+            "type": "double",
+            "display": "Bonus Amount with HINT (FIN0010)",
+            "legacyId": "DP2.DO618",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Business Date (Date Only)",
+            "legacyId": "DP2.DO602",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "TRANSACTION_TYPE",
+            "type": "string",
+            "display": "Transaction Type Code",
+            "legacyId": "DP2.DO6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "TRANSACTION_ENTRY_AMOUNT",
+            "type": "double",
+            "display": "Transaction Entry Amount",
+            "legacyId": "DP2.DO28",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ADVANCE_AMOUNT",
+            "type": "double",
+            "display": "Advance Amount",
+            "legacyId": "DP2.DO7d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "REPAYMENT_OF_ADVANCE_AMOUNT",
+            "type": "double",
+            "display": "Repayment of Advance Amount",
+            "legacyId": "DP2.DO7e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ACCOUNT_TRANSACTION_AMOUNTS_36",
+            "type": "double",
+            "display": "Account Transaction Amounts.Earnings",
+            "legacyId": "DP2.DOb4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "LOSS_OF_EARNINGS",
+            "type": "double",
+            "display": "Loss of Earnings",
+            "legacyId": "DP2.DOb3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "TRANSACTION_POSTING_TYPE_CODE",
+            "type": "string",
+            "display": "Transaction Posting Type (DR/CR)",
+            "legacyId": "DP2.DOa",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "V_TOTAL",
+            "type": "string",
+            "display": "V_TOTAL",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 10,
+            "name": "V_NET_AMOUNT_FROM_SUBHEAD",
+            "type": "string",
+            "display": "V_NET_AMOUNT_FROM_SUBHEAD",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376115/DP3",
+      "name": "Load End Date",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS MIS_LOAD_LOG_LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT MIS_LOAD_LOG_LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "MIS_LOAD_LOG_LOAD_END_DATE",
+            "type": "date",
+            "display": "MIS Load Log.Load End Date",
+            "legacyId": "DP3.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376115/DP4",
+      "name": "Establishment Name",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT WHERE (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)), dataset_ AS (SELECT ESTABLISHMENT_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment.Establishment Name",
+            "legacyId": "DP4.DO10129",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "117570.RS",
+      "name": "Earnings for the Day Report",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376115/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ACCOUNT_TRANSACTION_AMOUNTS_36",
+            "display": "Account Transaction Amounts.Earnings",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DOb4"
+          },
+          {
+            "name": "$ref:BONUS_AMOUNT_WITH_HINT_",
+            "display": "Bonus Amount with HINT (FIN0010)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO618"
+          },
+          {
+            "name": "$ref:ADVANCE_AMOUNT",
+            "display": "Advance Amount",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO7d"
+          },
+          {
+            "name": "$ref:V_TOTAL",
+            "display": "Total",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Account Transaction Amounts].[Earnings] + [Bonus Amount with HINT (FIN0010)] + [Advance Amount]"
+          },
+          {
+            "name": "$ref:REPAYMENT_OF_ADVANCE_AMOUNT",
+            "display": "Repayment of Advance Amount",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO7e"
+          },
+          {
+            "name": "$ref:LOSS_OF_EARNINGS",
+            "display": "Loss of Earnings",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DOb3"
+          },
+          {
+            "name": "$ref:V_NET_AMOUNT_FROM_SUBHEAD",
+            "display": "Net amount required from earnings subhead",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Total]+([Repayment of Advance Amount]+ [Loss of Earnings])"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

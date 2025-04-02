@@ -1,0 +1,633 @@
+{
+  "id": "Fjh9j1y_4QAAzT4AAHBL1l8YACJIAAzC",
+  "name": "ORS Chaplaincy Alpha List",
+  "description": "This report outputs all active prisoners on the prison roll of an establishment, along with their Religion.<br/>ACC0049 - v00.00.04 Last Modified: 02/11/2020",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACC0049",
+      "Alpha",
+      "Chaplaincy",
+      "Religion"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376286/DP0",
+      "name": "Prisoners",
+      "description": "OR - Sentence",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_NATIONALITY.DESCRIPTION, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.BIRTH_DATE, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_OFFENDERS_LOCATIONS.DESCRIPTION AS ESTABLISHMENT_NAME, AT_RELIGION.DESCRIPTION AS RELIGION_DESCRIPTION, AT_OFFENDER_RELIGION.PROFILE_CODE, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) = 0 THEN NULL ELSE SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) + 1, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) = 0 THEN LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION) ELSE INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) - INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) END - 1) END AS UNIT_CODE_1, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) = 0 THEN NULL ELSE SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) + 1, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 3) = 0 THEN LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION) ELSE INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 3) - INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) END - 1) END AS UNIT_CODE_2 FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFFENDER_RELIGION, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFF_PROF_DET_NAT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.PROFILE_CODES AT_NATIONALITY, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, USER_ACCESSIBLE_CASELOADS, OMS_OWNER.PROFILE_CODES AT_RELIGION, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDER_RELIGION.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_RELIGION.PROFILE_TYPE (+) = 'RELF') AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_OFF_PROF_DET_NAT.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFF_PROF_DET_NAT.PROFILE_TYPE (+) = ('NAT')) AND (AT_NATIONALITY.PROFILE_TYPE (+) = AT_OFF_PROF_DET_NAT.PROFILE_TYPE AND AT_NATIONALITY.PROFILE_CODE (+) = AT_OFF_PROF_DET_NAT.PROFILE_CODE) AND (AT_NATIONALITY.PROFILE_TYPE (+) = ('NAT')) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (AT_RELIGION.PROFILE_CODE (+) = AT_OFFENDER_RELIGION.PROFILE_CODE) AND (AT_RELIGION.PROFILE_TYPE (+) = AT_OFFENDER_RELIGION.PROFILE_TYPE) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ((SELECT establishment_code FROM prompt_)) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */ AND (AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, DESCRIPTION, LAST_NAME, FIRST_NAME, BIRTH_DATE, UNIT_DESCRIPTION_4_SHORT, ESTABLISHMENT_NAME, RELIGION_DESCRIPTION, PROFILE_CODE, UNIT_CODE_1, UNIT_CODE_2, COUNT(OFFENDER_ID_DISPLAY) AS V_COUNT_NOMS FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Nationality",
+            "legacyId": "DP0.DO10b7e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP0.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP0.DO10046",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "BIRTH_DATE",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP0.DO10075",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP0.DO10427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ESTABLISHMENT_NAME",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP0.DO1033b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "RELIGION_DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DP0.DO10c29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "PROFILE_CODE",
+            "type": "string",
+            "display": "Religion",
+            "legacyId": "DP0.DO100b0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "UNIT_CODE_1",
+            "type": "string",
+            "display": "Unit Code 1",
+            "legacyId": "DP0.DO10472",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "UNIT_CODE_2",
+            "type": "string",
+            "display": "Unit Code 2",
+            "legacyId": "DP0.DO10471",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "V_COUNT_NOMS",
+            "type": "string",
+            "display": "V_COUNT_NOMS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "165584.RS",
+      "name": "By Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:RELIGION_DESCRIPTION",
+            "display": "Religion Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10c29"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          }
+        ]
+      }
+    },
+    {
+      "id": "178815.RS",
+      "name": "By Religion",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:RELIGION_DESCRIPTION",
+            "display": "Religion Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10c29"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          }
+        ]
+      }
+    },
+    {
+      "id": "178875.RS",
+      "name": "Religion Breakdown",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          },
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "179078.RS",
+      "name": "By Surname with DOB",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:RELIGION_DESCRIPTION",
+            "display": "Religion Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10c29"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          }
+        ]
+      }
+    },
+    {
+      "id": "179191.RS",
+      "name": "By Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:RELIGION_DESCRIPTION",
+            "display": "Religion Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10c29"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          }
+        ]
+      }
+    },
+    {
+      "id": "179479.RS",
+      "name": "By Wing and Landing",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:RELIGION_DESCRIPTION",
+            "display": "Religion Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10c29"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Nationality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b7e"
+          }
+        ]
+      }
+    },
+    {
+      "id": "179245.RS",
+      "name": "With Attendance",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:UNIT_CODE_1",
+            "display": "Unit Code 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10472"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

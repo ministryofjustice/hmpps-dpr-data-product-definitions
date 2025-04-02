@@ -1,0 +1,614 @@
+{
+  "id": "klnDb24ABWDdDMgA.f8AFE.rcVQ",
+  "name": "MIS Chaplaincy New Receptions",
+  "description": "This report shows all new admissions and transfers into an establishment for a date range entered at runtime. The report contains input controls which allows the user to select which religions they wish to show on the report.<br/>MOV0051 v1.0 ",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "MOV0051"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP2",
+      "name": "Chaplaincy Receptions",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_DIM_DATE_EXT_MOV.DAY_DATE, AT_OFFENDER_BOOKING.FIRST_NAME, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, AT_CELL.UNIT_4_SHORT_DESCRIPTION, COALESCE(AT_OFFENDER_BOOKING.RELIGION_DESCRIPTION, 'Not Specified') AS RELIGION_DESCRIPTION, CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL THEN COALESCE(TO_NUMBER(SUBSTR(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH, 1, 2) * 12), 0) + COALESCE(TO_NUMBER(SUBSTR(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH, 4, 2)), 0) + COALESCE((TRUNC(TO_NUMBER(SUBSTR(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH, 7, 2)) / 30)), 0) ELSE 99 * 12 END AS CURRENT_EFFECTIVE_SENTENCE_L43, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_DESCRIPTION, CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' WHEN NOT DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH IS NULL THEN CASE WHEN TO_NUMBER(SUBSTR(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) IS NULL THEN NULL ELSE TO_NUMBER(SUBSTR(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) || ' yrs ' END || CASE WHEN TO_NUMBER(SUBSTR(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH, 4, 2)) IS NULL THEN NULL ELSE TO_NUMBER(SUBSTR(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH, 4, 2)) || ' mths ' END || CASE WHEN TO_NUMBER(SUBSTR(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH, 7, 2)) IS NULL THEN NULL ELSE TO_NUMBER(SUBSTR(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH, 7, 2)) || ' days ' END ELSE '' END AS SENTENCE_LENGTH_FORMATTED, CASE WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('14FTR_ORA', '14FTRHDC_ORA', 'CUR_ORA', 'FTR/08', 'FTR_HDC', 'FTR_HDC_ORA', 'FTR_ORA', 'FTR_SCH15', 'FTRSCH15_ORA', 'HDR_ORA', 'LR', 'LR_ALP', 'LR_ALP_LASPO', 'LR_DLP', 'LR_DPP', 'LR_EPP', 'LR_ES', 'LR_HDC', 'LR_IPP', 'LR_LASPO_AR', 'LR_LASPO_DR', 'LR_LIFE', 'LR_MLP', 'LR_ORA', 'LR_SEC236A', 'LR_SEC91_ORA', 'LR_YOI', 'LR_YOI_ORA') THEN 'Recall' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '0' THEN 'Dead' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '1' THEN 'Indeterminate Sentence' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('2', '3') THEN 'Sentenced' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('4', '5', '6', '7') THEN 'Convicted Unsentenced' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('9', '10') OR AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'CIV_RMD' THEN 'Civil Prisoner' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('8', '11') THEN 'Immigration Detainee' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('12', '13', '14') THEN 'Remand' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'UNKNOWN' THEN 'Unknown' ELSE 'Other' END AS LEGAL_STATUS_GROUPING, DT_EXT_MOVE_FROM.TYPE_DESCRIPTION_FROM FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_CELL AT_CELL, (SELECT BODIMIS.FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK, BODIMIS.FACT_OFFENDER_SENTENCE.EFFECTIVE_SENTENCE_LENGTH FROM BODIMIS.FACT_OFFENDER_SENTENCE WHERE (BODIMIS.FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG = 'Y')) DT_CURREFFSENLEN, (SELECT DISTINCT BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK = dss.sentence_status_sk) AND dss.sentence_status = 'Active' AND (BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK = BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK) AND (BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK) AND BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG = 'Y') DT_LIFEFLAG, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_FROM, (SELECT BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_SK AS SK_ID_FROM, BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION AS TYPE_DESCRIPTION_FROM, 'Establishment' AS Location_Type_FROM FROM BODIMIS.DIM_ESTABLISHMENT UNION ALL SELECT BODIMIS.DIM_PROBATION_OFFICE.PROBATION_OFFICE_SK, BODIMIS.DIM_PROBATION_OFFICE.PROB_OFFICE_DESCRIPTION, 'Probation Office' AS Location_Type_From FROM BODIMIS.DIM_PROBATION_OFFICE UNION ALL SELECT BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_SK, BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_DESCRIPTION, 'Outside Location' AS Location_Type_From FROM BODIMIS.DIM_OUTSIDE_LOCATION UNION ALL SELECT BODIMIS.DIM_CITY.CITY_SK, BODIMIS.DIM_CITY.DESCRIPTION, 'City' AS Location_Type_From FROM BODIMIS.DIM_CITY UNION ALL SELECT BODIMIS.DIM_COURT.COURT_SK, BODIMIS.DIM_COURT.COURT_DESCRIPTION, 'Court' AS Location_Type_From FROM BODIMIS.DIM_COURT UNION ALL SELECT address_id_nk, TRIM(CASE WHEN no_fixed_address_flag = 'Y' THEN 'No fixed address' ELSE CASE WHEN NOT flat IS NULL THEN flat || '  ' END || CASE WHEN NOT premise IS NULL THEN premise || '  ' END || CASE WHEN NOT street IS NULL THEN street || '  ' END || CASE WHEN NOT locality IS NULL THEN locality || '  ' END || CASE WHEN NOT city_desc IS NULL THEN city_desc || '  ' END || CASE WHEN NOT county_desc IS NULL THEN county_desc || '  ' END || CASE WHEN NOT postal_code IS NULL THEN postal_code || '  ' END || CASE WHEN NOT country_desc IS NULL THEN country_desc END END), 'Home Leave Address' FROM bodimis.dim_addresses) DT_EXT_MOVE_FROM, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_TO WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_CURREFFSENLEN.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_LIFEFLAG.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (CASE WHEN AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.FROM_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_SK (+)) AND (CASE WHEN AT_FACT_MOV_EXT.TO_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.TO_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_SK (+)) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_FACT_MOV_EXT.FROM_LOCATION_SK = DT_EXT_MOVE_FROM.SK_ID_FROM (+) AND AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = DT_EXT_MOVE_FROM.LOCATION_TYPE_FROM (+)) AND (AT_FACT_MOV_EXT.TYPE IN ('Admission', 'Transfers') AND (TRUNC(AT_DIM_DATE_EXT_MOV.DAY_DATE) BETWEEN TO_DATE('02-10-2017 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('06-10-2017 00:00:00', 'DD-MM-YYYY HH24:MI:SS')) AND (AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'IN' AND (AT_OFFENDER_BOOKING.ACTIVE_STATUS IN ('Active Out', 'Active In', 'Active UAL')))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, DAY_DATE, FIRST_NAME, DATE_OF_BIRTH, UNIT_4_SHORT_DESCRIPTION, RELIGION_DESCRIPTION, CURRENT_EFFECTIVE_SENTENCE_L43, ESTABLISHMENT_DESCRIPTION, SENTENCE_LENGTH_FORMATTED, LEGAL_STATUS_GROUPING, TYPE_DESCRIPTION_FROM FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP2.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Movement Date",
+            "legacyId": "DP2.DO10781",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP2.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP2.DO10085",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "UNIT_4_SHORT_DESCRIPTION",
+            "type": "string",
+            "display": "Unit Description 4 - Short",
+            "legacyId": "DP2.DO104c2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "RELIGION_DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DP2.DO100b3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "CURRENT_EFFECTIVE_SENTENCE_L43",
+            "type": "double",
+            "display": "Current Effective Sentence Length in Months",
+            "legacyId": "DP2.DO614",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Location From Description (External)",
+            "legacyId": "DP2.DO1015d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "SENTENCE_LENGTH_FORMATTED",
+            "type": "string",
+            "display": "Sentence Length Formatted",
+            "legacyId": "DP2.DO42",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "LEGAL_STATUS_GROUPING",
+            "type": "string",
+            "display": "Legal Status Grouping",
+            "legacyId": "DP2.DO107cb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "TYPE_DESCRIPTION_FROM",
+            "type": "string",
+            "display": "Movement Description (From)",
+            "legacyId": "DP2.DO10700",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP3",
+      "name": "MIS Load Date",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP3.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "217688.RS",
+      "name": "By Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Movement Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10781"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10080"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Unit Description 4 - Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO104c2"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10085"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_FROM",
+            "display": "Movement Description (From)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10700"
+          },
+          {
+            "name": "$ref:LEGAL_STATUS_GROUPING",
+            "display": "Legal Status Grouping",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO107cb"
+          },
+          {
+            "name": "$ref:RELIGION_DESCRIPTION",
+            "display": "Religion Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b3"
+          },
+          {
+            "name": "$ref:SENTENCE_LENGTH_FORMATTED",
+            "display": "Sentence Length Formatted",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO42"
+          }
+        ]
+      }
+    },
+    {
+      "id": "214316.RS",
+      "name": "By Movement Date",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Movement Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10781"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10080"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Unit Description 4 - Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO104c2"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10085"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_FROM",
+            "display": "Movement Description (From)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10700"
+          },
+          {
+            "name": "$ref:LEGAL_STATUS_GROUPING",
+            "display": "Legal Status Grouping",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO107cb"
+          },
+          {
+            "name": "$ref:RELIGION_DESCRIPTION",
+            "display": "Religion Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b3"
+          },
+          {
+            "name": "$ref:SENTENCE_LENGTH_FORMATTED",
+            "display": "Sentence Length Formatted",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO42"
+          }
+        ]
+      }
+    },
+    {
+      "id": "214459.RS",
+      "name": "By Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Movement Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10781"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10080"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Unit Description 4 - Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO104c2"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10085"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_FROM",
+            "display": "Movement Description (From)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10700"
+          },
+          {
+            "name": "$ref:LEGAL_STATUS_GROUPING",
+            "display": "Legal Status Grouping",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO107cb"
+          },
+          {
+            "name": "$ref:RELIGION_DESCRIPTION",
+            "display": "Religion Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b3"
+          },
+          {
+            "name": "$ref:SENTENCE_LENGTH_FORMATTED",
+            "display": "Sentence Length Formatted",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO42"
+          }
+        ]
+      }
+    },
+    {
+      "id": "214513.RS",
+      "name": "By Religion",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Movement Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10781"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10080"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Unit Description 4 - Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO104c2"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10085"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_FROM",
+            "display": "Movement Description (From)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10700"
+          },
+          {
+            "name": "$ref:LEGAL_STATUS_GROUPING",
+            "display": "Legal Status Grouping",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO107cb"
+          },
+          {
+            "name": "$ref:RELIGION_DESCRIPTION",
+            "display": "Religion Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b3"
+          },
+          {
+            "name": "$ref:SENTENCE_LENGTH_FORMATTED",
+            "display": "Sentence Length Formatted",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO42"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}
