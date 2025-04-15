@@ -22,7 +22,7 @@
       "name": "Damage Obligations Audit",
       "description": "Finance",
       "datasource": "nomis",
-      "query": "dataset_base_ AS (SELECT AT_DAMOBL_CASELOAD.DESCRIPTION, AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_OFF_DAMAGE_OBL.OFFENDER_ID, AT_OFF_DAMAGE_OBL.OFFENDER_DMG_OBLIGATION_ID, AT_OFF_DAMAGE_OBL.REFERENCE_NO, AT_OFF_DAMAGE_OBL.START_DATE, AT_OFF_DAMAGE_OBL.END_DATE, AT_OFF_DAMAGE_OBL.OBLIGATION_STATUS, SUM(AT_OFF_DAMAGE_OBL.AMOUNT_TO_PAY) AS AMOUNT_TO_PAY_WITH_SUM, SUM(AT_OFF_DAMAGE_OBL.PAID_AMOUNT) AS PAID_AMOUNT_WITH_SUM FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_DAMAGE_OBLIGATIONS AT_OFF_DAMAGE_OBL, CASELOADS AT_DAMOBL_CASELOAD WHERE (AT_DAMOBL_CASELOAD.CASELOAD_ID = AT_OFF_DAMAGE_OBL.AGY_LOC_ID) AND (AT_OFF_DAMAGE_OBL.OFFENDER_ID = AT_OFFENDER.ROOT_OFFENDER_ID AND AT_OFFENDER.root_offender_id = AT_OFFENDER.offender_id) AND (AT_DAMOBL_CASELOAD.CASELOAD_TYPE = 'INST') AND (AT_DAMOBL_CASELOAD.ACTIVE_FLAG = 'Y') AND (AT_DAMOBL_CASELOAD.TRUST_ACCOUNTS_FLAG = 'Y') AND ((AT_DAMOBL_CASELOAD.caseload_id = (SELECT establishment_code FROM prompt_)) AND AT_OFF_DAMAGE_OBL.START_DATE >= TO_DATE('01-02-2014 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_OFF_DAMAGE_OBL.START_DATE <= TO_DATE('14-02-2014 00:00:00', 'DD-MM-YYYY HH24:MI:SS')) GROUP BY AT_DAMOBL_CASELOAD.DESCRIPTION, AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_OFF_DAMAGE_OBL.OFFENDER_ID, AT_OFF_DAMAGE_OBL.OFFENDER_DMG_OBLIGATION_ID, AT_OFF_DAMAGE_OBL.REFERENCE_NO, AT_OFF_DAMAGE_OBL.START_DATE, AT_OFF_DAMAGE_OBL.END_DATE, AT_OFF_DAMAGE_OBL.OBLIGATION_STATUS), dataset_ AS (SELECT DESCRIPTION, OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, OFFENDER_ID, OFFENDER_DMG_OBLIGATION_ID, REFERENCE_NO, START_DATE, END_DATE, OBLIGATION_STATUS, AMOUNT_TO_PAY_WITH_SUM, PAID_AMOUNT_WITH_SUM FROM dataset_base_)",
+      "query": "dataset_base_ AS (SELECT AT_DAMOBL_CASELOAD.DESCRIPTION, AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_OFF_DAMAGE_OBL.OFFENDER_ID, AT_OFF_DAMAGE_OBL.OFFENDER_DMG_OBLIGATION_ID, AT_OFF_DAMAGE_OBL.REFERENCE_NO, AT_OFF_DAMAGE_OBL.START_DATE, AT_OFF_DAMAGE_OBL.END_DATE, AT_OFF_DAMAGE_OBL.OBLIGATION_STATUS, SUM(AT_OFF_DAMAGE_OBL.AMOUNT_TO_PAY) AS AMOUNT_TO_PAY_WITH_SUM, SUM(AT_OFF_DAMAGE_OBL.PAID_AMOUNT) AS PAID_AMOUNT_WITH_SUM FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_DAMAGE_OBLIGATIONS AT_OFF_DAMAGE_OBL, CASELOADS AT_DAMOBL_CASELOAD WHERE (AT_DAMOBL_CASELOAD.CASELOAD_ID = AT_OFF_DAMAGE_OBL.AGY_LOC_ID) AND (AT_OFF_DAMAGE_OBL.OFFENDER_ID = AT_OFFENDER.ROOT_OFFENDER_ID AND AT_OFFENDER.root_offender_id = AT_OFFENDER.offender_id) AND (AT_DAMOBL_CASELOAD.CASELOAD_TYPE = 'INST') AND (AT_DAMOBL_CASELOAD.ACTIVE_FLAG = 'Y') AND (AT_DAMOBL_CASELOAD.TRUST_ACCOUNTS_FLAG = 'Y') AND ((AT_DAMOBL_CASELOAD.caseload_id = (SELECT establishment_code FROM prompt_)) AND AT_OFF_DAMAGE_OBL.START_DATE >= (SELECT START_DATE FROM prompt_) AND AT_OFF_DAMAGE_OBL.START_DATE <= (SELECT END_DATE FROM prompt_)) GROUP BY AT_DAMOBL_CASELOAD.DESCRIPTION, AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_OFF_DAMAGE_OBL.OFFENDER_ID, AT_OFF_DAMAGE_OBL.OFFENDER_DMG_OBLIGATION_ID, AT_OFF_DAMAGE_OBL.REFERENCE_NO, AT_OFF_DAMAGE_OBL.START_DATE, AT_OFF_DAMAGE_OBL.END_DATE, AT_OFF_DAMAGE_OBL.OBLIGATION_STATUS), dataset_ AS (SELECT DESCRIPTION, OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, OFFENDER_ID, OFFENDER_DMG_OBLIGATION_ID, REFERENCE_NO, START_DATE, END_DATE, OBLIGATION_STATUS, AMOUNT_TO_PAY_WITH_SUM, PAID_AMOUNT_WITH_SUM, (AMOUNT_TO_PAY_WITH_SUM-PAID_AMOUNT_WITH_SUM) AS OUTSTANDING FROM dataset_base_)",
       "parameters": [
         {
           "index": 0,
@@ -33,6 +33,24 @@
           "description": "(SELECT establishment_code from prompt_)",
           "mandatory": "true",
           "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Admission Start Date",
+          "description": "@prompt('Admission Start Date','D',,Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Admission End Date",
+          "description": "@prompt('Admission End Date','D',,Mono,Free,Not_Persistent,,User:2)",
+          "mandatory": "true"
         }
       ],
       "schema": {
@@ -132,6 +150,14 @@
             "display": "Paid Amount with SUM",
             "legacyId": "DP1.DO47db",
             "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "OUTSTANDING",
+            "type": "double",
+            "display": "Outstanding",
+            "legacyId": "DP1.DO47db",
+            "legacySqlClass": "column"
           }
         ]
       }
@@ -178,7 +204,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
+            "defaultsort": true,
             "legacyId": "DP1.DO10044"
           },
           {
@@ -220,7 +246,7 @@
           {
             "name": "$ref:START_DATE",
             "display": "Start Date",
-            "formula": "",
+            "formula": "format_date(${START_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
             "defaultsort": false,
@@ -229,7 +255,7 @@
           {
             "name": "$ref:END_DATE",
             "display": "End Date",
-            "formula": "",
+            "formula": "format_date(${END_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
             "defaultsort": false,
@@ -237,7 +263,7 @@
           },
           {
             "name": "$ref:OBLIGATION_STATUS",
-            "display": "Obligation Status",
+            "display": "Status",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -246,7 +272,7 @@
           },
           {
             "name": "$ref:AMOUNT_TO_PAY_WITH_SUM",
-            "display": "Amount To Pay with SUM",
+            "display": "Obligation Amount",
             "formula": "",
             "visible": "true",
             "sortable": false,
@@ -255,7 +281,16 @@
           },
           {
             "name": "$ref:PAID_AMOUNT_WITH_SUM",
-            "display": "Paid Amount with SUM",
+            "display": "Amount Paid",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP1.DO47db"
+          },
+          {
+            "name": "$ref:OUTSTANDING",
+            "display": "Amount Outstanding",
             "formula": "",
             "visible": "true",
             "sortable": false,
