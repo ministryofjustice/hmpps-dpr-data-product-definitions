@@ -1,0 +1,480 @@
+{
+  "id": "Fow8UV0MBAMAI84BAHAbeV8UACJIABRd",
+  "name": "ORS Key Worker Sessions entered on Classic NOMIS or DPS",
+  "description": "This report lists Key Worker Case Note Sessions, along with which device was used.<br/>DQ0027 - v00.00.02 Last Modified: 24/01/20",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "DQ0027 v00.00.02",
+      "Key Worker",
+      "DPS",
+      "Classic"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP2",
+      "name": "Case Notes",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER.FIRST_NAME AS FIRST_NAME, AT_OFFENDER.LAST_NAME AS LAST_NAME, AT_OFFENDER_CASE_NOTES.CONTACT_DATE AS CONTACT_DATE, AT_OFFENDER_CASE_NOTES.CONTACT_TIME AS CONTACT_TIME, AT_STAFF_USER_ACCOUNTS.USERNAME AS USERNAME, AT_CASE_NOTES_STAFF_MEMBERS.FIRST_NAME AS CASE_NOTES_STAFF_FIRST_NAME, AT_CASE_NOTES_STAFF_MEMBERS.LAST_NAME AS CASE_NOTES_STAFF_LAST_NAME, AT_STAFF_USER_ACCOUNTS.STAFF_USER_TYPE AS STAFF_USER_TYPE, AT_OFFENDER_CASE_NOTES.AUDIT_MODULE_NAME AS AUDIT_MODULE_NAME, AT_OFFENDER_CASE_NOTES.AUDIT_TIMESTAMP AS AUDIT_TIMESTAMP FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.STAFF_MEMBERS AT_CASE_NOTES_STAFF_MEMBERS, OMS_OWNER.OFFENDER_CASE_NOTES AT_OFFENDER_CASE_NOTES, OMS_OWNER.STAFF_USER_ACCOUNTS AT_STAFF_USER_ACCOUNTS, OMS_OWNER.LIVING_UNITS AT_LIVING_UNITS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID = AT_LIVING_UNITS.LIVING_UNIT_ID) AND (NOT AT_LIVING_UNITS.HOUSING_UNIT_TYPE IN ('OU', 'REC')) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_CASE_NOTES.OFFENDER_BOOK_ID) AND (AT_STAFF_USER_ACCOUNTS.STAFF_ID = AT_CASE_NOTES_STAFF_MEMBERS.STAFF_ID) AND (AT_OFFENDER_CASE_NOTES.STAFF_ID = AT_STAFF_USER_ACCOUNTS.STAFF_ID) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code from prompt_)) AND (AT_LIVING_UNITS.AGY_LOC_ID || '-' || AT_LIVING_UNITS.LEVEL_1_CODE = (SELECT wing from prompt_) OR 'All' = (SELECT wing from prompt_)) AND AT_OFFENDER_CASE_NOTES.CONTACT_DATE BETWEEN (SELECT contact_start_date from prompt_) AND (SELECT contact_end_date from prompt_) AND AT_OFFENDER_CASE_NOTES.CASE_NOTE_SUB_TYPE = 'KS')), dataset_ AS (SELECT DISTINCT OFFENDER_ID_DISPLAY, FIRST_NAME, LAST_NAME, CONTACT_DATE, CONTACT_TIME, USERNAME, CASE_NOTES_STAFF_FIRST_NAME, CASE_NOTES_STAFF_LAST_NAME, STAFF_USER_TYPE, SUBSTR(USERNAME, 1, 6) AS V_LEFT_USER_ID, CASE WHEN AUDIT_MODULE_NAME IN ('JDBC Thin Client','ELITE2_API','API_FINANCE_PROCS.POST_TRANSACTION') THEN 'DPS' WHEN AUDIT_MODULE_NAME IN ('OCUCNAME', 'OCDCLOGS') THEN 'Classic' END AS V_DPS_OR_CLASSIC FROM dataset_base_)",
+      "parameters": [{
+        "index": 0,
+        "name": "establishment_code",
+        "filterType": "autocomplete",
+        "referenceType": "establishment",
+        "reportFieldType": "string",
+        "display": "Establishment",
+        "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+        "mandatory": "true"
+      },
+        {
+          "index": 1,
+          "name": "wing",
+          "filterType": "autocomplete",
+          "referenceType": "wing",
+          "reportFieldType": "string",
+          "display": "Wing (All for all)",
+          "description": "@Prompt('Wing (All for all)','A','Cell\\Location LOV',multi,free,,Not_Persistent,,User:4)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "contact_start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Contact Date Start",
+          "description": "@prompt('Schedule Date Start','D',,Mono,Free,Not_Persistent,,User:4)",
+          "mandatory": "true"
+        },
+        {
+          "index": 3,
+          "name": "contact_end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Contact Date End",
+          "description": "@prompt('Schedule Date End','D',,Mono,Free,Not_Persistent,,User:4)",
+          "mandatory": "true"
+        }],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP2.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP2.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "CONTACT_DATE",
+            "type": "date",
+            "display": "Contact Date",
+            "legacyId": "DP2.DOc94",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "CONTACT_TIME",
+            "type": "date",
+            "display": "Contact Time",
+            "legacyId": "DP2.DOcb3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "USERNAME",
+            "type": "string",
+            "display": "Case Notes Staff User Id",
+            "legacyId": "DP2.DOcc4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "CASE_NOTES_STAFF_FIRST_NAME",
+            "type": "string",
+            "display": "Case Notes Staff First Name",
+            "legacyId": "DP2.DOcc2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "CASE_NOTES_STAFF_LAST_NAME",
+            "type": "string",
+            "display": "Case Notes Staff Last Name",
+            "legacyId": "DP2.DOcc1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "STAFF_USER_TYPE",
+            "type": "string",
+            "display": "Case Notes Staff User Type",
+            "legacyId": "DP2.DOcc5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "V_LEFT_USER_ID",
+            "type": "string",
+            "display": "V_LEFT_USER_ID",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 10,
+            "name": "V_DPS_OR_CLASSIC",
+            "type": "string",
+            "display": "V_DPS_OR_CLASSIC"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "164624.RS",
+      "name": "By Key worker",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:CONTACT_DATE",
+            "display": "Contact Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOc94"
+          },
+          {
+            "name": "$ref:CONTACT_TIME",
+            "display": "Contact Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOcb3"
+          },
+          {
+            "name": "$ref:CASE_NOTES_STAFF_LAST_NAME",
+            "display": "Case Notes Staff Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP2.DOcc1"
+          },
+          {
+            "name": "$ref:CASE_NOTES_STAFF_FIRST_NAME",
+            "display": "Case Notes Staff First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOcc2"
+          },
+          {
+            "name": "$ref:V_LEFT_USER_ID",
+            "display": "Staff User ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Left([Case Notes Staff User Id];6)"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO44"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO45"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO46"
+          },
+          {
+            "name": "$ref:V_DPS_OR_CLASSIC",
+            "display": "Entered on Prison-NOMIS (Classic) or Digital Prison Services (DPS)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Audit Module Name] InList( \"JDBC Thin Client\";\"ELITE2_API\";\"API_FINANCE_PROCS.POST_TRANSACTION\"); \"DPS\"; If([Audit Module Name] InList(\"OCUCNAME\"; \"OCDCLOGS\"); \"Classic\"))"
+          }
+        ]
+      }
+    },
+    {
+      "id": "167267.RS",
+      "name": "By Prisoner",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:CONTACT_DATE",
+            "display": "Contact Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOc94"
+          },
+          {
+            "name": "$ref:CONTACT_TIME",
+            "display": "Contact Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOcb3"
+          },
+          {
+            "name": "$ref:CASE_NOTES_STAFF_LAST_NAME",
+            "display": "Case Notes Staff Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOcc1"
+          },
+          {
+            "name": "$ref:CASE_NOTES_STAFF_FIRST_NAME",
+            "display": "Case Notes Staff First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOcc2"
+          },
+          {
+            "name": "$ref:V_LEFT_USER_ID",
+            "display": "Staff User ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Left([Case Notes Staff User Id];6)"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO44"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP2.DO45"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO46"
+          },
+          {
+            "name": "$ref:V_DPS_OR_CLASSIC",
+            "display": "Entered on Prison-NOMIS (Classic) or Digital Prison Services (DPS)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Audit Module Name] InList( \"JDBC Thin Client\";\"ELITE2_API\";\"API_FINANCE_PROCS.POST_TRANSACTION\"); \"DPS\"; If([Audit Module Name] InList(\"OCUCNAME\"; \"OCDCLOGS\"); \"Classic\"))"
+          }
+        ]
+      }
+    },
+    {
+      "id": "167337.RS",
+      "name": "By Classic or DPS",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "section": ["V_DPS_OR_CLASSIC"],
+        "field": [
+          {
+            "name": "$ref:CONTACT_DATE",
+            "display": "Contact Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOc94"
+          },
+          {
+            "name": "$ref:CONTACT_TIME",
+            "display": "Contact Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOcb3"
+          },
+          {
+            "name": "$ref:CASE_NOTES_STAFF_LAST_NAME",
+            "display": "Case Notes Staff Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP2.DOcc1"
+          },
+          {
+            "name": "$ref:CASE_NOTES_STAFF_FIRST_NAME",
+            "display": "Case Notes Staff First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOcc2"
+          },
+          {
+            "name": "$ref:V_LEFT_USER_ID",
+            "display": "Staff User ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Left([Case Notes Staff User Id];6)"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO44"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO45"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO46"
+          },
+          {
+            "name": "$ref:V_DPS_OR_CLASSIC",
+            "display": "Entered on Prison-NOMIS (Classic) or Digital Prison Services (DPS)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacySql": "=If([Audit Module Name] InList( \"JDBC Thin Client\";\"ELITE2_API\";\"API_FINANCE_PROCS.POST_TRANSACTION\"); \"DPS\"; If([Audit Module Name] InList(\"OCUCNAME\"; \"OCDCLOGS\"); \"Classic\"))"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+  ]
+}
