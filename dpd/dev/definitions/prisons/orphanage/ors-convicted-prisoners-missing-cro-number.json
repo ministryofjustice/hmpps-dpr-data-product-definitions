@@ -1,0 +1,264 @@
+{
+  "id": "ok9OEJkAB5GbCBkASNOD8K7BXV4",
+  "name": "ORS Convicted Prisoners Missing CRO Number",
+  "description": "This report returns a list of convicted prisoners on a prison roll who do not have a CRO Number on their main record.<br/>DQ0007 - v1.2 Last Modified: 01/09/2016",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "DQ0007",
+      "CRO"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP2",
+      "name": "Missing CRO",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "DP4_ AS ( SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_PEOPLE.FIRST_NAME, AT_PEOPLE.LAST_NAME FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.PERSONS AT_PEOPLE, OMS_OWNER.OFFENDER_CONTACT_PERSONS AT_CONTACTS WHERE ( AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_CONTACTS.OFFENDER_BOOK_ID (+) ) AND (AT_PEOPLE.PERSON_ID (+) = AT_CONTACTS.PERSON_ID) AND ( AT_CONTACTS.ACTIVE_FLAG IN ('Y') AND AT_CONTACTS.RELATIONSHIP_TYPE = 'CA' ) ), CASE_ADMINISTRATOR_ AS ( SELECT OFFENDER_ID_DISPLAY, FIRST_NAME || ' ' || LAST_NAME AS CA_NAME, COUNT(1) OVER (PARTITION BY DP4_.OFFENDER_ID_DISPLAY) AS CA_COUNT FROM DP4_ ), dataset_base_ AS ( SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, SUBSTR( AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION) ) AS UNIT_DESCRIPTION_4_SHORT, DT_ADMISSION.ADMISSION_DATE, CASE_ADMINISTRATOR_.CA_NAME, CASE_ADMINISTRATOR_.CA_COUNT FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.IMPRISONMENT_STATUSES AT_IMPRISON_STATUSES_SEQ, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, ( SELECT DISTINCT m.OFFENDER_BOOK_ID, MAX(m.MOVEMENT_TIME) AS ADMISSION_DATE FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS m, OMS_OWNER.offender_bookings h WHERE h.booking_status = 'O' AND h.active_flag = 'Y' AND m.direction_code = 'IN' AND m.Movement_reason_code <> 'R' AND m.Movement_type = 'ADM' AND m.to_agy_loc_id = h.agy_loc_id AND h.offender_book_id = m.offender_book_id GROUP BY m.OFFENDER_BOOK_ID ) DT_ADMISSION, OMS_OWNER.OFFENDER_IDENTIFIERS AT_OFFENDER_CRO, OMS_OWNER.OFFENDER_IMPRISON_STATUSES AT_OFFENDER_IMPRISON_STS, CASE_ADMINISTRATOR_ WHERE ( AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID ) AND ( CASE_ADMINISTRATOR_.OFFENDER_ID_DISPLAY(+) = AT_OFFENDER.OFFENDER_ID_DISPLAY ) AND ( AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID ) AND ( AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST' ) AND (AT_OFFENDER_CRO.IDENTIFIER_TYPE (+) = 'CRO') AND ( AT_OFFENDER_CRO.OFFENDER_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_ID ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+) ) AND ( NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI') ) AND ( AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID ) AND ( AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID ) AND ( AT_OFFENDER_IMPRISON_STS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID ) AND ( AT_IMPRISON_STATUSES_SEQ.IMPRISONMENT_STATUS = AT_OFFENDER_IMPRISON_STS.IMPRISONMENT_STATUS ) AND (AT_OFFENDER_IMPRISON_STS.LATEST_STATUS = 'Y') AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_ADMISSION.OFFENDER_BOOK_ID (+) ) AND ( WING_CASELOAD_SECURITY.USERNAME = ( SELECT username FROM context_ ) ) AND ( (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_BOOKING.IN_OUT_STATUS IN ('IN', 'OUT') AND ( AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = ( SELECT establishment_code FROM prompt_ ) ) AND CASE WHEN AT_IMPRISON_STATUSES_SEQ.IMPRISONMENT_STATUS IN ( 'A_CFINE', 'BOBC', 'CIV_RMD', 'CIVIL', 'CIVIL_CON', 'CIVIL_DT', 'DEF_SENT', 'DEPORT', 'DET', 'DISCHARGED', 'DISCONT', 'DTTO', 'EXTRAD', 'POLICE', 'NON-CUST', 'REC_DEP', 'REFER', 'REST_ORD', 'RX', 'S35MHA', 'S36MHA', 'S48MHA', 'SEC43', 'SUP_ORD', 'SUSP_SEN', 'SINE_DIE', 'TRL', 'UNFIT', 'UNKNOWN', 'YO_CFINE', 'YOC_CONT', 'UNK_CUST', 'UNFIT', 'SINE_DIE' ) THEN 'Unconvicted' ELSE 'Convicted' END = 'Convicted' AND AT_OFFENDER_CRO.IDENTIFIER IS NULL ) ), dataset_ AS ( SELECT DISTINCT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, UNIT_DESCRIPTION_4_SHORT, ADMISSION_DATE, CASE WHEN CA_COUNT > 1 THEN 'MULTI ENTRIES - CHECK RECORD' ELSE CA_NAME END AS V_CASE_ADMINISTRATOR FROM dataset_base_ )",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP2.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP2.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP2.DO427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ADMISSION_DATE",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DP2.DOc6a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "V_CASE_ADMINISTRATOR",
+            "type": "string",
+            "display": "V_CASE_ADMINISTRATOR",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP4",
+      "name": "Case Admin",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_PEOPLE.FIRST_NAME, AT_PEOPLE.LAST_NAME FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.PERSONS AT_PEOPLE, OMS_OWNER.OFFENDER_CONTACT_PERSONS AT_CONTACTS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_CONTACTS.OFFENDER_BOOK_ID (+)) AND (AT_PEOPLE.PERSON_ID (+) = AT_CONTACTS.PERSON_ID) AND (AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A4686DV', 'A4883DV', 'A6126DV') AND AT_CONTACTS.ACTIVE_FLAG IN ('Y') AND AT_CONTACTS.RELATIONSHIP_TYPE = 'CA')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FIRST_NAME, LAST_NAME FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP4.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "CP First Name",
+            "legacyId": "DP4.DOed9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "CP Last Name",
+            "legacyId": "DP4.DOed8",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "total-distinct-prisoner-count",
+      "name": "Total prisoner count",
+      "datasource": "redshift",
+      "query": "select count(distinct OFFENDER_ID_DISPLAY) as PRISONER_COUNT from ${tableId}",
+      "schema": {
+        "field": [
+          {
+            "name": "PRISONER_COUNT",
+            "type": "int",
+            "display": "Total Prisoner Count"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "158283.RS",
+      "name": "Convicted Prisoners Missing CRO Number",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP2",
+      "summary": [
+        {
+          "id": "total-distinct-prisoner-count",
+          "template": "page-header",
+          "dataset": "$ref:total-distinct-prisoner-count"
+        }
+      ],
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO44"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO46"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP2.DO45"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Cell",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO427"
+          },
+          {
+            "name": "$ref:ADMISSION_DATE",
+            "display": "Admission Date",
+            "formula": "format_date(${ADMISSION_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOc6a"
+          },
+          {
+            "name": "$ref:V_CASE_ADMINISTRATOR",
+            "display": "Case Administrator",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([CP Last Name]+\", \"+[CP First Name]) In ([NOMS Number])"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_CASE_ADMINISTRATOR :: Error: =([CP Last Name]+\", \"+[CP First Name]) In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:40",
+      "entityId": "ok9OEJkAB5GbCBkASNOD8K7BXV4",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_CASE_ADMINISTRATOR :: Error: =([CP Last Name]+\", \"+[CP First Name]) In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:40",
+      "entityId": "ok9OEJkAB5GbCBkASNOD8K7BXV4",
+      "entityType": "dpd"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: NJS-005: invalid value for parameter 1",
+      "entityId": "3377299/DP2",
+      "entityType": "dataset"
+    }
+  ]
+}
