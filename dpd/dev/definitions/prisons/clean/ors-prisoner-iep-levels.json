@@ -263,6 +263,71 @@
       }
     },
     {
+      "id": "prisoner-total-row-count",
+      "name": "Total prisoner row count ungrouped",
+      "datasource": "redshift",
+      "query": "select count(*) as TOTAL from ${tableId}",
+      "schema": {
+        "field": [
+          {
+            "name": "TOTAL",
+            "type": "long",
+            "display": "Grand Total"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisoner-distinct-count-by-iep-level",
+      "name": "Distinct prisoner count by IEP Level",
+      "datasource": "redshift",
+      "query": "select t1.IEP_LEVEL, t1.IEP_LEVEL as IEP_LEVEL2, t1.PRISONER_COUNT, ROUND(PRISONER_COUNT * 100.0/t2.total_count, 2) as percentage from (select IEP_LEVEL, count(distinct OFFENDER_ID_DISPLAY) as PRISONER_COUNT from ${tableId} GROUP BY IEP_LEVEL) as t1, (SELECT COUNT(distinct OFFENDER_ID_DISPLAY) as total_count FROM ${tableId}) as t2",
+      "schema": {
+        "field": [
+          {
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "IEP Level"
+          },
+          {
+            "name": "IEP_LEVEL2",
+            "type": "string",
+            "display": "IEP Level"
+          },
+          {
+            "name": "PRISONER_COUNT",
+            "type": "long",
+            "display": "Prisoner Count"
+          },
+          {
+            "name": "PERCENTAGE",
+            "type": "double",
+            "display": "Percentage"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisoner-total-row-count-by-iep-level",
+      "name": "Total prisoner row count by IEP level",
+      "datasource": "redshift",
+      "query": "select IEP_LEVEL, count(*) as TOTAL_BY_GROUP from ${tableId} GROUP BY IEP_LEVEL",
+      "schema": {
+        "field": [
+          {
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "Location"
+          },
+          {
+            "name": "TOTAL_BY_GROUP",
+            "type": "long",
+            "display": "Total"
+          }
+        ]
+      }
+    },
+    {
       "id": "3377299/DP1a",
       "name": "All IEP Levels",
       "description": "Demographic",
@@ -390,14 +455,41 @@
       "version": "1.0.0",
       "render": "HTML",
       "dataset": "3377299/DP11",
+      "summary": [
+        {
+          "id": "prisoner-distinct-count-by-iep-level",
+          "template": "section-header",
+          "dataset": "$ref:prisoner-distinct-count-by-iep-level"
+        },
+        {
+          "id": "prisoner-total-row-count-by-iep-level",
+          "template": "section-footer",
+          "dataset": "$ref:prisoner-total-row-count-by-iep-level"
+        },
+        {
+          "id": "prisoner-grand-total-row-count",
+          "template": "page-footer",
+          "dataset": "$ref:prisoner-total-row-count"
+        }
+      ],
       "feature": [
         {
           "type": "print"
         }
       ],
       "specification": {
-        "template": "list",
+        "template": "list-section",
+        "section": ["IEP_LEVEL"],
         "field": [
+          {
+            "name": "$ref:IEP_LEVEL",
+            "display": "IEP Level",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP11.DO521"
+          },
           {
             "name": "$ref:OFFENDER_ID_DISPLAY",
             "display": "NOMS Number",
@@ -427,7 +519,7 @@
           },
           {
             "name": "$ref:AGE_IN_YEARS",
-            "display": "Age in Years",
+            "display": "Age",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -436,7 +528,7 @@
           },
           {
             "name": "$ref:PROFILE_CODE",
-            "display": "Nationality Code",
+            "display": "Nationality",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -463,7 +555,7 @@
           },
           {
             "name": "$ref:V_ADMISSIONDATE",
-            "display": "Eth Code",
+            "display": "Admission Date",
             "formula": "",
             "visible": "true",
             "sortable": false,
@@ -472,7 +564,7 @@
           },
           {
             "name": "$ref:CONVICTED_UNCONVICTED_STATUS",
-            "display": "Convicted / Unconvicted Status",
+            "display": "Legal Status",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -481,7 +573,7 @@
           },
           {
             "name": "$ref:EFFECTIVE_DATE",
-            "display": "Main Legal Status Effective Date",
+            "display": "Legal Status Start Date",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -490,7 +582,7 @@
           },
           {
             "name": "$ref:VSENTENCELENGTH",
-            "display": "Legal Status Start Date",
+            "display": "Sentence Length",
             "formula": "",
             "visible": "true",
             "sortable": false,
@@ -499,7 +591,7 @@
           },
           {
             "name": "$ref:VRELEASE",
-            "display": "Sent. Length",
+            "display": "Release Date",
             "formula": "",
             "visible": "true",
             "sortable": false,
@@ -508,7 +600,7 @@
           },
           {
             "name": "$ref:LOCATION",
-            "display": "Location",
+            "display": "Cell",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -517,7 +609,7 @@
           },
           {
             "name": "$ref:BOOKING_BEGIN_DATE",
-            "display": "Booking Begin Date",
+            "display": "Booking Start Date",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -526,7 +618,16 @@
           },
           {
             "name": "$ref:IEP_DATE",
-            "display": "IEP Date",
+            "display": "Current IEP Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DOe41"
+          },
+          {
+            "name": "$ref:DAYS_ON_IEP",
+            "display": "Days on IEP",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -1051,6 +1152,13 @@
       "version": "1.0.0",
       "render": "HTML",
       "dataset": "3377299/DP11",
+      "summary": [
+        {
+          "id": "prisoner-total-row-count",
+          "template": "page-footer",
+          "dataset": "$ref:prisoner-total-row-count"
+        }
+      ],
       "feature": [
         {
           "type": "print"
@@ -1141,6 +1249,15 @@
             "legacyId": "DP11.DObb5"
           },
           {
+            "name": "$ref:VSENTENCELENGTH",
+            "display": "Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Current Effective Sentence Length]=\"00/00/00\";\"\";[Current Effective Sentence Length])"
+          },
+          {
             "name": "$ref:VRELEASE",
             "display": "Release Date",
             "formula": "",
@@ -1169,7 +1286,7 @@
           },
           {
             "name": "$ref:IEP_LEVEL",
-            "display": "IEP Level",
+            "display": "Current IEP",
             "formula": "",
             "visible": "true",
             "sortable": false,
@@ -1178,7 +1295,16 @@
           },
           {
             "name": "$ref:IEP_DATE",
-            "display": "IEP Date",
+            "display": "Current IEP Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DOe41"
+          },
+          {
+            "name": "$ref:DAYS_ON_IEP",
+            "display": "Days on IEP",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -1195,6 +1321,13 @@
       "version": "1.0.0",
       "render": "HTML",
       "dataset": "3377299/DP11",
+      "summary": [
+        {
+          "id": "prisoner-total-row-count",
+          "template": "page-footer",
+          "dataset": "$ref:prisoner-total-row-count"
+        }
+      ],
       "feature": [
         {
           "type": "print"
@@ -1267,6 +1400,24 @@
             "legacySql": "=[Admission Date]"
           },
           {
+            "name": "$ref:CONVICTED_UNCONVICTED_STATUS",
+            "display": "Legal Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO716"
+          },
+          {
+            "name": "$ref:EFFECTIVE_DATE",
+            "display": "Legal Status Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Current Effective Sentence Length]=\"00/00/00\";\"\";[Current Effective Sentence Length])"
+          },
+          {
             "name": "$ref:VSENTENCELENGTH",
             "display": "Sentence Length",
             "formula": "",
@@ -1286,7 +1437,7 @@
           },
           {
             "name": "$ref:LOCATION",
-            "display": "Location",
+            "display": "Cell",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -1304,7 +1455,7 @@
           },
           {
             "name": "$ref:IEP_LEVEL",
-            "display": "IEP Level",
+            "display": "Current IEP",
             "formula": "",
             "visible": "true",
             "sortable": false,
@@ -1313,7 +1464,16 @@
           },
           {
             "name": "$ref:IEP_DATE",
-            "display": "IEP Date",
+            "display": "Current IEP Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DOe41"
+          },
+          {
+            "name": "$ref:DAYS_ON_IEP",
+            "display": "Days on IEP",
             "formula": "",
             "visible": "true",
             "sortable": true,
