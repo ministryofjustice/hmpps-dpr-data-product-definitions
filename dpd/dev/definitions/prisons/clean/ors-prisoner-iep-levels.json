@@ -263,6 +263,41 @@
       }
     },
     {
+      "id": "prisoner-total-row-count-per-legal-status",
+      "name": "Total prisoner row count",
+      "datasource": "redshift",
+      "query": "select CONVICTED_UNCONVICTED_STATUS, COUNT(*) as TOTAL_ROWS FROM ${tableId} GROUP BY CONVICTED_UNCONVICTED_STATUS",
+      "schema": {
+        "field": [
+          {
+            "name": "CONVICTED_UNCONVICTED_STATUS",
+            "type": "string",
+            "display": "Legal Status"
+          },
+          {
+            "name": "TOTAL_ROWS",
+            "type": "long",
+            "display": "Total"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisoner-sum-total-count-per-location-and-iep-level-non-section",
+      "name": "Total prisoner row count",
+      "datasource": "redshift",
+      "query": "select SUM(TOTAL_BY_GROUP) as TOTAL_ROWS FROM (select UNIT_CODE_1, IEP_LEVEL, count(*) as TOTAL_BY_GROUP from ${tableId} GROUP BY UNIT_CODE_1, IEP_LEVEL)",
+      "schema": {
+        "field": [
+          {
+            "name": "TOTAL_ROWS",
+            "type": "long",
+            "display": "Total"
+          }
+        ]
+      }
+    },
+    {
       "id": "prisoner-total-row-count",
       "name": "Total prisoner row count ungrouped",
       "datasource": "redshift",
@@ -303,6 +338,61 @@
             "name": "PERCENTAGE",
             "type": "double",
             "display": "Percentage"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisoner-distinct-count-by-iep-level-non-sectioned",
+      "name": "Distinct prisoner count by IEP Level",
+      "datasource": "redshift",
+      "query": "select t1.IEP_LEVEL, t1.PRISONER_COUNT, ROUND(PRISONER_COUNT * 100.0/t2.total_count, 2) as percentage from (select IEP_LEVEL, count(distinct OFFENDER_ID_DISPLAY) as PRISONER_COUNT from ${tableId} GROUP BY IEP_LEVEL) as t1, (SELECT COUNT(distinct OFFENDER_ID_DISPLAY) as total_count FROM ${tableId}) as t2",
+      "schema": {
+        "field": [
+          {
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "IEP Level"
+          },
+          {
+            "name": "PRISONER_COUNT",
+            "type": "long",
+            "display": "Prisoner Count"
+          },
+          {
+            "name": "PERCENTAGE",
+            "type": "double",
+            "display": "Percentage"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisoner-distinct-count-per-location-and-iep-level-non-sectioned",
+      "name": "Distinct prisoner count",
+      "datasource": "redshift",
+      "query": "select t1.UNIT_CODE_1 as LOCATION, t1.IEP_LEVEL, t1.PRISONER_COUNT, ROUND(PRISONER_COUNT * 100.0/t2.total_count, 2) as percentage from (select UNIT_CODE_1, IEP_LEVEL, count(distinct OFFENDER_ID_DISPLAY) as PRISONER_COUNT from ${tableId} GROUP BY UNIT_CODE_1, IEP_LEVEL) as t1, (SELECT COUNT(distinct OFFENDER_ID_DISPLAY) as total_count FROM ${tableId}) as t2",
+      "schema": {
+        "field": [
+          {
+            "name": "LOCATION",
+            "type": "string",
+            "display": "Location"
+          },
+          {
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "IEP Level"
+          },
+          {
+            "name": "PRISONER_COUNT",
+            "type": "long",
+            "display": "Prisoner Count"
+          },
+          {
+            "name": "PERCENTAGE",
+            "type": "double",
+            "display": "%"
           }
         ]
       }
@@ -419,6 +509,18 @@
       "version": "1.0.0",
       "render": "HTML",
       "dataset": "3377299/DP11",
+      "summary": [
+        {
+          "id": "prisoner-distinct-count-per-location-and-iep-level-non-sectioned",
+          "template": "page-header",
+          "dataset": "$ref:prisoner-distinct-count-per-location-and-iep-level-non-sectioned"
+        },
+        {
+          "id": "prisoner-sum-total-count-per-location-and-iep-level-non-section",
+          "template": "page-header",
+          "dataset": "$ref:prisoner-sum-total-count-per-location-and-iep-level-non-section"
+        }
+      ],
       "feature": [
         {
           "type": "print"
@@ -427,24 +529,6 @@
       "specification": {
         "template": "list",
         "field": [
-          {
-            "name": "$ref:UNIT_CODE_1",
-            "display": "Location",
-            "formula": "",
-            "visible": "true",
-            "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO472"
-          },
-          {
-            "name": "$ref:IEP_LEVEL",
-            "display": "IEP Level",
-            "formula": "",
-            "visible": "true",
-            "sortable": false,
-            "defaultsort": false,
-            "legacyId": "DP11.DO521"
-          }
         ]
       }
     },
@@ -644,6 +728,13 @@
       "version": "1.0.0",
       "render": "HTML",
       "dataset": "3377299/DP11",
+      "summary": [
+        {
+          "id": "prisoner-total-row-count-per-legal-status",
+          "template": "section-footer",
+          "dataset": "$ref:prisoner-total-row-count-per-legal-status"
+        }
+      ],
       "feature": [
         {
           "type": "print"
@@ -667,8 +758,8 @@
             "display": "IEP Level",
             "formula": "",
             "visible": "true",
-            "sortable": false,
-            "defaultsort": false,
+            "sortable": true,
+            "defaultsort": true,
             "legacyId": "DP11.DO521"
           },
           {
@@ -700,7 +791,7 @@
           },
           {
             "name": "$ref:AGE_IN_YEARS",
-            "display": "Age in Years",
+            "display": "Age",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -733,15 +824,6 @@
             "sortable": false,
             "defaultsort": false,
             "legacySql": "=[Admission Date]"
-          },
-          {
-            "name": "$ref:CONVICTED_UNCONVICTED_STATUS",
-            "display": "Legal Status",
-            "formula": "",
-            "visible": "true",
-            "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO716"
           },
           {
             "name": "$ref:EFFECTIVE_DATE",
@@ -790,7 +872,16 @@
           },
           {
             "name": "$ref:IEP_DATE",
-            "display": "IEP Date",
+            "display": "Current IEP Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DOe41"
+          },
+          {
+            "name": "$ref:DAYS_ON_IEP",
+            "display": "Days on IEP",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -1506,6 +1597,18 @@
       "version": "1.0.0",
       "render": "HTML",
       "dataset": "3377299/DP11",
+      "summary": [
+        {
+          "id": "prisoner-distinct-count-by-iep-level-non-sectioned",
+          "template": "page-header",
+          "dataset": "$ref:prisoner-distinct-count-by-iep-level-non-sectioned"
+        },
+        {
+          "id": "prisoner-grand-total-row-count",
+          "template": "page-footer",
+          "dataset": "$ref:prisoner-total-row-count"
+        }
+      ],
       "feature": [
         {
           "type": "print"
@@ -1520,7 +1623,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
+            "defaultsort": true,
             "legacyId": "DP11.DO51f"
           },
           {
@@ -1560,6 +1663,18 @@
       "version": "1.0.0",
       "render": "HTML",
       "dataset": "3377299/DP11",
+      "summary": [
+        {
+          "id": "prisoner-distinct-count-by-iep-level-non-sectioned",
+          "template": "page-header",
+          "dataset": "$ref:prisoner-distinct-count-by-iep-level-non-sectioned"
+        },
+        {
+          "id": "prisoner-grand-total-row-count",
+          "template": "page-footer",
+          "dataset": "$ref:prisoner-total-row-count"
+        }
+      ],
       "feature": [
         {
           "type": "print"
@@ -1583,7 +1698,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
+            "defaultsort": true,
             "legacyId": "DP11.DO45"
           },
           {
