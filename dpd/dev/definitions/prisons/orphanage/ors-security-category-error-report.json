@@ -1,0 +1,1677 @@
+{
+  "id": "Frh2g13bCAEAFfEBAHCLZF8VACJIABRd",
+  "name": "ORS Security Category Error Report",
+  "description": "This report returns a list of active prisoners on a prison roll who have an overdue or unapproved security categorisation or no categorisation at all. Also lists  when re categorisation reviews are due within a 3 month Time frame. Extra Tab added to list those unapproved assessments created on the same day as an approved assessment<br/>DQ0009 - v1.8 Last Modified: 19/09/2019",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "DQ0009 Security Category Reviews"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP2",
+      "name": "Latest Security Category",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "DPe_ AS ( SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_PEOPLE.FIRST_NAME || ' ' || AT_PEOPLE.LAST_NAME AS POM_NAME FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.PERSONS AT_PEOPLE, OMS_OWNER.OFFENDER_CONTACT_PERSONS AT_CONTACTS WHERE ( AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_CONTACTS.OFFENDER_BOOK_ID (+) ) AND (AT_PEOPLE.PERSON_ID (+) = AT_CONTACTS.PERSON_ID) AND ( AT_CONTACTS.ACTIVE_FLAG IN ('Y') AND AT_CONTACTS.RELATIONSHIP_TYPE IN ('POM') AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') ) ), DPa_ AS ( SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_PEOPLE.FIRST_NAME, AT_PEOPLE.LAST_NAME FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.PERSONS AT_PEOPLE, OMS_OWNER.OFFENDER_CONTACT_PERSONS AT_CONTACTS WHERE ( AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_CONTACTS.OFFENDER_BOOK_ID (+) ) AND (AT_PEOPLE.PERSON_ID (+) = AT_CONTACTS.PERSON_ID) AND ( AT_CONTACTS.ACTIVE_FLAG IN ('Y') AND AT_CONTACTS.RELATIONSHIP_TYPE = 'CA' ) ), CASE_ADMINISTRATOR_ AS ( SELECT OFFENDER_ID_DISPLAY, FIRST_NAME || ' ' || LAST_NAME AS CA_NAME, COUNT(1) OVER (PARTITION BY DPa_.OFFENDER_ID_DISPLAY) AS CA_COUNT FROM DPa_ ), DPC_ AS ( SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_PEOPLE.FIRST_NAME || ' ' || AT_PEOPLE.LAST_NAME AS SUP_FULL_NAME FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.PERSONS AT_PEOPLE, OMS_OWNER.OFFENDER_CONTACT_PERSONS AT_CONTACTS WHERE ( AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_CONTACTS.OFFENDER_BOOK_ID (+) ) AND (AT_PEOPLE.PERSON_ID (+) = AT_CONTACTS.PERSON_ID) AND ( AT_CONTACTS.ACTIVE_FLAG IN ('Y') AND AT_CONTACTS.RELATIONSHIP_TYPE IN ('OFS') ) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') ), DPd_ AS ( SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END AS CURRENT_RELEASE_DATE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.OFFENDER_RELEASE_DETAILS AT_OFFENDER_RELEASE_DETAILS, ( SELECT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID, CASE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE ELSE NULL END AS Last_Rel_Date, EFFECTIVE_SENTENCE_LENGTH FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = ( SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID ) ) DT_LAST_RELEASE_DATE WHERE ( AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_RELEASE_DETAILS.OFFENDER_BOOK_ID (+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_LAST_RELEASE_DATE.OFFENDER_BOOK_ID (+) ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) ), dataset_base_ AS ( SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_ALL_LIVING_UNITS.DESCRIPTION, AT_HEADER_BLOCK.STATUS_2, DT_CALC_LEVEL.DESCRIPTION AS CALCULATED_RESULT, DT_APPROVED_LEVEL.DESCRIPTION AS APPROVED_RESULT, DT_CATEGORISATION.NEXT_REVIEW_DATE, TRUNC(CURRENT_TIMESTAMP) AS TODAY_, TRUNC(ADD_MONTHS(CURRENT_TIMESTAMP, 3)) AS MONTHS_3_, DT_CATEGORISATION.ROW_SEQ_FILTER, DT_CATEGORISATION.ASSESS_STATUS, DT_CATEGORISATION.ASSESSMENT_DATE, DT_ADMISSION.ADMISSION_DATE, AT_HEADER_BLOCK.STATUS_2 AS SECURITY_CATEGORY, DPd_.CURRENT_RELEASE_DATE, DPC_.SUP_FULL_NAME, CASE_ADMINISTRATOR_.CA_NAME, CASE_ADMINISTRATOR_.CA_COUNT, DPe_.POM_NAME FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES DT_CALC_LEVEL, OMS_OWNER.REFERENCE_CODES DT_APPROVED_LEVEL, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS, ( SELECT oa.offender_book_id, oa.assessment_seq, oa.assess_status, oa.review_place_agy_loc_id, oa.assessment_date, oa.calc_sup_level_type, oa.overrided_sup_level_type, oa.review_sup_level_type, oa.next_review_date, rc.description AS review_sup_level_description, oa.evaluation_result_code, ROW_NUMBER() OVER ( PARTITION BY oa.offender_book_id ORDER BY CASE WHEN oa.assess_status <> 'I' THEN 1 ELSE 2 END, oa.assessment_date DESC, oa.assessment_seq DESC ) AS row_seq_filter FROM offender_assessments oa INNER JOIN assessments a ON a.assessment_id = oa.assessment_type_id AND a.assessment_class = 'TYPE' AND a.assessment_code = 'CATEGORY' AND a.determine_sup_level_flag = 'Y' LEFT OUTER JOIN reference_codes rc ON rc.code = oa.review_sup_level_type AND rc.domain = 'SUP_LVL_TYPE' ) DT_CATEGORISATION, ( SELECT DISTINCT m.OFFENDER_BOOK_ID, MAX(m.MOVEMENT_TIME) AS ADMISSION_DATE FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS m, OMS_OWNER.offender_bookings h WHERE h.booking_status = 'O' AND h.active_flag = 'Y' AND m.direction_code = 'IN' AND m.Movement_reason_code <> 'R' AND m.Movement_type = 'ADM' AND m.to_agy_loc_id = h.agy_loc_id AND h.offender_book_id = m.offender_book_id GROUP BY m.OFFENDER_BOOK_ID ) DT_ADMISSION, USER_ACCESSIBLE_CASELOADS, DPd_, DPC_, CASE_ADMINISTRATOR_, DPe_ WHERE ( AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID ) AND ( AT_OFFENDER.OFFENDER_ID_DISPLAY = DPd_.OFFENDER_ID_DISPLAY ) AND ( AT_OFFENDER.OFFENDER_ID_DISPLAY = DPC_.OFFENDER_ID_DISPLAY ) AND ( CASE_ADMINISTRATOR_.OFFENDER_ID_DISPLAY(+) = AT_OFFENDER.OFFENDER_ID_DISPLAY ) AND ( DPe_.OFFENDER_ID_DISPLAY(+) = AT_OFFENDER.OFFENDER_ID_DISPLAY ) AND ( AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST' ) AND ( USER_ACCESSIBLE_CASELOADS.USERNAME = ( SELECT username FROM context_ ) ) AND ( AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID ) AND ( AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+) ) AND ( NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI') ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_ADMISSION.OFFENDER_BOOK_ID (+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_CATEGORISATION.OFFENDER_BOOK_ID (+) ) AND ( DT_CATEGORISATION.CALC_SUP_LEVEL_TYPE = DT_CALC_LEVEL.CODE (+) ) AND ( DT_CATEGORISATION.REVIEW_SUP_LEVEL_TYPE = DT_APPROVED_LEVEL.CODE (+) ) AND (DT_CALC_LEVEL.DOMAIN (+) = 'SUP_LVL_TYPE') AND (DT_APPROVED_LEVEL.DOMAIN (+) = 'SUP_LVL_TYPE') AND ( (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_BOOKING.IN_OUT_STATUS IN ('IN', 'OUT') AND ( USER_ACCESSIBLE_CASELOADS.USERNAME = ( SELECT username FROM context_ ) ) AND ( AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = ( SELECT establishment_code FROM prompt_ ) ) ) ), dataset_ AS ( SELECT DISTINCT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, DESCRIPTION, STATUS_2, CALCULATED_RESULT, APPROVED_RESULT, NEXT_REVIEW_DATE, TODAY_, MONTHS_3_, ROW_SEQ_FILTER, ASSESS_STATUS, ASSESSMENT_DATE, ADMISSION_DATE, SECURITY_CATEGORY, CURRENT_RELEASE_DATE, SUP_FULL_NAME, CASE WHEN CA_COUNT > 1 THEN 'MULTI ENTRIES - CHECK RECORD' ELSE CA_NAME END AS V_CASE_ADMINISTRATOR, POM_NAME FROM dataset_base_ )",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP2.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP2.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Location",
+            "legacyId": "DP2.DO9fe",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "STATUS_2",
+            "type": "string",
+            "display": "Header Block Category",
+            "legacyId": "DP2.DO1051",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "CALCULATED_RESULT",
+            "type": "string",
+            "display": "Calculated Result",
+            "legacyId": "DP2.DO1011",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "APPROVED_RESULT",
+            "type": "string",
+            "display": "Approved Result",
+            "legacyId": "DP2.DO1012",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "NEXT_REVIEW_DATE",
+            "type": "date",
+            "display": "Next Review Date",
+            "legacyId": "DP2.DO100f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "TODAY_",
+            "type": "date",
+            "display": "Today (Date only)",
+            "legacyId": "DP2.DO712",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "MONTHS_3_",
+            "type": "date",
+            "display": "Today (Date only)",
+            "legacyId": "DP2.DO712",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ROW_SEQ_FILTER",
+            "type": "double",
+            "display": "Row Seq Filter",
+            "legacyId": "DP2.DO1010",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "ASSESS_STATUS",
+            "type": "string",
+            "display": "Assessment Status",
+            "legacyId": "DP2.DO10e5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "ASSESSMENT_DATE",
+            "type": "date",
+            "display": "Assessment Date",
+            "legacyId": "DP2.DO100a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "ADMISSION_DATE",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DP2.DOc6a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "SECURITY_CATEGORY",
+            "type": "string",
+            "display": "Security Category",
+            "legacyId": "DP2.DO265",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "CURRENT_RELEASE_DATE",
+            "type": "string",
+            "display": "CURRENT_RELEASE_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 16,
+            "name": "SUP_FULL_NAME",
+            "type": "string",
+            "display": "OFFENDER_SUPERVISOR",
+            "legacyId": "DP2.DO265",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "V_CASE_ADMINISTRATOR",
+            "type": "string",
+            "display": "V_CASE_ADMINISTRATOR",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 18,
+            "name": "POM_NAME",
+            "type": "string",
+            "display": "PRISONER OFFENDER MANAGER",
+            "legacyId": "DP2.DO265",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP4",
+      "name": "Latest Security Category (1)",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_ALL_LIVING_UNITS.DESCRIPTION, AT_HEADER_BLOCK.STATUS_2, DT_CALC_LEVEL.DESCRIPTION AS CALCULATED_RESULT, DT_APPROVED_LEVEL.DESCRIPTION AS APPROVED_RESULT, DT_CATEGORISATION.NEXT_REVIEW_DATE, TRUNC(CURRENT_TIMESTAMP) AS TODAY_, DT_CATEGORISATION.ROW_SEQ_FILTER, DT_CATEGORISATION.ASSESS_STATUS, DT_CATEGORISATION.ASSESSMENT_DATE, DT_ADMISSION.ADMISSION_DATE, AT_HEADER_BLOCK.STATUS_2 AS SECURITY_CATEGORY FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES DT_CALC_LEVEL, OMS_OWNER.REFERENCE_CODES DT_APPROVED_LEVEL, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS, (SELECT oa.offender_book_id, oa.assessment_seq, oa.assess_status, oa.review_place_agy_loc_id, oa.assessment_date, oa.calc_sup_level_type, oa.overrided_sup_level_type, oa.review_sup_level_type, oa.next_review_date, rc.description AS review_sup_level_description, oa.evaluation_result_code, ROW_NUMBER() OVER (PARTITION BY oa.offender_book_id ORDER BY CASE WHEN oa.assess_status <> 'I' THEN 1 ELSE 2 END, oa.assessment_date DESC, oa.assessment_seq DESC) AS row_seq_filter FROM offender_assessments oa INNER JOIN assessments a ON a.assessment_id = oa.assessment_type_id AND a.assessment_class = 'TYPE' AND a.assessment_code = 'CATEGORY' AND a.determine_sup_level_flag = 'Y' LEFT OUTER JOIN reference_codes rc ON rc.code = oa.review_sup_level_type AND rc.domain = 'SUP_LVL_TYPE') DT_CATEGORISATION, (SELECT DISTINCT m.OFFENDER_BOOK_ID, MAX(m.MOVEMENT_TIME) AS ADMISSION_DATE FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS m, OMS_OWNER.offender_bookings h WHERE h.booking_status = 'O' AND h.active_flag = 'Y' AND m.direction_code = 'IN' AND m.Movement_reason_code <> 'R' AND m.Movement_type = 'ADM' AND m.to_agy_loc_id = h.agy_loc_id AND h.offender_book_id = m.offender_book_id GROUP BY m.OFFENDER_BOOK_ID) DT_ADMISSION, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_ADMISSION.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_CATEGORISATION.OFFENDER_BOOK_ID (+)) AND (DT_CATEGORISATION.CALC_SUP_LEVEL_TYPE = DT_CALC_LEVEL.CODE (+)) AND (DT_CATEGORISATION.REVIEW_SUP_LEVEL_TYPE = DT_APPROVED_LEVEL.CODE (+)) AND (DT_CALC_LEVEL.DOMAIN (+) = 'SUP_LVL_TYPE') AND (DT_APPROVED_LEVEL.DOMAIN (+) = 'SUP_LVL_TYPE') AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_BOOKING.IN_OUT_STATUS IN ('IN', 'OUT') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_)) AND AT_OFFENDER.LAST_NAME BETWEEN 'E' AND 'HZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, DESCRIPTION, STATUS_2, CALCULATED_RESULT, APPROVED_RESULT, NEXT_REVIEW_DATE, TODAY_, ROW_SEQ_FILTER, ASSESS_STATUS, ASSESSMENT_DATE, ADMISSION_DATE, SECURITY_CATEGORY FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP4.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP4.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP4.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Location",
+            "legacyId": "DP4.DO9fe",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "STATUS_2",
+            "type": "string",
+            "display": "Header Block Category",
+            "legacyId": "DP4.DO1051",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "CALCULATED_RESULT",
+            "type": "string",
+            "display": "Calculated Result",
+            "legacyId": "DP4.DO1011",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "APPROVED_RESULT",
+            "type": "string",
+            "display": "Approved Result",
+            "legacyId": "DP4.DO1012",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "NEXT_REVIEW_DATE",
+            "type": "date",
+            "display": "Next Review Date",
+            "legacyId": "DP4.DO100f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "TODAY_",
+            "type": "date",
+            "display": "Today (Date only)",
+            "legacyId": "DP4.DO712",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "ROW_SEQ_FILTER",
+            "type": "double",
+            "display": "Row Seq Filter",
+            "legacyId": "DP4.DO1010",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ASSESS_STATUS",
+            "type": "string",
+            "display": "Assessment Status",
+            "legacyId": "DP4.DO10e5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "ASSESSMENT_DATE",
+            "type": "date",
+            "display": "Assessment Date",
+            "legacyId": "DP4.DO100a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "ADMISSION_DATE",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DP4.DOc6a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "SECURITY_CATEGORY",
+            "type": "string",
+            "display": "Security Category",
+            "legacyId": "DP4.DO265",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP5",
+      "name": "Latest Security Category (2)",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_ALL_LIVING_UNITS.DESCRIPTION, AT_HEADER_BLOCK.STATUS_2, DT_CALC_LEVEL.DESCRIPTION AS CALCULATED_RESULT, DT_APPROVED_LEVEL.DESCRIPTION AS APPROVED_RESULT, DT_CATEGORISATION.NEXT_REVIEW_DATE, TRUNC(CURRENT_TIMESTAMP) AS TODAY_, DT_CATEGORISATION.ROW_SEQ_FILTER, DT_CATEGORISATION.ASSESS_STATUS, DT_CATEGORISATION.ASSESSMENT_DATE, DT_ADMISSION.ADMISSION_DATE, AT_HEADER_BLOCK.STATUS_2 AS SECURITY_CATEGORY FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES DT_CALC_LEVEL, OMS_OWNER.REFERENCE_CODES DT_APPROVED_LEVEL, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS, (SELECT oa.offender_book_id, oa.assessment_seq, oa.assess_status, oa.review_place_agy_loc_id, oa.assessment_date, oa.calc_sup_level_type, oa.overrided_sup_level_type, oa.review_sup_level_type, oa.next_review_date, rc.description AS review_sup_level_description, oa.evaluation_result_code, ROW_NUMBER() OVER (PARTITION BY oa.offender_book_id ORDER BY CASE WHEN oa.assess_status <> 'I' THEN 1 ELSE 2 END, oa.assessment_date DESC, oa.assessment_seq DESC) AS row_seq_filter FROM offender_assessments oa INNER JOIN assessments a ON a.assessment_id = oa.assessment_type_id AND a.assessment_class = 'TYPE' AND a.assessment_code = 'CATEGORY' AND a.determine_sup_level_flag = 'Y' LEFT OUTER JOIN reference_codes rc ON rc.code = oa.review_sup_level_type AND rc.domain = 'SUP_LVL_TYPE') DT_CATEGORISATION, (SELECT DISTINCT m.OFFENDER_BOOK_ID, MAX(m.MOVEMENT_TIME) AS ADMISSION_DATE FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS m, OMS_OWNER.offender_bookings h WHERE h.booking_status = 'O' AND h.active_flag = 'Y' AND m.direction_code = 'IN' AND m.Movement_reason_code <> 'R' AND m.Movement_type = 'ADM' AND m.to_agy_loc_id = h.agy_loc_id AND h.offender_book_id = m.offender_book_id GROUP BY m.OFFENDER_BOOK_ID) DT_ADMISSION, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_ADMISSION.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_CATEGORISATION.OFFENDER_BOOK_ID (+)) AND (DT_CATEGORISATION.CALC_SUP_LEVEL_TYPE = DT_CALC_LEVEL.CODE (+)) AND (DT_CATEGORISATION.REVIEW_SUP_LEVEL_TYPE = DT_APPROVED_LEVEL.CODE (+)) AND (DT_CALC_LEVEL.DOMAIN (+) = 'SUP_LVL_TYPE') AND (DT_APPROVED_LEVEL.DOMAIN (+) = 'SUP_LVL_TYPE') AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_BOOKING.IN_OUT_STATUS IN ('IN', 'OUT') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_)) AND AT_OFFENDER.LAST_NAME BETWEEN 'I' AND 'LZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, DESCRIPTION, STATUS_2, CALCULATED_RESULT, APPROVED_RESULT, NEXT_REVIEW_DATE, TODAY_, ROW_SEQ_FILTER, ASSESS_STATUS, ASSESSMENT_DATE, ADMISSION_DATE, SECURITY_CATEGORY FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP5.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP5.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP5.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Location",
+            "legacyId": "DP5.DO9fe",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "STATUS_2",
+            "type": "string",
+            "display": "Header Block Category",
+            "legacyId": "DP5.DO1051",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "CALCULATED_RESULT",
+            "type": "string",
+            "display": "Calculated Result",
+            "legacyId": "DP5.DO1011",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "APPROVED_RESULT",
+            "type": "string",
+            "display": "Approved Result",
+            "legacyId": "DP5.DO1012",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "NEXT_REVIEW_DATE",
+            "type": "date",
+            "display": "Next Review Date",
+            "legacyId": "DP5.DO100f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "TODAY_",
+            "type": "date",
+            "display": "Today (Date only)",
+            "legacyId": "DP5.DO712",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "ROW_SEQ_FILTER",
+            "type": "double",
+            "display": "Row Seq Filter",
+            "legacyId": "DP5.DO1010",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ASSESS_STATUS",
+            "type": "string",
+            "display": "Assessment Status",
+            "legacyId": "DP5.DO10e5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "ASSESSMENT_DATE",
+            "type": "date",
+            "display": "Assessment Date",
+            "legacyId": "DP5.DO100a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "ADMISSION_DATE",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DP5.DOc6a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "SECURITY_CATEGORY",
+            "type": "string",
+            "display": "Security Category",
+            "legacyId": "DP5.DO265",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP6",
+      "name": "Latest Security Category (3)",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_ALL_LIVING_UNITS.DESCRIPTION, AT_HEADER_BLOCK.STATUS_2, DT_CALC_LEVEL.DESCRIPTION AS CALCULATED_RESULT, DT_APPROVED_LEVEL.DESCRIPTION AS APPROVED_RESULT, DT_CATEGORISATION.NEXT_REVIEW_DATE, TRUNC(CURRENT_TIMESTAMP) AS TODAY_, DT_CATEGORISATION.ROW_SEQ_FILTER, DT_CATEGORISATION.ASSESS_STATUS, DT_CATEGORISATION.ASSESSMENT_DATE, DT_ADMISSION.ADMISSION_DATE, AT_HEADER_BLOCK.STATUS_2 AS SECURITY_CATEGORY FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES DT_CALC_LEVEL, OMS_OWNER.REFERENCE_CODES DT_APPROVED_LEVEL, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS, (SELECT oa.offender_book_id, oa.assessment_seq, oa.assess_status, oa.review_place_agy_loc_id, oa.assessment_date, oa.calc_sup_level_type, oa.overrided_sup_level_type, oa.review_sup_level_type, oa.next_review_date, rc.description AS review_sup_level_description, oa.evaluation_result_code, ROW_NUMBER() OVER (PARTITION BY oa.offender_book_id ORDER BY CASE WHEN oa.assess_status <> 'I' THEN 1 ELSE 2 END, oa.assessment_date DESC, oa.assessment_seq DESC) AS row_seq_filter FROM offender_assessments oa INNER JOIN assessments a ON a.assessment_id = oa.assessment_type_id AND a.assessment_class = 'TYPE' AND a.assessment_code = 'CATEGORY' AND a.determine_sup_level_flag = 'Y' LEFT OUTER JOIN reference_codes rc ON rc.code = oa.review_sup_level_type AND rc.domain = 'SUP_LVL_TYPE') DT_CATEGORISATION, (SELECT DISTINCT m.OFFENDER_BOOK_ID, MAX(m.MOVEMENT_TIME) AS ADMISSION_DATE FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS m, OMS_OWNER.offender_bookings h WHERE h.booking_status = 'O' AND h.active_flag = 'Y' AND m.direction_code = 'IN' AND m.Movement_reason_code <> 'R' AND m.Movement_type = 'ADM' AND m.to_agy_loc_id = h.agy_loc_id AND h.offender_book_id = m.offender_book_id GROUP BY m.OFFENDER_BOOK_ID) DT_ADMISSION, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_ADMISSION.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_CATEGORISATION.OFFENDER_BOOK_ID (+)) AND (DT_CATEGORISATION.CALC_SUP_LEVEL_TYPE = DT_CALC_LEVEL.CODE (+)) AND (DT_CATEGORISATION.REVIEW_SUP_LEVEL_TYPE = DT_APPROVED_LEVEL.CODE (+)) AND (DT_CALC_LEVEL.DOMAIN (+) = 'SUP_LVL_TYPE') AND (DT_APPROVED_LEVEL.DOMAIN (+) = 'SUP_LVL_TYPE') AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_BOOKING.IN_OUT_STATUS IN ('IN', 'OUT') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_)) AND AT_OFFENDER.LAST_NAME BETWEEN 'M' AND 'PZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, DESCRIPTION, STATUS_2, CALCULATED_RESULT, APPROVED_RESULT, NEXT_REVIEW_DATE, TODAY_, ROW_SEQ_FILTER, ASSESS_STATUS, ASSESSMENT_DATE, ADMISSION_DATE, SECURITY_CATEGORY FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP6.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP6.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP6.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Location",
+            "legacyId": "DP6.DO9fe",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "STATUS_2",
+            "type": "string",
+            "display": "Header Block Category",
+            "legacyId": "DP6.DO1051",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "CALCULATED_RESULT",
+            "type": "string",
+            "display": "Calculated Result",
+            "legacyId": "DP6.DO1011",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "APPROVED_RESULT",
+            "type": "string",
+            "display": "Approved Result",
+            "legacyId": "DP6.DO1012",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "NEXT_REVIEW_DATE",
+            "type": "date",
+            "display": "Next Review Date",
+            "legacyId": "DP6.DO100f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "TODAY_",
+            "type": "date",
+            "display": "Today (Date only)",
+            "legacyId": "DP6.DO712",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "ROW_SEQ_FILTER",
+            "type": "double",
+            "display": "Row Seq Filter",
+            "legacyId": "DP6.DO1010",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ASSESS_STATUS",
+            "type": "string",
+            "display": "Assessment Status",
+            "legacyId": "DP6.DO10e5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "ASSESSMENT_DATE",
+            "type": "date",
+            "display": "Assessment Date",
+            "legacyId": "DP6.DO100a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "ADMISSION_DATE",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DP6.DOc6a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "SECURITY_CATEGORY",
+            "type": "string",
+            "display": "Security Category",
+            "legacyId": "DP6.DO265",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP7",
+      "name": "Latest Security Category (4)",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_ALL_LIVING_UNITS.DESCRIPTION, AT_HEADER_BLOCK.STATUS_2, DT_CALC_LEVEL.DESCRIPTION AS CALCULATED_RESULT, DT_APPROVED_LEVEL.DESCRIPTION AS APPROVED_RESULT, DT_CATEGORISATION.NEXT_REVIEW_DATE, TRUNC(CURRENT_TIMESTAMP) AS TODAY_, DT_CATEGORISATION.ROW_SEQ_FILTER, DT_CATEGORISATION.ASSESS_STATUS, DT_CATEGORISATION.ASSESSMENT_DATE, DT_ADMISSION.ADMISSION_DATE, AT_HEADER_BLOCK.STATUS_2 AS SECURITY_CATEGORY FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES DT_CALC_LEVEL, OMS_OWNER.REFERENCE_CODES DT_APPROVED_LEVEL, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS, (SELECT oa.offender_book_id, oa.assessment_seq, oa.assess_status, oa.review_place_agy_loc_id, oa.assessment_date, oa.calc_sup_level_type, oa.overrided_sup_level_type, oa.review_sup_level_type, oa.next_review_date, rc.description AS review_sup_level_description, oa.evaluation_result_code, ROW_NUMBER() OVER (PARTITION BY oa.offender_book_id ORDER BY CASE WHEN oa.assess_status <> 'I' THEN 1 ELSE 2 END, oa.assessment_date DESC, oa.assessment_seq DESC) AS row_seq_filter FROM offender_assessments oa INNER JOIN assessments a ON a.assessment_id = oa.assessment_type_id AND a.assessment_class = 'TYPE' AND a.assessment_code = 'CATEGORY' AND a.determine_sup_level_flag = 'Y' LEFT OUTER JOIN reference_codes rc ON rc.code = oa.review_sup_level_type AND rc.domain = 'SUP_LVL_TYPE') DT_CATEGORISATION, (SELECT DISTINCT m.OFFENDER_BOOK_ID, MAX(m.MOVEMENT_TIME) AS ADMISSION_DATE FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS m, OMS_OWNER.offender_bookings h WHERE h.booking_status = 'O' AND h.active_flag = 'Y' AND m.direction_code = 'IN' AND m.Movement_reason_code <> 'R' AND m.Movement_type = 'ADM' AND m.to_agy_loc_id = h.agy_loc_id AND h.offender_book_id = m.offender_book_id GROUP BY m.OFFENDER_BOOK_ID) DT_ADMISSION, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_ADMISSION.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_CATEGORISATION.OFFENDER_BOOK_ID (+)) AND (DT_CATEGORISATION.CALC_SUP_LEVEL_TYPE = DT_CALC_LEVEL.CODE (+)) AND (DT_CATEGORISATION.REVIEW_SUP_LEVEL_TYPE = DT_APPROVED_LEVEL.CODE (+)) AND (DT_CALC_LEVEL.DOMAIN (+) = 'SUP_LVL_TYPE') AND (DT_APPROVED_LEVEL.DOMAIN (+) = 'SUP_LVL_TYPE') AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_BOOKING.IN_OUT_STATUS IN ('IN', 'OUT') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_)) AND AT_OFFENDER.LAST_NAME BETWEEN 'Q' AND 'TZZZZZZZZZZZZZZZZZZZZZ')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, DESCRIPTION, STATUS_2, CALCULATED_RESULT, APPROVED_RESULT, NEXT_REVIEW_DATE, TODAY_, ROW_SEQ_FILTER, ASSESS_STATUS, ASSESSMENT_DATE, ADMISSION_DATE, SECURITY_CATEGORY FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP7.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP7.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP7.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Location",
+            "legacyId": "DP7.DO9fe",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "STATUS_2",
+            "type": "string",
+            "display": "Header Block Category",
+            "legacyId": "DP7.DO1051",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "CALCULATED_RESULT",
+            "type": "string",
+            "display": "Calculated Result",
+            "legacyId": "DP7.DO1011",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "APPROVED_RESULT",
+            "type": "string",
+            "display": "Approved Result",
+            "legacyId": "DP7.DO1012",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "NEXT_REVIEW_DATE",
+            "type": "date",
+            "display": "Next Review Date",
+            "legacyId": "DP7.DO100f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "TODAY_",
+            "type": "date",
+            "display": "Today (Date only)",
+            "legacyId": "DP7.DO712",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "ROW_SEQ_FILTER",
+            "type": "double",
+            "display": "Row Seq Filter",
+            "legacyId": "DP7.DO1010",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ASSESS_STATUS",
+            "type": "string",
+            "display": "Assessment Status",
+            "legacyId": "DP7.DO10e5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "ASSESSMENT_DATE",
+            "type": "date",
+            "display": "Assessment Date",
+            "legacyId": "DP7.DO100a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "ADMISSION_DATE",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DP7.DOc6a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "SECURITY_CATEGORY",
+            "type": "string",
+            "display": "Security Category",
+            "legacyId": "DP7.DO265",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP8",
+      "name": "Latest Security Category (5)",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_ALL_LIVING_UNITS.DESCRIPTION, AT_HEADER_BLOCK.STATUS_2, DT_CALC_LEVEL.DESCRIPTION AS CALCULATED_RESULT, DT_APPROVED_LEVEL.DESCRIPTION AS APPROVED_RESULT, DT_CATEGORISATION.NEXT_REVIEW_DATE, TRUNC(CURRENT_TIMESTAMP) AS TODAY_, DT_CATEGORISATION.ROW_SEQ_FILTER, DT_CATEGORISATION.ASSESS_STATUS, DT_CATEGORISATION.ASSESSMENT_DATE, DT_ADMISSION.ADMISSION_DATE, AT_HEADER_BLOCK.STATUS_2 AS SECURITY_CATEGORY FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES DT_CALC_LEVEL, OMS_OWNER.REFERENCE_CODES DT_APPROVED_LEVEL, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS, (SELECT oa.offender_book_id, oa.assessment_seq, oa.assess_status, oa.review_place_agy_loc_id, oa.assessment_date, oa.calc_sup_level_type, oa.overrided_sup_level_type, oa.review_sup_level_type, oa.next_review_date, rc.description AS review_sup_level_description, oa.evaluation_result_code, ROW_NUMBER() OVER (PARTITION BY oa.offender_book_id ORDER BY CASE WHEN oa.assess_status <> 'I' THEN 1 ELSE 2 END, oa.assessment_date DESC, oa.assessment_seq DESC) AS row_seq_filter FROM offender_assessments oa INNER JOIN assessments a ON a.assessment_id = oa.assessment_type_id AND a.assessment_class = 'TYPE' AND a.assessment_code = 'CATEGORY' AND a.determine_sup_level_flag = 'Y' LEFT OUTER JOIN reference_codes rc ON rc.code = oa.review_sup_level_type AND rc.domain = 'SUP_LVL_TYPE') DT_CATEGORISATION, (SELECT DISTINCT m.OFFENDER_BOOK_ID, MAX(m.MOVEMENT_TIME) AS ADMISSION_DATE FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS m, OMS_OWNER.offender_bookings h WHERE h.booking_status = 'O' AND h.active_flag = 'Y' AND m.direction_code = 'IN' AND m.Movement_reason_code <> 'R' AND m.Movement_type = 'ADM' AND m.to_agy_loc_id = h.agy_loc_id AND h.offender_book_id = m.offender_book_id GROUP BY m.OFFENDER_BOOK_ID) DT_ADMISSION, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_ADMISSION.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_CATEGORISATION.OFFENDER_BOOK_ID (+)) AND (DT_CATEGORISATION.CALC_SUP_LEVEL_TYPE = DT_CALC_LEVEL.CODE (+)) AND (DT_CATEGORISATION.REVIEW_SUP_LEVEL_TYPE = DT_APPROVED_LEVEL.CODE (+)) AND (DT_CALC_LEVEL.DOMAIN (+) = 'SUP_LVL_TYPE') AND (DT_APPROVED_LEVEL.DOMAIN (+) = 'SUP_LVL_TYPE') AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_BOOKING.IN_OUT_STATUS IN ('IN', 'OUT') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_)) AND AT_OFFENDER.LAST_NAME BETWEEN 'U' AND 'ZZZZZZZZZZZZZZZZZZZZZZZZ')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, DESCRIPTION, STATUS_2, CALCULATED_RESULT, APPROVED_RESULT, NEXT_REVIEW_DATE, TODAY_, ROW_SEQ_FILTER, ASSESS_STATUS, ASSESSMENT_DATE, ADMISSION_DATE, SECURITY_CATEGORY FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP8.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP8.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP8.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Location",
+            "legacyId": "DP8.DO9fe",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "STATUS_2",
+            "type": "string",
+            "display": "Header Block Category",
+            "legacyId": "DP8.DO1051",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "CALCULATED_RESULT",
+            "type": "string",
+            "display": "Calculated Result",
+            "legacyId": "DP8.DO1011",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "APPROVED_RESULT",
+            "type": "string",
+            "display": "Approved Result",
+            "legacyId": "DP8.DO1012",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "NEXT_REVIEW_DATE",
+            "type": "date",
+            "display": "Next Review Date",
+            "legacyId": "DP8.DO100f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "TODAY_",
+            "type": "date",
+            "display": "Today (Date only)",
+            "legacyId": "DP8.DO712",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "ROW_SEQ_FILTER",
+            "type": "double",
+            "display": "Row Seq Filter",
+            "legacyId": "DP8.DO1010",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ASSESS_STATUS",
+            "type": "string",
+            "display": "Assessment Status",
+            "legacyId": "DP8.DO10e5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "ASSESSMENT_DATE",
+            "type": "date",
+            "display": "Assessment Date",
+            "legacyId": "DP8.DO100a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "ADMISSION_DATE",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DP8.DOc6a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "SECURITY_CATEGORY",
+            "type": "string",
+            "display": "Security Category",
+            "legacyId": "DP8.DO265",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DPa",
+      "name": "Case Admin",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_PEOPLE.LAST_NAME, AT_PEOPLE.FIRST_NAME FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.PERSONS AT_PEOPLE, OMS_OWNER.OFFENDER_CONTACT_PERSONS AT_CONTACTS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_CONTACTS.OFFENDER_BOOK_ID (+)) AND (AT_PEOPLE.PERSON_ID (+) = AT_CONTACTS.PERSON_ID) AND ((AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A1846AL', 'A8022DF', 'A8592AJ', 'A1695CY', 'A0587CC', 'A0035EJ', 'A5592CD', 'A7529AW', 'A8551DG', 'A6061EF', 'A8420DX', 'A9166DP', 'A1757CX', 'A6825CM', 'A1761EA', 'A0246EG', 'A9185DG', 'A2717CF', 'A5861AV', 'A4491DM', 'A6494AQ', 'A5754EF', 'A5107EF', 'A6928DX', 'A1348CZ', 'A7455EE', 'A6561EE', 'A6814AY', 'A0252AD', 'A6570CA', 'A0828ED', 'A8475EF', 'A5479EG', 'A2677DL', 'A1436DK', 'A0047AR', 'A8296DE', 'A8351AL', 'A2233DE', 'A4312AR', 'A2255DN', 'A1433DF', 'A4104AD', 'A0726CM', 'A8087DE', 'A5939AY', 'A4368AK', 'A7787DH', 'A6863CF', 'A3440AH', 'A6720CE', 'A1801EK', 'A7026CZ', 'A3903DJ', 'A1071DN', 'A7226DT', 'A7601DE', 'A3773EC', 'A3543DA', 'A6158AQ', 'A0444CR', 'A3196CR', 'A5481DT', 'A9592AR', 'A8621EC', 'A8014AQ', 'A4004AP', 'A9394DL', 'A0138AT', 'A4298EK', 'A4802CC', 'A1749CQ', 'A1438EJ', 'A3142AW', 'A1960DY', 'A4882CH', 'A1063CN', 'A6929AD', 'A8201AR', 'A6464EG', 'A1059EJ', 'A6636AL', 'A1060EH', 'A4964EH', 'A7033CP', 'A6442DJ', 'A4585AN', 'A1589EK', 'A9850AY', 'A4951DE', 'A1057EH', 'A7349AT', 'A9412CK', 'A6763CF', 'A0462AL', 'A0242AR', 'A1627AN', 'A7094EH', 'A9582EC', 'A1804AA', 'A8848AK', 'A8645EG', 'A0645DJ', 'A7681AC', 'A7903EG', 'A3793EH', 'A1726EH', 'A3189EF', 'A8071EH', 'A5287CQ', 'A2696CL', 'A1557DR', 'A5645DH', 'A5829ED', 'A4068EF', 'A5606CT', 'A1922EE', 'A6168EH', 'A9359EH', 'A5619DA', 'A0314DE', 'A9125CN', 'A0377EH', 'A3192AD', 'A3305CF', 'A3382EJ', 'A4665EG', 'A4144EF', 'A6524AM', 'A1837CV', 'A7729EG', 'A1035AD', 'A2324DX', 'A2568AD', 'A5141AF', 'A9891AK', 'A3332AV', 'A8820CT', 'A4651CT', 'A7677CF', 'A5440DF', 'A6959AY', 'A9634DK', 'A2442CC', 'A2256AD', 'A4968AZ', 'A8598CN', 'A6461DT', 'A7587EE', 'A6514EC', 'A3279CX', 'A6362EC', 'A9655EF', 'A1499EG', 'A9869EF', 'A0210CY', 'A9041DL', 'A9624DV', 'A6168DZ', 'A1735CV', 'A6673DY', 'A1898DR', 'A8340DV', 'A2480AA', 'A8514EE', 'A9665CF', 'A1060ED', 'A3055CA', 'A6813CR', 'A9635DH', 'A1197EJ', 'A1626DP', 'A3625EF', 'A5658EE', 'A8990AV', 'A2553EG', 'A6068DQ', 'A7623DV', 'A3210EG', 'A7660DG', 'A9289CX', 'A2646EE', 'A7001CY', 'A6482EH', 'A4559DY', 'A1966EH', 'A3782EE', 'A1327EE', 'A1712DE', 'A9698EF', 'A5025CY', 'A4919ED', 'A5916CH', 'A8280EC', 'A5594EG', 'A5268ED', 'A9718CZ', 'A1969EJ', 'A8736DW', 'A7504DW', 'A9702EF', 'A8566AE', 'A2586DR', 'A1510CV', 'A9384EH', 'A2249DP', 'A9548DE', 'A7570AP', 'A9356AN', 'A4604AD', 'A4847AK', 'A7646AM', 'A1151AP', 'A2962AM', 'A0803AL') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A5026AQ', 'A4853EH', 'A0125DM', 'A3192AP', 'A9137AN', 'A1357ED', 'A7384EH', 'A6002AP', 'A3440EA', 'A3250DQ', 'A0083EG', 'A1751EA', 'A3251DA', 'A5159CX', 'A2477DG', 'A4423DE', 'A7016CE', 'A7328AC', 'A4724DK', 'A0780EG', 'A9807EE', 'A6134DR', 'A1466AP', 'A4440CA', 'A0905EC', 'A5667EC', 'A9766EG', 'A3241AQ', 'A4326CQ', 'A2842AL', 'A9529EJ', 'A6124AR', 'A1085CF', 'A7971EH', 'A7284AP', 'A3657DC', 'A8565AQ', 'A5660EH', 'A7463CP', 'A5214CX', 'A8281AJ', 'A7726EH', 'A0081DV', 'A9912EJ', 'A1645DN', 'A6860AY', 'A1020AD', 'A6609CV', 'A4376EG', 'A8720EF', 'A5474EH', 'A5445CT', 'A0064AW', 'A3137EJ', 'A9296AQ', 'A0110EA', 'A1823DP', 'A6065CG', 'A6168EJ', 'A4294DR', 'A5857EH', 'A4583DL', 'A1380DX', 'A4861EF', 'A3297DR', 'A8379EG', 'A5741CE', 'A9620AT', 'A0716DL', 'A7916DY', 'A2520EH', 'A8752EG', 'A0205AY', 'A9831AM', 'A3573DC', 'A7301EE', 'A8280AY', 'A5682EC', 'A9810EE', 'A1564AT', 'A2737EA', 'A8066DQ', 'A8813CQ', 'A3900AQ', 'A9861CL', 'A0885CT', 'A5011DD', 'A6844AL', 'A8671DV', 'A3804DL', 'A1547DR', 'A2691EA', 'A5163EJ', 'A3544AL', 'A1255EC', 'A4667DZ', 'A0674EG', 'A8077DL', 'A4485DR', 'A3171CV', 'A0199DW', 'A6450DY', 'A3943DT', 'A5369DF', 'A9998DZ', 'A4303DP', 'A9174DG', 'A8721DX', 'A7219DV', 'A2728EH', 'A9712EE', 'A0089EJ', 'A7194DY', 'A5749CX', 'A2784EJ', 'A5099EG', 'A9715CT', 'A4114EH', 'A8731DT', 'A4784AD', 'A7540EC', 'A7306AP', 'A8005AC', 'A0092AD') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A1550AV', 'A2052EF', 'A3734DV', 'A2855EC', 'A7045CF', 'A2417EG', 'A5177AJ', 'A7488ED', 'A3057AM', 'A3351CG', 'A8214CJ', 'A6407DX', 'A6197DK', 'A0658CV', 'A8406EJ', 'A7030AP', 'A6363EF', 'A0034EE', 'A1320DW', 'A4154DM', 'A8825EJ', 'A1527AD', 'A1564EH', 'A3990EH', 'A6850DQ', 'A6390CN', 'A9820EJ', 'A1341DC', 'A1826EH', 'A7803AL', 'A8271EJ', 'A1432AK', 'A2045EJ', 'A0624EH', 'A0597AM', 'A1924CH', 'A1382CP', 'A8915EH', 'A8131CV', 'A8934EA', 'A7221EG', 'A9058EH', 'A2503DZ', 'A9842AL', 'A1809AF', 'A4192EH', 'A2375DQ', 'A0499DA', 'A3143CX', 'A1079AQ', 'A2051EK', 'A3007AL', 'A0683EE', 'A8934CD', 'A1118EA', 'A3832EE', 'A3713EF', 'A7864DL', 'A7358AR', 'A6314AT', 'A4639AQ', 'A6367EE', 'A6568ED', 'A6613DL', 'A5548DQ', 'A8949EG', 'A2082DF', 'A8779CK', 'A1359CY', 'A7044AF', 'A9441EJ', 'A1647CP', 'A1493DD', 'A1466EA', 'A0562EF', 'A3727DT', 'A3047DV', 'A6482EF', 'A7349CP', 'A6533EE', 'A1941EK', 'A0369DV', 'A3446DC', 'A6190CR', 'A0265AQ', 'A5577AK', 'A1063AJ', 'A6791AM', 'A9879AN', 'A6459AA') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A9167EG', 'A7423AZ', 'A5349EH', 'A9116AV', 'A4251AV', 'A7097EF', 'A5855AL', 'A0991DW', 'A5371AZ', 'A9111AK', 'A5080AC', 'A1908AG', 'A2312CD', 'A1233EH', 'A7850DY', 'A5872DE', 'A3768CM', 'A6038CX', 'A5865AV', 'A5012EF', 'A3510CC', 'A9512EJ', 'A6349EH', 'A6658DY', 'A4107CH', 'A5104CZ', 'A5926EG', 'A3304CQ', 'A7765DT', 'A3287AT', 'A0871EF', 'A9632ED', 'A9998AK', 'A3494CJ', 'A8368DY', 'A9891CH', 'A2170EK', 'A4728CX', 'A9623DJ', 'A5603EG', 'A5654CQ', 'A0065DH', 'A0999CZ', 'A0049EC', 'A8147EJ', 'A9431EA', 'A2981AL', 'A5695AN', 'A6841EG', 'A2875DN', 'A7403AD', 'A2242EJ', 'A4613CG', 'A0670DL', 'A7297CD', 'A4236AQ', 'A7737EC', 'A3530EF', 'A8813AW', 'A4099AV', 'A5976CD', 'A7987AW', 'A4773CT', 'A0031EJ', 'A6058AP', 'A6531AK', 'A2980EJ', 'A0728EH', 'A5372EG', 'A8385CJ', 'A8862DA', 'A3442EC', 'A9170AQ', 'A0275DT', 'A7846AV', 'A5349DZ', 'A1694CK', 'A0582EG', 'A6928EF', 'A1143AT', 'A7345AL', 'A4542AN', 'A9628AQ', 'A5740AQ', 'A4222EH', 'A0673EH', 'A7393EE', 'A4774EF', 'A2678DK', 'A1216DT', 'A3709ED', 'A5004EC', 'A0362EC', 'A6355ED', 'A7298EF', 'A5234EH', 'A1177AA', 'A1903CP', 'A5500AP', 'A0107DP', 'A3482DW', 'A3882EA', 'A5768EG', 'A8328CV', 'A8956AA', 'A7662DF', 'A6101EA', 'A8081DT', 'A3031AM', 'A0305AM', 'A8807AF', 'A4856AE', 'A4413AY', 'A7254CC') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A8377CT', 'A2206AR', 'A2882DX', 'A8789DT', 'A7272AP', 'A1445AZ', 'A6046AQ', 'A2298AN', 'A6946DZ', 'A6165DW', 'A2649CQ', 'A2523EG', 'A2191EJ', 'A3090EG', 'A7362EJ', 'A8143DC', 'A0103CM', 'A6393AL', 'A1289CA', 'A3803DF', 'A5249EG', 'A5988AP', 'A8433DX', 'A7373ED', 'A3681DK', 'A8818AM', 'A4160AG', 'A1498AV', 'A8133AN', 'A7285EG', 'A3329CE', 'A4846DK', 'A4282EE', 'A8652EF', 'A3280AX', 'A3813CX', 'A9683AP', 'A4783CN', 'A6609EC', 'A9135CX', 'A9415DP', 'A3301DY', 'A0476CM', 'A7474AD', 'A9599DM', 'A2798CV', 'A3882EG', 'A3688DT', 'A4249EJ', 'A8403EF', 'A7831CA', 'A4455EF', 'A2834AL', 'A7248ED', 'A3648AW', 'A1216EK', 'A5279EE', 'A6373DM', 'A8746AQ', 'A9516EG', 'A5627AQ', 'A3262AM', 'A6567DE', 'A8044EG', 'A6597EJ', 'A5642EA', 'A2584CT', 'A1951EH', 'A6262AQ', 'A6417AV', 'A4735EG', 'A9332CE', 'A4079EJ', 'A8249EH', 'A6414DF', 'A7936AT', 'A9172AK', 'A1575DJ', 'A1788EJ', 'A9671EA', 'A0361AN', 'A8210DJ', 'A2633EH', 'A6467CL', 'A5542CC', 'A9165EG', 'A8868EG', 'A3256DZ', 'A4070EF', 'A1463CJ', 'A9799AT', 'A9120AM', 'A2226CC', 'A9373AQ', 'A1162DX', 'A2001AY', 'A5464AQ', 'A3908CR', 'A1288CA', 'A4155CW', 'A5409AM', 'A8999CK', 'A6213AQ', 'A3895EG', 'A7978DV', 'A0119DW', 'A6413DZ', 'A4096CE', 'A6655EF', 'A4117EJ', 'A1420DX', 'A0815DL', 'A5843ED', 'A8658DN', 'A6004ED', 'A8059ED', 'A3045EE', 'A9411EC', 'A3479DZ', 'A5183EF', 'A7631CR', 'A8385CA', 'A5078DX', 'A1005EC', 'A2517DP', 'A9044CZ', 'A2646ED', 'A6308DP', 'A7418AW', 'A5484AM', 'A5885EA', 'A6103DL', 'A7814CQ', 'A6162EJ', 'A7584EJ', 'A7876EC', 'A4659EH', 'A8870DV', 'A4493DZ', 'A4587DW', 'A5167EA', 'A1999DQ', 'A5691EC', 'A7587DQ', 'A0853DE', 'A1436EG', 'A1646EG', 'A7802DP', 'A1309AD', 'A5827AL', 'A0602CT', 'A2747AM', 'A7078AP', 'A4393AV') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A1710CN', 'A1276EH', 'A2037AV', 'A5944EJ', 'A1121AQ', 'A6012AV', 'A4231DP', 'A2949AL', 'A9391AQ', 'A1589ED', 'A5705AT', 'A3683EH', 'A2665DD', 'A7260CW', 'A6859AK', 'A1936DE', 'A7750CF', 'A0884AZ', 'A8251EJ', 'A9319CA', 'A6883DY', 'A1322AV', 'A3600EC', 'A5493DX', 'A9508EF', 'A9735AR', 'A5133DT', 'A3859AQ', 'A4909AM', 'A6523CM', 'A1821AY', 'A3477DH', 'A3744DQ', 'A4310EH', 'A5505AV', 'A5164EE', 'A1490EH', 'A9913CY', 'A4239DM', 'A4452AR', 'A9124EC', 'A6059DM', 'A9945EE', 'A8577ED', 'A8275DZ', 'A5724AM', 'A6822EG', 'A5337AY', 'A1647AA', 'A5294DR', 'A9223ED', 'A7326AP', 'A1069EA', 'A5092EF', 'A1975AM', 'A3854AQ')) AND (AT_CONTACTS.RELATIONSHIP_TYPE IN ('CA') AND AT_CONTACTS.ACTIVE_FLAG IN ('Y')) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPa.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "CP Last Name",
+            "legacyId": "DPa.DOed8",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "CP First Name",
+            "legacyId": "DPa.DOed9",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DPc",
+      "name": "Offender Supervisor",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_PEOPLE.FIRST_NAME, AT_PEOPLE.LAST_NAME FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.PERSONS AT_PEOPLE, OMS_OWNER.OFFENDER_CONTACT_PERSONS AT_CONTACTS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_CONTACTS.OFFENDER_BOOK_ID (+)) AND (AT_PEOPLE.PERSON_ID (+) = AT_CONTACTS.PERSON_ID) AND ((AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A5026AQ', 'A4853EH', 'A0125DM', 'A3192AP', 'A9137AN', 'A1357ED', 'A7384EH', 'A6002AP', 'A3440EA', 'A3250DQ', 'A0083EG', 'A1751EA', 'A3251DA', 'A5159CX', 'A2477DG', 'A4423DE', 'A7016CE', 'A7328AC', 'A4724DK', 'A0780EG', 'A9807EE', 'A6134DR', 'A1466AP', 'A4440CA', 'A0905EC', 'A5667EC', 'A9766EG', 'A3241AQ', 'A4326CQ', 'A2842AL', 'A9529EJ', 'A6124AR', 'A1085CF', 'A7971EH', 'A7284AP', 'A3657DC', 'A8565AQ', 'A5660EH', 'A7463CP', 'A5214CX', 'A8281AJ', 'A7726EH', 'A0081DV', 'A9912EJ', 'A1645DN', 'A6860AY', 'A1020AD', 'A6609CV', 'A4376EG', 'A8720EF', 'A5474EH', 'A5445CT', 'A0064AW', 'A3137EJ', 'A9296AQ', 'A0110EA', 'A1823DP', 'A6065CG', 'A6168EJ', 'A4294DR', 'A5857EH', 'A4583DL', 'A1380DX', 'A4861EF', 'A3297DR', 'A8379EG', 'A5741CE', 'A9620AT', 'A0716DL', 'A7916DY', 'A2520EH', 'A8752EG', 'A0205AY', 'A9831AM', 'A3573DC', 'A7301EE', 'A8280AY', 'A5682EC', 'A9810EE', 'A1564AT', 'A2737EA', 'A8066DQ', 'A8813CQ', 'A3900AQ', 'A9861CL', 'A0885CT', 'A5011DD', 'A6844AL', 'A8671DV', 'A3804DL', 'A1547DR', 'A2691EA', 'A5163EJ', 'A3544AL', 'A1255EC', 'A4667DZ', 'A0674EG', 'A8077DL', 'A4485DR', 'A3171CV', 'A0199DW', 'A6450DY', 'A3943DT', 'A5369DF', 'A9998DZ', 'A4303DP', 'A9174DG', 'A8721DX', 'A7219DV', 'A2728EH', 'A9712EE', 'A0089EJ', 'A7194DY', 'A5749CX', 'A2784EJ', 'A5099EG', 'A9715CT', 'A4114EH', 'A8731DT', 'A4784AD', 'A7540EC', 'A7306AP', 'A8005AC', 'A0092AD') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A1846AL', 'A8022DF', 'A8592AJ', 'A1695CY', 'A0587CC', 'A0035EJ', 'A5592CD', 'A7529AW', 'A8551DG', 'A6061EF', 'A8420DX', 'A9166DP', 'A1757CX', 'A6825CM', 'A1761EA', 'A0246EG', 'A9185DG', 'A2717CF', 'A5861AV', 'A4491DM', 'A6494AQ', 'A5754EF', 'A5107EF', 'A6928DX', 'A1348CZ', 'A7455EE', 'A6561EE', 'A6814AY', 'A0252AD', 'A6570CA', 'A0828ED', 'A8475EF', 'A5479EG', 'A2677DL', 'A1436DK', 'A0047AR', 'A8296DE', 'A8351AL', 'A2233DE', 'A4312AR', 'A2255DN', 'A1433DF', 'A4104AD', 'A0726CM', 'A8087DE', 'A5939AY', 'A4368AK', 'A7787DH', 'A6863CF', 'A3440AH', 'A6720CE', 'A1801EK', 'A7026CZ', 'A3903DJ', 'A1071DN', 'A7226DT', 'A7601DE', 'A3773EC', 'A3543DA', 'A6158AQ', 'A0444CR', 'A3196CR', 'A5481DT', 'A9592AR', 'A8621EC', 'A8014AQ', 'A4004AP', 'A9394DL', 'A0138AT', 'A4298EK', 'A4802CC', 'A1749CQ', 'A1438EJ', 'A3142AW', 'A1960DY', 'A4882CH', 'A1063CN', 'A6929AD', 'A8201AR', 'A6464EG', 'A1059EJ', 'A6636AL', 'A1060EH', 'A4964EH', 'A7033CP', 'A6442DJ', 'A4585AN', 'A1589EK', 'A9850AY', 'A4951DE', 'A1057EH', 'A7349AT', 'A9412CK', 'A6763CF', 'A0462AL', 'A0242AR', 'A1627AN', 'A7094EH', 'A9582EC', 'A1804AA', 'A8848AK', 'A8645EG', 'A0645DJ', 'A7681AC', 'A7903EG', 'A3793EH', 'A1726EH', 'A3189EF', 'A8071EH', 'A5287CQ', 'A2696CL', 'A1557DR', 'A5645DH', 'A5829ED', 'A4068EF', 'A5606CT', 'A1922EE', 'A6168EH', 'A9359EH', 'A5619DA', 'A0314DE', 'A9125CN', 'A0377EH', 'A3192AD', 'A3305CF', 'A3382EJ', 'A4665EG', 'A4144EF', 'A6524AM', 'A1837CV', 'A7729EG', 'A1035AD', 'A2324DX', 'A2568AD', 'A5141AF', 'A9891AK', 'A3332AV', 'A8820CT', 'A4651CT', 'A7677CF', 'A5440DF', 'A6959AY', 'A9634DK', 'A2442CC', 'A2256AD', 'A4968AZ', 'A8598CN', 'A6461DT', 'A7587EE', 'A6514EC', 'A3279CX', 'A6362EC', 'A9655EF', 'A1499EG', 'A9869EF', 'A0210CY', 'A9041DL', 'A9624DV', 'A6168DZ', 'A1735CV', 'A6673DY', 'A1898DR', 'A8340DV', 'A2480AA', 'A8514EE', 'A9665CF', 'A1060ED', 'A3055CA', 'A6813CR', 'A9635DH', 'A1197EJ', 'A1626DP', 'A3625EF', 'A5658EE', 'A8990AV', 'A2553EG', 'A6068DQ', 'A7623DV', 'A3210EG', 'A7660DG', 'A9289CX', 'A2646EE', 'A7001CY', 'A6482EH', 'A4559DY', 'A1966EH', 'A3782EE', 'A1327EE', 'A1712DE', 'A9698EF', 'A5025CY', 'A4919ED', 'A5916CH', 'A8280EC', 'A5594EG', 'A5268ED', 'A9718CZ', 'A1969EJ', 'A8736DW', 'A7504DW', 'A9702EF', 'A8566AE', 'A2586DR', 'A1510CV', 'A9384EH', 'A2249DP', 'A9548DE', 'A7570AP', 'A9356AN', 'A4604AD', 'A4847AK', 'A7646AM', 'A1151AP', 'A2962AM', 'A0803AL') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A1550AV', 'A2052EF', 'A3734DV', 'A2855EC', 'A7045CF', 'A2417EG', 'A5177AJ', 'A7488ED', 'A3057AM', 'A3351CG', 'A8214CJ', 'A6407DX', 'A6197DK', 'A0658CV', 'A8406EJ', 'A7030AP', 'A6363EF', 'A0034EE', 'A1320DW', 'A4154DM', 'A8825EJ', 'A1527AD', 'A1564EH', 'A3990EH', 'A6850DQ', 'A6390CN', 'A9820EJ', 'A1341DC', 'A1826EH', 'A7803AL', 'A8271EJ', 'A1432AK', 'A2045EJ', 'A0624EH', 'A0597AM', 'A1924CH', 'A1382CP', 'A8915EH', 'A8131CV', 'A8934EA', 'A7221EG', 'A9058EH', 'A2503DZ', 'A9842AL', 'A1809AF', 'A4192EH', 'A2375DQ', 'A0499DA', 'A3143CX', 'A1079AQ', 'A2051EK', 'A3007AL', 'A0683EE', 'A8934CD', 'A1118EA', 'A3832EE', 'A3713EF', 'A7864DL', 'A7358AR', 'A6314AT', 'A4639AQ', 'A6367EE', 'A6568ED', 'A6613DL', 'A5548DQ', 'A8949EG', 'A2082DF', 'A8779CK', 'A1359CY', 'A7044AF', 'A9441EJ', 'A1647CP', 'A1493DD', 'A1466EA', 'A0562EF', 'A3727DT', 'A3047DV', 'A6482EF', 'A7349CP', 'A6533EE', 'A1941EK', 'A0369DV', 'A3446DC', 'A6190CR', 'A0265AQ', 'A5577AK', 'A1063AJ', 'A6791AM', 'A9879AN', 'A6459AA') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A8377CT', 'A2206AR', 'A2882DX', 'A8789DT', 'A7272AP', 'A1445AZ', 'A6046AQ', 'A2298AN', 'A6946DZ', 'A6165DW', 'A2649CQ', 'A2523EG', 'A2191EJ', 'A3090EG', 'A7362EJ', 'A8143DC', 'A0103CM', 'A6393AL', 'A1289CA', 'A3803DF', 'A5249EG', 'A5988AP', 'A8433DX', 'A7373ED', 'A3681DK', 'A8818AM', 'A4160AG', 'A1498AV', 'A8133AN', 'A7285EG', 'A3329CE', 'A4846DK', 'A4282EE', 'A8652EF', 'A3280AX', 'A3813CX', 'A9683AP', 'A4783CN', 'A6609EC', 'A9135CX', 'A9415DP', 'A3301DY', 'A0476CM', 'A7474AD', 'A9599DM', 'A2798CV', 'A3882EG', 'A3688DT', 'A4249EJ', 'A8403EF', 'A7831CA', 'A4455EF', 'A2834AL', 'A7248ED', 'A3648AW', 'A1216EK', 'A5279EE', 'A6373DM', 'A8746AQ', 'A9516EG', 'A5627AQ', 'A3262AM', 'A6567DE', 'A8044EG', 'A6597EJ', 'A5642EA', 'A2584CT', 'A1951EH', 'A6262AQ', 'A6417AV', 'A4735EG', 'A9332CE', 'A4079EJ', 'A8249EH', 'A6414DF', 'A7936AT', 'A9172AK', 'A1575DJ', 'A1788EJ', 'A9671EA', 'A0361AN', 'A8210DJ', 'A2633EH', 'A6467CL', 'A5542CC', 'A9165EG', 'A8868EG', 'A3256DZ', 'A4070EF', 'A1463CJ', 'A9799AT', 'A9120AM', 'A2226CC', 'A9373AQ', 'A1162DX', 'A2001AY', 'A5464AQ', 'A3908CR', 'A1288CA', 'A4155CW', 'A5409AM', 'A8999CK', 'A6213AQ', 'A3895EG', 'A7978DV', 'A0119DW', 'A6413DZ', 'A4096CE', 'A6655EF', 'A4117EJ', 'A1420DX', 'A0815DL', 'A5843ED', 'A8658DN', 'A6004ED', 'A8059ED', 'A3045EE', 'A9411EC', 'A3479DZ', 'A5183EF', 'A7631CR', 'A8385CA', 'A5078DX', 'A1005EC', 'A2517DP', 'A9044CZ', 'A2646ED', 'A6308DP', 'A7418AW', 'A5484AM', 'A5885EA', 'A6103DL', 'A7814CQ', 'A6162EJ', 'A7584EJ', 'A7876EC', 'A4659EH', 'A8870DV', 'A4493DZ', 'A4587DW', 'A5167EA', 'A1999DQ', 'A5691EC', 'A7587DQ', 'A0853DE', 'A1436EG', 'A1646EG', 'A7802DP', 'A1309AD', 'A5827AL', 'A0602CT', 'A2747AM', 'A7078AP', 'A4393AV') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A9167EG', 'A7423AZ', 'A5349EH', 'A9116AV', 'A4251AV', 'A7097EF', 'A5855AL', 'A0991DW', 'A5371AZ', 'A9111AK', 'A5080AC', 'A1908AG', 'A2312CD', 'A1233EH', 'A7850DY', 'A5872DE', 'A3768CM', 'A6038CX', 'A5865AV', 'A5012EF', 'A3510CC', 'A9512EJ', 'A6349EH', 'A6658DY', 'A4107CH', 'A5104CZ', 'A5926EG', 'A3304CQ', 'A7765DT', 'A3287AT', 'A0871EF', 'A9632ED', 'A9998AK', 'A3494CJ', 'A8368DY', 'A9891CH', 'A2170EK', 'A4728CX', 'A9623DJ', 'A5603EG', 'A5654CQ', 'A0065DH', 'A0999CZ', 'A0049EC', 'A8147EJ', 'A9431EA', 'A2981AL', 'A5695AN', 'A6841EG', 'A2875DN', 'A7403AD', 'A2242EJ', 'A4613CG', 'A0670DL', 'A7297CD', 'A4236AQ', 'A7737EC', 'A3530EF', 'A8813AW', 'A4099AV', 'A5976CD', 'A7987AW', 'A4773CT', 'A0031EJ', 'A6058AP', 'A6531AK', 'A2980EJ', 'A0728EH', 'A5372EG', 'A8385CJ', 'A8862DA', 'A3442EC', 'A9170AQ', 'A0275DT', 'A7846AV', 'A5349DZ', 'A1694CK', 'A0582EG', 'A6928EF', 'A1143AT', 'A7345AL', 'A4542AN', 'A9628AQ', 'A5740AQ', 'A4222EH', 'A0673EH', 'A7393EE', 'A4774EF', 'A2678DK', 'A1216DT', 'A3709ED', 'A5004EC', 'A0362EC', 'A6355ED', 'A7298EF', 'A5234EH', 'A1177AA', 'A1903CP', 'A5500AP', 'A0107DP', 'A3482DW', 'A3882EA', 'A5768EG', 'A8328CV', 'A8956AA', 'A7662DF', 'A6101EA', 'A8081DT', 'A3031AM', 'A0305AM', 'A8807AF', 'A4856AE', 'A4413AY', 'A7254CC') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A1710CN', 'A1276EH', 'A2037AV', 'A5944EJ', 'A1121AQ', 'A6012AV', 'A4231DP', 'A2949AL', 'A9391AQ', 'A1589ED', 'A5705AT', 'A3683EH', 'A2665DD', 'A7260CW', 'A6859AK', 'A1936DE', 'A7750CF', 'A0884AZ', 'A8251EJ', 'A9319CA', 'A6883DY', 'A1322AV', 'A3600EC', 'A5493DX', 'A9508EF', 'A9735AR', 'A5133DT', 'A3859AQ', 'A4909AM', 'A6523CM', 'A1821AY', 'A3477DH', 'A3744DQ', 'A4310EH', 'A5505AV', 'A5164EE', 'A1490EH', 'A9913CY', 'A4239DM', 'A4452AR', 'A9124EC', 'A6059DM', 'A9945EE', 'A8577ED', 'A8275DZ', 'A5724AM', 'A6822EG', 'A5337AY', 'A1647AA', 'A5294DR', 'A9223ED', 'A7326AP', 'A1069EA', 'A5092EF', 'A1975AM', 'A3854AQ')) AND (AT_CONTACTS.ACTIVE_FLAG IN ('Y') AND AT_CONTACTS.RELATIONSHIP_TYPE IN ('OFS')) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FIRST_NAME, LAST_NAME FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPc.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "CP First Name",
+            "legacyId": "DPc.DOed9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "CP Last Name",
+            "legacyId": "DPc.DOed8",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DPd",
+      "name": "Release Date",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END AS CURRENT_RELEASE_DATE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.OFFENDER_RELEASE_DETAILS AT_OFFENDER_RELEASE_DETAILS, (SELECT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID, CASE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE ELSE NULL END AS Last_Rel_Date, EFFECTIVE_SENTENCE_LENGTH FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) DT_LAST_RELEASE_DATE WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_RELEASE_DETAILS.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_LAST_RELEASE_DATE.OFFENDER_BOOK_ID (+)) AND ((AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A5026AQ', 'A4853EH', 'A0125DM', 'A3192AP', 'A9137AN', 'A1357ED', 'A7384EH', 'A6002AP', 'A3440EA', 'A3250DQ', 'A0083EG', 'A1751EA', 'A3251DA', 'A5159CX', 'A2477DG', 'A4423DE', 'A7016CE', 'A7328AC', 'A4724DK', 'A0780EG', 'A9807EE', 'A6134DR', 'A1466AP', 'A4440CA', 'A0905EC', 'A5667EC', 'A9766EG', 'A3241AQ', 'A4326CQ', 'A2842AL', 'A9529EJ', 'A6124AR', 'A1085CF', 'A7971EH', 'A7284AP', 'A3657DC', 'A8565AQ', 'A5660EH', 'A7463CP', 'A5214CX', 'A8281AJ', 'A7726EH', 'A0081DV', 'A9912EJ', 'A1645DN', 'A6860AY', 'A1020AD', 'A6609CV', 'A4376EG', 'A8720EF', 'A5474EH', 'A5445CT', 'A0064AW', 'A3137EJ', 'A9296AQ', 'A0110EA', 'A1823DP', 'A6065CG', 'A6168EJ', 'A4294DR', 'A5857EH', 'A4583DL', 'A1380DX', 'A4861EF', 'A3297DR', 'A8379EG', 'A5741CE', 'A9620AT', 'A0716DL', 'A7916DY', 'A2520EH', 'A8752EG', 'A0205AY', 'A9831AM', 'A3573DC', 'A7301EE', 'A8280AY', 'A5682EC', 'A9810EE', 'A1564AT', 'A2737EA', 'A8066DQ', 'A8813CQ', 'A3900AQ', 'A9861CL', 'A0885CT', 'A5011DD', 'A6844AL', 'A8671DV', 'A3804DL', 'A1547DR', 'A2691EA', 'A5163EJ', 'A3544AL', 'A1255EC', 'A4667DZ', 'A0674EG', 'A8077DL', 'A4485DR', 'A3171CV', 'A0199DW', 'A6450DY', 'A3943DT', 'A5369DF', 'A9998DZ', 'A4303DP', 'A9174DG', 'A8721DX', 'A7219DV', 'A2728EH', 'A9712EE', 'A0089EJ', 'A7194DY', 'A5749CX', 'A2784EJ', 'A5099EG', 'A9715CT', 'A4114EH', 'A8731DT', 'A4784AD', 'A7540EC', 'A7306AP', 'A8005AC', 'A0092AD') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A1846AL', 'A8022DF', 'A8592AJ', 'A1695CY', 'A0587CC', 'A0035EJ', 'A5592CD', 'A7529AW', 'A8551DG', 'A6061EF', 'A8420DX', 'A9166DP', 'A1757CX', 'A6825CM', 'A1761EA', 'A0246EG', 'A9185DG', 'A2717CF', 'A5861AV', 'A4491DM', 'A6494AQ', 'A5754EF', 'A5107EF', 'A6928DX', 'A1348CZ', 'A7455EE', 'A6561EE', 'A6814AY', 'A0252AD', 'A6570CA', 'A0828ED', 'A8475EF', 'A5479EG', 'A2677DL', 'A1436DK', 'A0047AR', 'A8296DE', 'A8351AL', 'A2233DE', 'A4312AR', 'A2255DN', 'A1433DF', 'A4104AD', 'A0726CM', 'A8087DE', 'A5939AY', 'A4368AK', 'A7787DH', 'A6863CF', 'A3440AH', 'A6720CE', 'A1801EK', 'A7026CZ', 'A3903DJ', 'A1071DN', 'A7226DT', 'A7601DE', 'A3773EC', 'A3543DA', 'A6158AQ', 'A0444CR', 'A3196CR', 'A5481DT', 'A9592AR', 'A8621EC', 'A8014AQ', 'A4004AP', 'A9394DL', 'A0138AT', 'A4298EK', 'A4802CC', 'A1749CQ', 'A1438EJ', 'A3142AW', 'A1960DY', 'A4882CH', 'A1063CN', 'A6929AD', 'A8201AR', 'A6464EG', 'A1059EJ', 'A6636AL', 'A1060EH', 'A4964EH', 'A7033CP', 'A6442DJ', 'A4585AN', 'A1589EK', 'A9850AY', 'A4951DE', 'A1057EH', 'A7349AT', 'A9412CK', 'A6763CF', 'A0462AL', 'A0242AR', 'A1627AN', 'A7094EH', 'A9582EC', 'A1804AA', 'A8848AK', 'A8645EG', 'A0645DJ', 'A7681AC', 'A7903EG', 'A3793EH', 'A1726EH', 'A3189EF', 'A8071EH', 'A5287CQ', 'A2696CL', 'A1557DR', 'A5645DH', 'A5829ED', 'A4068EF', 'A5606CT', 'A1922EE', 'A6168EH', 'A9359EH', 'A5619DA', 'A0314DE', 'A9125CN', 'A0377EH', 'A3192AD', 'A3305CF', 'A3382EJ', 'A4665EG', 'A4144EF', 'A6524AM', 'A1837CV', 'A7729EG', 'A1035AD', 'A2324DX', 'A2568AD', 'A5141AF', 'A9891AK', 'A3332AV', 'A8820CT', 'A4651CT', 'A7677CF', 'A5440DF', 'A6959AY', 'A9634DK', 'A2442CC', 'A2256AD', 'A4968AZ', 'A8598CN', 'A6461DT', 'A7587EE', 'A6514EC', 'A3279CX', 'A6362EC', 'A9655EF', 'A1499EG', 'A9869EF', 'A0210CY', 'A9041DL', 'A9624DV', 'A6168DZ', 'A1735CV', 'A6673DY', 'A1898DR', 'A8340DV', 'A2480AA', 'A8514EE', 'A9665CF', 'A1060ED', 'A3055CA', 'A6813CR', 'A9635DH', 'A1197EJ', 'A1626DP', 'A3625EF', 'A5658EE', 'A8990AV', 'A2553EG', 'A6068DQ', 'A7623DV', 'A3210EG', 'A7660DG', 'A9289CX', 'A2646EE', 'A7001CY', 'A6482EH', 'A4559DY', 'A1966EH', 'A3782EE', 'A1327EE', 'A1712DE', 'A9698EF', 'A5025CY', 'A4919ED', 'A5916CH', 'A8280EC', 'A5594EG', 'A5268ED', 'A9718CZ', 'A1969EJ', 'A8736DW', 'A7504DW', 'A9702EF', 'A8566AE', 'A2586DR', 'A1510CV', 'A9384EH', 'A2249DP', 'A9548DE', 'A7570AP', 'A9356AN', 'A4604AD', 'A4847AK', 'A7646AM', 'A1151AP', 'A2962AM', 'A0803AL') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A1550AV', 'A2052EF', 'A3734DV', 'A2855EC', 'A7045CF', 'A2417EG', 'A5177AJ', 'A7488ED', 'A3057AM', 'A3351CG', 'A8214CJ', 'A6407DX', 'A6197DK', 'A0658CV', 'A8406EJ', 'A7030AP', 'A6363EF', 'A0034EE', 'A1320DW', 'A4154DM', 'A8825EJ', 'A1527AD', 'A1564EH', 'A3990EH', 'A6850DQ', 'A6390CN', 'A9820EJ', 'A1341DC', 'A1826EH', 'A7803AL', 'A8271EJ', 'A1432AK', 'A2045EJ', 'A0624EH', 'A0597AM', 'A1924CH', 'A1382CP', 'A8915EH', 'A8131CV', 'A8934EA', 'A7221EG', 'A9058EH', 'A2503DZ', 'A9842AL', 'A1809AF', 'A4192EH', 'A2375DQ', 'A0499DA', 'A3143CX', 'A1079AQ', 'A2051EK', 'A3007AL', 'A0683EE', 'A8934CD', 'A1118EA', 'A3832EE', 'A3713EF', 'A7864DL', 'A7358AR', 'A6314AT', 'A4639AQ', 'A6367EE', 'A6568ED', 'A6613DL', 'A5548DQ', 'A8949EG', 'A2082DF', 'A8779CK', 'A1359CY', 'A7044AF', 'A9441EJ', 'A1647CP', 'A1493DD', 'A1466EA', 'A0562EF', 'A3727DT', 'A3047DV', 'A6482EF', 'A7349CP', 'A6533EE', 'A1941EK', 'A0369DV', 'A3446DC', 'A6190CR', 'A0265AQ', 'A5577AK', 'A1063AJ', 'A6791AM', 'A9879AN', 'A6459AA') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A8377CT', 'A2206AR', 'A2882DX', 'A8789DT', 'A7272AP', 'A1445AZ', 'A6046AQ', 'A2298AN', 'A6946DZ', 'A6165DW', 'A2649CQ', 'A2523EG', 'A2191EJ', 'A3090EG', 'A7362EJ', 'A8143DC', 'A0103CM', 'A6393AL', 'A1289CA', 'A3803DF', 'A5249EG', 'A5988AP', 'A8433DX', 'A7373ED', 'A3681DK', 'A8818AM', 'A4160AG', 'A1498AV', 'A8133AN', 'A7285EG', 'A3329CE', 'A4846DK', 'A4282EE', 'A8652EF', 'A3280AX', 'A3813CX', 'A9683AP', 'A4783CN', 'A6609EC', 'A9135CX', 'A9415DP', 'A3301DY', 'A0476CM', 'A7474AD', 'A9599DM', 'A2798CV', 'A3882EG', 'A3688DT', 'A4249EJ', 'A8403EF', 'A7831CA', 'A4455EF', 'A2834AL', 'A7248ED', 'A3648AW', 'A1216EK', 'A5279EE', 'A6373DM', 'A8746AQ', 'A9516EG', 'A5627AQ', 'A3262AM', 'A6567DE', 'A8044EG', 'A6597EJ', 'A5642EA', 'A2584CT', 'A1951EH', 'A6262AQ', 'A6417AV', 'A4735EG', 'A9332CE', 'A4079EJ', 'A8249EH', 'A6414DF', 'A7936AT', 'A9172AK', 'A1575DJ', 'A1788EJ', 'A9671EA', 'A0361AN', 'A8210DJ', 'A2633EH', 'A6467CL', 'A5542CC', 'A9165EG', 'A8868EG', 'A3256DZ', 'A4070EF', 'A1463CJ', 'A9799AT', 'A9120AM', 'A2226CC', 'A9373AQ', 'A1162DX', 'A2001AY', 'A5464AQ', 'A3908CR', 'A1288CA', 'A4155CW', 'A5409AM', 'A8999CK', 'A6213AQ', 'A3895EG', 'A7978DV', 'A0119DW', 'A6413DZ', 'A4096CE', 'A6655EF', 'A4117EJ', 'A1420DX', 'A0815DL', 'A5843ED', 'A8658DN', 'A6004ED', 'A8059ED', 'A3045EE', 'A9411EC', 'A3479DZ', 'A5183EF', 'A7631CR', 'A8385CA', 'A5078DX', 'A1005EC', 'A2517DP', 'A9044CZ', 'A2646ED', 'A6308DP', 'A7418AW', 'A5484AM', 'A5885EA', 'A6103DL', 'A7814CQ', 'A6162EJ', 'A7584EJ', 'A7876EC', 'A4659EH', 'A8870DV', 'A4493DZ', 'A4587DW', 'A5167EA', 'A1999DQ', 'A5691EC', 'A7587DQ', 'A0853DE', 'A1436EG', 'A1646EG', 'A7802DP', 'A1309AD', 'A5827AL', 'A0602CT', 'A2747AM', 'A7078AP', 'A4393AV') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A9167EG', 'A7423AZ', 'A5349EH', 'A9116AV', 'A4251AV', 'A7097EF', 'A5855AL', 'A0991DW', 'A5371AZ', 'A9111AK', 'A5080AC', 'A1908AG', 'A2312CD', 'A1233EH', 'A7850DY', 'A5872DE', 'A3768CM', 'A6038CX', 'A5865AV', 'A5012EF', 'A3510CC', 'A9512EJ', 'A6349EH', 'A6658DY', 'A4107CH', 'A5104CZ', 'A5926EG', 'A3304CQ', 'A7765DT', 'A3287AT', 'A0871EF', 'A9632ED', 'A9998AK', 'A3494CJ', 'A8368DY', 'A9891CH', 'A2170EK', 'A4728CX', 'A9623DJ', 'A5603EG', 'A5654CQ', 'A0065DH', 'A0999CZ', 'A0049EC', 'A8147EJ', 'A9431EA', 'A2981AL', 'A5695AN', 'A6841EG', 'A2875DN', 'A7403AD', 'A2242EJ', 'A4613CG', 'A0670DL', 'A7297CD', 'A4236AQ', 'A7737EC', 'A3530EF', 'A8813AW', 'A4099AV', 'A5976CD', 'A7987AW', 'A4773CT', 'A0031EJ', 'A6058AP', 'A6531AK', 'A2980EJ', 'A0728EH', 'A5372EG', 'A8385CJ', 'A8862DA', 'A3442EC', 'A9170AQ', 'A0275DT', 'A7846AV', 'A5349DZ', 'A1694CK', 'A0582EG', 'A6928EF', 'A1143AT', 'A7345AL', 'A4542AN', 'A9628AQ', 'A5740AQ', 'A4222EH', 'A0673EH', 'A7393EE', 'A4774EF', 'A2678DK', 'A1216DT', 'A3709ED', 'A5004EC', 'A0362EC', 'A6355ED', 'A7298EF', 'A5234EH', 'A1177AA', 'A1903CP', 'A5500AP', 'A0107DP', 'A3482DW', 'A3882EA', 'A5768EG', 'A8328CV', 'A8956AA', 'A7662DF', 'A6101EA', 'A8081DT', 'A3031AM', 'A0305AM', 'A8807AF', 'A4856AE', 'A4413AY', 'A7254CC') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A1710CN', 'A1276EH', 'A2037AV', 'A5944EJ', 'A1121AQ', 'A6012AV', 'A4231DP', 'A2949AL', 'A9391AQ', 'A1589ED', 'A5705AT', 'A3683EH', 'A2665DD', 'A7260CW', 'A6859AK', 'A1936DE', 'A7750CF', 'A0884AZ', 'A8251EJ', 'A9319CA', 'A6883DY', 'A1322AV', 'A3600EC', 'A5493DX', 'A9508EF', 'A9735AR', 'A5133DT', 'A3859AQ', 'A4909AM', 'A6523CM', 'A1821AY', 'A3477DH', 'A3744DQ', 'A4310EH', 'A5505AV', 'A5164EE', 'A1490EH', 'A9913CY', 'A4239DM', 'A4452AR', 'A9124EC', 'A6059DM', 'A9945EE', 'A8577ED', 'A8275DZ', 'A5724AM', 'A6822EG', 'A5337AY', 'A1647AA', 'A5294DR', 'A9223ED', 'A7326AP', 'A1069EA', 'A5092EF', 'A1975AM', 'A3854AQ')) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, CURRENT_RELEASE_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPd.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "CURRENT_RELEASE_DATE",
+            "type": "date",
+            "display": "Current Release Date",
+            "legacyId": "DPd.DOb29",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DPe",
+      "name": "Offender Manager",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_PEOPLE.LAST_NAME, AT_PEOPLE.FIRST_NAME FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.PERSONS AT_PEOPLE, OMS_OWNER.OFFENDER_CONTACT_PERSONS AT_CONTACTS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_CONTACTS.OFFENDER_BOOK_ID (+)) AND (AT_PEOPLE.PERSON_ID (+) = AT_CONTACTS.PERSON_ID) AND ((AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A5026AQ', 'A4853EH', 'A0125DM', 'A3192AP', 'A9137AN', 'A1357ED', 'A7384EH', 'A6002AP', 'A3440EA', 'A3250DQ', 'A0083EG', 'A1751EA', 'A3251DA', 'A5159CX', 'A2477DG', 'A4423DE', 'A7016CE', 'A7328AC', 'A4724DK', 'A0780EG', 'A9807EE', 'A6134DR', 'A1466AP', 'A4440CA', 'A0905EC', 'A5667EC', 'A9766EG', 'A3241AQ', 'A4326CQ', 'A2842AL', 'A9529EJ', 'A6124AR', 'A1085CF', 'A7971EH', 'A7284AP', 'A3657DC', 'A8565AQ', 'A5660EH', 'A7463CP', 'A5214CX', 'A8281AJ', 'A7726EH', 'A0081DV', 'A9912EJ', 'A1645DN', 'A6860AY', 'A1020AD', 'A6609CV', 'A4376EG', 'A8720EF', 'A5474EH', 'A5445CT', 'A0064AW', 'A3137EJ', 'A9296AQ', 'A0110EA', 'A1823DP', 'A6065CG', 'A6168EJ', 'A4294DR', 'A5857EH', 'A4583DL', 'A1380DX', 'A4861EF', 'A3297DR', 'A8379EG', 'A5741CE', 'A9620AT', 'A0716DL', 'A7916DY', 'A2520EH', 'A8752EG', 'A0205AY', 'A9831AM', 'A3573DC', 'A7301EE', 'A8280AY', 'A5682EC', 'A9810EE', 'A1564AT', 'A2737EA', 'A8066DQ', 'A8813CQ', 'A3900AQ', 'A9861CL', 'A0885CT', 'A5011DD', 'A6844AL', 'A8671DV', 'A3804DL', 'A1547DR', 'A2691EA', 'A5163EJ', 'A3544AL', 'A1255EC', 'A4667DZ', 'A0674EG', 'A8077DL', 'A4485DR', 'A3171CV', 'A0199DW', 'A6450DY', 'A3943DT', 'A5369DF', 'A9998DZ', 'A4303DP', 'A9174DG', 'A8721DX', 'A7219DV', 'A2728EH', 'A9712EE', 'A0089EJ', 'A7194DY', 'A5749CX', 'A2784EJ', 'A5099EG', 'A9715CT', 'A4114EH', 'A8731DT', 'A4784AD', 'A7540EC', 'A7306AP', 'A8005AC', 'A0092AD') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A1846AL', 'A8022DF', 'A8592AJ', 'A1695CY', 'A0587CC', 'A0035EJ', 'A5592CD', 'A7529AW', 'A8551DG', 'A6061EF', 'A8420DX', 'A9166DP', 'A1757CX', 'A6825CM', 'A1761EA', 'A0246EG', 'A9185DG', 'A2717CF', 'A5861AV', 'A4491DM', 'A6494AQ', 'A5754EF', 'A5107EF', 'A6928DX', 'A1348CZ', 'A7455EE', 'A6561EE', 'A6814AY', 'A0252AD', 'A6570CA', 'A0828ED', 'A8475EF', 'A5479EG', 'A2677DL', 'A1436DK', 'A0047AR', 'A8296DE', 'A8351AL', 'A2233DE', 'A4312AR', 'A2255DN', 'A1433DF', 'A4104AD', 'A0726CM', 'A8087DE', 'A5939AY', 'A4368AK', 'A7787DH', 'A6863CF', 'A3440AH', 'A6720CE', 'A1801EK', 'A7026CZ', 'A3903DJ', 'A1071DN', 'A7226DT', 'A7601DE', 'A3773EC', 'A3543DA', 'A6158AQ', 'A0444CR', 'A3196CR', 'A5481DT', 'A9592AR', 'A8621EC', 'A8014AQ', 'A4004AP', 'A9394DL', 'A0138AT', 'A4298EK', 'A4802CC', 'A1749CQ', 'A1438EJ', 'A3142AW', 'A1960DY', 'A4882CH', 'A1063CN', 'A6929AD', 'A8201AR', 'A6464EG', 'A1059EJ', 'A6636AL', 'A1060EH', 'A4964EH', 'A7033CP', 'A6442DJ', 'A4585AN', 'A1589EK', 'A9850AY', 'A4951DE', 'A1057EH', 'A7349AT', 'A9412CK', 'A6763CF', 'A0462AL', 'A0242AR', 'A1627AN', 'A7094EH', 'A9582EC', 'A1804AA', 'A8848AK', 'A8645EG', 'A0645DJ', 'A7681AC', 'A7903EG', 'A3793EH', 'A1726EH', 'A3189EF', 'A8071EH', 'A5287CQ', 'A2696CL', 'A1557DR', 'A5645DH', 'A5829ED', 'A4068EF', 'A5606CT', 'A1922EE', 'A6168EH', 'A9359EH', 'A5619DA', 'A0314DE', 'A9125CN', 'A0377EH', 'A3192AD', 'A3305CF', 'A3382EJ', 'A4665EG', 'A4144EF', 'A6524AM', 'A1837CV', 'A7729EG', 'A1035AD', 'A2324DX', 'A2568AD', 'A5141AF', 'A9891AK', 'A3332AV', 'A8820CT', 'A4651CT', 'A7677CF', 'A5440DF', 'A6959AY', 'A9634DK', 'A2442CC', 'A2256AD', 'A4968AZ', 'A8598CN', 'A6461DT', 'A7587EE', 'A6514EC', 'A3279CX', 'A6362EC', 'A9655EF', 'A1499EG', 'A9869EF', 'A0210CY', 'A9041DL', 'A9624DV', 'A6168DZ', 'A1735CV', 'A6673DY', 'A1898DR', 'A8340DV', 'A2480AA', 'A8514EE', 'A9665CF', 'A1060ED', 'A3055CA', 'A6813CR', 'A9635DH', 'A1197EJ', 'A1626DP', 'A3625EF', 'A5658EE', 'A8990AV', 'A2553EG', 'A6068DQ', 'A7623DV', 'A3210EG', 'A7660DG', 'A9289CX', 'A2646EE', 'A7001CY', 'A6482EH', 'A4559DY', 'A1966EH', 'A3782EE', 'A1327EE', 'A1712DE', 'A9698EF', 'A5025CY', 'A4919ED', 'A5916CH', 'A8280EC', 'A5594EG', 'A5268ED', 'A9718CZ', 'A1969EJ', 'A8736DW', 'A7504DW', 'A9702EF', 'A8566AE', 'A2586DR', 'A1510CV', 'A9384EH', 'A2249DP', 'A9548DE', 'A7570AP', 'A9356AN', 'A4604AD', 'A4847AK', 'A7646AM', 'A1151AP', 'A2962AM', 'A0803AL') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A1550AV', 'A2052EF', 'A3734DV', 'A2855EC', 'A7045CF', 'A2417EG', 'A5177AJ', 'A7488ED', 'A3057AM', 'A3351CG', 'A8214CJ', 'A6407DX', 'A6197DK', 'A0658CV', 'A8406EJ', 'A7030AP', 'A6363EF', 'A0034EE', 'A1320DW', 'A4154DM', 'A8825EJ', 'A1527AD', 'A1564EH', 'A3990EH', 'A6850DQ', 'A6390CN', 'A9820EJ', 'A1341DC', 'A1826EH', 'A7803AL', 'A8271EJ', 'A1432AK', 'A2045EJ', 'A0624EH', 'A0597AM', 'A1924CH', 'A1382CP', 'A8915EH', 'A8131CV', 'A8934EA', 'A7221EG', 'A9058EH', 'A2503DZ', 'A9842AL', 'A1809AF', 'A4192EH', 'A2375DQ', 'A0499DA', 'A3143CX', 'A1079AQ', 'A2051EK', 'A3007AL', 'A0683EE', 'A8934CD', 'A1118EA', 'A3832EE', 'A3713EF', 'A7864DL', 'A7358AR', 'A6314AT', 'A4639AQ', 'A6367EE', 'A6568ED', 'A6613DL', 'A5548DQ', 'A8949EG', 'A2082DF', 'A8779CK', 'A1359CY', 'A7044AF', 'A9441EJ', 'A1647CP', 'A1493DD', 'A1466EA', 'A0562EF', 'A3727DT', 'A3047DV', 'A6482EF', 'A7349CP', 'A6533EE', 'A1941EK', 'A0369DV', 'A3446DC', 'A6190CR', 'A0265AQ', 'A5577AK', 'A1063AJ', 'A6791AM', 'A9879AN', 'A6459AA') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A8377CT', 'A2206AR', 'A2882DX', 'A8789DT', 'A7272AP', 'A1445AZ', 'A6046AQ', 'A2298AN', 'A6946DZ', 'A6165DW', 'A2649CQ', 'A2523EG', 'A2191EJ', 'A3090EG', 'A7362EJ', 'A8143DC', 'A0103CM', 'A6393AL', 'A1289CA', 'A3803DF', 'A5249EG', 'A5988AP', 'A8433DX', 'A7373ED', 'A3681DK', 'A8818AM', 'A4160AG', 'A1498AV', 'A8133AN', 'A7285EG', 'A3329CE', 'A4846DK', 'A4282EE', 'A8652EF', 'A3280AX', 'A3813CX', 'A9683AP', 'A4783CN', 'A6609EC', 'A9135CX', 'A9415DP', 'A3301DY', 'A0476CM', 'A7474AD', 'A9599DM', 'A2798CV', 'A3882EG', 'A3688DT', 'A4249EJ', 'A8403EF', 'A7831CA', 'A4455EF', 'A2834AL', 'A7248ED', 'A3648AW', 'A1216EK', 'A5279EE', 'A6373DM', 'A8746AQ', 'A9516EG', 'A5627AQ', 'A3262AM', 'A6567DE', 'A8044EG', 'A6597EJ', 'A5642EA', 'A2584CT', 'A1951EH', 'A6262AQ', 'A6417AV', 'A4735EG', 'A9332CE', 'A4079EJ', 'A8249EH', 'A6414DF', 'A7936AT', 'A9172AK', 'A1575DJ', 'A1788EJ', 'A9671EA', 'A0361AN', 'A8210DJ', 'A2633EH', 'A6467CL', 'A5542CC', 'A9165EG', 'A8868EG', 'A3256DZ', 'A4070EF', 'A1463CJ', 'A9799AT', 'A9120AM', 'A2226CC', 'A9373AQ', 'A1162DX', 'A2001AY', 'A5464AQ', 'A3908CR', 'A1288CA', 'A4155CW', 'A5409AM', 'A8999CK', 'A6213AQ', 'A3895EG', 'A7978DV', 'A0119DW', 'A6413DZ', 'A4096CE', 'A6655EF', 'A4117EJ', 'A1420DX', 'A0815DL', 'A5843ED', 'A8658DN', 'A6004ED', 'A8059ED', 'A3045EE', 'A9411EC', 'A3479DZ', 'A5183EF', 'A7631CR', 'A8385CA', 'A5078DX', 'A1005EC', 'A2517DP', 'A9044CZ', 'A2646ED', 'A6308DP', 'A7418AW', 'A5484AM', 'A5885EA', 'A6103DL', 'A7814CQ', 'A6162EJ', 'A7584EJ', 'A7876EC', 'A4659EH', 'A8870DV', 'A4493DZ', 'A4587DW', 'A5167EA', 'A1999DQ', 'A5691EC', 'A7587DQ', 'A0853DE', 'A1436EG', 'A1646EG', 'A7802DP', 'A1309AD', 'A5827AL', 'A0602CT', 'A2747AM', 'A7078AP', 'A4393AV') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A9167EG', 'A7423AZ', 'A5349EH', 'A9116AV', 'A4251AV', 'A7097EF', 'A5855AL', 'A0991DW', 'A5371AZ', 'A9111AK', 'A5080AC', 'A1908AG', 'A2312CD', 'A1233EH', 'A7850DY', 'A5872DE', 'A3768CM', 'A6038CX', 'A5865AV', 'A5012EF', 'A3510CC', 'A9512EJ', 'A6349EH', 'A6658DY', 'A4107CH', 'A5104CZ', 'A5926EG', 'A3304CQ', 'A7765DT', 'A3287AT', 'A0871EF', 'A9632ED', 'A9998AK', 'A3494CJ', 'A8368DY', 'A9891CH', 'A2170EK', 'A4728CX', 'A9623DJ', 'A5603EG', 'A5654CQ', 'A0065DH', 'A0999CZ', 'A0049EC', 'A8147EJ', 'A9431EA', 'A2981AL', 'A5695AN', 'A6841EG', 'A2875DN', 'A7403AD', 'A2242EJ', 'A4613CG', 'A0670DL', 'A7297CD', 'A4236AQ', 'A7737EC', 'A3530EF', 'A8813AW', 'A4099AV', 'A5976CD', 'A7987AW', 'A4773CT', 'A0031EJ', 'A6058AP', 'A6531AK', 'A2980EJ', 'A0728EH', 'A5372EG', 'A8385CJ', 'A8862DA', 'A3442EC', 'A9170AQ', 'A0275DT', 'A7846AV', 'A5349DZ', 'A1694CK', 'A0582EG', 'A6928EF', 'A1143AT', 'A7345AL', 'A4542AN', 'A9628AQ', 'A5740AQ', 'A4222EH', 'A0673EH', 'A7393EE', 'A4774EF', 'A2678DK', 'A1216DT', 'A3709ED', 'A5004EC', 'A0362EC', 'A6355ED', 'A7298EF', 'A5234EH', 'A1177AA', 'A1903CP', 'A5500AP', 'A0107DP', 'A3482DW', 'A3882EA', 'A5768EG', 'A8328CV', 'A8956AA', 'A7662DF', 'A6101EA', 'A8081DT', 'A3031AM', 'A0305AM', 'A8807AF', 'A4856AE', 'A4413AY', 'A7254CC') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A1710CN', 'A1276EH', 'A2037AV', 'A5944EJ', 'A1121AQ', 'A6012AV', 'A4231DP', 'A2949AL', 'A9391AQ', 'A1589ED', 'A5705AT', 'A3683EH', 'A2665DD', 'A7260CW', 'A6859AK', 'A1936DE', 'A7750CF', 'A0884AZ', 'A8251EJ', 'A9319CA', 'A6883DY', 'A1322AV', 'A3600EC', 'A5493DX', 'A9508EF', 'A9735AR', 'A5133DT', 'A3859AQ', 'A4909AM', 'A6523CM', 'A1821AY', 'A3477DH', 'A3744DQ', 'A4310EH', 'A5505AV', 'A5164EE', 'A1490EH', 'A9913CY', 'A4239DM', 'A4452AR', 'A9124EC', 'A6059DM', 'A9945EE', 'A8577ED', 'A8275DZ', 'A5724AM', 'A6822EG', 'A5337AY', 'A1647AA', 'A5294DR', 'A9223ED', 'A7326AP', 'A1069EA', 'A5092EF', 'A1975AM', 'A3854AQ')) AND (AT_CONTACTS.ACTIVE_FLAG IN ('Y') AND AT_CONTACTS.RELATIONSHIP_TYPE IN ('POM') AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y')))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPe.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "CP Last Name",
+            "legacyId": "DPe.DOed8",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "CP First Name",
+            "legacyId": "DPe.DOed9",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "158730.RS",
+      "name": "No Assessment",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ROW_SEQ_FILTER = 1)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP3.DO44"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO46"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP3.DO45"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Cell",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO427"
+          },
+          {
+            "name": "$ref:SECURITY_CATEGORY",
+            "display": "Security Category",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO265"
+          },
+          {
+            "name": "$ref:ADMISSION_DATE",
+            "display": "Admission Date",
+            "formula": "format_date(${ADMISSION_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO100f"
+          },
+          {
+            "name": "$ref:CURRENT_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "format_date(${CURRENT_RELEASE_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO100f"
+          },
+          {
+            "name": "$ref:SUP_FULL_NAME",
+            "display": "Offender Supervisor",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO265"
+          },
+          {
+            "name": "$ref:V_CASE_ADMINISTRATOR",
+            "display": "Case Administrator",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([CP Last Name]+\", \"+[CP First Name]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:POM_NAME",
+            "display": "Prisoner Offender Manager",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO265"
+          }
+        ]
+      }
+    },
+    {
+      "id": "158198.RS",
+      "name": "Overdue Re-Assessments",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE APPROVED_RESULT IS NOT NULL AND ROW_SEQ_FILTER = 1 AND (TRUNC(NEXT_REVIEW_DATE) <= TODAY_ ))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP3.DO44"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO46"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP3.DO45"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Cell",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO427"
+          },
+          {
+            "name": "$ref:SECURITY_CATEGORY",
+            "display": "Security Category",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO265"
+          },
+          {
+            "name": "$ref:ADMISSION_DATE",
+            "display": "Admission Date",
+            "formula": "format_date(${ADMISSION_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO100f"
+          },
+          {
+            "name": "$ref:CURRENT_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "format_date(${CURRENT_RELEASE_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO100f"
+          },
+          {
+            "name": "$ref:SUP_FULL_NAME",
+            "display": "Offender Supervisor",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO265"
+          },
+          {
+            "name": "$ref:V_CASE_ADMINISTRATOR",
+            "display": "Case Administrator",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([CP Last Name]+\", \"+[CP First Name]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:POM_NAME",
+            "display": "Prisoner Offender Manager",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO265"
+          }
+        ]
+      }
+    },
+    {
+      "id": "158496.RS",
+      "name": "Unapproved Assessments",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE APPROVED_RESULT IS NULL AND CALCULATED_RESULT IS NOT NULL AND ROW_SEQ_FILTER = 1)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP3.DO44"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO46"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP3.DO45"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Cell",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO427"
+          },
+          {
+            "name": "$ref:SECURITY_CATEGORY",
+            "display": "Security Category",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO265"
+          },
+          {
+            "name": "$ref:APPROVED_RESULT",
+            "display": "Approved Result",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP3.DO265"
+          },
+          {
+            "name": "$ref:ADMISSION_DATE",
+            "display": "Admission Date",
+            "formula": "format_date(${ADMISSION_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO100f"
+          },
+          {
+            "name": "$ref:CURRENT_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "format_date(${CURRENT_RELEASE_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO100f"
+          },
+          {
+            "name": "$ref:SUP_FULL_NAME",
+            "display": "Offender Supervisor",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO265"
+          },
+          {
+            "name": "$ref:V_CASE_ADMINISTRATOR",
+            "display": "Case Administrator",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([CP Last Name]+\", \"+[CP First Name]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:POM_NAME",
+            "display": "Prisoner Offender Manager",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO265"
+          }
+        ]
+      }
+    },
+    {
+      "id": "158805.RS",
+      "name": "Next Review Date<3 Months",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ROW_SEQ_FILTER = 1 AND (TRUNC(NEXT_REVIEW_DATE) <= MONTHS_3_ ))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP3.DO44"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO46"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO45"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Cell",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO427"
+          },
+          {
+            "name": "$ref:SECURITY_CATEGORY",
+            "display": "Security Category",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO265"
+          },
+          {
+            "name": "$ref:NEXT_REVIEW_DATE",
+            "display": "Next Review Date",
+            "formula": "format_date(${NEXT_REVIEW_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP3.DO100f"
+          },
+          {
+            "name": "$ref:ADMISSION_DATE",
+            "display": "Admission Date",
+            "formula": "format_date(${ADMISSION_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO100f"
+          },
+          {
+            "name": "$ref:CURRENT_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "format_date(${CURRENT_RELEASE_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO100f"
+          },
+          {
+            "name": "$ref:SUP_FULL_NAME",
+            "display": "Offender Supervisor",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO265"
+          },
+          {
+            "name": "$ref:V_CASE_ADMINISTRATOR",
+            "display": "Case Administrator",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([CP Last Name]+\", \"+[CP First Name]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:POM_NAME",
+            "display": "Prisoner Offender Manager",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO265"
+          }
+        ]
+      }
+    },
+    {
+      "id": "160014.RS",
+      "name": "Next Review Date (All prisoners)",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ROW_SEQ_FILTER = 1)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP3.DO44"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO46"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO45"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Cell",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO427"
+          },
+          {
+            "name": "$ref:SECURITY_CATEGORY",
+            "display": "Security Category",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO265"
+          },
+          {
+            "name": "$ref:NEXT_REVIEW_DATE",
+            "display": "Next Review Date",
+            "formula": "format_date(${NEXT_REVIEW_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP3.DO100f"
+          },
+          {
+            "name": "$ref:ADMISSION_DATE",
+            "display": "Admission Date",
+            "formula": "format_date(${ADMISSION_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO100f"
+          },
+          {
+            "name": "$ref:CURRENT_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "format_date(${CURRENT_RELEASE_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO100f"
+          },
+          {
+            "name": "$ref:SUP_FULL_NAME",
+            "display": "Offender Supervisor",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO265"
+          },
+          {
+            "name": "$ref:V_CASE_ADMINISTRATOR",
+            "display": "Case Administrator",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([CP Last Name]+\", \"+[CP First Name]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:POM_NAME",
+            "display": "Prisoner Offender Manager",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO265"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "instance.report[0] requires property \"dataset\"",
+      "entityId": "Frh2g13bCAEAFfEBAHCLZF8VACJIABRd",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[1] requires property \"dataset\"",
+      "entityId": "Frh2g13bCAEAFfEBAHCLZF8VACJIABRd",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[2] requires property \"dataset\"",
+      "entityId": "Frh2g13bCAEAFfEBAHCLZF8VACJIABRd",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[3] requires property \"dataset\"",
+      "entityId": "Frh2g13bCAEAFfEBAHCLZF8VACJIABRd",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[4] requires property \"dataset\"",
+      "entityId": "Frh2g13bCAEAFfEBAHCLZF8VACJIABRd",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 158730.RS does not have corresponding dataset undefined",
+      "entityId": "158730.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 158198.RS does not have corresponding dataset undefined",
+      "entityId": "158198.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 158496.RS does not have corresponding dataset undefined",
+      "entityId": "158496.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 158805.RS does not have corresponding dataset undefined",
+      "entityId": "158805.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 160014.RS does not have corresponding dataset undefined",
+      "entityId": "160014.RS",
+      "entityType": "variant"
+    }
+  ]
+}
