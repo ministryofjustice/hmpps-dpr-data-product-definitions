@@ -1,0 +1,466 @@
+{
+  "id": "dps-case-note-for-date-range-inc-omic",
+  "name": "DPS Case Notes for a Date Range Report (Including OMiC)",
+  "description": "This report lists the changes carried out to prisoner case notes in a specified date range and will include both sensitive (OMiC) and non-sensitive notes.",
+  "metadata": {
+    "version": "1.0.0"
+  },
+  "datasource": [
+    {
+      "id": "datamart",
+      "name": "datamart"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "dps-case-note-for-date-range-inc-omic-dataset",
+      "name": "Case Notes",
+      "description": "Demographic",
+      "datasource": "datamart",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.LAST_NAME, SPLIT_PART(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 2) AS UNIT_CODE_1, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID, AT_OFFENDER_CASE_NOTES.OCCURRED_AT AS CONTACT_DATETIME, AT_STAFF_USER_ACCOUNTS.USERNAME, AT_CASE_NOTES_STAFF_MEMBERS.FIRST_NAME AS CASE_NOTES_STAFF_FIRST_NAME, AT_CASE_NOTES_STAFF_MEMBERS.LAST_NAME AS CASE_NOTES_STAFF_LAST_NAME, AT_OFFENDER_CASE_NOTES.NOTE_TEXT, at_offender_case_note_sub_type.TYPE_CODE AS CASE_NOTE_TYPE, at_offender_case_note_type.CODE AS CASE_NOTE_SUB_TYPE, AT_STAFF_USER_ACCOUNTS.STAFF_USER_TYPE FROM datamart.prisons.nomis_offenders at_offender JOIN datamart.prisons.nomis_offender_bookings at_offender_booking ON at_offender.offender_id = at_offender_booking.offender_id JOIN datamart.prisons.nomis_agency_internal_locations at_agency_internal_location_l4 ON at_offender_booking.living_unit_id = at_agency_internal_location_l4.internal_location_id JOIN datamart.prisons.nomis_agency_locations at_wing_establishment ON at_agency_internal_location_l4.agy_loc_id = at_wing_establishment.agy_loc_id JOIN datamart.prisons.nomis_user_accessible_caseloads wing_caseload_security ON at_wing_establishment.agy_loc_id = wing_caseload_security.caseload_id JOIN datamart.prisons.nomis_user_accessible_caseloads user_accessible_caseloads ON user_accessible_caseloads.username = (SELECT username FROM context_) JOIN datamart.prisons.nomis_agency_locations at_offenders_locations ON at_offenders_locations.agy_loc_id = user_accessible_caseloads.caseload_id JOIN datamart.prisons.nomis_caseload_agency_locations at_caseload_locations ON at_caseload_locations.agy_loc_id = at_offender_booking.agy_loc_id LEFT JOIN datamart.prisons.nomis_agency_locations at_offenders_locations_optional ON at_caseload_locations.agy_loc_id = at_offenders_locations_optional.agy_loc_id JOIN datamart.prisons.casenotes_case_note at_offender_case_notes ON at_offender.offender_id_display = at_offender_case_notes.person_identifier JOIN datamart.prisons.casenotes_case_note_sub_type at_offender_case_note_sub_type ON at_offender_case_note_sub_type.id = at_offender_case_notes.sub_type_id JOIN datamart.prisons.casenotes_case_note_type at_offender_case_note_type ON at_offender_case_note_sub_type.type_code = at_offender_case_note_type.code JOIN datamart.prisons.nomis_staff_user_accounts at_staff_user_accounts ON at_offender_case_notes.author_user_id = at_staff_user_accounts.staff_id::VARCHAR JOIN datamart.prisons.nomis_staff_members at_case_notes_staff_members ON at_staff_user_accounts.staff_id = at_case_notes_staff_members.staff_id WHERE at_offenders_locations.agency_location_type = 'INST' AND wing_caseload_security.username = (SELECT username FROM context_) AND at_offenders_locations.agy_loc_id = (SELECT establishment_code FROM prompt_) AND at_offender_case_notes.occurred_at BETWEEN (SELECT start_date FROM prompt_) AND (SELECT end_date FROM prompt_) AND at_caseload_locations.agy_loc_id NOT IN ('OUT', 'TRN') AND at_caseload_locations.caseload_id NOT IN ('ADMINC', 'CADM_I', 'MULTI')) ,dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FIRST_NAME, LAST_NAME, UNIT_CODE_1, AGY_LOC_ID, CONTACT_DATETIME, USERNAME, CASE_NOTES_STAFF_FIRST_NAME, CASE_NOTES_STAFF_LAST_NAME, NOTE_TEXT, CASE_NOTE_SUB_TYPE, CASE_NOTE_TYPE, STAFF_USER_TYPE, SUBSTRING(USERNAME, 1, 6) AS V_USER_ID, CONCAT(CONCAT(CASE_NOTE_TYPE, ' - '), CASE_NOTE_SUB_TYPE) AS V_CASE_NOTE_TYPE_SUBTYPE, (OFFENDER_ID_DISPLAY || ' ' || FIRST_NAME || ' ' || LAST_NAME) AS PRISONER_NAME FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Date(Start):",
+          "description": "@prompt('Enter Event Date(Start):','D',,Mono,Free,Not_Persistent,,User:2)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Date(End):",
+          "description": "@prompt('Enter Event Date(End):','D',,Mono,Free,Not_Persistent,,User:3)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name"
+          },
+          {
+            "index": 3,
+            "name": "UNIT_CODE_1",
+            "type": "string",
+            "display": "Unit Code 1"
+          },
+          {
+            "index": 4,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code"
+          },
+          {
+            "index": 5,
+            "name": "CONTACT_DATETIME",
+            "type": "datetime",
+            "display": "Contact Date"
+          },
+          {
+            "index": 7,
+            "name": "USERNAME",
+            "type": "string",
+            "display": "Case Notes Staff User Id"
+          },
+          {
+            "index": 8,
+            "name": "CASE_NOTES_STAFF_FIRST_NAME",
+            "type": "string",
+            "display": "Case Notes Staff First Name"
+          },
+          {
+            "index": 9,
+            "name": "CASE_NOTES_STAFF_LAST_NAME",
+            "type": "string",
+            "display": "Case Notes Staff Last Name"
+          },
+          {
+            "index": 10,
+            "name": "NOTE_TEXT",
+            "type": "string",
+            "display": "Case Note Text"
+          },
+          {
+            "index": 11,
+            "name": "CASE_NOTE_SUB_TYPE",
+            "type": "string",
+            "display": "Case Note Sub Type"
+          },
+          {
+            "index": 12,
+            "name": "CASE_NOTE_TYPE",
+            "type": "string",
+            "display": "Case Note Type"
+          },
+          {
+            "index": 13,
+            "name": "STAFF_USER_TYPE",
+            "type": "string",
+            "display": "Case Notes Staff User Type"
+          },
+          {
+            "index": 14,
+            "name": "V_USER_ID",
+            "type": "string",
+            "display": "V_USER_ID"
+          },
+          {
+            "index": 15,
+            "name": "V_CASE_NOTE_TYPE_SUBTYPE",
+            "type": "string",
+            "display": "V_CASE_NOTE_TYPE_SUBTYPE"
+          },
+          {
+            "index": 16,
+            "name": "PRISONER_NAME",
+            "type": "string",
+            "display": "Prisoner Name"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER",
+                "ROLE_VIEW_SENSITIVE_CASE_NOTES"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "dps-case-notes-by-wing",
+      "name": "By Wing",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "$ref:dps-case-note-for-date-range-inc-omic-dataset",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "section": ["UNIT_CODE_1", "PRISONER_NAME"],
+        "field": [
+          {
+            "name": "$ref:UNIT_CODE_1",
+            "display": "Wing",
+            "formula": "",
+            "visible": "false",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:PRISONER_NAME",
+            "display": "Prisoner Name",
+            "formula": "",
+            "visible": "false",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:CASE_NOTES_STAFF_LAST_NAME",
+            "display": "Case Notes Staff Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:CASE_NOTES_STAFF_FIRST_NAME",
+            "display": "Case Notes Staff First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOcc2"
+          },
+          {
+            "name": "$ref:V_USER_ID",
+            "display": "Staff User ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:CONTACT_DATETIME",
+            "display": "Contact Date and Time",
+            "formula": "format_date(${CONTACT_DATE}, 'dd/MM/yyyy HH:mm:ss')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true
+          },
+          {
+            "name": "$ref:V_CASE_NOTE_TYPE_SUBTYPE",
+            "display": "Case Note Type/Sub Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:NOTE_TEXT",
+            "display": "Case Note Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "dps-case-notes-by-prisoner",
+      "name": "By Prisoner",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "$ref:dps-case-note-for-date-range-inc-omic-dataset",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "section": ["PRISONER_NAME"],
+        "field": [
+          {
+            "name": "$ref:PRISONER_NAME",
+            "display": "Prisoner Name",
+            "formula": "",
+            "visible": "false",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:CASE_NOTES_STAFF_LAST_NAME",
+            "display": "Case Notes Staff Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:CASE_NOTES_STAFF_FIRST_NAME",
+            "display": "Case Notes Staff First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:V_USER_ID",
+            "display": "Staff User ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:CONTACT_DATETIME",
+            "display": "Contact Date and Time",
+            "formula": "format_date(${CONTACT_DATE}, 'dd/MM/yyyy HH:mm:ss')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true
+          },
+          {
+            "name": "$ref:V_CASE_NOTE_TYPE_SUBTYPE",
+            "display": "Case Note Type/Sub Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:NOTE_TEXT",
+            "display": "Case Note Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "dps-case-notes-by-prisoner-merged",
+      "name": "By Prisoner Merged",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "$ref:dps-case-note-for-date-range-inc-omic-dataset",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:CASE_NOTES_STAFF_LAST_NAME",
+            "display": "Case Notes Staff Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOcc1"
+          },
+          {
+            "name": "$ref:CASE_NOTES_STAFF_FIRST_NAME",
+            "display": "Case Notes Staff First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:V_USER_ID",
+            "display": "Staff User ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:CONTACT_DATETIME",
+            "display": "Contact Date and Time",
+            "formula": "format_date(${CONTACT_DATE}, 'dd/MM/yyyy HH:mm:ss')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true
+          },
+          {
+            "name": "$ref:V_CASE_NOTE_TYPE_SUBTYPE",
+            "display": "Case Note Type/Sub Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:NOTE_TEXT",
+            "display": "Case Note Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}
