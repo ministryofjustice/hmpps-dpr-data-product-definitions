@@ -1,0 +1,151 @@
+{
+  "id": "all-est-test-report",
+  "name": "All establishments test report",
+  "description": "All establishments test report",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0074 - v1.1"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP3",
+      "name": "Establishments",
+      "description": "Establishments",
+      "datasource": "nomis",
+      "query":"",
+      "multiphaseQuery": [
+        {
+          "index": 0,
+          "datasource": {
+            "id": "nomis",
+            "name": "NOMIS",
+            "database": "DIGITAL_PRISON_REPORTING",
+            "catalog": "nomis",
+            "connection": "federated",
+            "dialect": "oracle/11g"
+          },
+          "query": "SELECT agy_loc_id as establishment_code FROM OMS_OWNER.LIVING_UNITS",
+          "parameters": [
+            {
+              "index": 0,
+              "name": "establishment_code",
+              "filterType": "autocomplete",
+              "referenceType": "establishment",
+              "reportFieldType": "string",
+              "display": "Establishment",
+              "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+              "mandatory": "true"
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "datasource": {
+            "id": "athena",
+            "name": "athena",
+            "database": "reports",
+            "catalog": "awsdatacatalog",
+            "connection": "awsdatacatalog",
+            "dialect": "athena/3"
+          },
+          "query": "SELECT establishment_code FROM AwsDataCatalog.reports.${tableId} WHERE establishment_code = (SELECT establishment_code FROM prompt_)",
+          "parameters": [
+            {
+              "index": 0,
+              "name": "establishment_code",
+              "filterType": "autocomplete",
+              "referenceType": "establishment",
+              "reportFieldType": "string",
+              "display": "Establishment",
+              "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+              "mandatory": "true"
+            }
+          ]
+        },
+
+        {
+          "index": 2,
+          "datasource": {
+            "id": "athena",
+            "name": "athena",
+            "database": "reports",
+            "catalog": "awsdatacatalog",
+            "connection": "awsdatacatalog",
+            "dialect": "athena/3"
+
+          },
+          "query": "SELECT count(*) as total FROM AwsDataCatalog.reports.${tableId}"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "establishment_code",
+            "type": "string",
+            "display": "Establishment Code"
+          },
+          {
+            "index": 1,
+            "name": "total",
+            "type": "string",
+            "display": "Total"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "establishmentsMultiphaseReport",
+      "name": "All Establishments Test Report",
+      "description": "",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP3",
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:total",
+            "display": "Total",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true
+          }
+        ]
+      }
+    }
+  ]
+}
