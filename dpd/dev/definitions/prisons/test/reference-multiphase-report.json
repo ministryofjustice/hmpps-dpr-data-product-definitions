@@ -1,0 +1,148 @@
+{
+  "id": "a-test-report",
+  "name": "A test report",
+  "description": "A test report",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0074 - v1.1"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "testId",
+      "name": "testName",
+      "database": "testDb",
+      "catalog": "testCatalog"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "testDataset",
+      "name": "Establishments",
+      "description": "Establishments",
+      
+      "query":"",
+      "multiphaseQuery": [
+        {
+        "index": 0,
+        "datasource": {
+          "id": "testId",
+          "name": "testName",
+          "database": "testDb",
+          "catalog": "testCatalog",
+          "connection": "federated",
+          "dialect": "oracle/11g"
+        },
+        "query": "SELECT * from example_table",
+        "parameters": [
+          {
+            "index": 0,
+            "name": "column_a_code",
+            "filterType": "autocomplete",
+            "referenceType": "establishment",
+            "reportFieldType": "string",
+            "display": "Establishment",
+            "mandatory": "true"
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "datasource": {
+         "id": "testId2",
+          "name": "testName2",
+          "database": "reports",
+          "catalog": "awsdatacatalog",
+          "connection": "awsdatacatalog",
+          "dialect": "athena/3"
+        },
+        "query": "SELECT column_a_code FROM AwsDataCatalog.reports.${tableId} WHERE column_a_code = (SELECT column_a_code FROM prompt_)",
+        "parameters": [
+          {
+            "index": 0,
+            "name": "column_a_code",
+            "filterType": "autocomplete",
+            "referenceType": "establishment",
+            "reportFieldType": "string",
+            "display": "Establishment",
+            "mandatory": "true"
+          }
+        ]
+      },
+
+        {
+          "index": 2,
+          "datasource": {
+            "id": "athena",
+            "name": "athena",
+            "database": "reports",
+            "catalog": "awsdatacatalog",
+            "connection": "awsdatacatalog",
+            "dialect": "athena/3"
+          },
+          "query": "SELECT count(*) as total FROM AwsDataCatalog.reports.${tableId}"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "column_a_code",
+            "type": "string",
+            "display": "Column A Code"
+          },
+          {
+            "index": 1,
+            "name": "total",
+            "type": "string",
+            "display": "Total"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "SOME_ROLE"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "testReportId",
+      "name": "Test report",
+      "description": "",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "testDataset",
+      "specification": {
+        "template": "list",     
+         "field": [
+          {
+            "name": "$ref:total",
+            "display": "Total",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true            
+          }
+        ]
+      }      
+    }
+  ]
+}
