@@ -1,7 +1,7 @@
 {
-  "id": "a-test-report",
-  "name": "A test report",
-  "description": "A test report",
+  "id": "all-est-test-report",
+  "name": "All establishments test report",
+  "description": "All establishments test report",
   "metadata": {
     "version": "1.0.0",
     "tags": [
@@ -10,66 +10,68 @@
   },
   "datasource": [
     {
-      "id": "testId",
-      "name": "testName",
-      "database": "testDb",
-      "catalog": "testCatalog"
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
     }
   ],
   "dataset": [
     {
-      "id": "testDataset",
+      "id": "3377299/DP3",
       "name": "Establishments",
       "description": "Establishments",
-      
+      "datasource": "nomis",
       "query":"",
       "multiphaseQuery": [
         {
-        "index": 0,
-        "datasource": {
-          "id": "testId",
-          "name": "testName",
-          "database": "testDb",
-          "catalog": "testCatalog",
-          "connection": "federated",
-          "dialect": "oracle/11g"
+          "index": 0,
+          "datasource": {
+            "id": "nomis",
+            "name": "NOMIS",
+            "database": "DIGITAL_PRISON_REPORTING",
+            "catalog": "nomis",
+            "connection": "federated",
+            "dialect": "oracle/11g"
+          },
+          "query": "SELECT agy_loc_id as establishment_code FROM OMS_OWNER.LIVING_UNITS",
+          "parameters": [
+            {
+              "index": 0,
+              "name": "establishment_code",
+              "filterType": "autocomplete",
+              "referenceType": "establishment",
+              "reportFieldType": "string",
+              "display": "Establishment",
+              "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+              "mandatory": "true"
+            }
+          ]
         },
-        "query": "SELECT * from example_table",
-        "parameters": [
-          {
-            "index": 0,
-            "name": "column_a_code",
-            "filterType": "autocomplete",
-            "referenceType": "establishment",
-            "reportFieldType": "string",
-            "display": "Establishment",
-            "mandatory": "true"
-          }
-        ]
-      },
-      {
-        "index": 1,
-        "datasource": {
-         "id": "testId2",
-          "name": "testName2",
-          "database": "reports",
-          "catalog": "awsdatacatalog",
-          "connection": "awsdatacatalog",
-          "dialect": "athena/3"
+        {
+          "index": 1,
+          "datasource": {
+            "id": "athena",
+            "name": "athena",
+            "database": "reports",
+            "catalog": "awsdatacatalog",
+            "connection": "awsdatacatalog",
+            "dialect": "athena/3"
+          },
+          "query": "SELECT establishment_code FROM AwsDataCatalog.reports.${tableId} WHERE establishment_code = (SELECT establishment_code FROM prompt_)",
+          "parameters": [
+            {
+              "index": 0,
+              "name": "establishment_code",
+              "filterType": "autocomplete",
+              "referenceType": "establishment",
+              "reportFieldType": "string",
+              "display": "Establishment",
+              "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+              "mandatory": "true"
+            }
+          ]
         },
-        "query": "SELECT column_a_code FROM AwsDataCatalog.reports.${tableId} WHERE column_a_code = (SELECT column_a_code FROM prompt_)",
-        "parameters": [
-          {
-            "index": 0,
-            "name": "column_a_code",
-            "filterType": "autocomplete",
-            "referenceType": "establishment",
-            "reportFieldType": "string",
-            "display": "Establishment",
-            "mandatory": "true"
-          }
-        ]
-      },
 
         {
           "index": 2,
@@ -80,6 +82,7 @@
             "catalog": "awsdatacatalog",
             "connection": "awsdatacatalog",
             "dialect": "athena/3"
+
           },
           "query": "SELECT count(*) as total FROM AwsDataCatalog.reports.${tableId}"
         }
@@ -88,9 +91,9 @@
         "field": [
           {
             "index": 0,
-            "name": "column_a_code",
+            "name": "establishment_code",
             "type": "string",
-            "display": "Column A Code"
+            "display": "Establishment Code"
           },
           {
             "index": 1,
@@ -113,7 +116,7 @@
             {
               "match": [
                 "${role}",
-                "SOME_ROLE"
+                "ROLE_PRISONS_REPORTING_USER"
               ]
             }
           ]
@@ -123,26 +126,26 @@
   ],
   "report": [
     {
-      "id": "testReportId",
-      "name": "Test report",
+      "id": "establishmentsMultiphaseReport",
+      "name": "All Establishments Test Report",
       "description": "",
       "classification": "OFFICIAL",
       "version": "1.0.0",
       "render": "HTML",
-      "dataset": "testDataset",
+      "dataset": "3377299/DP3",
       "specification": {
-        "template": "list",     
-         "field": [
+        "template": "list",
+        "field": [
           {
             "name": "$ref:total",
             "display": "Total",
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": true            
+            "defaultsort": true
           }
         ]
-      }      
+      }
     }
   ]
 }
