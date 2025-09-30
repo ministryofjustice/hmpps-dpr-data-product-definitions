@@ -1,0 +1,287 @@
+{
+  "id": "olA.T7UACF7DGNsALP_D8K7BUOE",
+  "name": "ORS National Report of Prisoner Photographs",
+  "description": "This report returns the counts by establishment of prisoners who have no photograph and those who have photographs over 2 years old. Prisoners with bookings commencing 'yesterday' or 'today' are excluded.<br/>PND0017 - v00.00.02 Last Modified: 12/10/17",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PND0017 v00.00.02"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DPd",
+      "name": "Prisoners with old photos",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "DP3_ AS (SELECT DISTINCT AT_OFFENDERS_LOCATIONS.DESCRIPTION, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID, DT_PHOTO_POP.POPULATION AS PHOTO_POPULATION FROM OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, USER_ACCESSIBLE_CASELOADS, (SELECT AT_OFFENDER_BOOKING.AGY_LOC_ID, COUNT(AT_OFFENDER.OFFENDER_ID_DISPLAY) AS Population FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING WHERE (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND AT_OFFENDER_BOOKING.BOOKING_BEGIN_DATE < TRUNC(CURRENT_TIMESTAMP - 1) GROUP BY AT_OFFENDER_BOOKING.AGY_LOC_ID) DT_PHOTO_POP WHERE (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = DT_PHOTO_POP.AGY_LOC_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS'))), DPf_ AS (SELECT DISTINCT AT_OFFENDERS_LOCATIONS.DESCRIPTION, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID, DT_PRISONERSWITHPHOTOCOUNT.PRISONERSWITHPHOTOCOUNT AS COUNT_OF_PRISONERS_WITH_PHOTOS FROM OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, USER_ACCESSIBLE_CASELOADS, (SELECT DISTINCT AT_OFFENDER_BOOKING.AGY_LOC_ID, COUNT(DT_LATEST_FACIAL_IMAGES.OFFENDER_BOOK_ID) AS PrisonersWithPhotoCount FROM OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, (SELECT OFFENDER_BOOK_ID, OFFENDER_IMAGE_ID, CAPTURE_DATETIME FROM oms_owner.OFFENDER_IMAGES WHERE (OFFENDER_BOOK_ID, CAPTURE_DATETIME) IN (SELECT OFFENDER_BOOK_ID, MAX(CAPTURE_DATETIME) FROM OMS_OWNER.OFFENDER_IMAGES WHERE active_flag = 'Y' AND image_view_type = 'FACE' GROUP BY OFFENDER_BOOK_ID)) DT_LATEST_FACIAL_IMAGES WHERE (DT_LATEST_FACIAL_IMAGES.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND AT_OFFENDER_BOOKING.booking_begin_date < TRUNC(CURRENT_TIMESTAMP) - 1 GROUP BY AT_OFFENDER_BOOKING.AGY_LOC_ID) DT_PRISONERSWITHPHOTOCOUNT WHERE (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = DT_PRISONERSWITHPHOTOCOUNT.AGY_LOC_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS'))), dataset_base_ AS (SELECT DISTINCT AT_OFFENDERS_LOCATIONS.DESCRIPTION, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID, DT_OLD_PHOTOS.OLDPHOTOCOUNT, DP3_.PHOTO_POPULATION, DPf_.COUNT_OF_PRISONERS_WITH_PHOTOS FROM OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, USER_ACCESSIBLE_CASELOADS, (SELECT DISTINCT AT_OFFENDER_BOOKING.AGY_LOC_ID, COUNT(DT_LATEST_FACIAL_IMAGES.OFFENDER_Book_ID) AS OLDPHOTOCOUNT FROM OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, (SELECT OFFENDER_BOOK_ID, OFFENDER_IMAGE_ID, CAPTURE_DATETIME FROM oms_owner.OFFENDER_IMAGES WHERE (OFFENDER_BOOK_ID, CAPTURE_DATETIME) IN (SELECT OFFENDER_BOOK_ID, MAX(CAPTURE_DATETIME) FROM OMS_OWNER.OFFENDER_IMAGES WHERE active_flag = 'Y' AND image_view_type = 'FACE' GROUP BY OFFENDER_BOOK_ID)) DT_LATEST_FACIAL_IMAGES WHERE (DT_LATEST_FACIAL_IMAGES.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' AND TRUNC(CURRENT_TIMESTAMP) - TRUNC(DT_LATEST_FACIAL_IMAGES.CAPTURE_DATETIME) > 730) GROUP BY AT_OFFENDER_BOOKING.AGY_LOC_ID) DT_OLD_PHOTOS, DP3_, DPf_ WHERE (((AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = DT_OLD_PHOTOS.AGY_LOC_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS'))) AND (DP3_.OFFENDER_ID_DISPLAY = AT_OFFENDER.OFFENDER_ID_DISPLAY)) AND (DPf_.OFFENDER_ID_DISPLAY = AT_OFFENDER.OFFENDER_ID_DISPLAY)), dataset_ AS (SELECT DESCRIPTION, AGY_LOC_ID, OLDPHOTOCOUNT, POPULATION - COUNT_OF_PRISONERS_WITH_PHOTOS AS V_PRISONERSMISSINGPHOTOS FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DPd.DO33b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DPd.DO43b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "OLDPHOTOCOUNT",
+            "type": "double",
+            "display": "Prisoners With Photos Aged 2 Yrs+",
+            "legacyId": "DPd.DO1048",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "V_PRISONERSMISSINGPHOTOS",
+            "type": "string",
+            "display": "V_PRISONERSMISSINGPHOTOS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DPf",
+      "name": "Prisoners with photo count",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDERS_LOCATIONS.DESCRIPTION, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID, DT_PRISONERSWITHPHOTOCOUNT.PRISONERSWITHPHOTOCOUNT FROM OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, USER_ACCESSIBLE_CASELOADS, (SELECT DISTINCT AT_OFFENDER_BOOKING.AGY_LOC_ID, COUNT(DT_LATEST_FACIAL_IMAGES.OFFENDER_BOOK_ID) AS PrisonersWithPhotoCount FROM OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, (SELECT OFFENDER_BOOK_ID, OFFENDER_IMAGE_ID, CAPTURE_DATETIME FROM oms_owner.OFFENDER_IMAGES WHERE (OFFENDER_BOOK_ID, CAPTURE_DATETIME) IN (SELECT OFFENDER_BOOK_ID, MAX(CAPTURE_DATETIME) FROM OMS_OWNER.OFFENDER_IMAGES WHERE active_flag = 'Y' AND image_view_type = 'FACE' GROUP BY OFFENDER_BOOK_ID)) DT_LATEST_FACIAL_IMAGES WHERE (DT_LATEST_FACIAL_IMAGES.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND AT_OFFENDER_BOOKING.booking_begin_date < TRUNC(CURRENT_TIMESTAMP) - 1 GROUP BY AT_OFFENDER_BOOKING.AGY_LOC_ID) DT_PRISONERSWITHPHOTOCOUNT WHERE (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = DT_PRISONERSWITHPHOTOCOUNT.AGY_LOC_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS'))), dataset_ AS (SELECT DESCRIPTION, AGY_LOC_ID, PRISONERSWITHPHOTOCOUNT FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DPf.DO33b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DPf.DO43b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "PRISONERSWITHPHOTOCOUNT",
+            "type": "double",
+            "display": "Count of Prisoners With Photos",
+            "legacyId": "DPf.DO1049",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP3",
+      "name": "Population",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDERS_LOCATIONS.DESCRIPTION, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID, DT_PHOTO_POP.POPULATION FROM OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, USER_ACCESSIBLE_CASELOADS, (SELECT AT_OFFENDER_BOOKING.AGY_LOC_ID, COUNT(AT_OFFENDER.OFFENDER_ID_DISPLAY) AS Population FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING WHERE (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND AT_OFFENDER_BOOKING.BOOKING_BEGIN_DATE < TRUNC(CURRENT_TIMESTAMP - 1) GROUP BY AT_OFFENDER_BOOKING.AGY_LOC_ID) DT_PHOTO_POP WHERE (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = DT_PHOTO_POP.AGY_LOC_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS'))), dataset_ AS (SELECT DESCRIPTION, AGY_LOC_ID, POPULATION, POPULATION - PRISONERSWITHPHOTOCOUNT AS V_PRISONERSMISSINGPHOTOS FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP3.DO33b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP3.DO43b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "POPULATION",
+            "type": "double",
+            "display": "Photo Population",
+            "legacyId": "DP3.DO1045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "V_PRISONERSMISSINGPHOTOS",
+            "type": "string",
+            "display": "V_PRISONERSMISSINGPHOTOS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP10",
+      "name": "All Establishments",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDERS_LOCATIONS.DESCRIPTION, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID FROM OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS'))), dataset_ AS (SELECT DESCRIPTION, AGY_LOC_ID FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP10.DO33b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP10.DO43b",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "166863.RS",
+      "name": "National Report of Prisoner Photographs",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP3",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (ESTABLISHMENT_CODE <> 'ZZGHI' AND ESTABLISHMENT_CODE <> 'TRN'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:POPULATION",
+            "display": "Photo Population",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP3.DO1045"
+          },
+          {
+            "name": "$ref:V_PRISONERSMISSINGPHOTOS",
+            "display": "Population",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Photo Population]-[Count of Prisoners With Photos]"
+          },
+          {
+            "name": "$ref:OLDPHOTOCOUNT",
+            "display": "Prisoners With Photos Aged 2 Yrs+",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPd.DO1048"
+          },
+          {
+            "name": "$ref:V_PRISONERSMISSINGPHOTOS",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Photo Population]-[Count of Prisoners With Photos]"
+          },
+          {
+            "name": "$ref:OLDPHOTOCOUNT",
+            "display": "Prisoners With Photos Aged 2 Yrs+",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPd.DO1048"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "Report field OLDPHOTOCOUNT does not have corresponding dataset schema field",
+      "entityId": "166863.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field OLDPHOTOCOUNT does not have corresponding dataset schema field",
+      "entityId": "166863.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00904: \"AT_OFFENDER\".\"OFFENDER_ID_DISPLAY\": invalid identifier\nHelp: https://docs.oracle.com/error-help/db/ora-00904/",
+      "entityId": "3377299/DPd",
+      "entityType": "dataset"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00904: \"PRISONERSWITHPHOTOCOUNT\": invalid identifier\nHelp: https://docs.oracle.com/error-help/db/ora-00904/",
+      "entityId": "3377299/DP3",
+      "entityType": "dataset"
+    }
+  ]
+}

@@ -1,0 +1,1379 @@
+{
+  "id": "FtgCTV6_pAYAoy4AAHCbWl8VACJIAFJ8",
+  "name": "MIS ROR and RDR Uptake Report",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "MOV0074 v00.00.01 ROR",
+      "RDR",
+      "RoTL"
+    ]
+  },
+  "description": "Has multiple tabs to display which Prisoners have completed a Resettlement Day Release, a Resettlement Overnight Release and any other RoTL.  This report has been created to assist Establishments looking for those Prisoners who have not yet been released on ROR for Parole purposes.<br/>MOV0074 v00.00.01  Last Updated 19/02/20 ",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP10",
+      "name": "All Prisoners",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, CASE WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '1' THEN 'Y' ELSE 'N' END AS IS_INDETERMINATE_SENTENCE_, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION, DT_ADMISSION.MOVEMENT_TIME, AT_FACT_MOV_EXT.MOVEMENT_SEQ FROM (SELECT ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk, fme.from_location_type, MAX(fme.MOVEMENT_SEQ) AS MOVEMENT_SEQ, MAX(d.day_date) AS MOVEMENT_TIME, TRUNC(ETL.LOAD_END_DATETIME) AS LOAD_DATE FROM BODIMIS.FACT_MOVEMENT_EXTERNAL fme, BODIMIS.DIM_OFFENDER_BOOKING ob, BODIMIS.DIM_ESTABLISHMENT est, BODIMIS.ETL_LOAD_LOG ETL, BODIMIS.DIM_DATE d WHERE ob.ESTABLISHMENT_SK = est.ESTABLISHMENT_SK AND d.date_sk = fme.date_sk AND fme.offender_booking_sk = ob.offender_booking_sk AND ob.active_status IN ('Active In', 'Active Out') AND ob.MIS_CURRENT_RECORD_IND = 'Y' AND ob.ACTIVE_FLAG = 'Y' AND ETL.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL) AND ob.ESTABLISHMENT_SK = fme.to_location_sk AND fme.movement_seq = (SELECT MAX(fme2.movement_seq) FROM BODIMIS.FACT_MOVEMENT_EXTERNAL fme2 WHERE fme.offender_booking_sk = fme2.offender_booking_sk AND fme2.direction_code = 'IN' AND fme2.TYPE = 'Admission' AND fme2.To_location_type = 'Establishment' AND fme2.reason_code <> 'R') GROUP BY ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk, fme.from_location_type, ETL.LOAD_END_DATETIME) DT_ADMISSION, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_CELL AT_CELL WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_ADMISSION.OFFENDER_BOOKING_SK (+)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, FIRST_NAME, DATE_OF_BIRTH, ETHNIC_CODE, IS_INDETERMINATE_SENTENCE_, MAIN_LEGAL_STATUS_DESCRIPTION, MOVEMENT_TIME, MOVEMENT_SEQ, CASE WHEN V_COUNT_POM > 1 THEN 'MULTIPLE - Please check record' ELSE V_POM END AS V_POM_DISPLAY, ALL_PRISONERS.MAIN_LEGAL_STATUS_DESCRIPTION AS V_MAIN_LEGAL_STATUS, IS_INDETERMINATE_SENTENCE_ AS V_INDETERMINATE_SENT_, MOVEMENT_TIME AS V_ADMISSION_DATE, ROR_AND_RDR.CURR_ROTL_DATE AS V_ROTL_ELIGIBILITY_DATE, MAX(V_MOVEMENT_DESCRIPTION_ALL) OVER (PARTITION BY V_MOVEMENT_DATE_ALL = V_MAX_ROTL_ALL) AS V_MAX_MOVEMENT_DESCRIPTION_ALL, CASE WHEN V_MAX_MOVEMENT_DESCRIPTION IS NULL THEN 'No' ELSE 'Yes' END AS V_ROR_AND_RDR_ FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP10.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP10.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP10.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP10.DO10085",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP10.DO1009b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "IS_INDETERMINATE_SENTENCE_",
+            "type": "string",
+            "display": "Is Indeterminate Sentence?",
+            "legacyId": "DP10.DO107d9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "MAIN_LEGAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Main Legal Status Description",
+            "legacyId": "DP10.DO100df",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "MOVEMENT_TIME",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DP10.DO107ce",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "MOVEMENT_SEQ",
+            "type": "double",
+            "display": "Movement Sequence",
+            "legacyId": "DP10.DO103e5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "V_POM_DISPLAY",
+            "type": "string",
+            "display": "V_POM_DISPLAY",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 10,
+            "name": "V_MAIN_LEGAL_STATUS",
+            "type": "string",
+            "display": "V_MAIN_LEGAL_STATUS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 11,
+            "name": "V_INDETERMINATE_SENT_",
+            "type": "string",
+            "display": "V_INDETERMINATE_SENT_",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 12,
+            "name": "V_ADMISSION_DATE",
+            "type": "string",
+            "display": "V_ADMISSION_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 13,
+            "name": "V_ROTL_ELIGIBILITY_DATE",
+            "type": "string",
+            "display": "V_ROTL_ELIGIBILITY_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 14,
+            "name": "V_MAX_MOVEMENT_DESCRIPTION_ALL",
+            "type": "string",
+            "display": "V_MAX_MOVEMENT_DESCRIPTION_ALL",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 15,
+            "name": "V_ROR_AND_RDR_",
+            "type": "string",
+            "display": "V_ROR_AND_RDR_",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP13",
+      "name": "ROR and RDR",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, AT_FACT_MOV_EXT.REASON, AT_DIM_DATE_EXT_MOV.DAY_DATE, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK, SUBSTR(AT_FACT_MOV_EXT.MOVEMENT_TIME, 11, 6) AS MOVEMENT_TIME, FACT_CURR_KEY_DATES_SENT.CURR_ROTL_DATE, AT_FACT_MOV_EXT.MOVEMENT_TIME, AT_FACT_MOV_EXT.DIRECTION_CODE, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION, AT_FACT_MOV_EXT.MOVEMENT_SEQ FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_FROM, FACT_CURR_KEY_DATES_SENT, BODIMIS.DIM_CELL AT_CELL WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (CASE WHEN AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.FROM_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_SK (+)) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_FACT_MOV_EXT.TYPE IN ('Temporary Absence / Home Leave', 'Temporary Absence') AND NOT AT_FACT_MOV_EXT.REASON IN ('Medical', 'Medical or Dental Appointments', 'Medical/Dental Inpatient Appointment', 'Medical/Dental Outpatient Appointment', 'End of Custody Licence (ECL)', 'Recall from End of Custody Licence (ECL)', 'Final Discharge To Hospital-Psychiatric', 'Awaiting Removal to Psychiatric Hospital', 'Hospital/Hospice In-Patient', 'Outside Hospital Attendance', 'Court Appearance - Police Product Order', 'Court/Legal/Police/Prison Transfer', 'Discharged into Police Custody', 'Helping Police With Enquiries', 'Police Production', 'Video Link Police Production'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, FIRST_NAME, DATE_OF_BIRTH, ETHNIC_CODE, REASON, DAY_DATE, ESTABLISHMENT_CODE_NK, MOVEMENT_TIME, CURR_ROTL_DATE, MOVEMENT_TIME, DIRECTION_CODE, MAIN_LEGAL_STATUS_DESCRIPTION, MOVEMENT_SEQ, CASE WHEN V_COUNT_POM > 1 THEN 'MULTIPLE - Please check record' ELSE V_POM END AS V_POM_DISPLAY, IS_INDETERMINATE_SENTENCE_ AS V_INDETERMINATE_SENT_, MOVEMENT_TIME AS V_ADMISSION_DATE, ROR_AND_RDR.CURR_ROTL_DATE AS V_ROTL_ELIGIBILITY_DATE, 'TBD' AS V_MAX_MOVEMENT_DESCRIPTION_, 'TBD' AS V_MAX_MOVEMENT_DESCRIPTION, (TO_DATE(V_MAX_RORRDR_OUT, 'DD/MM/YYYY') - TO_DATE(V_MAX_RORRDR_IN, 'DD/MM/YYYY')) || 1 AS V_DAYS_ON_RORRDR, 'TBD' AS V_ROR_IN_NOMS, CASE WHEN V_MOVE_IN_OUT = 0 THEN 'Please check record, possible date error / transfer from RoTL or currently out on RoTL' END AS V_DATA_ERRORS FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP13.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP13.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP13.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP13.DO10085",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP13.DO1009b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "REASON",
+            "type": "string",
+            "display": "Movement Description (External)",
+            "legacyId": "DP13.DO1015b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Movement Date",
+            "legacyId": "DP13.DO10781",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Movement Location From Code (External)",
+            "legacyId": "DP13.DO103ff",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "MOVEMENT_TIME",
+            "type": "string",
+            "display": "Movement Time",
+            "legacyId": "DP13.DO10782",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "CURR_ROTL_DATE",
+            "type": "date",
+            "display": "ROTL (Release on Temp Licence)",
+            "legacyId": "DP13.DO61b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "MOVEMENT_TIME",
+            "type": "date",
+            "display": "Movement Date and Time (External)",
+            "legacyId": "DP13.DO103eb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "DIRECTION_CODE",
+            "type": "string",
+            "display": "Movement Direction Code (External)",
+            "legacyId": "DP13.DO103fd",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "MAIN_LEGAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Main Legal Status Description",
+            "legacyId": "DP13.DO100df",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "MOVEMENT_SEQ",
+            "type": "double",
+            "display": "Movement Sequence",
+            "legacyId": "DP13.DO103e5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "V_POM_DISPLAY",
+            "type": "string",
+            "display": "V_POM_DISPLAY",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 15,
+            "name": "V_INDETERMINATE_SENT_",
+            "type": "string",
+            "display": "V_INDETERMINATE_SENT_",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 16,
+            "name": "V_ADMISSION_DATE",
+            "type": "string",
+            "display": "V_ADMISSION_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 17,
+            "name": "V_ROTL_ELIGIBILITY_DATE",
+            "type": "string",
+            "display": "V_ROTL_ELIGIBILITY_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 18,
+            "name": "V_MAX_MOVEMENT_DESCRIPTION_",
+            "type": "string",
+            "display": "V_MAX_MOVEMENT_DESCRIPTION_",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 19,
+            "name": "V_MAX_MOVEMENT_DESCRIPTION",
+            "type": "string",
+            "display": "V_MAX_MOVEMENT_DESCRIPTION",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 20,
+            "name": "V_DAYS_ON_RORRDR",
+            "type": "string",
+            "display": "V_DAYS_ON_RORRDR",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 21,
+            "name": "V_ROR_IN_NOMS",
+            "type": "string",
+            "display": "V_ROR_IN_NOMS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 22,
+            "name": "V_DATA_ERRORS",
+            "type": "string",
+            "display": "V_DATA_ERRORS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP15",
+      "name": "POM",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, TRIM(CASE WHEN NOT DT_OFFENDER_CONTACT_ADDRESS.TITLE IS NULL THEN DT_OFFENDER_CONTACT_ADDRESS.TITLE || ' ' END || CASE WHEN NOT DT_OFFENDER_CONTACT_ADDRESS.FIRST_NAME IS NULL THEN DT_OFFENDER_CONTACT_ADDRESS.FIRST_NAME || ' ' END || CASE WHEN NOT DT_OFFENDER_CONTACT_ADDRESS.MIDDLE_NAME IS NULL THEN DT_OFFENDER_CONTACT_ADDRESS.MIDDLE_NAME || ' ' END || DT_OFFENDER_CONTACT_ADDRESS.LAST_NAME) AS OTHER_CONTACT_NAME FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, (SELECT ROW_NUMBER() OVER (PARTITION BY dooc.offender_booking_sk, dooc.relationship ORDER BY dooc.active_flag DESC, dooc.address_flag DESC, dooc.mis_load_id DESC) AS row_seq_filter, dooc.*, CASE WHEN dooc.next_of_kin_flag = 'Y' THEN 'NEXTOFKIN' ELSE 'CONTACT' END AS Con_Addr_Type, CASE WHEN dooc.next_of_kin_flag = 'Y' THEN 'Next of Kin' ELSE 'Contact' END AS ConAddrTypeDesc FROM bodimis.dim_offender_other_contacts dooc) DT_OFFENDER_CONTACT_ADDRESS, BODIMIS.DIM_CELL AT_CELL WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK (+)) AND (DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK IS NULL OR DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (DT_OFFENDER_CONTACT_ADDRESS.RELATIONSHIP = 'Prison Offender Manager' AND (AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (DT_OFFENDER_CONTACT_ADDRESS.ACTIVE_FLAG (+) = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, FIRST_NAME, DATE_OF_BIRTH, ETHNIC_CODE, OTHER_CONTACT_NAME FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP15.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP15.DO7b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP15.DO80",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP15.DO85",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP15.DO9b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "OTHER_CONTACT_NAME",
+            "type": "string",
+            "display": "Other Contact Name",
+            "legacyId": "DP15.DOa1b",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP16",
+      "name": "All ROTL",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, AT_FACT_MOV_EXT.REASON, AT_DIM_DATE_EXT_MOV.DAY_DATE, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK, SUBSTR(AT_FACT_MOV_EXT.MOVEMENT_TIME, 11, 6) AS MOVEMENT_TIME, FACT_CURR_KEY_DATES_SENT.CURR_ROTL_DATE, AT_FACT_MOV_EXT.MOVEMENT_TIME, AT_FACT_MOV_EXT.DIRECTION_CODE, AT_FACT_MOV_EXT.MOVEMENT_SEQ FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_FROM, FACT_CURR_KEY_DATES_SENT, BODIMIS.DIM_CELL AT_CELL WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (CASE WHEN AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.FROM_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_SK (+)) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_FACT_MOV_EXT.TYPE IN ('Temporary Absence / Home Leave', 'Temporary Absence'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, FIRST_NAME, DATE_OF_BIRTH, ETHNIC_CODE, REASON, DAY_DATE, ESTABLISHMENT_CODE_NK, MOVEMENT_TIME, CURR_ROTL_DATE, MOVEMENT_TIME, DIRECTION_CODE, MOVEMENT_SEQ FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP16.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP16.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP16.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP16.DO10085",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP16.DO1009b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "REASON",
+            "type": "string",
+            "display": "Movement Description (External)",
+            "legacyId": "DP16.DO1015b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Movement Date",
+            "legacyId": "DP16.DO10781",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Movement Location From Code (External)",
+            "legacyId": "DP16.DO103ff",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "MOVEMENT_TIME",
+            "type": "string",
+            "display": "Movement Time",
+            "legacyId": "DP16.DO10782",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "CURR_ROTL_DATE",
+            "type": "date",
+            "display": "ROTL (Release on Temp Licence)",
+            "legacyId": "DP16.DO61b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "MOVEMENT_TIME",
+            "type": "date",
+            "display": "Movement Date and Time (External)",
+            "legacyId": "DP16.DO103eb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "DIRECTION_CODE",
+            "type": "string",
+            "display": "Movement Direction Code (External)",
+            "legacyId": "DP16.DO103fd",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "MOVEMENT_SEQ",
+            "type": "double",
+            "display": "Movement Sequence",
+            "legacyId": "DP16.DO103e5",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DPe",
+      "name": "MIS Load Date",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DPe.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "215227.RS",
+      "name": "By Movement Date",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP13",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (ROR_AND_RDR_MOVEMENT_DESCRIP33 NOT(IN ('Medical','Medical/Dental Inpatient Appointment','Medical/Dental Outpatient Appointment','Medical or Dental Appointments','Court Appearance - Police Product Order','Court/Legal/Police/Prison Transfer','Discharged into Police Custody','Helping Police With Enquiries','Police Production','Video Link Police Production','Awaiting Removal to Psychiatric Hospital','Final Discharge To Hospital-Psychiatric','Hospital/Hospice In-Patient','Outside Hospital Attendance','Funeral','Funerals And Deaths','Other Security Escort','End of Custody Licence (ECL)')) AND ROR_AND_RDR_MOVEMENT_DIRECTI36 = 'OUT'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:V_POM_DISPLAY",
+            "display": "Prison Offender Manager",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_Count_POM]>1;\"MULTIPLE - Please check record\";[v_POM])"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO1007b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO10080"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO10085"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO1009b"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_DESCRIPTION",
+            "display": "Main Legal Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP13.DO100df"
+          },
+          {
+            "name": "$ref:V_INDETERMINATE_SENT_",
+            "display": "Indeter Sent?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Is Indeterminate Sentence?]"
+          },
+          {
+            "name": "$ref:V_ADMISSION_DATE",
+            "display": "Admission Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Admission Date]"
+          },
+          {
+            "name": "$ref:V_ROTL_ELIGIBILITY_DATE",
+            "display": "RoTL Eligibilty Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[ROR and RDR].[ROTL (Release on Temp Licence)]"
+          },
+          {
+            "name": "$ref:V_MAX_MOVE_DATE",
+            "display": "Last ROR / RDR Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Max([ROR and RDR].[Movement Date and Time (External)]) In([ROR and RDR].[NOMS Number])\n"
+          },
+          {
+            "name": "$ref:V_MAX_MOVEMENT_DESCRIPTION_",
+            "display": "Last ROR / RDR Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Max([ROR and RDR].[Movement Description (External)]) Where ([ROR and RDR].[Movement Date and Time (External)] = [v_Max_Move_Date]) In ([ROR and RDR].[NOMS Number])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "216724.RS",
+      "name": "By Movement Description",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP13",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ROR_AND_RDR_MOVEMENT_DESCRIP33 NOT(IN ('Medical','Medical/Dental Inpatient Appointment','Medical/Dental Outpatient Appointment','Medical or Dental Appointments','Court Appearance - Police Product Order','Court/Legal/Police/Prison Transfer','Discharged into Police Custody','Helping Police With Enquiries','Police Production','Video Link Police Production','Awaiting Removal to Psychiatric Hospital','Final Discharge To Hospital-Psychiatric','Hospital/Hospice In-Patient','Outside Hospital Attendance','Funeral','Funerals And Deaths','Other Security Escort','End of Custody Licence (ECL)')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:V_POM_DISPLAY",
+            "display": "Prison Offender Manager",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_Count_POM]>1;\"MULTIPLE - Please check record\";[v_POM])"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO1007b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO10080"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO10085"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO1009b"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_DESCRIPTION",
+            "display": "Main Legal Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP13.DO100df"
+          },
+          {
+            "name": "$ref:V_INDETERMINATE_SENT_",
+            "display": "Indeter Sent?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Is Indeterminate Sentence?]"
+          },
+          {
+            "name": "$ref:V_ADMISSION_DATE",
+            "display": "Admission Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Admission Date]"
+          },
+          {
+            "name": "$ref:V_ROTL_ELIGIBILITY_DATE",
+            "display": "RoTL Eligibilty Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[ROR and RDR].[ROTL (Release on Temp Licence)]"
+          },
+          {
+            "name": "$ref:V_MAX_MOVE_DATE",
+            "display": "Last ROR / RDR Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Max([ROR and RDR].[Movement Date and Time (External)]) In([ROR and RDR].[NOMS Number])\n"
+          },
+          {
+            "name": "$ref:V_MAX_MOVEMENT_DESCRIPTION_",
+            "display": "Last ROR / RDR Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Max([ROR and RDR].[Movement Description (External)]) Where ([ROR and RDR].[Movement Date and Time (External)] = [v_Max_Move_Date]) In ([ROR and RDR].[NOMS Number])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "218058.RS",
+      "name": "No ROR",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP10",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_ROR_IN_NOMS = 'No')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:V_POM_DISPLAY",
+            "display": "Prison Offender Manager",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_Count_POM]>1;\"MULTIPLE - Please check record\";[v_POM])"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP10.DO10076"
+          },
+          {
+            "name": "$ref:V_MAIN_LEGAL_STATUS",
+            "display": "Main Legal Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[All Prisoners].[Main Legal Status Description]"
+          },
+          {
+            "name": "$ref:V_INDETERMINATE_SENT_",
+            "display": "Indeter Sent?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Is Indeterminate Sentence?]"
+          },
+          {
+            "name": "$ref:V_ADMISSION_DATE",
+            "display": "Admission Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Admission Date]"
+          },
+          {
+            "name": "$ref:V_ROTL_ELIGIBILITY_DATE",
+            "display": "RoTL Eligibilty Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[ROR and RDR].[ROTL (Release on Temp Licence)]"
+          },
+          {
+            "name": "$ref:V_MAX_ROTL_ALL",
+            "display": "Last Rotl Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Max([All ROTL].[Movement Date and Time (External)]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_MAX_MOVEMENT_DESCRIPTION_ALL",
+            "display": "Last RoTL Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Max([v_Movement_Description_All]) Where ([v_Movement_date_All] = [v_Max_RoTL_All])"
+          },
+          {
+            "name": "$ref:V_ROR_AND_RDR_",
+            "display": "Had RDR?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([v_Max_Movement_Description]);\"No\";\"Yes\")"
+          }
+        ]
+      }
+    },
+    {
+      "id": "216794.RS",
+      "name": "No ROR, RDR or RoTL",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP10",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_MOVEMENT_DATE_ALL IS NULL)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:V_POM_DISPLAY",
+            "display": "Prison Offender Manager",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_Count_POM]>1;\"MULTIPLE - Please check record\";[v_POM])"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP10.DO10076"
+          },
+          {
+            "name": "$ref:V_MAIN_LEGAL_STATUS",
+            "display": "Main Legal Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[All Prisoners].[Main Legal Status Description]"
+          },
+          {
+            "name": "$ref:V_INDETERMINATE_SENT_",
+            "display": "Indeter Sent?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Is Indeterminate Sentence?]"
+          },
+          {
+            "name": "$ref:V_ADMISSION_DATE",
+            "display": "Admission Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Admission Date]"
+          },
+          {
+            "name": "$ref:V_ROTL_ELIGIBILITY_DATE",
+            "display": "RoTL Eligibilty Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[ROR and RDR].[ROTL (Release on Temp Licence)]"
+          },
+          {
+            "name": "$ref:V_MAX_ROTL_OUT",
+            "display": "Last Rotl Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Max([v_RoTL_out ]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_MAX_MOVEMENT_DESCRIPTION_ALL",
+            "display": "RoTL Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Max([v_Movement_Description_All]) Where ([v_Movement_date_All] = [v_Max_RoTL_All])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "217306.RS",
+      "name": "Time on last ROR or RDR",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP13",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (V_MAX_MOVEMENT_DESCRIPTION NOT(IN ('Medical','Medical/Dental Inpatient Appointment','Medical/Dental Outpatient Appointment','Medical or Dental Appointments','Court Appearance - Police Product Order','Court/Legal/Police/Prison Transfer','Discharged into Police Custody','Helping Police With Enquiries','Police Production','Video Link Police Production','Awaiting Removal to Psychiatric Hospital','Final Discharge To Hospital-Psychiatric','Hospital/Hospice In-Patient','Outside Hospital Attendance','Funeral','Funerals And Deaths','Other Security Escort','End of Custody Licence (ECL)')) AND ROR_AND_RDR_MOVEMENT_DESCRIP33 NOT(IN ('Medical','Medical/Dental Inpatient Appointment','Medical/Dental Outpatient Appointment','Medical or Dental Appointments','Court Appearance - Police Product Order','Court/Legal/Police/Prison Transfer','Discharged into Police Custody','Helping Police With Enquiries','Police Production','Video Link Police Production','Awaiting Removal to Psychiatric Hospital','Final Discharge To Hospital-Psychiatric','Hospital/Hospice In-Patient','Outside Hospital Attendance','Funeral','Funerals And Deaths','Other Security Escort','End of Custody Licence (ECL)'))))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:V_POM_DISPLAY",
+            "display": "Prison Offender Manager",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_Count_POM]>1;\"MULTIPLE - Please check record\";[v_POM])"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO10076"
+          },
+          {
+            "name": "$ref:V_INDETERMINATE_SENT_",
+            "display": "Indeter Sent?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Is Indeterminate Sentence?]"
+          },
+          {
+            "name": "$ref:V_ADMISSION_DATE",
+            "display": "Admission Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Admission Date]"
+          },
+          {
+            "name": "$ref:V_MAX_RORRDR_OUT",
+            "display": "Last ROR / RDR Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Max([v_ROR_RDR_out]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_MAX_RORRDR_IN",
+            "display": "Last ROR /RDR End Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Max([v_ROR_RDR_in]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_MAX_MOVEMENT_DESCRIPTION",
+            "display": "Last ROR or RDR Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Max([v_Movement_Description]) Where ([v_Movement_date] = [v_Max_ROR_and_RDR]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_DAYS_ON_RORRDR",
+            "display": "Days on ROR / RDR",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=DaysBetween([v_Max_RORRDR_Out];[v_Max_RORRDR_in]) +1"
+          },
+          {
+            "name": "$ref:V_ROR_IN_NOMS",
+            "display": "Had ROR?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_ROR] = 1 In ([All ROTL].[NOMS Number]) ;\"Yes\";\"No\")"
+          },
+          {
+            "name": "$ref:V_DATA_ERRORS",
+            "display": "Data anomolies",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If ([v_Move_IN_>OUT] = 0; \"Please check record, possible date error / transfer from RoTL or currently out on RoTL\")"
+          }
+        ]
+      }
+    },
+    {
+      "id": "217648.RS",
+      "name": "All Prisoners and ROR or RDR",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    },
+    {
+      "id": "217465.RS",
+      "name": "All Prisoners and latest RoTL",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_MAX_ROTL_ALL :: Error: Invalid expression / Unexpected token. Line 1, Col: 32.\n  MAX(ALL_ROTL.MOVEMENT_TIME) IN \u001b[4m,\u001b[0mOFFENDER_ID_DISPLAY,",
+      "entityId": "FtgCTV6_pAYAoy4AAHCbWl8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_MAX_ROTL_OUT :: Error: Invalid expression / Unexpected token. Line 1, Col: 20.\n  MAX(V_ROTL_OUT) IN \u001b[4m,\u001b[0mOFFENDER_ID_DISPLAY,",
+      "entityId": "FtgCTV6_pAYAoy4AAHCbWl8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_INDETERMINATE_SENT_ :: ReferenceError: error is not defined",
+      "entityId": "FtgCTV6_pAYAoy4AAHCbWl8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_MAX_MOVEMENT_DESCRIPTION_ :: Error: =Max([ROR and RDR].[Movement Description (External)]) Where ([ROR and RDR].[Movement Date and Time (External)] = [v_Max_Move_Date]) In ([ROR and RDR].[NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:133",
+      "entityId": "FtgCTV6_pAYAoy4AAHCbWl8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_MAX_MOVEMENT_DESCRIPTION :: Error: =Max([v_Movement_Description]) Where ([v_Movement_date] = [v_Max_ROR_and_RDR]) In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:80",
+      "entityId": "FtgCTV6_pAYAoy4AAHCbWl8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_ROR_IN_NOMS :: Error: =If([v_ROR] = 1 In ([All ROTL].[NOMS Number]) ;\"Yes\";\"No\") ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "FtgCTV6_pAYAoy4AAHCbWl8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_INDETERMINATE_SENT_ :: ReferenceError: error is not defined",
+      "entityId": "FtgCTV6_pAYAoy4AAHCbWl8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_MAX_MOVE_DATE :: Error: Invalid expression / Unexpected token. Line 1, Col: 35.\n  MAX(ROR_AND_RDR.MOVEMENT_TIME) IN \u001b[4m,\u001b[0mROR_AND_RDR.OFFENDER_ID_DISPLAY,",
+      "entityId": "FtgCTV6_pAYAoy4AAHCbWl8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_MAX_MOVEMENT_DESCRIPTION_ :: Error: =Max([ROR and RDR].[Movement Description (External)]) Where ([ROR and RDR].[Movement Date and Time (External)] = [v_Max_Move_Date]) In ([ROR and RDR].[NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:133",
+      "entityId": "FtgCTV6_pAYAoy4AAHCbWl8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_MAX_RORRDR_OUT :: Error: Invalid expression / Unexpected token. Line 1, Col: 23.\n  MAX(V_ROR_RDR_OUT) IN \u001b[4m,\u001b[0mOFFENDER_ID_DISPLAY,",
+      "entityId": "FtgCTV6_pAYAoy4AAHCbWl8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_MAX_RORRDR_IN :: Error: Invalid expression / Unexpected token. Line 1, Col: 22.\n  MAX(V_ROR_RDR_IN) IN \u001b[4m,\u001b[0mOFFENDER_ID_DISPLAY,",
+      "entityId": "FtgCTV6_pAYAoy4AAHCbWl8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_MAX_MOVEMENT_DESCRIPTION :: Error: =Max([v_Movement_Description]) Where ([v_Movement_date] = [v_Max_ROR_and_RDR]) In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:80",
+      "entityId": "FtgCTV6_pAYAoy4AAHCbWl8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_ROR_IN_NOMS :: Error: =If([v_ROR] = 1 In ([All ROTL].[NOMS Number]) ;\"Yes\";\"No\") ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "FtgCTV6_pAYAoy4AAHCbWl8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[5] requires property \"dataset\"",
+      "entityId": "FtgCTV6_pAYAoy4AAHCbWl8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[6] requires property \"dataset\"",
+      "entityId": "FtgCTV6_pAYAoy4AAHCbWl8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MAX_MOVE_DATE does not have corresponding dataset schema field",
+      "entityId": "215227.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MAX_MOVE_DATE does not have corresponding dataset schema field",
+      "entityId": "216724.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MAX_ROTL_ALL does not have corresponding dataset schema field",
+      "entityId": "218058.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MAX_ROTL_OUT does not have corresponding dataset schema field",
+      "entityId": "216794.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MAX_RORRDR_OUT does not have corresponding dataset schema field",
+      "entityId": "217306.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MAX_RORRDR_IN does not have corresponding dataset schema field",
+      "entityId": "217306.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 217648.RS does not have corresponding dataset undefined",
+      "entityId": "217648.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 217465.RS does not have corresponding dataset undefined",
+      "entityId": "217465.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DP10",
+      "entityType": "dataset"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DP13",
+      "entityType": "dataset"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DP16",
+      "entityType": "dataset"
+    }
+  ]
+}

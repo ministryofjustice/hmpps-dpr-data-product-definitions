@@ -1,0 +1,1166 @@
+{
+  "id": "FnBVu1o6ggcAyzABAHBrzV8CACJIABRd",
+  "name": "ORS Key Worker Contact Report",
+  "description": "Report returns details of those Prisoners who have had a Key Worker case note Entry or Case note Session, if that entry was made at the current establishment (on latest admission) and the time elapsed between entries.<br/>PDD0085 - v00.00.02 Last Modified: 12/12/2018",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0085  v00.00.02 Key Worker",
+      "Case Notes"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP4",
+      "name": "All",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.LAST_NAME, DT_ADMISSION.ADMISSION_DATE, CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END AS CURRENT_RELEASE_DATE, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, (SELECT DISTINCT m.OFFENDER_BOOK_ID, MAX(m.MOVEMENT_TIME) AS ADMISSION_DATE FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS m, OMS_OWNER.offender_bookings h WHERE h.booking_status = 'O' AND h.active_flag = 'Y' AND m.direction_code = 'IN' AND m.Movement_reason_code <> 'R' AND m.Movement_type = 'ADM' AND m.to_agy_loc_id = h.agy_loc_id AND h.offender_book_id = m.offender_book_id GROUP BY m.OFFENDER_BOOK_ID) DT_ADMISSION, OMS_OWNER.OFFENDER_RELEASE_DETAILS AT_OFFENDER_RELEASE_DETAILS, (SELECT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID, CASE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE ELSE NULL END AS Last_Rel_Date, EFFECTIVE_SENTENCE_LENGTH FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) DT_LAST_RELEASE_DATE, USER_ACCESSIBLE_CASELOADS, OMS_OWNER.LIVING_UNITS AT_LIVING_UNITS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_RELEASE_DETAILS.OFFENDER_BOOK_ID (+)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID = AT_LIVING_UNITS.LIVING_UNIT_ID) AND (NOT AT_LIVING_UNITS.HOUSING_UNIT_TYPE IN ('OU', 'REC')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_LAST_RELEASE_DATE.OFFENDER_BOOK_ID (+)) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_ADMISSION.OFFENDER_BOOK_ID (+)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_)) AND (AT_LIVING_UNITS.AGY_LOC_ID || '-' || AT_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FIRST_NAME, LAST_NAME, ADMISSION_DATE, CURRENT_RELEASE_DATE, AGY_LOC_ID, COUNT(ALL.OFFENDER_ID_DISPLAY) AS V_COUNT_ALL_PRISONERS, COUNT(KE_CASE_NOTES.OFFENDER_ID_DISPLAY) OVER (PARTITION BY KE_CASE_NOTES.CASE_NOTE_SUB_TYPE = 'KE') AS V_COUNT_CASE_NOTE_PRISONERS_33, COUNT(KS_CASE_NOTES.OFFENDER_ID_DISPLAY) OVER (PARTITION BY KS_CASE_NOTES.CASE_NOTE_SUB_TYPE = 'KS') AS V_COUNT_CASE_NOTE_PRISONERS_35, V_COUNT_ALL_PRISONERS - V_COUNT_CASE_NOTE_PRISONERS_ENTRY AS V_COUNT_PRISONERS_WITHOUT_CA42, V_COUNT_ALL_PRISONERS - V_COUNT_CASE_NOTE_PRISONERS_SESSION AS V_COUNT_PRISONERS_WITHOUT_CA44, V_COUNT_ALL_PRISONERS - V_COUNT_CASE_NOTE_PRISONERS_KA AS V_COUNT_PRISONERS_WITHOUT_EI45 FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP4.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP4.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP4.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ADMISSION_DATE",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DP4.DOc6a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "CURRENT_RELEASE_DATE",
+            "type": "date",
+            "display": "Current Release Date",
+            "legacyId": "DP4.DOb29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP4.DO43b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "V_COUNT_ALL_PRISONERS",
+            "type": "string",
+            "display": "V_COUNT_ALL_PRISONERS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 7,
+            "name": "V_COUNT_CASE_NOTE_PRISONERS_33",
+            "type": "string",
+            "display": "V_COUNT_CASE_NOTE_PRISONERS_33",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 8,
+            "name": "V_COUNT_CASE_NOTE_PRISONERS_35",
+            "type": "string",
+            "display": "V_COUNT_CASE_NOTE_PRISONERS_35",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 9,
+            "name": "V_COUNT_PRISONERS_WITHOUT_CA42",
+            "type": "string",
+            "display": "V_COUNT_PRISONERS_WITHOUT_CA42",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 10,
+            "name": "V_COUNT_PRISONERS_WITHOUT_CA44",
+            "type": "string",
+            "display": "V_COUNT_PRISONERS_WITHOUT_CA44",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 11,
+            "name": "V_COUNT_PRISONERS_WITHOUT_EI45",
+            "type": "string",
+            "display": "V_COUNT_PRISONERS_WITHOUT_EI45",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP2",
+      "name": "KE Case Notes",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID, DT_ADMISSION.ADMISSION_DATE, AT_OFFENDER_CASE_NOTES.CONTACT_DATE, AT_OFFENDER_CASE_NOTES.CONTACT_TIME, AT_OFFENDER_CASE_NOTES.CASE_NOTE_TYPE, AT_OFFENDER_CASE_NOTES.CASE_NOTE_SUB_TYPE, CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END AS CURRENT_RELEASE_DATE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS, (SELECT DISTINCT m.OFFENDER_BOOK_ID, MAX(m.MOVEMENT_TIME) AS ADMISSION_DATE FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS m, OMS_OWNER.offender_bookings h WHERE h.booking_status = 'O' AND h.active_flag = 'Y' AND m.direction_code = 'IN' AND m.Movement_reason_code <> 'R' AND m.Movement_type = 'ADM' AND m.to_agy_loc_id = h.agy_loc_id AND h.offender_book_id = m.offender_book_id GROUP BY m.OFFENDER_BOOK_ID) DT_ADMISSION, OMS_OWNER.OFFENDER_CASE_NOTES AT_OFFENDER_CASE_NOTES, OMS_OWNER.OFFENDER_RELEASE_DETAILS AT_OFFENDER_RELEASE_DETAILS, (SELECT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID, CASE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE ELSE NULL END AS Last_Rel_Date, EFFECTIVE_SENTENCE_LENGTH FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) DT_LAST_RELEASE_DATE, OMS_OWNER.LIVING_UNITS AT_LIVING_UNITS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_RELEASE_DETAILS.OFFENDER_BOOK_ID (+)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID = AT_LIVING_UNITS.LIVING_UNIT_ID) AND (NOT AT_LIVING_UNITS.HOUSING_UNIT_TYPE IN ('OU', 'REC')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_LAST_RELEASE_DATE.OFFENDER_BOOK_ID (+)) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_ADMISSION.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_CASE_NOTES.OFFENDER_BOOK_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_)) AND (AT_LIVING_UNITS.AGY_LOC_ID || '-' || AT_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_CASE_NOTES.CONTACT_DATE >= TO_DATE('01-11-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_OFFENDER_CASE_NOTES.CASE_NOTE_TYPE IN ('KA') AND AT_OFFENDER_CASE_NOTES.CASE_NOTE_SUB_TYPE = 'KE')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, AGY_LOC_ID, ADMISSION_DATE, CONTACT_DATE, CONTACT_TIME, CASE_NOTE_TYPE, CASE_NOTE_SUB_TYPE, CURRENT_RELEASE_DATE, CASE WHEN V_MAX_KE_CONTACT_DATE > (KE_CASE_NOTES.ADMISSION_DATE) THEN 'Yes' ELSE 'No' END AS V_MAX_KE_CASE_NOTE_CURRENT_E32, (TO_DATE(V_MAX_KE_CONTACT_DATE, 'DD/MM/YYYY') - TO_DATE(TRUNC(SYSDATE), 'DD/MM/YYYY')) AS V_DAYS_SINCE_LAST_KE_CONTACT37, CASE WHEN V_DAYS_SINCE_LAST_KE_CONTACT_DATE_MAX > 7 THEN 'Yes' ELSE 'No' END AS V_7_DAYS_SINCE_LAST_KE_CONTA43, CASE WHEN V_DAYS_SINCE_LAST_KE_CONTACT_DATE_MAX > 14 THEN 'Yes' ELSE 'No' END AS V_14_DAYS_SINCE_LAST_KE_CONT44, CASE WHEN KE_CASE_NOTES.CONTACT_TIME > (KE_CASE_NOTES.ADMISSION_DATE) THEN 'Yes' ELSE 'No' END AS V_KE_CASE_NOTE_CURRENT_ESTAB, (TO_DATE(V_PREV_KE_CONTACT_DATE, 'DD/MM/YYYY') - TO_DATE((KE_CASE_NOTES.CONTACT_DATE), 'DD/MM/YYYY')) AS V_DAYS_BETWEEN_KE_CONTACT_AN45, CASE WHEN V_DAYS_BETWEEN_KE_CONTACT_AND_PREVCONTACTDATE > 14 THEN 'Yes' ELSE 'No' END AS V_OVER_14_DAYS_SINCE_CONTACT31 FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP2.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP2.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP2.DO43b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ADMISSION_DATE",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DP2.DOc6a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "CONTACT_DATE",
+            "type": "date",
+            "display": "Contact Date",
+            "legacyId": "DP2.DOc94",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "CONTACT_TIME",
+            "type": "date",
+            "display": "Contact Time",
+            "legacyId": "DP2.DOcb3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "CASE_NOTE_TYPE",
+            "type": "string",
+            "display": "Case Note Type",
+            "legacyId": "DP2.DOcb4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "CASE_NOTE_SUB_TYPE",
+            "type": "string",
+            "display": "Case Note Sub Type",
+            "legacyId": "DP2.DOcb5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "CURRENT_RELEASE_DATE",
+            "type": "date",
+            "display": "Current Release Date",
+            "legacyId": "DP2.DOb29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "V_MAX_KE_CASE_NOTE_CURRENT_E32",
+            "type": "string",
+            "display": "V_MAX_KE_CASE_NOTE_CURRENT_E32",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 11,
+            "name": "V_DAYS_SINCE_LAST_KE_CONTACT37",
+            "type": "string",
+            "display": "V_DAYS_SINCE_LAST_KE_CONTACT37",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 12,
+            "name": "V_7_DAYS_SINCE_LAST_KE_CONTA43",
+            "type": "string",
+            "display": "V_7_DAYS_SINCE_LAST_KE_CONTA43",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 13,
+            "name": "V_14_DAYS_SINCE_LAST_KE_CONT44",
+            "type": "string",
+            "display": "V_14_DAYS_SINCE_LAST_KE_CONT44",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 14,
+            "name": "V_KE_CASE_NOTE_CURRENT_ESTAB",
+            "type": "string",
+            "display": "V_KE_CASE_NOTE_CURRENT_ESTAB",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 15,
+            "name": "V_DAYS_BETWEEN_KE_CONTACT_AN45",
+            "type": "string",
+            "display": "V_DAYS_BETWEEN_KE_CONTACT_AN45",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 16,
+            "name": "V_OVER_14_DAYS_SINCE_CONTACT31",
+            "type": "string",
+            "display": "V_OVER_14_DAYS_SINCE_CONTACT31",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP5",
+      "name": "KS Case Notes",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID, DT_ADMISSION.ADMISSION_DATE, AT_OFFENDER_CASE_NOTES.CONTACT_DATE, AT_OFFENDER_CASE_NOTES.CONTACT_TIME, AT_OFFENDER_CASE_NOTES.CASE_NOTE_TYPE, AT_OFFENDER_CASE_NOTES.CASE_NOTE_SUB_TYPE, CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END AS CURRENT_RELEASE_DATE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS, (SELECT DISTINCT m.OFFENDER_BOOK_ID, MAX(m.MOVEMENT_TIME) AS ADMISSION_DATE FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS m, OMS_OWNER.offender_bookings h WHERE h.booking_status = 'O' AND h.active_flag = 'Y' AND m.direction_code = 'IN' AND m.Movement_reason_code <> 'R' AND m.Movement_type = 'ADM' AND m.to_agy_loc_id = h.agy_loc_id AND h.offender_book_id = m.offender_book_id GROUP BY m.OFFENDER_BOOK_ID) DT_ADMISSION, OMS_OWNER.OFFENDER_CASE_NOTES AT_OFFENDER_CASE_NOTES, OMS_OWNER.OFFENDER_RELEASE_DETAILS AT_OFFENDER_RELEASE_DETAILS, (SELECT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID, CASE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE ELSE NULL END AS Last_Rel_Date, EFFECTIVE_SENTENCE_LENGTH FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) DT_LAST_RELEASE_DATE, OMS_OWNER.LIVING_UNITS AT_LIVING_UNITS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_RELEASE_DETAILS.OFFENDER_BOOK_ID (+)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID = AT_LIVING_UNITS.LIVING_UNIT_ID) AND (NOT AT_LIVING_UNITS.HOUSING_UNIT_TYPE IN ('OU', 'REC')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_LAST_RELEASE_DATE.OFFENDER_BOOK_ID (+)) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_ADMISSION.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_CASE_NOTES.OFFENDER_BOOK_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_)) AND (AT_LIVING_UNITS.AGY_LOC_ID || '-' || AT_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_CASE_NOTES.CONTACT_DATE >= TO_DATE('01-11-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_OFFENDER_CASE_NOTES.CASE_NOTE_TYPE IN ('KA') AND AT_OFFENDER_CASE_NOTES.CASE_NOTE_SUB_TYPE = 'KS')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, AGY_LOC_ID, ADMISSION_DATE, CONTACT_DATE, CONTACT_TIME, CASE_NOTE_TYPE, CASE_NOTE_SUB_TYPE, CURRENT_RELEASE_DATE, CASE WHEN V_MAX_KS_CONTACT_DATE > (KS_CASE_NOTES.ADMISSION_DATE) THEN 'Yes' ELSE 'No' END AS V_MAX_KS_CASE_NOTE_CURRENT_E32, (TO_DATE(V_MAX_KS_CONTACT_DATE, 'DD/MM/YYYY') - TO_DATE(TRUNC(SYSDATE), 'DD/MM/YYYY')) AS V_DAYS_SINCE_LAST_KS_CONTACT37, CASE WHEN V_DAYS_SINCE_LAST_KS_CONTACT_DATE_MAX > 7 THEN 'Yes' ELSE 'No' END AS V_7_DAYS_SINCE_LAST_KS_CONTA43, CASE WHEN V_DAYS_SINCE_LAST_KS_CONTACT_DATE_MAX > 14 THEN 'Yes' ELSE 'No' END AS V_14_DAYS_SINCE_LAST_KS_CONT44, CASE WHEN KS_CASE_NOTES.CONTACT_DATE > (KS_CASE_NOTES.ADMISSION_DATE) THEN 'Yes' ELSE 'No' END AS V_KS_CASE_NOTE_CURRENT_ESTAB, (TO_DATE(V_PREV_KS_CONTACT_DATE, 'DD/MM/YYYY') - TO_DATE((KS_CASE_NOTES.CONTACT_DATE), 'DD/MM/YYYY')) AS V_DAYS_BETWEEN_KS_CONTACT_AN45, CASE WHEN V_DAYS_BETWEEN_KS_CONTACT_AND_PREVCONTACTDATE > 14 THEN 'Yes' ELSE 'No' END AS V_OVER_14_DAYS_SINCE_CONTACT31 FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP5.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP5.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP5.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP5.DO43b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ADMISSION_DATE",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DP5.DOc6a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "CONTACT_DATE",
+            "type": "date",
+            "display": "Contact Date",
+            "legacyId": "DP5.DOc94",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "CONTACT_TIME",
+            "type": "date",
+            "display": "Contact Time",
+            "legacyId": "DP5.DOcb3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "CASE_NOTE_TYPE",
+            "type": "string",
+            "display": "Case Note Type",
+            "legacyId": "DP5.DOcb4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "CASE_NOTE_SUB_TYPE",
+            "type": "string",
+            "display": "Case Note Sub Type",
+            "legacyId": "DP5.DOcb5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "CURRENT_RELEASE_DATE",
+            "type": "date",
+            "display": "Current Release Date",
+            "legacyId": "DP5.DOb29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "V_MAX_KS_CASE_NOTE_CURRENT_E32",
+            "type": "string",
+            "display": "V_MAX_KS_CASE_NOTE_CURRENT_E32",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 11,
+            "name": "V_DAYS_SINCE_LAST_KS_CONTACT37",
+            "type": "string",
+            "display": "V_DAYS_SINCE_LAST_KS_CONTACT37",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 12,
+            "name": "V_7_DAYS_SINCE_LAST_KS_CONTA43",
+            "type": "string",
+            "display": "V_7_DAYS_SINCE_LAST_KS_CONTA43",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 13,
+            "name": "V_14_DAYS_SINCE_LAST_KS_CONT44",
+            "type": "string",
+            "display": "V_14_DAYS_SINCE_LAST_KS_CONT44",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 14,
+            "name": "V_KS_CASE_NOTE_CURRENT_ESTAB",
+            "type": "string",
+            "display": "V_KS_CASE_NOTE_CURRENT_ESTAB",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 15,
+            "name": "V_DAYS_BETWEEN_KS_CONTACT_AN45",
+            "type": "string",
+            "display": "V_DAYS_BETWEEN_KS_CONTACT_AN45",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 16,
+            "name": "V_OVER_14_DAYS_SINCE_CONTACT31",
+            "type": "string",
+            "display": "V_OVER_14_DAYS_SINCE_CONTACT31",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "167560.RS",
+      "name": "Contact Due KS",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP5",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (V_14_DAYS_SINCE_LAST_KS_CONT44 = 'Yes' OR V_7_DAYS_SINCE_LAST_KS_CONTA43 = 'Yes'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO44"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO45"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO46"
+          },
+          {
+            "name": "$ref:ADMISSION_DATE",
+            "display": "Admission Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DOc6a"
+          },
+          {
+            "name": "$ref:V_MAX_KS_CASE_NOTE_CURRENT_E32",
+            "display": "Case Note Entered at Current Estab? (Curr. Admission)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_Max_KS_contact_date] > ([KS Case Notes].[Admission Date]);\"Yes\"; \"No\")"
+          },
+          {
+            "name": "$ref:V_MAX_KS_CONTACT_DATE",
+            "display": "Last Contact Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Max([KS Case Notes].[Contact Date]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_DAYS_SINCE_LAST_KS_CONTACT37",
+            "display": "No. of days since last contact",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=DaysBetween([v_Max_KS_contact_date];CurrentDate())"
+          },
+          {
+            "name": "$ref:V_7_DAYS_SINCE_LAST_KS_CONTA43",
+            "display": "Over 7 days since last contact?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_days since_Last_KS_Contact_date_Max] >7; \"Yes\";\"No\")"
+          },
+          {
+            "name": "$ref:V_14_DAYS_SINCE_LAST_KS_CONT44",
+            "display": "Over 14 days since last contact?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_days since_Last_KS_Contact_date_Max] >14; \"Yes\";\"No\")"
+          },
+          {
+            "name": "$ref:CURRENT_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DOb29"
+          }
+        ]
+      }
+    },
+    {
+      "id": "170484.RS",
+      "name": "KS Detail",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP5",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO44"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO45"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO46"
+          },
+          {
+            "name": "$ref:ADMISSION_DATE",
+            "display": "Admission Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DOc6a"
+          },
+          {
+            "name": "$ref:V_KS_CASE_NOTE_CURRENT_ESTAB",
+            "display": "Case Note Entered at Current Estab? (Curr. Admn)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([KS Case Notes].[Contact Date] > ([KS Case Notes].[Admission Date]);\"Yes\"; \"No\")"
+          },
+          {
+            "name": "$ref:CONTACT_DATE",
+            "display": "Contact Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DOc94"
+          },
+          {
+            "name": "$ref:CASE_NOTE_SUB_TYPE",
+            "display": "Case Note Sub Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DOcb5"
+          },
+          {
+            "name": "$ref:V_DAYS_BETWEEN_KS_CONTACT_AN45",
+            "display": "Days between contact",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=DaysBetween([v_prev_KS Contact_date];([KS Case Notes].[Contact Date]))"
+          },
+          {
+            "name": "$ref:V_OVER_14_DAYS_SINCE_CONTACT31",
+            "display": "Over 14 days between contact dates?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_days_between_KS_contact_and_prevcontactdate] > 14;\"Yes\";\"No\") "
+          },
+          {
+            "name": "$ref:V_DAYS_SINCE_LAST_KS_CONTACT37",
+            "display": "No. of days since last contact",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=DaysBetween([v_Max_KS_contact_date];CurrentDate())"
+          },
+          {
+            "name": "$ref:V_7_DAYS_SINCE_LAST_KS_CONTA43",
+            "display": "Over 7 days since last contact?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_days since_Last_KS_Contact_date_Max] >7; \"Yes\";\"No\")"
+          },
+          {
+            "name": "$ref:V_14_DAYS_SINCE_LAST_KS_CONT44",
+            "display": "Over 14 days since last contact?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_days since_Last_KS_Contact_date_Max] >14; \"Yes\";\"No\")"
+          },
+          {
+            "name": "$ref:CURRENT_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DOb29"
+          }
+        ]
+      }
+    },
+    {
+      "id": "169666.RS",
+      "name": "Contact Due KE",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (V_14_DAYS_SINCE_LAST_KE_CONT44 = 'Yes' OR V_7_DAYS_SINCE_LAST_KE_CONTA43 = 'Yes'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO44"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO45"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO46"
+          },
+          {
+            "name": "$ref:ADMISSION_DATE",
+            "display": "Admission Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DOc6a"
+          },
+          {
+            "name": "$ref:V_MAX_KE_CASE_NOTE_CURRENT_E32",
+            "display": "Case Note Entered at Current Estab? (Curr. Admission)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_Max_KE_contact_date] > ([KE Case Notes].[Admission Date]);\"Yes\"; \"No\")"
+          },
+          {
+            "name": "$ref:V_MAX_KE_CONTACT_DATE",
+            "display": "Last Contact Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Max([KE Case Notes].[Contact Date]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_DAYS_SINCE_LAST_KE_CONTACT37",
+            "display": "No. of days since last contact",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=DaysBetween([v_Max_KE_contact_date];CurrentDate())"
+          },
+          {
+            "name": "$ref:V_7_DAYS_SINCE_LAST_KE_CONTA43",
+            "display": "Over 7 days since last contact?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_days since_Last_KE_Contact_date_Max] >7; \"Yes\";\"No\")"
+          },
+          {
+            "name": "$ref:V_14_DAYS_SINCE_LAST_KE_CONT44",
+            "display": "Over 14 days since last contact?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_days since_Last_KE_Contact_date_Max] >14; \"Yes\";\"No\")"
+          },
+          {
+            "name": "$ref:CURRENT_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DOb29"
+          }
+        ]
+      }
+    },
+    {
+      "id": "164624.RS",
+      "name": "KE Detail",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO44"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO45"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO46"
+          },
+          {
+            "name": "$ref:ADMISSION_DATE",
+            "display": "Admission Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DOc6a"
+          },
+          {
+            "name": "$ref:V_KE_CASE_NOTE_CURRENT_ESTAB",
+            "display": "Case Note Entered at Current Estab? (Curr. Admn)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([KE Case Notes].[Contact Time] > ([KE Case Notes].[Admission Date]);\"Yes\"; \"No\")"
+          },
+          {
+            "name": "$ref:CONTACT_DATE",
+            "display": "Contact Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DOc94"
+          },
+          {
+            "name": "$ref:CASE_NOTE_SUB_TYPE",
+            "display": "Case Note Sub Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DOcb5"
+          },
+          {
+            "name": "$ref:V_DAYS_BETWEEN_KE_CONTACT_AN45",
+            "display": "Days between contact",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=DaysBetween([v_prev_KE_Contact_date];([KE Case Notes].[Contact Date]))"
+          },
+          {
+            "name": "$ref:V_OVER_14_DAYS_SINCE_CONTACT31",
+            "display": "Over 14 days between contact dates?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_days_between_KE_contact_and_prevcontactdate] > 14;\"Yes\";\"No\") "
+          },
+          {
+            "name": "$ref:V_DAYS_SINCE_LAST_KE_CONTACT37",
+            "display": "No. of days since last contact",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=DaysBetween([v_Max_KE_contact_date];CurrentDate())"
+          },
+          {
+            "name": "$ref:V_7_DAYS_SINCE_LAST_KE_CONTA43",
+            "display": "Over 7 days since last contact?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_days since_Last_KE_Contact_date_Max] >7; \"Yes\";\"No\")"
+          },
+          {
+            "name": "$ref:V_14_DAYS_SINCE_LAST_KE_CONT44",
+            "display": "Over 14 days since last contact?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_days since_Last_KE_Contact_date_Max] >14; \"Yes\";\"No\")"
+          },
+          {
+            "name": "$ref:CURRENT_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DOb29"
+          }
+        ]
+      }
+    },
+    {
+      "id": "168453.RS",
+      "name": "No Contact Recorded",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP4",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_NO_CONTACT = 1)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP4.DO44"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO45"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO46"
+          },
+          {
+            "name": "$ref:ADMISSION_DATE",
+            "display": "Admission Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP4.DOc6a"
+          },
+          {
+            "name": "$ref:CURRENT_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP4.DOb29"
+          }
+        ]
+      }
+    },
+    {
+      "id": "169160.RS",
+      "name": "Stats",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP4",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP4.DO43b"
+          },
+          {
+            "name": "$ref:V_COUNT_ALL_PRISONERS",
+            "display": "Total Prisoners",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([All].[NOMS Number])"
+          },
+          {
+            "name": "$ref:V_COUNT_CASE_NOTE_PRISONERS_33",
+            "display": "Prisoners with a Key Worker Entry",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([KE Case Notes].[NOMS Number]) Where ([KE Case Notes].[Case Note Sub Type] = \"KE\")"
+          },
+          {
+            "name": "$ref:V_COUNT_CASE_NOTE_PRISONERS_35",
+            "display": "Prisoners with a Key Worker Session",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([KS Case Notes].[NOMS Number]) Where ([KS Case Notes].[Case Note Sub Type] = \"KS\")"
+          },
+          {
+            "name": "$ref:V_COUNT_PRISONERS_WITHOUT_CA42",
+            "display": "Prisoners without a Key Worker Entry",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Count_All_Prisoners] - [v_Count_Case_Note_Prisoners_Entry]"
+          },
+          {
+            "name": "$ref:V_COUNT_PRISONERS_WITHOUT_CA44",
+            "display": "Prisoners without a Key Worker Session",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Count_All_Prisoners] - [v_Count_Case_Note_Prisoners_Session]"
+          },
+          {
+            "name": "$ref:V_COUNT_PRISONERS_WITHOUT_EI45",
+            "display": "Prisoners without a Key Worker Case Note",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Count_All_Prisoners] - [v_count_case_note_prisoners_(KA)]"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_MAX_KE_CONTACT_DATE :: Error: Invalid expression / Unexpected token. Line 1, Col: 36.\n  MAX(KE_CASE_NOTES.CONTACT_DATE) IN \u001b[4m,\u001b[0mOFFENDER_ID_DISPLAY,",
+      "entityId": "FnBVu1o6ggcAyzABAHBrzV8CACJIABRd",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_MAX_KS_CONTACT_DATE :: Error: Invalid expression / Unexpected token. Line 1, Col: 36.\n  MAX(KS_CASE_NOTES.CONTACT_DATE) IN \u001b[4m,\u001b[0mOFFENDER_ID_DISPLAY,",
+      "entityId": "FnBVu1o6ggcAyzABAHBrzV8CACJIABRd",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MAX_KS_CONTACT_DATE does not have corresponding dataset schema field",
+      "entityId": "167560.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MAX_KE_CONTACT_DATE does not have corresponding dataset schema field",
+      "entityId": "169666.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00936: missing expression\nHelp: https://docs.oracle.com/error-help/db/ora-00936/",
+      "entityId": "3377299/DP4",
+      "entityType": "dataset"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00972: identifier is too long\nHelp: https://docs.oracle.com/error-help/db/ora-00972/",
+      "entityId": "3377299/DP2",
+      "entityType": "dataset"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00972: identifier is too long\nHelp: https://docs.oracle.com/error-help/db/ora-00972/",
+      "entityId": "3377299/DP5",
+      "entityType": "dataset"
+    }
+  ]
+}

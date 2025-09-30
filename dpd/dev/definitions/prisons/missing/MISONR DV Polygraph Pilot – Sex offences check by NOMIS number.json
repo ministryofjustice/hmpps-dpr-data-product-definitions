@@ -1,0 +1,570 @@
+{
+  "id": "FmVirgEvBgUAOdkDAADn7s4AACJIAGE1",
+  "name": "MISONR DV Polygraph Pilot – Sex offences check by NOMIS number",
+  "description": "Test to run up to 6 months of data for all releases/HDCED/PED for all Rehab Providers and all prisons",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "v1.1"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP2",
+      "name": "Sentence",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, Case When DT_LIFEFLAG.LIFE_SENTENCE_FLAG='Y' then 'Life' Else FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH End, FACT_CURR_KEY_DATES_SENT.SSD, CASE WHEN AT_SENT_START_DATE.DAY_DATE < '31/12/9000' THEN AT_SENT_START_DATE.DAY_DATE END, DT_ADMISSION.MOVEMENT_TIME, CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL THEN COALESCE(TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH,1,2)*12),0)+ COALESCE(TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH,4,2)),0)+ COALESCE((TRUNC(TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH,7,2))/30)),0) ELSE 99*12 END, /* DT_CURRENT_RELEASE_DATE.CURR_RELEASE_DATE */ CASE WHEN ( FACT_CURR_KEY_DATES_SENT.CURR_PRRD_DATE )<( FACT_CURR_KEY_DATES_SENT.CURR_MTD_DATE ) Then ( FACT_CURR_KEY_DATES_SENT.CURR_PRRD_DATE ) WHEN( FACT_CURR_KEY_DATES_SENT.CURR_MTD_DATE )<( FACT_CURR_KEY_DATES_SENT.CURR_CRD_DATE ) Then ( FACT_CURR_KEY_DATES_SENT.CURR_MTD_DATE ) WHEN ( FACT_CURR_KEY_DATES_SENT.CURR_MTD_DATE )<( FACT_CURR_KEY_DATES_SENT.CURR_ETD_DATE ) then ( FACT_CURR_KEY_DATES_SENT.CURR_MTD_DATE ) WHEN ( FACT_CURR_KEY_DATES_SENT.CURR_MTD_DATE )<( FACT_CURR_KEY_DATES_SENT.CURR_LTD_DATE ) then ( FACT_CURR_KEY_DATES_SENT.CURR_MTD_DATE ) ELSE DT_CURRENT_RELEASE_DATE.CURR_RELEASE_DATE END , FACT_CURR_KEY_DATES_SENT.CURR_PED_DATE, Case When DT_LIFEFLAG.LIFE_SENTENCE_FLAG='Y' then 'Sentenced' when FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH='00/00/00' then 'Unsentenced' when FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH is null then 'Unsentenced' else 'Sentenced' End, FACT_CURR_KEY_DATES_SENT.CURR_APD_DATE, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_DESCRIPTION, FACT_CURR_KEY_DATES_SENT.CURR_HDCED_DATE, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END, CASE when AT_DIM_ETHNICITY_CODES.DESCRIPTION= 'Chinese' then 'Asian/Asian British: Chinese' when AT_DIM_ETHNICITY_CODES.DESCRIPTION='White : Irish Traveller/Gypsy' then 'White: Gypsy or Irish Traveller' when AT_DIM_ETHNICITY_CODES.DESCRIPTION is null then 'Code Missing' else AT_DIM_ETHNICITY_CODES.DESCRIPTION END, FACT_CURR_KEY_DATES_SENT.CURR_LED_DATE, FACT_CURR_KEY_DATES_SENT.SED, AT_OFFENDER_BOOKING.GENDER_DESCRIPTION, FACT_CURR_KEY_DATES_SENT.CURR_HDCAD_DATE, Case when AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE In ('14FTR_ORA','14FTRHDC_ORA','CUR_ORA','FTR/08','FTR_HDC','FTR_HDC_ORA','FTR_ORA','FTR_SCH15','FTRSCH15_ORA','HDR_ORA','LR','LR_ALP','LR_ALP_LASPO','LR_DLP','LR_DPP','LR_EPP','LR_ES','LR_HDC','LR_IPP','LR_LASPO_AR','LR_LASPO_DR','LR_LIFE','LR_MLP','LR_ORA','LR_SEC236A','LR_SEC91_ORA','LR_YOI','LR_YOI_ORA','FTRSCH18_ORA','FTRSCH18','LR_EDS18','LR_EDS21','LR_SOPC18','LR_SOPC21','LRSEC250_ORA','LR_ALP_CDE18','LR_ALP_CDE21','LR_EDSU18') then 'Recall' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '0' then 'Dead' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '1' then 'Indeterminate Sentence' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND in ('2','3') then 'Sentenced' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND in ('4','5','6','7') then 'Convicted Unsentenced' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND in ('9','10') or AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'CIV_RMD' then 'Civil Prisoner' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND in ('8','11') then 'Immigration Detainee' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND in ('12','13','14') then 'Remand' when AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'UNKNOWN' then 'Unknown' Else 'Other' End FROM BODIMIS.DIM_DATE AT_SENT_START_DATE, ( Select ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk , fme.from_location_type, max(fme.MOVEMENT_SEQ ) as MOVEMENT_SEQ, max(d.day_date) as MOVEMENT_TIME, trunc(ETL.LOAD_END_DATETIME) as LOAD_DATE From BODIMIS.FACT_MOVEMENT_EXTERNAL fme, BODIMIS.DIM_OFFENDER_BOOKING ob, BODIMIS.DIM_ESTABLISHMENT est, BODIMIS.ETL_LOAD_LOG ETL, BODIMIS.DIM_DATE d Where ob.ESTABLISHMENT_SK=est.ESTABLISHMENT_SK and d.date_sk=fme.date_sk and fme.offender_booking_sk=ob.offender_booking_sk and ob.active_status IN('Active In','Active Out') And ob.MIS_CURRENT_RECORD_IND = 'Y' and ob.ACTIVE_FLAG = 'Y' and ETL.LOAD_ID=(select max(LOAD_ID) from BODIMIS.ETL_LOAD_LOG WHERE LOAD_END_DATETIME IS NOT NULL) And ob.ESTABLISHMENT_SK=fme.to_location_sk and fme.movement_seq= (select max(fme2.movement_seq ) from BODIMIS.FACT_MOVEMENT_EXTERNAL fme2 where fme.offender_booking_sk=fme2.offender_booking_sk and fme2.direction_code='IN' And fme2.TYPE='Admission' And fme2.To_location_type='Establishment' and fme2.reason_code <> 'R') GROUP BY ob.offender_id_display, fme.offender_booking_sk,est.establishment_code_nk,fme.to_location_sk,fme.from_location_sk,fme.from_location_type,ETL.LOAD_END_DATETIME ) DT_ADMISSION, BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_COURT_CASE_STATUS AT_DIM_COURT_CASE_STATUS, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, ( --derives a single 'Y' if a prisoner has one or more life sentences where the sentence status is active. The table is outer-joined to dim_offender_booking in the universe. SELECT distinct BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE ( BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK=dss.sentence_status_sk) AND dss.sentence_status='Active' AND ( BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK=BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK ) AND ( BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK=BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK ) AND ( BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK=BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK ) and BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG='Y' ) DT_LIFEFLAG, FACT_CURR_KEY_DATES_SENT, ( --Changes by S.Stow to remove the FACT_CASE_SENTENCE table as part of the Nationality report changes and address changes . --It causes duplicate rows to be returned per booking. Select AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK as OFFENDER_BOOKING_SK, case when AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE From --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_DATE AT_RELEASE_DATE where --AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK=AT_FACT_SENTENCE.OFFENDER_BOOKING_SK(+) AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK=AT_RELEASE_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' --and AT_RELEASE_DATE.DAY_DATE !='31/12/9000' ) DT_CURRENT_RELEASE_DATE, BODIMIS.DIM_DATE AT_DOB, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_COURT_CASE AT_COURT_CASE WHERE ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK(+) ) AND ( AT_FACT_SENTENCE.SENTENCE_START_DATE_SK=AT_SENT_START_DATE.DATE_SK(+) ) AND ( AT_COURT_CASE.COURT_CASE_STATUS_SK=AT_DIM_COURT_CASE_STATUS.COURT_CASE_STATUS_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_CURRENT_RELEASE_DATE.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_LIFEFLAG.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK(+) ) AND ( AT_COURT_CASE.OFFENDER_BOOKING_SK(+)=AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK ) AND ( AT_OFFENDER_BOOKING.BIRTH_DATE_SK=AT_DOB.DATE_SK ) AND ( AT_COURT_CASE.COURT_CASE_SK=AT_FACT_SENTENCE.COURT_CASE_SK(+) ) AND ( AT_DIM_ETHNICITY_CODES.CODE(+)=AT_OFFENDER_BOOKING.ETHNICITY_CODE ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('VQL10O') AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('VQL10O') AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.ESTABLISHMENT_SK=AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK ) AND ( AT_ESTABLISHMENT_TAP.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_ADMISSION.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY IN ('A0001AC') AND ( AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND='Y' ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND ( AT_DIM_COURT_CASE_STATUS.COURT_CASE_STATUS = 'Active' ) AND ( AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' ) AND Case When DT_LIFEFLAG.LIFE_SENTENCE_FLAG='Y' then 'Life' Else FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH End >= '01/00/00' AND Case When DT_LIFEFLAG.LIFE_SENTENCE_FLAG='Y' then 'Sentenced' when FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH='00/00/00' then 'Unsentenced' when FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH is null then 'Unsentenced' else 'Sentenced' End = 'Sentenced' )), dataset_ AS (SELECT  FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3375896/DPc",
+      "name": "OASys",
+      "description": "ONR - Ad-hoc Reports",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, SUBSTR(ASSESSMENT.CALC_HIGHEST_RISK, 4) AS RISK_LEVEL_, REP_OFFENDER_HISTORY.CONTROLLING_OWNER AS CONTROLLING_OWNER, ASSESSMENT.DATE_COMPLETED AS DATE_COMPLETED, OFFENDER.CRAMS_NUMBER AS CRAMS_NUMBER, ASSESSMENT_SUMMARY.OSP_I_RISK_RECON_ELM AS OSP_I_RISK_RECON_ELM, ASSESSMENT_SUMMARY.OSP_C_RISK_RECON_ELM AS OSP_C_RISK_RECON_ELM FROM OFFENDER, ASSESSMENT, REP_OFFENDER_HISTORY, ASSESSMENT_SUMMARY WHERE (ASSESSMENT.ASSESSMENT_ID = ASSESSMENT_SUMMARY.ASSESSMENT_ID) AND (OFFENDER.OFFENDER_ID = ASSESSMENT.OFFENDER_ID (+)) AND (OFFENDER.OFFENDER_ID = REP_OFFENDER_HISTORY.OFFENDER_ID (+)) AND (OFFENDER.LIMIT_ACCESS_OFFENDER_INDICAT = 0) AND (SUBSTR(OFFENDER.OFFENDER_ID_DISPLAY, 1, 10) = TAGMIS_CASELOAD_SECURITY('VQL10O', OFFENDER.OFFENDER_ID_DISPLAY)) AND ASSESSMENT.ASSESSMENT_ID IN (SELECT LAST_VALUE(ASSESSMENT.assessment_id) OVER (PARTITION BY ASSESSMENT.offender_id ORDER BY ASSESSMENT.date_completed rows BETWEEN CURRENT ROW AND UNBOUNDED following) AS last_ass_for_offender FROM ASSESSMENT, OFFENDER, PURPOSE_OF_ASSESSMENT WHERE (PURPOSE_OF_ASSESSMENT.PURPOSE_OF_ASSESSMENT_CODE (+) = ASSESSMENT.PURPOSE_OF_ASSESSMENT_CODE) AND (OFFENDER.OFFENDER_ID = ASSESSMENT.OFFENDER_ID (+)) AND (ASSESSMENT.single_date_completed = 'Y' AND completed_assessment <> 'Abandoned' AND NOT OFFENDER.Offender_id IS NULL) AND (OFFENDER.LIMIT_ACCESS_OFFENDER_INDICAT = 0) AND (SUBSTR(OFFENDER.OFFENDER_ID_DISPLAY, 1, 10) = TAGMIS_CASELOAD_SECURITY('VQL10O', OFFENDER.OFFENDER_ID_DISPLAY)) AND (COALESCE(ASSESSMENT.COMPLETED_ASSESSMENT, 'Not Specified') = 'True' AND OFFENDER.HISTORIC_OFFENDER_CALC = 'Current' AND NOT COALESCE(PURPOSE_OF_ASSESSMENT.DESCRIPTION, 'Not Specified') IN ('PSR', 'PSR Addendum', 'PSR - FDR', 'PSR - Oral', 'PSR - SDR', 'Nil Report') AND OFFENDER.OFFENDER_ID_DISPLAY IN ('A0001AC')))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, RISK_LEVEL_, CONTROLLING_OWNER, DATE_COMPLETED, CRAMS_NUMBER, OSP_I_RISK_RECON_ELM, OSP_C_RISK_RECON_ELM FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPc.DO264",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 1,
+            "name": "RISK_LEVEL_",
+            "type": "string",
+            "display": "Risk Level (10.6)",
+            "legacyId": "DPc.DOf2f",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 2,
+            "name": "CONTROLLING_OWNER",
+            "type": "string",
+            "display": "Controlling Owner",
+            "legacyId": "DPc.DO114b",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 3,
+            "name": "DATE_COMPLETED",
+            "type": "date",
+            "display": "Date Completed",
+            "legacyId": "DPc.DO5e5",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 4,
+            "name": "CRAMS_NUMBER",
+            "type": "string",
+            "display": "Case Index Number",
+            "legacyId": "DPc.DOa93",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 5,
+            "name": "OSP_I_RISK_RECON_ELM",
+            "type": "string",
+            "display": "OSP-I Risk of Reconviction Band",
+            "legacyId": "DPc.DO1531",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 6,
+            "name": "OSP_C_RISK_RECON_ELM",
+            "type": "string",
+            "display": "OSP-C Risk of Reconviction Band",
+            "legacyId": "DPc.DO1533",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP4",
+      "name": "MIS Load Log",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE AS BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP4.DO104dd",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DPe",
+      "name": "Offences 1",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, CASE WHEN AT_DIM_OFFENCE.OFFENCE_SK > 0 THEN (AT_DIM_OFFENCE.OFFENCE_CODE_NK) ELSE '-' END AS OFFENCE_CJIT_CODE, AT_DIM_OFFENCE.OFFENCE_NAME AS OFFENCE_NAME, AT_DIM_REF_CODES_CRG_RESULT1.DESCRIPTION AS DESCRIPTION, AT_DIM_REF_CODES_CRG_RESULT2.DESCRIPTION AS RESULT_2_INDICATOR, AT_DIM_OUTCOME_RSN_CRG_RESULT1.OUTCOME_REASON_DESCRIPTION AS OUTCOME_REASON_DESCRIPTION, AT_DIM_OUTCOME_RSN_CRG_RESULT2.OUTCOME_REASON_DESCRIPTION AS RESULT_2_DESCRIPTION FROM BODIMIS.DIM_OFFENCE AT_DIM_OFFENCE, BODIMIS.FACT_COURT_CHARGE AT_FACT_COURT_CHARGE, BODIMIS.DIM_OUTCOME_REASON AT_DIM_OUTCOME_RSN_CRG_RESULT1, BODIMIS.DIM_OUTCOME_REASON AT_DIM_OUTCOME_RSN_CRG_RESULT2, BODIMIS.DIM_COURT_CASE_STATUS AT_DIM_COURT_CASE_STATUS, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_REFERENCE_CODES AT_DIM_REF_CODES_CRG_RESULT1, BODIMIS.DIM_REFERENCE_CODES AT_DIM_REF_CODES_CRG_RESULT2, BODIMIS.DIM_COURT_CASE AT_COURT_CASE WHERE (AT_FACT_COURT_CHARGE.OFFENCE_SK = AT_DIM_OFFENCE.OFFENCE_SK (+)) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_COURT_CHARGE.COURT_CASE_SK (+)) AND (AT_COURT_CASE.COURT_CASE_STATUS_SK = AT_DIM_COURT_CASE_STATUS.COURT_CASE_STATUS_SK (+)) AND (AT_FACT_COURT_CHARGE.RESULT_1_DESC_SK = AT_DIM_OUTCOME_RSN_CRG_RESULT1.OUTCOME_REASON_SK (+)) AND (AT_FACT_COURT_CHARGE.RESULT_1_IND_SK = AT_DIM_REF_CODES_CRG_RESULT1.REFERENCE_CODE_SK (+) AND AT_DIM_REF_CODES_CRG_RESULT1.CODE_DOMAIN (+) = 'OFF_RESULT') AND (AT_FACT_COURT_CHARGE.RESULT_2_DESC_SK = AT_DIM_OUTCOME_RSN_CRG_RESULT2.OUTCOME_REASON_SK (+)) AND (AT_FACT_COURT_CHARGE.RESULT_2_IND_SK = AT_DIM_REF_CODES_CRG_RESULT2.REFERENCE_CODE_SK (+) AND AT_DIM_REF_CODES_CRG_RESULT2.CODE_DOMAIN (+) = 'OFF_RESULT') AND (AT_COURT_CASE.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY IN (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('Enter value(s) for NOMS Number:','A',,Multi,Free,Not_Persistent,,User:0) */) AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_DIM_COURT_CASE_STATUS.COURT_CASE_STATUS = 'Active') AND AT_DIM_REF_CODES_CRG_RESULT1.DESCRIPTION IN ('Final', 'Partial') AND AT_DIM_OUTCOME_RSN_CRG_RESULT1.OUTCOME_REASON_DESCRIPTION IN ('Imprisonment') AND CASE WHEN AT_DIM_OFFENCE.OFFENCE_SK > 0 THEN (AT_DIM_OFFENCE.OFFENCE_CODE_NK) ELSE '-' END IN ('DB0077', 'SX03006', 'SX03006A', 'SX03006B', 'SX03006C', 'GL08003', 'SX03016', 'SX03016A', 'SX03016B', 'SX03016C', 'DC00041', 'NORF041', 'SX03008', 'SX03008A', 'SX03008C', 'SX56030', 'GL07091', 'KE00053', 'SX03018', 'SX03018A', 'SX03018B', 'SX03018C', 'SX56007', 'MH59005', 'MH59008', 'CC000073', 'COML064', 'DB0102', 'GM000150', 'KE00066', 'SX03001', 'SX56001', 'SX56070', 'SX56070B', 'SX56070C', 'SX56U14', 'TV00031', 'YY0048', 'CC000070', 'GL07065', 'GM000163', 'KE00099', 'SX03002', 'SX03002B', 'SX56071', 'SX56071B', 'SX56071C', 'SXRAPE', 'WI00048', 'WI00177', 'YY0022', 'YY00339', 'SX03003', 'SX56015', 'SX56072', 'SX03004', 'SX56073', 'SX03001A', 'SX03001B', 'SX03001C', 'SX56070A', 'SX03002A', 'SX03002C', 'SX56071A', 'SX03003A', 'SX03003C', 'SX56072A', 'SX03004A', 'SX03004C', 'SX56073A', 'SX03013', 'SX03014', 'CMLO252', 'LO31121', 'SX03013A', 'SX03013B', 'SX03013C', 'SX03014A', 'SX03014B', 'SX03014C', 'LO31119', 'SX56026A', 'SX56026B', 'LO31120', 'DB0135', 'SX03005', 'SX03005A', 'SX03005B', 'SX03005C', 'SX56104', 'SX56119', 'SX03015', 'SX03015A', 'SX03015C', 'BED0003', 'CC000071', 'DB0023', 'DC00007', 'GL07088', 'GL07089', 'IC60002N', 'IC60004N', 'KE00137', 'LO018', 'SX03007', 'SX03007A', 'SX03007C', 'SX03007G', 'SX56027', 'SX56027A', 'SX56031', 'SXGIND', 'SXINDA', 'SXINDAA', 'SXINDAB', 'WI00043', 'WI00047', 'YY000062', 'YY0001', 'YY0047', 'CC000072', 'DB0037', 'DC00006', 'DC00016', 'GL07056', 'GL08034', 'GL08057', 'GM000052', 'IC60GW01', 'IC60GW02', 'KE00041', 'KE00070', 'KE00111', 'SX03017', 'SX03017A', 'SX03017B', 'SX03017C', 'SX56025', 'SX56025A', 'SX56026', 'SX56SW01', 'SY00050', 'WI00004', 'WI00005', 'YY000070', 'YY0023', 'DB0078', 'DC00067', 'SX03021', 'SX03021A', 'SX03021C', 'AS00113', 'CC00057', 'DB0063', 'LO31124', 'SO81003', 'SX03019', 'SX03019A', 'SX03019C', 'WM00116', 'YY00174', 'ZZ00111', 'SX03022', 'SX03022A', 'SX03022C', 'IC60005', 'LO31108', 'SX03020', 'SX03020A', 'SX03020C', 'YY00210', 'DC00008', 'SX03023', 'SX03023A', 'SX03023B', 'SX03023C', 'SX56005', 'WI00109', 'SX03024', 'SX03024A', 'SX03024C', 'SX03027', 'SX03027A', 'SX03027C', 'SX03028', 'SX03028A', 'SX03028C', 'HI00088', 'SX03031', 'SX03031A', 'SX03031B', 'SX03033', 'SX03033A', 'SX03035', 'SX03035A', 'SX03036', 'SX03036A', 'SX03039', 'SX03039A', 'SX03040', 'SX03040A', 'SX03043', 'SX03043A', 'SX03045', 'SX03045A', 'SX03156', 'SX03157', 'SX03157B', 'SX03165A', 'SX56028', 'SX56109', 'HI00089', 'SX03160', 'SX03161', 'SX03161A', 'SX03164', 'SX03165', 'SX03168', 'SX03169', 'SX03011', 'SX03011A', 'SX03011C', 'SX03012', 'SX03012A', 'SX03012C', 'SX03009', 'SX03009C', 'SX03010', 'SX03010A', 'SX03010C', 'SX03025', 'SX03025A', 'SX03025C', 'SX56006', 'SX03026', 'SX03026A', 'SX03026C', 'SX03029', 'SX03029A', 'SX03029C', 'SX56049', 'SX03030', 'SX03030A', 'SX03030C', 'SX03032', 'SX03032A', 'SX03034', 'SX03034A', 'SX03037', 'SX03037A', 'SX03038', 'SX03038A', 'SX56110', 'SX03041', 'SX03041A', 'ZZ00090', 'SX03042', 'SX03042A', 'SX03044', 'SX03044A', 'SX03046', 'SX03046A', 'SX03158', 'SX03158A', 'SY000013', 'LO31112', 'SX03159', 'SX56029', 'SX56GL1', 'WI00088', 'WY010609', 'YY00212', 'SO96014G', 'SX03162', 'SX03162A', 'SX03163', 'SX03166', 'SX03167', 'SX56117', 'SX03170', 'SX03170A', 'SX03171', 'SX56009', 'SX56013', 'SX56013A', 'CL77015', 'SX03068', 'SX03068C', 'SX56010', 'WI00178', 'SX03069', 'SX03069C', 'SX56011', 'SX03066', 'SX03066C', 'SX03067', 'SX03067C', 'SX03076', 'SX03077', 'SX03074', 'SX03075', 'SX03126', 'SX03127', 'SX03064', 'SX03064C', 'SX03065', 'SX03065C', 'SX03062', 'SX03062C', 'SX03063', 'SX03063C', 'SX03072', 'SX03073', 'SX03070', 'SX03071', 'SX03174', 'SX03174C', 'SX03175', 'SX03175C', 'SX03172', 'SX03172C', 'SX03173', 'SX03173C', 'SX03178', 'SX03179', 'SX03176', 'SX03177', 'SX03181', 'SX03181C', 'SX03182', 'SX03182C', 'SX03183', 'SX03183C', 'SX03184', 'SX03184C', 'SX03185', 'SX03186', 'SX03187', 'SX03188', 'SX67001', 'SX67002', 'SX03118', 'SX03119', 'SX56053', 'SX56054', 'WI00058', 'YY00317', 'SX56032', 'SX56033', 'SX56036', 'SX56035', 'SX56037', 'SX03081', 'SX03080', 'SX03079', 'SX03078', 'SX03085', 'SX03084', 'SX03083', 'SX03082', 'SX03086', 'SX03087', 'SX03089', 'SX03088', 'SX03091', 'SX03090', 'SX03092', 'SX03093', 'SX03097', 'SX03096', 'SX03095', 'SX03094', 'SX03099', 'SX03098', 'SX03100', 'SX03208', 'SX03101', 'SX03209', 'SX03047', 'SX03047A', 'SX03104', 'SX03105', 'SX03102', 'SX03106', 'SX03106A', 'SX03103', 'SX03107', 'SX03110', 'SX03111', 'SX03113', 'SX03230', 'SX03230A', 'SX03115', 'SX03232', 'SX03117', 'SX03117C', 'SX03228', 'SX03228C', 'LAN0056', 'SX03112', 'SX03229', 'TV00009', 'SX03114', 'SX03231', 'SX03116', 'SX03116C', 'SX03227', 'SX03227C', 'SX03109', 'SX03108', 'SX03224', 'SX03224A', 'SX03120', 'SX56038', 'SX03121', 'YY00316', 'SX03122', 'SX03217', 'SX03218', 'SX03219', 'SX03052', 'SX03191', 'SX03192', 'WI00111', 'SX03053', 'SX03056', 'SX03195', 'SX03057', 'SX03196', 'SX03059', 'SX03198', 'SX03061', 'SX03200', 'SX03050', 'SX03189', 'SX03051', 'SX03190', 'SX03054', 'SX03193', 'SX03055', 'SX03194', 'SX03058', 'SX03197', 'SX03199', 'SX03060', 'DB0094', 'DB124', 'IC60001', 'IC60003', 'IC60007', 'IC6001A', 'YY00211', 'YY00213', 'CX00037', 'IC60002', 'IC60004', 'IC60006', 'IC60006A', 'IC60008', 'SY00051', 'CE79190', 'CE79336', 'PK78001', 'PK78002', 'PK78003', 'PK78003A', 'PK78003I', 'PK78004', 'PK78005', 'PK78006', 'PK78007', 'PK78008', 'TV00024', 'WM00032', 'CJ88115', 'CJ88115A', 'SX03048', 'SX03048A', 'SX03210', 'SX03210A', 'SX03210G', 'SX03225', 'SX03225A', 'SX03049', 'SX03211', 'SX03211A', 'SX03226', 'SX03226A', 'SX03134', 'SX03136', 'SX56019', 'SX03133', 'SX03133B', 'SX03123', 'SX56004', 'SX03124', 'SX03201', 'SX03201A', 'SX03125', 'DB0131', 'SX03128', 'CA81S98', 'KE00180', 'KE00181', 'LO31072', 'NO36069', 'SX03129', 'SX03129A', 'SX03130', 'SX03131', 'SX03132', 'TV00025', 'SX03137'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, OFFENCE_CJIT_CODE, OFFENCE_NAME, DESCRIPTION, RESULT_2_INDICATOR, OUTCOME_REASON_DESCRIPTION, RESULT_2_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter value(s) for NOMS Number:",
+          "description": "@prompt('Enter value(s) for NOMS Number:','A',,Multi,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPe.DO10076",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 1,
+            "name": "OFFENCE_CJIT_CODE",
+            "type": "string",
+            "display": "Offence CJIT Code",
+            "legacyId": "DPe.DO49",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 2,
+            "name": "OFFENCE_NAME",
+            "type": "string",
+            "display": "Offence Name",
+            "legacyId": "DPe.DO4b",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Result 1 Indicator",
+            "legacyId": "DPe.DO331",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 4,
+            "name": "RESULT_2_INDICATOR",
+            "type": "string",
+            "display": "Result 2 Indicator",
+            "legacyId": "DPe.DO5e5",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 5,
+            "name": "OUTCOME_REASON_DESCRIPTION",
+            "type": "string",
+            "display": "Result 1 Description",
+            "legacyId": "DPe.DO5e4",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 6,
+            "name": "RESULT_2_DESCRIPTION",
+            "type": "string",
+            "display": "Result 2 Description",
+            "legacyId": "DPe.DO5e6",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DPf",
+      "name": "Offences 1 Other",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, CASE WHEN AT_DIM_OFFENCE.OFFENCE_SK > 0 THEN (AT_DIM_OFFENCE.OFFENCE_CODE_NK) ELSE '-' END AS OFFENCE_CJIT_CODE, AT_DIM_OFFENCE.OFFENCE_NAME AS OFFENCE_NAME, AT_DIM_REF_CODES_CRG_RESULT1.DESCRIPTION AS DESCRIPTION, AT_DIM_REF_CODES_CRG_RESULT2.DESCRIPTION AS RESULT_2_INDICATOR, AT_DIM_OUTCOME_RSN_CRG_RESULT1.OUTCOME_REASON_DESCRIPTION AS OUTCOME_REASON_DESCRIPTION, AT_DIM_OUTCOME_RSN_CRG_RESULT2.OUTCOME_REASON_DESCRIPTION AS RESULT_2_DESCRIPTION FROM BODIMIS.DIM_OFFENCE AT_DIM_OFFENCE, BODIMIS.FACT_COURT_CHARGE AT_FACT_COURT_CHARGE, BODIMIS.DIM_OUTCOME_REASON AT_DIM_OUTCOME_RSN_CRG_RESULT1, BODIMIS.DIM_OUTCOME_REASON AT_DIM_OUTCOME_RSN_CRG_RESULT2, BODIMIS.DIM_COURT_CASE_STATUS AT_DIM_COURT_CASE_STATUS, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_REFERENCE_CODES AT_DIM_REF_CODES_CRG_RESULT1, BODIMIS.DIM_REFERENCE_CODES AT_DIM_REF_CODES_CRG_RESULT2, BODIMIS.DIM_COURT_CASE AT_COURT_CASE WHERE (AT_FACT_COURT_CHARGE.OFFENCE_SK = AT_DIM_OFFENCE.OFFENCE_SK (+)) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_COURT_CHARGE.COURT_CASE_SK (+)) AND (AT_COURT_CASE.COURT_CASE_STATUS_SK = AT_DIM_COURT_CASE_STATUS.COURT_CASE_STATUS_SK (+)) AND (AT_FACT_COURT_CHARGE.RESULT_1_DESC_SK = AT_DIM_OUTCOME_RSN_CRG_RESULT1.OUTCOME_REASON_SK (+)) AND (AT_FACT_COURT_CHARGE.RESULT_1_IND_SK = AT_DIM_REF_CODES_CRG_RESULT1.REFERENCE_CODE_SK (+) AND AT_DIM_REF_CODES_CRG_RESULT1.CODE_DOMAIN (+) = 'OFF_RESULT') AND (AT_FACT_COURT_CHARGE.RESULT_2_DESC_SK = AT_DIM_OUTCOME_RSN_CRG_RESULT2.OUTCOME_REASON_SK (+)) AND (AT_FACT_COURT_CHARGE.RESULT_2_IND_SK = AT_DIM_REF_CODES_CRG_RESULT2.REFERENCE_CODE_SK (+) AND AT_DIM_REF_CODES_CRG_RESULT2.CODE_DOMAIN (+) = 'OFF_RESULT') AND (AT_COURT_CASE.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY IN (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('Enter value(s) for NOMS Number:','A',,Multi,Free,Not_Persistent,,User:0) */) AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_DIM_COURT_CASE_STATUS.COURT_CASE_STATUS = 'Active') AND AT_DIM_REF_CODES_CRG_RESULT1.DESCRIPTION IN ('Final', 'Partial') AND AT_DIM_OUTCOME_RSN_CRG_RESULT1.OUTCOME_REASON_DESCRIPTION IN ('Imprisonment') AND CASE WHEN AT_DIM_OFFENCE.OFFENCE_SK > 0 THEN (AT_DIM_OFFENCE.OFFENCE_CODE_NK) ELSE '-' END IN ('SX03074', 'SX03075', 'SX03126', 'SX03127', 'SX03064', 'SX03064C', 'SX03065', 'SX03065C', 'SX03062', 'SX03062C', 'SX03063', 'SX03063C', 'SX03072', 'SX03073', 'SX03070', 'SX03071', 'SX03174', 'SX03174C', 'SX03175', 'SX03175C', 'SX03172', 'SX03172C', 'SX03173', 'SX03173C', 'SX03178', 'SX03179', 'SX03176', 'SX03177', 'SX03181', 'SX03181C', 'SX03182', 'SX03182C', 'SX03183', 'SX03183C', 'SX03184', 'SX03184C', 'SX03185', 'SX03186', 'SX03187', 'SX03188', 'SX67001', 'SX67002', 'SX03118', 'SX03119', 'SX56053', 'SX56054', 'WI00058', 'YY00317', 'SX56032', 'SX56033', 'SX56036', 'SX56035', 'SX56037', 'SX03081', 'SX03080', 'SX03079', 'SX03078', 'SX03085', 'SX03084', 'SX03083', 'SX03082', 'SX03086', 'SX03087', 'SX03089', 'SX03088', 'SX03091', 'SX03090', 'SX03092', 'SX03093', 'SX03097', 'SX03096', 'SX03095', 'SX03094', 'SX03099', 'SX03098', 'SX03100', 'SX03208', 'SX03101', 'SX03209', 'SX03047', 'SX03047A', 'SX03104', 'SX03105', 'SX03102', 'SX03106', 'SX03106A', 'SX03103', 'SX03107', 'SX03110', 'SX03111', 'SX03113', 'SX03230', 'SX03230A', 'SX03115', 'SX03232', 'SX03117', 'SX03117C', 'SX03228', 'SX03228C', 'LAN0056', 'SX03112', 'SX03229', 'TV00009', 'SX03114', 'SX03231', 'SX03116', 'SX03116C', 'SX03227', 'SX03227C', 'SX03109', 'SX03108', 'SX03224', 'SX03224A', 'SX03120', 'SX56038', 'SX03121', 'YY00316', 'SX03122', 'SX03217', 'SX03218', 'SX03219', 'SX03052', 'SX03191', 'SX03192', 'WI00111', 'SX03053', 'SX03056', 'SX03195', 'SX03057', 'SX03196', 'SX03059', 'SX03198', 'SX03061', 'SX03200', 'SX03050', 'SX03189', 'SX03051', 'SX03190', 'SX03054', 'SX03193', 'SX03055', 'SX03194', 'SX03058', 'SX03197', 'SX03199', 'SX03060', 'DB0094', 'DB124', 'IC60001', 'IC60003', 'IC60007', 'IC6001A', 'YY00211', 'YY00213', 'CX00037', 'IC60002', 'IC60004', 'IC60006', 'IC60006A', 'IC60008', 'SY00051', 'CE79190', 'CE79336', 'PK78001', 'PK78002', 'PK78003', 'PK78003A', 'PK78003I', 'PK78004', 'PK78005', 'PK78006', 'PK78007', 'PK78008', 'TV00024', 'WM00032', 'CJ88115', 'CJ88115A', 'SX03048', 'SX03048A', 'SX03210', 'SX03210A', 'SX03210G', 'SX03225', 'SX03225A', 'SX03049', 'SX03211', 'SX03211A', 'SX03226', 'SX03226A', 'SX03134', 'SX03136', 'SX56019', 'SX03133', 'SX03133B', 'SX03123', 'SX56004', 'SX03124', 'SX03201', 'SX03201A', 'SX03125', 'DB0131', 'SX03128', 'CA81S98', 'KE00180', 'KE00181', 'LO31072', 'NO36069', 'SX03129', 'SX03129A', 'SX03130', 'SX03131', 'SX03132', 'TV00025', 'SX03137'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, OFFENCE_CJIT_CODE, OFFENCE_NAME, DESCRIPTION, RESULT_2_INDICATOR, OUTCOME_REASON_DESCRIPTION, RESULT_2_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter value(s) for NOMS Number:",
+          "description": "@prompt('Enter value(s) for NOMS Number:','A',,Multi,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPf.DO10076",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 1,
+            "name": "OFFENCE_CJIT_CODE",
+            "type": "string",
+            "display": "Offence CJIT Code",
+            "legacyId": "DPf.DO49",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 2,
+            "name": "OFFENCE_NAME",
+            "type": "string",
+            "display": "Offence Name",
+            "legacyId": "DPf.DO4b",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Result 1 Indicator",
+            "legacyId": "DPf.DO331",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 4,
+            "name": "RESULT_2_INDICATOR",
+            "type": "string",
+            "display": "Result 2 Indicator",
+            "legacyId": "DPf.DO5e5",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 5,
+            "name": "OUTCOME_REASON_DESCRIPTION",
+            "type": "string",
+            "display": "Result 1 Description",
+            "legacyId": "DPf.DO5e4",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 6,
+            "name": "RESULT_2_DESCRIPTION",
+            "type": "string",
+            "display": "Result 2 Description",
+            "legacyId": "DPf.DO5e6",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP10",
+      "name": "Rehab",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, CASE WHEN BODIMIS.DIM_REHAB_PROVIDER.REHAB_PROVIDER_SK > 0 THEN BODIMIS.DIM_REHAB_PROVIDER.CODE_NK END AS REHAB_PROVIDER_CODE, CASE WHEN BODIMIS.DIM_REHAB_PROVIDER.REHAB_PROVIDER_SK > 0 THEN BODIMIS.DIM_REHAB_PROVIDER.DESCRIPTION END AS REHAB_PROVIDER_DESCRIPTION FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_REHAB_PROVIDER, BODIMIS.FACT_OFFENDER_REHAB WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('VQL10O') AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.FACT_OFFENDER_REHAB.OFFENDER_BOOKING_SK (+)) AND (BODIMIS.FACT_OFFENDER_REHAB.REHAB_PROVIDER_SK = BODIMIS.DIM_REHAB_PROVIDER.REHAB_PROVIDER_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY IN ('A0001AC') AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (BODIMIS.FACT_OFFENDER_REHAB.PROVIDER_ACTIVE_FLAG = 'Y' OR BODIMIS.FACT_OFFENDER_REHAB.PROVIDER_ACTIVE_FLAG IS NULL) AND (BODIMIS.FACT_OFFENDER_REHAB.DECISION_ACTIVE_FLAG = 'Y' OR BODIMIS.FACT_OFFENDER_REHAB.DECISION_ACTIVE_FLAG IS NULL))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, REHAB_PROVIDER_CODE, REHAB_PROVIDER_DESCRIPTION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP10.DO10076",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 1,
+            "name": "REHAB_PROVIDER_CODE",
+            "type": "string",
+            "display": "Rehab Provider Code",
+            "legacyId": "DP10.DO10b37",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 2,
+            "name": "REHAB_PROVIDER_DESCRIPTION",
+            "type": "string",
+            "display": "Rehab Provider Description",
+            "legacyId": "DP10.DO10b38",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "83107.RS",
+      "name": "Due for release in next 6 months",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP2.DO107b1",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP2.DO10076",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:CRN",
+            "display": "",
+            "formula": "=[Case Index Number]",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP2.DO1007b",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP2.DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP2.DO10085",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP2.DO100a9",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP2.DO1009c",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP2.DO107cb",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP2.DO107ce",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP2.DO32d",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_latest_sent_date",
+            "display": "",
+            "formula": "=Max([Sentence Start Date])",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP2.DO2d0",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_Date_Completed",
+            "display": "",
+            "formula": "=[Date Completed]",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_Has_Offence?",
+            "display": "",
+            "formula": "=If(IsNull([Offence CJIT Code]);\"No\";\"Yes\") In ([NOMS Number])",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_Max_Concat_offence",
+            "display": "",
+            "formula": "=[v_concat_offence] Where ([v_CJIT_And_Offence_Description]= [v_max_offence]) In ([NOMS Number])",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_OSP_I_Band",
+            "display": "",
+            "formula": "=[OSP-I Risk of Reconviction Band]",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_OSP_C_Band",
+            "display": "",
+            "formula": "=[OSP-C Risk of Reconviction Band]",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_ROSH",
+            "display": "",
+            "formula": "=[Risk Level (10.6)]",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_Rehab_Provider",
+            "display": "",
+            "formula": "=([Rehab Provider Code] + \" \" + [Rehab Provider Description])",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP2.DO565",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_Age_at_Release_Date_TRUNC",
+            "display": "",
+            "formula": "=Truncate((MonthsBetween([Date of Birth];[Release Date (Current)])/12);0)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP2.DO70",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP2.DO97",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP2.DO87",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP2.DO88",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP2.DO6a",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP2.DO46",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    }
+  ]
+}

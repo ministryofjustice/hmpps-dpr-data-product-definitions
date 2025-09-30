@@ -1,0 +1,715 @@
+{
+  "id": "FjiPsQFq.A0Ahig4AACnrg4AACJIAGc1",
+  "name": "MIS  National Alpha List for SOCU V2",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "NAT0008, Population",
+      "Alpha"
+    ]
+  },
+  "description": "Displays all current prisoners showing NOMS number, Name, establishment and 21 other data items <br/>NAT0008 V2 Last update 21/09//2023",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP4",
+      "name": "Prisoners",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.MIDDLE_NAME_1, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, AT_OFFENDER_BOOKING.PNC_ID, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION, AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG, AT_OFFENDER_BOOKING.CRO_NUMBER, CASE WHEN AT_CURRENT_SECURITY_CATEGORY.CURRENT_SEC_CAT_LEVEL IS NULL THEN 'Unclassified' ELSE AT_CURRENT_SECURITY_CATEGORY.CURRENT_SEC_CAT_LEVEL END AS CURRENT_SECURITY_CATEGORY, AT_DIM_OFFENDER_ASSESSMENTS.CURRENT_SEC_CAT_REVIEW_DATE, COALESCE(AT_OFFENDER_BOOKING.IEP_BAND, '** Incentive Level Missing **') AS IEP_BAND, FACT_CURR_KEY_DATES_SENT.CURR_HDCED_DATE, CASE WHEN DT_FIRST_RECEPTION.DAY_DATE < '31/12/9000' THEN DT_FIRST_RECEPTION.DAY_DATE ELSE NULL END AS DATE_FIRST_RECEPTION, DT_ADMISSION.MOVEMENT_TIME, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_DESCRIPTION, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION, AT_FIRST_CELL.UNIT_4_SHORT_DESCRIPTION AS PRISONER_FIRST_CELL_LOCATION, CASE WHEN AT_DIM_ETHNICITY_CODES.DESCRIPTION = 'Chinese' THEN 'Asian/Asian British: Chinese' WHEN AT_DIM_ETHNICITY_CODES.DESCRIPTION = 'White : Irish Traveller/Gypsy' THEN 'White: Gypsy or Irish Traveller' WHEN AT_DIM_ETHNICITY_CODES.DESCRIPTION IS NULL THEN 'Code Missing' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION END AS ETHNIC_GROUP, FACT_CURR_KEY_DATES_SENT.CURR_RELEASE_DATE, FACT_CURR_KEY_DATES_SENT.SED, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE, AT_DIM_OFFENCE.OFFENCE_NAME, FACT_CURR_KEY_DATES_SENT.CURR_ERSED_DATE, AT_OFFENDER_BOOKING.NATIONALITY_DESCRIPTION, AT_OFFENDER_BOOKING.GENDER_DESCRIPTION FROM BODIMIS.DIM_OFFENCE AT_DIM_OFFENCE, (SELECT ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk, fme.from_location_type, MAX(fme.MOVEMENT_SEQ) AS MOVEMENT_SEQ, MAX(d.day_date) AS MOVEMENT_TIME, TRUNC(ETL.LOAD_END_DATETIME) AS LOAD_DATE FROM BODIMIS.FACT_MOVEMENT_EXTERNAL fme, BODIMIS.DIM_OFFENDER_BOOKING ob, BODIMIS.DIM_ESTABLISHMENT est, BODIMIS.ETL_LOAD_LOG ETL, BODIMIS.DIM_DATE d WHERE ob.ESTABLISHMENT_SK = est.ESTABLISHMENT_SK AND d.date_sk = fme.date_sk AND fme.offender_booking_sk = ob.offender_booking_sk AND ob.active_status IN ('Active In', 'Active Out') AND ob.MIS_CURRENT_RECORD_IND = 'Y' AND ob.ACTIVE_FLAG = 'Y' AND ETL.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL) AND ob.ESTABLISHMENT_SK = fme.to_location_sk AND fme.movement_seq = (SELECT MAX(fme2.movement_seq) FROM BODIMIS.FACT_MOVEMENT_EXTERNAL fme2 WHERE fme.offender_booking_sk = fme2.offender_booking_sk AND fme2.direction_code = 'IN' AND fme2.TYPE = 'Admission' AND fme2.To_location_type = 'Establishment' AND fme2.reason_code <> 'R') GROUP BY ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk, fme.from_location_type, ETL.LOAD_END_DATETIME) DT_ADMISSION, BODIMIS.DIM_CELL AT_DIM_LOCATION, BODIMIS.FACT_COURT_CHARGE AT_FACT_COURT_CHARGE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_OFFENDER_ASSESSMENT AT_CURRENT_SECURITY_CATEGORY, BODIMIS.DIM_OFFENDER_ASSESSMENT AT_DIM_OFFENDER_ASSESSMENTS, FACT_CURR_KEY_DATES_SENT, (SELECT * FROM (SELECT m.offender_booking_sk, d.day_date, m.movement_seq, m.movement_time, ROW_NUMBER() OVER (PARTITION BY m.offender_booking_sk ORDER BY m.movement_seq) AS row_seq_filter FROM bodimis.fact_movement_external m INNER JOIN bodimis.dim_date d ON m.date_sk = d.date_sk WHERE m.direction_code = 'IN') WHERE row_seq_filter = 1) DT_FIRST_RECEPTION, BODIMIS.DIM_CELL AT_FIRST_CELL, BODIMIS.DIM_COURT_CASE AT_COURT_CASE WHERE (AT_FACT_COURT_CHARGE.OFFENCE_SK = AT_DIM_OFFENCE.OFFENCE_SK (+)) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_COURT_CHARGE.COURT_CASE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK (+)) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_OFFENDER_BOOKING.INITIAL_LIVING_UNIT_SK = AT_FIRST_CELL.UNIT_4_SK) AND (DT_FIRST_RECEPTION.OFFENDER_BOOKING_SK = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_ADMISSION.OFFENDER_BOOKING_SK (+)) AND (AT_CURRENT_SECURITY_CATEGORY.CURRENT_SEC_CAT_FLAG (+) = 'Y') AND (AT_CURRENT_SECURITY_CATEGORY.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_DIM_OFFENDER_ASSESSMENTS.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_SK = AT_DIM_LOCATION.UNIT_4_SK (+)) AND ((AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK IN ((SELECT establishment_code FROM prompt_)) OR 'All' IN ((SELECT establishment_code FROM prompt_))) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, FIRST_NAME, MIDDLE_NAME_1, DATE_OF_BIRTH, PNC_ID, MAIN_LEGAL_STATUS_DESCRIPTION, MOST_SERIOUS_FLAG, CRO_NUMBER, CURRENT_SECURITY_CATEGORY, CURRENT_SEC_CAT_REVIEW_DATE, IEP_BAND, CURR_HDCED_DATE, DATE_FIRST_RECEPTION, MOVEMENT_TIME, ESTABLISHMENT_DESCRIPTION, UNIT_4_SHORT_DESCRIPTION, PRISONER_FIRST_CELL_LOCATION, ETHNIC_GROUP, CURR_RELEASE_DATE, SED, MAIN_LEGAL_STATUS_CODE, OFFENCE_NAME, CURR_ERSED_DATE, NATIONALITY_DESCRIPTION, GENDER_DESCRIPTION, SENTENCE_LENGTH_YEARS AS V_SENT_LENGTH_YEARS, SENTENCE_LENGTH_MONTHS AS V_SENT_LENGTH_MONTHS, SENTENCE_LENGTH_DAYS AS V_SENT_LENGTH_DAYS FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP4.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP4.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP4.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "MIDDLE_NAME_1",
+            "type": "string",
+            "display": "Offender Given Name 2",
+            "legacyId": "DP4.DO10081",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP4.DO10085",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "PNC_ID",
+            "type": "string",
+            "display": "PNC ID",
+            "legacyId": "DP4.DO100db",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "MAIN_LEGAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Main Legal Status Description",
+            "legacyId": "DP4.DO100df",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "MOST_SERIOUS_FLAG",
+            "type": "string",
+            "display": "Main Offence Flag",
+            "legacyId": "DP4.DO4f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "CRO_NUMBER",
+            "type": "string",
+            "display": "Criminal Records Office number",
+            "legacyId": "DP4.DO100da",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "CURRENT_SECURITY_CATEGORY",
+            "type": "string",
+            "display": "Current Security Category",
+            "legacyId": "DP4.DO100e1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "CURRENT_SEC_CAT_REVIEW_DATE",
+            "type": "date",
+            "display": "Security Category - Current Review Date",
+            "legacyId": "DP4.DO10830",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "IEP_BAND",
+            "type": "string",
+            "display": "IEP Band",
+            "legacyId": "DP4.DO100e4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "CURR_HDCED_DATE",
+            "type": "date",
+            "display": "HDC Eligibility Date",
+            "legacyId": "DP4.DO70",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "DATE_FIRST_RECEPTION",
+            "type": "date",
+            "display": "Date First Reception",
+            "legacyId": "DP4.DO10106",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "MOVEMENT_TIME",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DP4.DO107ce",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Associated Establishment Name",
+            "legacyId": "DP4.DO107b1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "UNIT_4_SHORT_DESCRIPTION",
+            "type": "string",
+            "display": "Prisoner Location",
+            "legacyId": "DP4.DO10a7c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "PRISONER_FIRST_CELL_LOCATION",
+            "type": "string",
+            "display": "Prisoner First Cell Location",
+            "legacyId": "DP4.DO102c3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 18,
+            "name": "ETHNIC_GROUP",
+            "type": "string",
+            "display": "Ethnic Group",
+            "legacyId": "DP4.DO1009c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 19,
+            "name": "CURR_RELEASE_DATE",
+            "type": "date",
+            "display": "Current Release Date",
+            "legacyId": "DP4.DO2e6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 20,
+            "name": "SED",
+            "type": "date",
+            "display": "SED (Sentence End Date)",
+            "legacyId": "DP4.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 21,
+            "name": "MAIN_LEGAL_STATUS_CODE",
+            "type": "string",
+            "display": "Main Legal Status Code",
+            "legacyId": "DP4.DO100de",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 22,
+            "name": "OFFENCE_NAME",
+            "type": "string",
+            "display": "Offence Name",
+            "legacyId": "DP4.DO4b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 23,
+            "name": "CURR_ERSED_DATE",
+            "type": "date",
+            "display": "ERSED (Early Removal Scheme Eligibility Date)",
+            "legacyId": "DP4.DO61c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 24,
+            "name": "NATIONALITY_DESCRIPTION",
+            "type": "string",
+            "display": "Nationality Description",
+            "legacyId": "DP4.DO100b5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 25,
+            "name": "GENDER_DESCRIPTION",
+            "type": "string",
+            "display": "Gender Description",
+            "legacyId": "DP4.DO100a9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 26,
+            "name": "V_SENT_LENGTH_YEARS",
+            "type": "string",
+            "display": "V_SENT_LENGTH_YEARS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 27,
+            "name": "V_SENT_LENGTH_MONTHS",
+            "type": "string",
+            "display": "V_SENT_LENGTH_MONTHS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 28,
+            "name": "V_SENT_LENGTH_DAYS",
+            "type": "string",
+            "display": "V_SENT_LENGTH_DAYS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP2e",
+      "name": "MIS Load",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATETIME FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATETIME",
+            "type": "date",
+            "display": "Load End Datetime",
+            "legacyId": "DP2e.DO104ca",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP31",
+      "name": "Sentence",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, FACT_CURR_KEY_DATES_SENT.CURR_LED_DATE, FACT_CURR_KEY_DATES_SENT.CURR_CRD_DATE, TO_NUMBER(SUBSTR(AT_FACT_OFFENDER_SENTENCE.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) AS SENTENCE_LENGTH_YEARS, TO_NUMBER(SUBSTR(AT_FACT_OFFENDER_SENTENCE.EFFECTIVE_SENTENCE_LENGTH, 4, 2)) AS SENTENCE_LENGTH_MONTHS, TO_NUMBER(SUBSTR(AT_FACT_OFFENDER_SENTENCE.EFFECTIVE_SENTENCE_LENGTH, 7, 2)) AS SENTENCE_LENGTH_DAYS, FACT_CURR_KEY_DATES_SENT.TUSED_DATE, FACT_CURR_KEY_DATES_SENT.CURR_TERSED_DATE, FACT_CURR_KEY_DATES_SENT.SED FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, FACT_CURR_KEY_DATES_SENT, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK IN ((SELECT establishment_code FROM prompt_)) OR 'All' IN ((SELECT establishment_code FROM prompt_))) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, CURR_LED_DATE, CURR_CRD_DATE, SENTENCE_LENGTH_YEARS, SENTENCE_LENGTH_MONTHS, SENTENCE_LENGTH_DAYS, TUSED_DATE, CURR_TERSED_DATE, SED FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP31.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "CURR_LED_DATE",
+            "type": "date",
+            "display": "LED (Licence Expiry Date )",
+            "legacyId": "DP31.DO6a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "CURR_CRD_DATE",
+            "type": "date",
+            "display": "CRD (Conditional Release Date)",
+            "legacyId": "DP31.DO48",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "SENTENCE_LENGTH_YEARS",
+            "type": "double",
+            "display": "Sentence Length Years",
+            "legacyId": "DP31.DO1ed",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "SENTENCE_LENGTH_MONTHS",
+            "type": "double",
+            "display": "Sentence Length Months",
+            "legacyId": "DP31.DO1ee",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "SENTENCE_LENGTH_DAYS",
+            "type": "double",
+            "display": "Sentence Length Days",
+            "legacyId": "DP31.DO579",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "TUSED_DATE",
+            "type": "date",
+            "display": "TUSED (Top Up Supervision Expiry Date)",
+            "legacyId": "DP31.DO615",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "CURR_TERSED_DATE",
+            "type": "date",
+            "display": "TERSED (Tariff Expiry Removal Scheme Eligibility Date)",
+            "legacyId": "DP31.DO61d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "SED",
+            "type": "date",
+            "display": "SED (Sentence End Date)",
+            "legacyId": "DP31.DO46",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "222371.RS",
+      "name": "Data",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP4",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO1007b"
+          },
+          {
+            "name": "$ref:MIDDLE_NAME_1",
+            "display": "Offender Given Name 2",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10081"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10085"
+          },
+          {
+            "name": "$ref:PNC_ID",
+            "display": "PNC ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO100db"
+          },
+          {
+            "name": "$ref:CRO_NUMBER",
+            "display": "Criminal Records Office number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO100da"
+          },
+          {
+            "name": "$ref:IEP_BAND",
+            "display": "IEP Band",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO100e4"
+          },
+          {
+            "name": "$ref:CURRENT_SECURITY_CATEGORY",
+            "display": "Current Security Category",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO100e1"
+          },
+          {
+            "name": "$ref:CURRENT_SEC_CAT_REVIEW_DATE",
+            "display": "Security Category - Current Review Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10830"
+          },
+          {
+            "name": "$ref:ETHNIC_GROUP",
+            "display": "Ethnic Group",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO1009c"
+          },
+          {
+            "name": "$ref:CURR_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO2e6"
+          },
+          {
+            "name": "$ref:SED",
+            "display": "SED (Sentence End Date)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO46"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Prisoner Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10a7c"
+          },
+          {
+            "name": "$ref:OFFENCE_NAME",
+            "display": "Offence Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO4b"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10076"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Associated Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO107b1"
+          },
+          {
+            "name": "$ref:MOST_SERIOUS_FLAG",
+            "display": "Main Offence Flag",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO4f"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10080"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_DESCRIPTION",
+            "display": "Main Legal Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO100df"
+          },
+          {
+            "name": "$ref:V_SENT_LENGTH_YEARS",
+            "display": "Sentence Length Years",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Sentence Length Years]"
+          },
+          {
+            "name": "$ref:V_SENT_LENGTH_MONTHS",
+            "display": "Sentence Length Months",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Sentence Length Months]"
+          },
+          {
+            "name": "$ref:V_SENT_LENGTH_DAYS",
+            "display": "Sentence Length Days",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Sentence Length Days]"
+          },
+          {
+            "name": "$ref:CURR_ERSED_DATE",
+            "display": "ERSED (Early Removal Scheme Eligibility Date)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO61c"
+          },
+          {
+            "name": "$ref:CURR_HDCED_DATE",
+            "display": "HDC Eligibility Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO70"
+          },
+          {
+            "name": "$ref:NATIONALITY_DESCRIPTION",
+            "display": "Nationality Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO100b5"
+          },
+          {
+            "name": "$ref:GENDER_DESCRIPTION",
+            "display": "Gender Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO100a9"
+          },
+          {
+            "name": "$ref:MOVEMENT_TIME",
+            "display": "Admission Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO107ce"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_SENT_LENGTH_YEARS :: ReferenceError: error is not defined",
+      "entityId": "FjiPsQFq.A0Ahig4AACnrg4AACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_SENT_LENGTH_MONTHS :: ReferenceError: error is not defined",
+      "entityId": "FjiPsQFq.A0Ahig4AACnrg4AACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_SENT_LENGTH_DAYS :: ReferenceError: error is not defined",
+      "entityId": "FjiPsQFq.A0Ahig4AACnrg4AACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_SENT_LENGTH_YEARS :: ReferenceError: error is not defined",
+      "entityId": "FjiPsQFq.A0Ahig4AACnrg4AACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_SENT_LENGTH_MONTHS :: ReferenceError: error is not defined",
+      "entityId": "FjiPsQFq.A0Ahig4AACnrg4AACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_SENT_LENGTH_DAYS :: ReferenceError: error is not defined",
+      "entityId": "FjiPsQFq.A0Ahig4AACnrg4AACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DP4",
+      "entityType": "dataset"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DP31",
+      "entityType": "dataset"
+    }
+  ]
+}

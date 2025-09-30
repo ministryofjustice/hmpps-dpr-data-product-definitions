@@ -1,0 +1,236 @@
+{
+  "id": "olDsGlIAASIEIMUAmP_E63FUM7c",
+  "name": "MIS Estate Population Snapshot",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": []
+  },
+  "description": "HQ9014 v1.0 This report contains the number of prisoners aged over 18 in each establishment. The data is split over two tabs. Tab 1 provides a Foreign National Breakdown.  Tab 2 provides a breakdown by legal status i.e. Remand, Sentenced, Detainees, Recall, Convicted Unsentenced and Civil Prisoners.",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP2",
+      "name": "Population Snapshot",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, COUNT(DISTINCT (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY)) AS COUNT_OF_OFFENDERS, CASE WHEN AT_OFFENDER_BOOKING.NATIONALITY_CODE = 'BRIT' THEN 'British' WHEN AT_OFFENDER_BOOKING.NATIONALITY_CODE IN ('UNKNOWN', 'REF', 'STATE') THEN 'Not stated' WHEN AT_OFFENDER_BOOKING.NATIONALITY_CODE IS NULL THEN 'Not stated' ELSE 'Foreign nationals' END AS NATIONALITY_GROUPING, CASE WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('LR_HDC', 'LR_ES', 'LR_YOI', 'LR_LIFE', 'LR_S53', 'LR_S53_2', 'LR_DPP', 'LR_EPP', 'LR_IPP') THEN 'Recall' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'LR' THEN 'Recall' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'DLF' THEN 'Sentenced' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('A_CFINE', 'CIV_RMD', 'CIVIL', 'CIVIL_CON', 'CIVIL_DT', 'YO_CFINE', 'YOC_CONT') THEN 'Civil prisoners' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('RX', 'S35MHA', 'S36MHA', 'S37MHA', 'S48MHA', 'SEC43', 'TRL', 'BOBC', 'UNFIT', 'SINE_DIE') THEN 'Remand' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('DET', 'DEPORT', 'EXTRAD', 'REC_DEP') THEN 'Detainee' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('BOAR', 'BOBC', 'JR', 'LR', 'REFER', 'S38MHA', 'S41MHA', 'S43MHA', 'S45MHA', 'SEC10_3', 'SEC17_3', 'SEC18_2', 'SEC19_3B', 'SEC2_1', 'SEC24_2A', 'SEC30', 'SEC37', 'SEC38', 'SEC39', 'SEC42', 'SEC45', 'SEC5', 'SEC56', 'SEC6', 'SEC6_4', 'SEC6B', 'SEC8_6', 'UNK_CONV') THEN 'Convicted unsentenced' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('A_FINE', 'A_FINE1', 'A_FINE2', 'AFIXED', 'CFLIFE', 'CJCON08', 'CUSTPLUS', 'DEATH', 'DIED', 'DTO', 'DTTO', 'DTO_YOI', 'DTOR_104', 'DTOR_105', 'EXSENT', 'EXSENT03', 'EXSENT08', 'FTR/08', 'HMP', 'INT_CUST', 'IPP', 'L_W', 'LIFE', 'PPEXT_SENT', 'S47MHA', 'SEC53', 'SEC53_2', 'SEC90', 'SEC90_03', 'SEC91', 'SEC91_03', 'SEC93', 'SEC93_03', 'SEC94', 'SENT', 'SENT_EXL', 'SENT03', 'SENTCJ03', 'YOFINE', 'YOFINE1', 'YOFINE2', 'YOFIXED', (SELECT establishment_code FROM prompt_), 'UNK_SENT', 'MLP', 'ALP', 'DLP', 'DPP', 'HMPL') THEN 'Sentenced' ELSE 'Other' END AS LEGAL_STATUS_GROUPING FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_CELL AT_CELL WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND ((AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O') AND AT_OFFENDER_BOOKING.IN_OUT <> 'TRN       ' AND FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE <> '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) >= 18) GROUP BY AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, CASE WHEN AT_OFFENDER_BOOKING.NATIONALITY_CODE = 'BRIT' THEN 'British' WHEN AT_OFFENDER_BOOKING.NATIONALITY_CODE IN ('UNKNOWN', 'REF', 'STATE') THEN 'Not stated' WHEN AT_OFFENDER_BOOKING.NATIONALITY_CODE IS NULL THEN 'Not stated' ELSE 'Foreign nationals' END, CASE WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('LR_HDC', 'LR_ES', 'LR_YOI', 'LR_LIFE', 'LR_S53', 'LR_S53_2', 'LR_DPP', 'LR_EPP', 'LR_IPP') THEN 'Recall' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'LR' THEN 'Recall' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'DLF' THEN 'Sentenced' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('A_CFINE', 'CIV_RMD', 'CIVIL', 'CIVIL_CON', 'CIVIL_DT', 'YO_CFINE', 'YOC_CONT') THEN 'Civil prisoners' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('RX', 'S35MHA', 'S36MHA', 'S37MHA', 'S48MHA', 'SEC43', 'TRL', 'BOBC', 'UNFIT', 'SINE_DIE') THEN 'Remand' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('DET', 'DEPORT', 'EXTRAD', 'REC_DEP') THEN 'Detainee' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('BOAR', 'BOBC', 'JR', 'LR', 'REFER', 'S38MHA', 'S41MHA', 'S43MHA', 'S45MHA', 'SEC10_3', 'SEC17_3', 'SEC18_2', 'SEC19_3B', 'SEC2_1', 'SEC24_2A', 'SEC30', 'SEC37', 'SEC38', 'SEC39', 'SEC42', 'SEC45', 'SEC5', 'SEC56', 'SEC6', 'SEC6_4', 'SEC6B', 'SEC8_6', 'UNK_CONV') THEN 'Convicted unsentenced' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('A_FINE', 'A_FINE1', 'A_FINE2', 'AFIXED', 'CFLIFE', 'CJCON08', 'CUSTPLUS', 'DEATH', 'DIED', 'DTO', 'DTTO', 'DTO_YOI', 'DTOR_104', 'DTOR_105', 'EXSENT', 'EXSENT03', 'EXSENT08', 'FTR/08', 'HMP', 'INT_CUST', 'IPP', 'L_W', 'LIFE', 'PPEXT_SENT', 'S47MHA', 'SEC53', 'SEC53_2', 'SEC90', 'SEC90_03', 'SEC91', 'SEC91_03', 'SEC93', 'SEC93_03', 'SEC94', 'SENT', 'SENT_EXL', 'SENT03', 'SENTCJ03', 'YOFINE', 'YOFINE1', 'YOFINE2', 'YOFIXED', (SELECT establishment_code FROM prompt_), 'UNK_SENT', 'MLP', 'ALP', 'DLP', 'DPP', 'HMPL') THEN 'Sentenced' ELSE 'Other' END), dataset_ AS (SELECT ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION, COUNT_OF_OFFENDERS, NATIONALITY_GROUPING, LEGAL_STATUS_GROUPING FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP2.DO139",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP2.DO129",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "COUNT_OF_OFFENDERS",
+            "type": "double",
+            "display": "Count of Offenders",
+            "legacyId": "DP2.DO655",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "NATIONALITY_GROUPING",
+            "type": "string",
+            "display": "Nationality Grouping",
+            "legacyId": "DP2.DO7be",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "LEGAL_STATUS_GROUPING",
+            "type": "string",
+            "display": "Legal Status Grouping",
+            "legacyId": "DP2.DO7cb",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP3",
+      "name": "MIS Load End Date",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DP3.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "105407.RS",
+      "name": "Foreign Nationals",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO139"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO129"
+          },
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO655"
+          }
+        ]
+      }
+    },
+    {
+      "id": "105532.RS",
+      "name": "By Legal Status Grouping",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "crosstab",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO655"
+          },
+          {
+            "name": "$ref:LEGAL_STATUS_GROUPING",
+            "display": "Legal Status Grouping",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO7cb"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO139"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO129"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "instance.report[1].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "olDsGlIAASIEIMUAmP_E63FUM7c",
+      "entityType": "dpd"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3376639/DP2",
+      "entityType": "dataset"
+    }
+  ]
+}

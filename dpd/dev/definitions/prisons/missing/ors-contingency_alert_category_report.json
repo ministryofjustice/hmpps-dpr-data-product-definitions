@@ -1,0 +1,164 @@
+{
+  "id": "ok1vhl8AA54lIQEAIxmD8K7BUIk",
+  "name": "ORS Contingency_Alert_Category_Report",
+  "description": "This is a scheduled report which provides a list of prisoners (sorted in Surname order) who have an active alert within each of the specified categories. The report is shown within a single tab and shows the number of alert types within each category.<br/>CON0008 - v00.01.01 Last Modified: 09/03/11 ",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "CON00008 v00.01.01 LSRIT027"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376286/DP15",
+      "name": "Alerts1",
+      "description": "Sentence",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_OFFENDER_ALERTS.ALERT_TYPE, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OMS_OWNER.OFFENDER_ALERTS AT_OFFENDER_ALERTS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_ALERTS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (WING_CASELOAD_SECURITY.USERNAME = UPPER('DPRWS')) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = SUBSTR('DPRWS', 1, 3)) AND (AT_OFFENDER_ALERTS.ALERT_STATUS = 'ACTIVE') AND (AT_OFFENDERS_LOCATIONS.ACTIVE_FLAG IN ('Y', 'y') AND AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND AT_HEADER_BLOCK.STATUS_DISPLAY = 'Active')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, UNIT_DESCRIPTION_4_SHORT, ALERT_TYPE, AGY_LOC_ID, SUM(V_CODE_C || V_CODE_H || V_CODE_M || V_CODE_O || V_CODE_P || V_CODE_R || V_CODE_S || V_CODE_T || V_CODE_V || V_CODE_W || V_CODE_X) AS TOTAL_ALERTS FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP15.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP15.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP15.DO10427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ALERT_TYPE",
+            "type": "string",
+            "display": "Alert Category Code",
+            "legacyId": "DP15.DO1007f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP15.DO1043b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "TOTAL_ALERTS",
+            "type": "string",
+            "display": "TOTAL_ALERTS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "165754.RS",
+      "name": "By Prisoner Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP15",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP15.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP15.DO10045"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP15.DO10427"
+          },
+          {
+            "name": "$ref:TOTAL_ALERTS",
+            "display": "Child Comms Measures",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([V_Code C]+[V_Code H]+[V_Code M]+[V_Code O]+[V_Code P]+[V_Code R]+[V_Code S]+[V_Code T]+[V_Code V]+[V_Code W]+[V_Code X])"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00904: \"V_CODE_X\": invalid identifier\nHelp: https://docs.oracle.com/error-help/db/ora-00904/",
+      "entityId": "3376286/DP15",
+      "entityType": "dataset"
+    }
+  ]
+}

@@ -1,0 +1,372 @@
+{
+  "id": "Fh99fVox1QIAmqoAAHCbGV8AACJIAFJ8",
+  "name": "MIS Draft National HDC Releases (MIS) IT v3",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "HDC0010"
+    ]
+  },
+  "description": "Has been specifically designed for the HDC Taskforce to enable monitoring of the HDC Release Process.<br/><br/>HDC0010",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP3",
+      "name": "MIS Load Date",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP3.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP9",
+      "name": "releases",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.BOOKING_NUMBER, CASE WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('14FTR_ORA', '14FTRHDC_ORA', 'CUR_ORA', 'FTR/08', 'FTR_HDC', 'FTR_HDC_ORA', 'FTR_ORA', 'FTR_SCH15', 'FTRSCH15_ORA', 'HDR_ORA', 'LR', 'LR_ALP', 'LR_ALP_LASPO', 'LR_DLP', 'LR_DPP', 'LR_EPP', 'LR_ES', 'LR_HDC', 'LR_IPP', 'LR_LASPO_AR', 'LR_LASPO_DR', 'LR_LIFE', 'LR_MLP', 'LR_ORA', 'LR_SEC236A', 'LR_SEC91_ORA', 'LR_YOI', 'LR_YOI_ORA') THEN 'Recall' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '0' THEN 'Dead' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '1' THEN 'Indeterminate Sentence' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('2', '3') THEN 'Sentenced' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('4', '5', '6', '7') THEN 'Convicted Unsentenced' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('9', '10') OR AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'CIV_RMD' THEN 'Civil Prisoner' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('8', '11') THEN 'Immigration Detainee' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('12', '13', '14') THEN 'Remand' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'UNKNOWN' THEN 'Unknown' ELSE 'Other' END AS LEGAL_STATUS_GROUPING, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_DESCRIPTION, AT_FACT_MOV_EXT.REASON_CODE, AT_DIM_DATE_EXT_MOV.DAY_DATE, AT_OFFENDER_BOOKING.ACTIVE_STATUS, AT_FACT_MOV_EXT.TYPE, AT_FACT_MOV_EXT.DIRECTION_CODE, DT_EXT_MOVE_TO.LOCATION_TYPE_TO FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_FROM, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, (SELECT BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_SK AS SK_ID_TO, BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION AS TYPE_DESCRIPTION_TO, 'Establishment' AS Location_Type_To FROM BODIMIS.DIM_ESTABLISHMENT UNION ALL SELECT BODIMIS.DIM_PROBATION_OFFICE.PROBATION_OFFICE_SK, BODIMIS.DIM_PROBATION_OFFICE.PROB_OFFICE_DESCRIPTION, 'Probation Office' AS Location_Type_To FROM BODIMIS.DIM_PROBATION_OFFICE UNION ALL SELECT BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_SK, BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_DESCRIPTION, 'Outside Location' AS Location_Type_To FROM BODIMIS.DIM_OUTSIDE_LOCATION UNION ALL SELECT BODIMIS.DIM_CITY.CITY_SK, BODIMIS.DIM_CITY.DESCRIPTION, 'City' AS Location_Type_To FROM BODIMIS.DIM_CITY UNION ALL SELECT BODIMIS.DIM_COURT.COURT_SK, BODIMIS.DIM_COURT.COURT_DESCRIPTION, 'Court' AS Location_Type_To FROM BODIMIS.DIM_COURT UNION ALL SELECT address_id_nk, TRIM(CASE WHEN no_fixed_address_flag = 'Y' THEN 'No fixed address' ELSE CASE WHEN NOT flat IS NULL THEN flat || '  ' END || CASE WHEN NOT premise IS NULL THEN premise || '  ' END || CASE WHEN NOT street IS NULL THEN street || '  ' END || CASE WHEN NOT locality IS NULL THEN locality || '  ' END || CASE WHEN NOT city_desc IS NULL THEN city_desc || '  ' END || CASE WHEN NOT county_desc IS NULL THEN county_desc || '  ' END || CASE WHEN NOT postal_code IS NULL THEN postal_code || '  ' END || CASE WHEN NOT country_desc IS NULL THEN country_desc END END), 'Home Leave Address' FROM bodimis.dim_addresses) DT_EXT_MOVE_TO WHERE (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (CASE WHEN AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.FROM_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_FACT_MOV_EXT.TO_LOCATION_SK = DT_EXT_MOVE_TO.SK_ID_TO (+) AND AT_FACT_MOV_EXT.TO_LOCATION_TYPE = DT_EXT_MOVE_TO.LOCATION_TYPE_TO (+)) AND ((TRUNC(AT_DIM_DATE_EXT_MOV.DAY_DATE) BETWEEN TO_DATE('02-02-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('09-02-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS')) AND AT_FACT_MOV_EXT.TYPE IN ('Release') AND AT_FACT_MOV_EXT.REASON_CODE IN ('HR', 'HD', 'HE', 'HU') AND AT_FACT_MOV_EXT.DIRECTION_CODE IN ('OUT'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, BOOKING_NUMBER, LEGAL_STATUS_GROUPING, ESTABLISHMENT_DESCRIPTION, REASON_CODE, DAY_DATE, ACTIVE_STATUS, TYPE, DIRECTION_CODE, LOCATION_TYPE_TO FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP9.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "BOOKING_NUMBER",
+            "type": "string",
+            "display": "Booking Number",
+            "legacyId": "DP9.DO10077",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LEGAL_STATUS_GROUPING",
+            "type": "string",
+            "display": "Legal Status Grouping",
+            "legacyId": "DP9.DO107cb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Location From Description (External)",
+            "legacyId": "DP9.DO1015d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "REASON_CODE",
+            "type": "string",
+            "display": "Movement Reason Code (External)",
+            "legacyId": "DP9.DO103fc",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Movement Date Only (External)",
+            "legacyId": "DP9.DO1015c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ACTIVE_STATUS",
+            "type": "string",
+            "display": "Active Status",
+            "legacyId": "DP9.DO104d5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "TYPE",
+            "type": "string",
+            "display": "Movement Type (External)",
+            "legacyId": "DP9.DO103ec",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "DIRECTION_CODE",
+            "type": "string",
+            "display": "Movement Direction Code (External)",
+            "legacyId": "DP9.DO103fd",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "LOCATION_TYPE_TO",
+            "type": "string",
+            "display": "Location Type To",
+            "legacyId": "DP9.DO10768",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DPa",
+      "name": "key dates etc",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN AT_SENT_START_DATE.DAY_DATE < '31/12/9000' THEN AT_SENT_START_DATE.DAY_DATE END AS SENTENCE_START_DATE, CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' ELSE DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH END AS EFFECTIVE_SENTENCE_LENGTH, CASE WHEN AT_DIM_ASSESSMENT_DATE.DAY_DATE < '31/12/9000' THEN AT_DIM_ASSESSMENT_DATE.DAY_DATE END AS HDC_CHECKS_DONE_DATE, CASE WHEN AT_CURFEW_ASSESSMENT.PASSED_FLAG = 'Y' THEN 'YES' WHEN AT_CURFEW_ASSESSMENT.PASSED_FLAG = 'N' THEN 'NO' END AS HDC_PASSED_FLAG, AT_DIM_HDC_ASST_APP_STATUS.HDC_ASSMENT_APP_STATUS_DESC, CASE WHEN AT_DIM_DECISION_DATE.DAY_DATE < '31/12/9000' THEN AT_DIM_DECISION_DATE.DAY_DATE END AS HDC_DECISION_DATE, DT_CURRENT_KEY_DATES.CURR_HDCED_DATE, DT_CURRENT_KEY_DATES.CURR_ARD_DATE, DT_CURRENT_KEY_DATES.CURR_CRD_DATE, CASE WHEN AT_CURFEW_ASSESSMENT.REVIEW_FLAG = 'Y' THEN 'YES' WHEN AT_CURFEW_ASSESSMENT.REVIEW_FLAG = 'N' THEN 'NO' END AS HDC_REVIEW_FLAG, CASE WHEN AT_RELEASE_DATE.DAY_DATE < '31/12/9000' THEN AT_RELEASE_DATE.DAY_DATE END AS RELEASE_DATE, DT_CURRENT_KEY_DATES.CURR_RELEASE_DATE, CASE WHEN AT_ARD_DATE.DAY_DATE < '31/12/9000' THEN AT_ARD_DATE.DAY_DATE END AS ARD_, CASE WHEN AT_CRD_DATE.DAY_DATE < '31/12/9000' THEN AT_CRD_DATE.DAY_DATE END AS CRD_ FROM BODIMIS.DIM_DATE AT_SENT_START_DATE, BODIMIS.DIM_DATE AT_DIM_ASSESSMENT_DATE, BODIMIS.DIM_DATE AT_DIM_DECISION_DATE, BODIMIS.DIM_DATE AT_RELEASE_DATE, BODIMIS.DIM_DATE AT_ARD_DATE, BODIMIS.DIM_DATE AT_CRD_DATE, (SELECT AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK AS OFFENDER_BOOKING_SK, CASE WHEN AT_APD_DATE.DAY_DATE <> '31/12/9000' THEN AT_APD_DATE.DAY_DATE END AS CURR_APD_DATE, CASE WHEN AT_ARD_DATE.DAY_DATE <> '31/12/9000' THEN AT_ARD_DATE.DAY_DATE END AS CURR_ARD_DATE, CASE WHEN AT_CRD_DATE.DAY_DATE <> '31/12/9000' THEN AT_CRD_DATE.DAY_DATE END AS CURR_CRD_DATE, CASE WHEN AT_ETD_DATE.DAY_DATE <> '31/12/9000' THEN AT_ETD_DATE.DAY_DATE END AS CURR_ETD_DATE, CASE WHEN AT_HDCAD_DATE.DAY_DATE <> '31/12/9000' THEN AT_HDCAD_DATE.DAY_DATE END AS CURR_HDCAD_DATE, CASE WHEN AT_HDCED_DATE.DAY_DATE <> '31/12/9000' THEN AT_HDCED_DATE.DAY_DATE END AS CURR_HDCED_DATE, CASE WHEN AT_PED_DATE.DAY_DATE <> '31/12/9000' THEN AT_PED_DATE.DAY_DATE END AS CURR_PED_DATE, CASE WHEN AT_LED_DATE.DAY_DATE <> '31/12/9000' THEN AT_LED_DATE.DAY_DATE END AS CURR_LED_DATE, CASE WHEN AT_LTD_DATE.DAY_DATE <> '31/12/9000' THEN AT_LTD_DATE.DAY_DATE END AS CURR_LTD_DATE, CASE WHEN AT_MTD_DATE.DAY_DATE <> '31/12/9000' THEN AT_MTD_DATE.DAY_DATE END AS CURR_MTD_DATE, CASE WHEN AT_NPD_DATE.DAY_DATE <> '31/12/9000' THEN AT_NPD_DATE.DAY_DATE END AS CURR_NPD_DATE, CASE WHEN AT_PRRD_DATE.DAY_DATE <> '31/12/9000' THEN AT_PRRD_DATE.DAY_DATE END AS CURR_PRRD_DATE, CASE WHEN AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' THEN AT_RELEASE_DATE.DAY_DATE END AS CURR_RELEASE_DATE, CASE WHEN AT_SED_DATE.DAY_DATE <> '31/12/9000' THEN AT_SED_DATE.DAY_DATE END AS SED, MIN(CASE WHEN AT_SENT_START_DATE.DAY_DATE <> '31/12/9000' THEN AT_SENT_START_DATE.DAY_DATE END) AS SSD, CASE WHEN AT_TARIFF_DATE.DAY_DATE <> '31/12/9000' THEN AT_TARIFF_DATE.DAY_DATE END AS TARIFF, CASE WHEN AT_ROTL_DATE.DAY_DATE <> '31/12/9000' THEN AT_ROTL_DATE.DAY_DATE END AS CURR_ROTL_DATE, CASE WHEN AT_ERSED_DATE.DAY_DATE <> '31/12/9000' THEN AT_ERSED_DATE.DAY_DATE END AS CURR_ERSED_DATE, CASE WHEN AT_TERSED_DATE.DAY_DATE <> '31/12/9000' THEN AT_TERSED_DATE.DAY_DATE END AS CURR_TERSED_DATE, at_fact_offender_sentence.tused_date_sk AS tused_sk, NULLIF(td.day_date, TO_DATE('31/12/9000', 'DD/MM/YYYY')) AS tused FROM BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_DATE AT_ARD_DATE, BODIMIS.DIM_DATE AT_APD_DATE, BODIMIS.DIM_DATE AT_CRD_DATE, BODIMIS.DIM_DATE AT_ETD_DATE, BODIMIS.DIM_DATE AT_HDCAD_DATE, BODIMIS.DIM_DATE AT_HDCED_DATE, BODIMIS.DIM_DATE AT_PED_DATE, BODIMIS.DIM_DATE AT_LED_DATE, BODIMIS.DIM_DATE AT_LTD_DATE, BODIMIS.DIM_DATE AT_MTD_DATE, BODIMIS.DIM_DATE AT_NPD_DATE, BODIMIS.DIM_DATE AT_PRRD_DATE, BODIMIS.DIM_DATE AT_RELEASE_DATE, BODIMIS.DIM_DATE AT_SED_DATE, BODIMIS.DIM_DATE AT_SENT_START_DATE, BODIMIS.DIM_DATE AT_TARIFF_DATE, BODIMIS.DIM_DATE AT_ROTL_DATE, BODIMIS.DIM_DATE AT_ERSED_DATE, BODIMIS.DIM_DATE AT_TERSED_DATE, bodimis.dim_date td WHERE AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK = AT_FACT_SENTENCE.OFFENDER_BOOKING_SK (+) AND AT_FACT_OFFENDER_SENTENCE.ARD_DATE_SK = AT_ARD_DATE.DATE_SK (+) AND AT_FACT_OFFENDER_SENTENCE.APD_DATE_SK = AT_APD_DATE.DATE_SK (+) AND AT_FACT_OFFENDER_SENTENCE.CRD_DATE_SK = AT_CRD_DATE.DATE_SK (+) AND AT_FACT_OFFENDER_SENTENCE.ETD_DATE_SK = AT_ETD_DATE.DATE_SK (+) AND AT_FACT_OFFENDER_SENTENCE.HDCAD_DATE_SK = AT_HDCAD_DATE.DATE_SK (+) AND AT_FACT_OFFENDER_SENTENCE.HDCED_DATE_SK = AT_HDCED_DATE.DATE_SK (+) AND AT_FACT_OFFENDER_SENTENCE.PED_DATE_SK = AT_PED_DATE.DATE_SK (+) AND AT_FACT_OFFENDER_SENTENCE.LED_DATE_SK = AT_LED_DATE.DATE_SK (+) AND AT_FACT_OFFENDER_SENTENCE.LTD_DATE_SK = AT_LTD_DATE.DATE_SK (+) AND AT_FACT_OFFENDER_SENTENCE.MTD_DATE_SK = AT_MTD_DATE.DATE_SK (+) AND AT_FACT_OFFENDER_SENTENCE.NPD_DATE_SK = AT_NPD_DATE.DATE_SK (+) AND AT_FACT_OFFENDER_SENTENCE.PED_DATE_SK = AT_PED_DATE.DATE_SK (+) AND AT_FACT_OFFENDER_SENTENCE.PRRD_DATE_SK = AT_PRRD_DATE.DATE_SK (+) AND AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK = AT_RELEASE_DATE.DATE_SK (+) AND AT_FACT_OFFENDER_SENTENCE.SED_DATE_SK = AT_SED_DATE.DATE_SK (+) AND AT_FACT_SENTENCE.SENTENCE_START_DATE_SK = AT_SENT_START_DATE.DATE_SK (+) AND AT_FACT_OFFENDER_SENTENCE.TARIFF_DATE_SK = AT_TARIFF_DATE.DATE_SK (+) AND AT_FACT_OFFENDER_SENTENCE.ROTL_DATE_SK = AT_ROTL_DATE.DATE_SK (+) AND AT_FACT_OFFENDER_SENTENCE.ERSED_DATE_SK = AT_ERSED_DATE.DATE_SK (+) AND AT_FACT_OFFENDER_SENTENCE.TERSED_DATE_SK = AT_TERSED_DATE.DATE_SK (+) AND at_fact_offender_sentence.tused_date_sk = td.date_sk (+) AND AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG = 'Y' GROUP BY AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK, CASE WHEN AT_APD_DATE.DAY_DATE <> '31/12/9000' THEN AT_APD_DATE.DAY_DATE END, CASE WHEN AT_ARD_DATE.DAY_DATE <> '31/12/9000' THEN AT_ARD_DATE.DAY_DATE END, CASE WHEN AT_CRD_DATE.DAY_DATE <> '31/12/9000' THEN AT_CRD_DATE.DAY_DATE END, CASE WHEN AT_ETD_DATE.DAY_DATE <> '31/12/9000' THEN AT_ETD_DATE.DAY_DATE END, CASE WHEN AT_HDCAD_DATE.DAY_DATE <> '31/12/9000' THEN AT_HDCAD_DATE.DAY_DATE END, CASE WHEN AT_HDCED_DATE.DAY_DATE <> '31/12/9000' THEN AT_HDCED_DATE.DAY_DATE END, CASE WHEN AT_PED_DATE.DAY_DATE <> '31/12/9000' THEN AT_PED_DATE.DAY_DATE END, CASE WHEN AT_LED_DATE.DAY_DATE <> '31/12/9000' THEN AT_LED_DATE.DAY_DATE END, CASE WHEN AT_LTD_DATE.DAY_DATE <> '31/12/9000' THEN AT_LTD_DATE.DAY_DATE END, CASE WHEN AT_MTD_DATE.DAY_DATE <> '31/12/9000' THEN AT_MTD_DATE.DAY_DATE END, CASE WHEN AT_NPD_DATE.DAY_DATE <> '31/12/9000' THEN AT_NPD_DATE.DAY_DATE END, CASE WHEN AT_PRRD_DATE.DAY_DATE <> '31/12/9000' THEN AT_PRRD_DATE.DAY_DATE END, CASE WHEN AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' THEN AT_RELEASE_DATE.DAY_DATE END, CASE WHEN at_sed_date.day_date <> '31/12/9000' THEN at_sed_date.day_date END, CASE WHEN AT_TARIFF_DATE.DAY_DATE <> '31/12/9000' THEN AT_TARIFF_DATE.DAY_DATE END, CASE WHEN AT_ROTL_DATE.DAY_DATE <> '31/12/9000' THEN AT_ROTL_DATE.DAY_DATE END, CASE WHEN AT_ERSED_DATE.DAY_DATE <> '31/12/9000' THEN AT_ERSED_DATE.DAY_DATE END, CASE WHEN AT_TERSED_DATE.DAY_DATE <> '31/12/9000' THEN AT_TERSED_DATE.DAY_DATE END, at_fact_offender_sentence.tused_date_sk, td.day_date) DT_CURRENT_KEY_DATES, BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_CURFEW_ASSESSMENT AT_CURFEW_ASSESSMENT, BODIMIS.DIM_HDC_ASSESSMNT_APP_STATUS AT_DIM_HDC_ASST_APP_STATUS, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT BODIMIS.FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK, BODIMIS.FACT_OFFENDER_SENTENCE.EFFECTIVE_SENTENCE_LENGTH FROM BODIMIS.FACT_OFFENDER_SENTENCE WHERE (BODIMIS.FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG = 'Y')) DT_CURREFFSENLEN, (SELECT DISTINCT BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK = dss.sentence_status_sk) AND dss.sentence_status = 'Active' AND (BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK = BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK) AND (BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK) AND BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG = 'Y') DT_LIFEFLAG, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_COURT_CASE AT_COURT_CASE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE WHERE (AT_FACT_OFFENDER_SENTENCE.ARD_DATE_SK = AT_ARD_DATE.DATE_SK (+)) AND (AT_FACT_OFFENDER_SENTENCE.CRD_DATE_SK = AT_CRD_DATE.DATE_SK (+)) AND (AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK = AT_RELEASE_DATE.DATE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK (+)) AND (AT_FACT_SENTENCE.SENTENCE_START_DATE_SK = AT_SENT_START_DATE.DATE_SK (+)) AND (AT_CURFEW_ASSESSMENT.HDC_ASSMENT_APP_STATUS_SK = AT_DIM_HDC_ASST_APP_STATUS.HDC_ASSMENT_APP_STATUS_SK (+)) AND (AT_CURFEW_ASSESSMENT.ASSESSMENT_DATE_SK = AT_DIM_ASSESSMENT_DATE.DATE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_CURRENT_KEY_DATES.OFFENDER_BOOKING_SK (+)) AND (AT_CURFEW_ASSESSMENT.DECISION_DATE_SK = AT_DIM_DECISION_DATE.DATE_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_CURREFFSENLEN.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_LIFEFLAG.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_COURT_CASE.OFFENDER_BOOKING_SK (+)) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_SENTENCE.COURT_CASE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_CURFEW_ASSESSMENT.OFFENDER_BOOKING_SK (+)) AND ((TRUNC(AT_DIM_DATE_EXT_MOV.DAY_DATE) BETWEEN TO_DATE('02-02-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('09-02-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS')) AND AT_FACT_MOV_EXT.TYPE IN ('Release') AND AT_FACT_MOV_EXT.REASON_CODE IN ('HR', 'HD', 'HE', 'HU') AND AT_FACT_MOV_EXT.DIRECTION_CODE IN ('OUT'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SENTENCE_START_DATE, EFFECTIVE_SENTENCE_LENGTH, HDC_CHECKS_DONE_DATE, HDC_PASSED_FLAG, HDC_ASSMENT_APP_STATUS_DESC, HDC_DECISION_DATE, CURR_HDCED_DATE, CURR_ARD_DATE, CURR_CRD_DATE, HDC_REVIEW_FLAG, RELEASE_DATE, CURR_RELEASE_DATE, ARD_, CRD_ FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPa.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SENTENCE_START_DATE",
+            "type": "date",
+            "display": "Sentence Start Date",
+            "legacyId": "DPa.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "EFFECTIVE_SENTENCE_LENGTH",
+            "type": "string",
+            "display": "Effective Sentence Length",
+            "legacyId": "DPa.DO2d0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "HDC_CHECKS_DONE_DATE",
+            "type": "date",
+            "display": "HDC Checks Done Date",
+            "legacyId": "DPa.DO54a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "HDC_PASSED_FLAG",
+            "type": "string",
+            "display": "HDC Passed Flag",
+            "legacyId": "DPa.DO3ad",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "HDC_ASSMENT_APP_STATUS_DESC",
+            "type": "string",
+            "display": "HDC Status",
+            "legacyId": "DPa.DO54",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "HDC_DECISION_DATE",
+            "type": "date",
+            "display": "HDC Decision Date",
+            "legacyId": "DPa.DO3b0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "CURR_HDCED_DATE",
+            "type": "date",
+            "display": "HDC Eligibility Date",
+            "legacyId": "DPa.DO70",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "CURR_ARD_DATE",
+            "type": "date",
+            "display": "ARD (Approved Release Date)",
+            "legacyId": "DPa.DO47",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "CURR_CRD_DATE",
+            "type": "date",
+            "display": "CRD (Conditional Release Date)",
+            "legacyId": "DPa.DO48",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "HDC_REVIEW_FLAG",
+            "type": "string",
+            "display": "HDC Review Flag",
+            "legacyId": "DPa.DO3ae",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "RELEASE_DATE",
+            "type": "date",
+            "display": "Release Date",
+            "legacyId": "DPa.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "CURR_RELEASE_DATE",
+            "type": "date",
+            "display": "Current Release Date",
+            "legacyId": "DPa.DO2e6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "ARD_",
+            "type": "date",
+            "display": "ARD (Approved Release Date) (Historical)",
+            "legacyId": "DPa.DO30d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "CRD_",
+            "type": "date",
+            "display": "CRD (Conditional Release Date) (Historical)",
+            "legacyId": "DPa.DO30a",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DPb",
+      "name": "admissions",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, DT_ADMISSION.MOVEMENT_TIME FROM (SELECT ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk, fme.from_location_type, MAX(fme.MOVEMENT_SEQ) AS MOVEMENT_SEQ, MAX(d.day_date) AS MOVEMENT_TIME, TRUNC(ETL.LOAD_END_DATETIME) AS LOAD_DATE FROM BODIMIS.FACT_MOVEMENT_EXTERNAL fme, BODIMIS.DIM_OFFENDER_BOOKING ob, BODIMIS.DIM_ESTABLISHMENT est, BODIMIS.ETL_LOAD_LOG ETL, BODIMIS.DIM_DATE d WHERE ob.ESTABLISHMENT_SK = est.ESTABLISHMENT_SK AND d.date_sk = fme.date_sk AND fme.offender_booking_sk = ob.offender_booking_sk AND ob.active_status IN ('Active In', 'Active Out') AND ob.MIS_CURRENT_RECORD_IND = 'Y' AND ob.ACTIVE_FLAG = 'Y' AND ETL.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL) AND ob.ESTABLISHMENT_SK = fme.to_location_sk AND fme.movement_seq = (SELECT MAX(fme2.movement_seq) FROM BODIMIS.FACT_MOVEMENT_EXTERNAL fme2 WHERE fme.offender_booking_sk = fme2.offender_booking_sk AND fme2.direction_code = 'IN' AND fme2.TYPE = 'Admission' AND fme2.To_location_type = 'Establishment' AND fme2.reason_code <> 'R') GROUP BY ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk, fme.from_location_type, ETL.LOAD_END_DATETIME) DT_ADMISSION, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_ADMISSION.OFFENDER_BOOKING_SK (+)) AND AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY IN (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT WHERE (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((TRUNC(AT_DIM_DATE_EXT_MOV.DAY_DATE) BETWEEN TO_DATE('02-02-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('09-02-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS')) AND AT_FACT_MOV_EXT.REASON_CODE IN ('HR', 'HD', 'HE', 'HU') AND AT_FACT_MOV_EXT.TYPE IN ('Release') AND AT_FACT_MOV_EXT.DIRECTION_CODE IN ('OUT')))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, MOVEMENT_TIME FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPb.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "MOVEMENT_TIME",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DPb.DO107ce",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "214316.RS",
+      "name": "HDC Releases",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    },
+    {
+      "id": "215087.RS",
+      "name": "Report 2",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "instance.report[0] requires property \"dataset\"",
+      "entityId": "Fh99fVox1QIAmqoAAHCbGV8AACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[1] requires property \"dataset\"",
+      "entityId": "Fh99fVox1QIAmqoAAHCbGV8AACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 214316.RS does not have corresponding dataset undefined",
+      "entityId": "214316.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 215087.RS does not have corresponding dataset undefined",
+      "entityId": "215087.RS",
+      "entityType": "variant"
+    }
+  ]
+}

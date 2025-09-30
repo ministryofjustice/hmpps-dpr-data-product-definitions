@@ -1,0 +1,432 @@
+{
+  "id": "okefFh0AAF5qZxkAPwSEcEPmy5E",
+  "name": "MIS Religion By Establishment",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0011 v00.00.11 drop10.5"
+    ]
+  },
+  "description": "Shows the establishment population breakdown by religion broken down by Adult, Young Person and Juvenile.<br/>PDD0011 - v00.00.11 ",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP4",
+      "name": "Religion",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, CASE when ( floor((months_between(( trunc(sysdate) ), ( CASE WHEN AT_DOB.DAY_DATE <> '31/12/9000' THEN AT_DOB.DAY_DATE END ))) / 12) ) <= 17 then 'Juvenile' when ( floor((months_between(( trunc(sysdate) ), ( CASE WHEN AT_DOB.DAY_DATE <> '31/12/9000' THEN AT_DOB.DAY_DATE END ))) / 12) ) between 18 and 20 then 'Young Person' when ( floor((months_between(( trunc(sysdate) ), ( CASE WHEN AT_DOB.DAY_DATE <> '31/12/9000' THEN AT_DOB.DAY_DATE END ))) / 12) ) >= 21 then 'Adult' END, NVL(AT_OFFENDER_BOOKING.RELIGION_DESCRIPTION,'Not Specified'), COUNT(distinct(AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY)) FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_CELL AT_CELL WHERE ( AT_OFFENDER_BOOKING.BIRTH_DATE_SK=AT_DOB.DATE_SK ) AND ( AT_CELL.ESTABLISHMENT_SK=AT_ESTABLISHMENT.ESTABLISHMENT_SK ) AND ( AT_CELL.UNIT_4_SK=AT_OFFENDER_BOOKING.LIVING_UNIT_SK ) AND ( AT_ESTABLISHMENT.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT  CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) AND (CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 OR CSL.ENDYEAR = '2999' ) ) ) AND ( ( AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK in (SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,Not_Persistent,User:69) */ ) Or 'All' in (SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,Not_Persistent,User:69) */ ) ) AND ( case when 'All' in (SELECT WING FROM prompt_ /*= #Prompt('Wing (All for all)','A','Cell\\Unit Description 1',multi,free,Not_Persistent,User:80) */ ) then 'All' else AT_CELL.UNIT_1_DESCRIPTION end in @Variable('Wing (All for all)') ) AND ( AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y' ) ) GROUP BY AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, CASE when ( floor((months_between(( trunc(sysdate) ), ( CASE WHEN AT_DOB.DAY_DATE <> '31/12/9000' THEN AT_DOB.DAY_DATE END ))) / 12) ) <= 17 then 'Juvenile' when ( floor((months_between(( trunc(sysdate) ), ( CASE WHEN AT_DOB.DAY_DATE <> '31/12/9000' THEN AT_DOB.DAY_DATE END ))) / 12) ) between 18 and 20 then 'Young Person' when ( floor((months_between(( trunc(sysdate) ), ( CASE WHEN AT_DOB.DAY_DATE <> '31/12/9000' THEN AT_DOB.DAY_DATE END ))) / 12) ) >= 21 then 'Adult' END, NVL(AT_OFFENDER_BOOKING.RELIGION_DESCRIPTION,'Not Specified')), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,Not_Persistent,User:69)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "wing",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Wing (All for all)",
+          "description": "@Prompt('Wing (All for all)','A','Cell\\Unit Description 1',multi,free,Not_Persistent,User:80)",
+          "mandatory": "true",
+          "referenceType": "wing"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3376639/DPd",
+      "name": "MIS Load Log",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DPd.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "122576.RS",
+      "name": "Religion by Establishment",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP4",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DP4_DO129",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "121777.RS",
+      "name": "Summary",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP4",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "crosstab",
+        "field": [
+          {
+            "name": "$ref:V_COUNTOFADULTS",
+            "display": "=[Count of Offenders]/[Count of Offenders]In Block",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([Count of Offenders] Where ([Adult/Young Person Indicator] = \"Adult\";[Adult/Young Person Indicator]))"
+          },
+          {
+            "name": "$ref:V_PERCENTAGEOFADULTS",
+            "display": "Adult",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Count of Offenders] Where ([Adult/Young Person Indicator] = \"Adult\" In Block;[Adult/Young Person Indicator])/[Count of Offenders]In Block"
+          },
+          {
+            "name": "$ref:V_COUNTOFYOUNGOFFENDERS",
+            "display": "Juvenile",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Count of Offenders] Where ([Adult/Young Person Indicator] = \"Young Person\";[Adult/Young Person Indicator])"
+          },
+          {
+            "name": "$ref:V_PERCENTAGEOFYOUNGOFFENDERS",
+            "display": "Totals",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Count of Offenders] Where ([Adult/Young Person Indicator] = \"Young Person\";[Adult/Young Person Indicator])/[Count of Offenders]In Block"
+          },
+          {
+            "name": "$ref:V_COUNTOFJUVENILE",
+            "display": "%",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Count of Offenders] Where ([Adult/Young Person Indicator] = \"Juvenile\";[Adult/Young Person Indicator])"
+          },
+          {
+            "name": "$ref:V_PERCENTAGEOFJUVENILE",
+            "display": "Total",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Count of Offenders] Where ([Adult/Young Person Indicator] = \"Juvenile\";[Adult/Young Person Indicator])/[Count of Offenders]In Block"
+          },
+          {
+            "name": "$ref:DP4_DO655",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_COUNTOFADULTS",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([Count of Offenders] Where ([Adult/Young Person Indicator] = \"Adult\";[Adult/Young Person Indicator]))"
+          },
+          {
+            "name": "$ref:V_PERCENTAGEOFADULTS",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Count of Offenders] Where ([Adult/Young Person Indicator] = \"Adult\" In Block;[Adult/Young Person Indicator])/[Count of Offenders]In Block"
+          },
+          {
+            "name": "$ref:V_COUNTOFYOUNGOFFENDERS",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Count of Offenders] Where ([Adult/Young Person Indicator] = \"Young Person\";[Adult/Young Person Indicator])"
+          },
+          {
+            "name": "$ref:V_PERCENTAGEOFYOUNGOFFENDERS",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Count of Offenders] Where ([Adult/Young Person Indicator] = \"Young Person\";[Adult/Young Person Indicator])/[Count of Offenders]In Block"
+          },
+          {
+            "name": "$ref:V_COUNTOFJUVENILE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Count of Offenders] Where ([Adult/Young Person Indicator] = \"Juvenile\";[Adult/Young Person Indicator])"
+          },
+          {
+            "name": "$ref:V_PERCENTAGEOFJUVENILE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Count of Offenders] Where ([Adult/Young Person Indicator] = \"Juvenile\";[Adult/Young Person Indicator])/[Count of Offenders]In Block"
+          },
+          {
+            "name": "$ref:DP4_DO655",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DOB3",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "resolveEmbeddedVariables did not resolve all variables",
+      "entityId": "okefFh0AAF5qZxkAPwSEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Aliases'>. Line 1, Col: 2037.\n  multi,free,Not_Persistent,User:80) */ ) then 'All' else AT_CELL.UNIT_1_DESCRIPTION end in @Variable(\u001b[4m'Wing (All for all)'\u001b[0m) ) AND ( AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y' ) ) GROUP BY AT_ESTABLISHMENT.ESTABLISHME]",
+      "entityId": "okefFh0AAF5qZxkAPwSEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_COUNTOFADULTS :: Error: =Sum([Count of Offenders] Where ([Adult/Young Person Indicator] = \"Adult\";[Adult/Young Person Indicator])) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "okefFh0AAF5qZxkAPwSEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_PERCENTAGEOFADULTS :: Error: =[Count of Offenders] Where ([Adult/Young Person Indicator] = \"Adult\" In Block;[Adult/Young Person Indicator])/[Count of Offenders]In Block ==> Error: Expected end of input but \"W\" found.\n at undefined:1:23",
+      "entityId": "okefFh0AAF5qZxkAPwSEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_COUNTOFYOUNGOFFENDERS :: Error: =[Count of Offenders] Where ([Adult/Young Person Indicator] = \"Young Person\";[Adult/Young Person Indicator]) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:23",
+      "entityId": "okefFh0AAF5qZxkAPwSEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_PERCENTAGEOFYOUNGOFFENDERS :: Error: =[Count of Offenders] Where ([Adult/Young Person Indicator] = \"Young Person\";[Adult/Young Person Indicator])/[Count of Offenders]In Block ==> Error: Expected end of input but \"W\" found.\n at undefined:1:23",
+      "entityId": "okefFh0AAF5qZxkAPwSEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_COUNTOFJUVENILE :: Error: =[Count of Offenders] Where ([Adult/Young Person Indicator] = \"Juvenile\";[Adult/Young Person Indicator]) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:23",
+      "entityId": "okefFh0AAF5qZxkAPwSEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_PERCENTAGEOFJUVENILE :: Error: =[Count of Offenders] Where ([Adult/Young Person Indicator] = \"Juvenile\";[Adult/Young Person Indicator])/[Count of Offenders]In Block ==> Error: Expected end of input but \"W\" found.\n at undefined:1:23",
+      "entityId": "okefFh0AAF5qZxkAPwSEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[1].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "okefFh0AAF5qZxkAPwSEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO129 does not have corresponding dataset schema field",
+      "entityId": "122576.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNTOFADULTS does not have corresponding dataset schema field",
+      "entityId": "121777.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENTAGEOFADULTS does not have corresponding dataset schema field",
+      "entityId": "121777.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNTOFYOUNGOFFENDERS does not have corresponding dataset schema field",
+      "entityId": "121777.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENTAGEOFYOUNGOFFENDERS does not have corresponding dataset schema field",
+      "entityId": "121777.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNTOFJUVENILE does not have corresponding dataset schema field",
+      "entityId": "121777.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENTAGEOFJUVENILE does not have corresponding dataset schema field",
+      "entityId": "121777.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO655 does not have corresponding dataset schema field",
+      "entityId": "121777.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNTOFADULTS does not have corresponding dataset schema field",
+      "entityId": "121777.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENTAGEOFADULTS does not have corresponding dataset schema field",
+      "entityId": "121777.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNTOFYOUNGOFFENDERS does not have corresponding dataset schema field",
+      "entityId": "121777.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENTAGEOFYOUNGOFFENDERS does not have corresponding dataset schema field",
+      "entityId": "121777.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNTOFJUVENILE does not have corresponding dataset schema field",
+      "entityId": "121777.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENTAGEOFJUVENILE does not have corresponding dataset schema field",
+      "entityId": "121777.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO655 does not have corresponding dataset schema field",
+      "entityId": "121777.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DOB3 does not have corresponding dataset schema field",
+      "entityId": "121777.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3376639/DP4",
+      "entityType": "dataset"
+    }
+  ]
+}

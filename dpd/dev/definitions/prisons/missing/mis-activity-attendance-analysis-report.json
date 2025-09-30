@@ -1,0 +1,1897 @@
+{
+  "id": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+  "name": "MIS Activity Attendance Analysis Report",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACT0031 v2 Activity Analysis"
+    ]
+  },
+  "description": "Is used to track scheduled Prisoners against actual attendances, cancellations, absences and unrecorded attendances.<br/>ACT0031 v2 Last Modified: 17/07/2023",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP0",
+      "name": "Activities",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, COALESCE(AT_OFFENDER_BOOKING.IEP_BAND, '** Incentive Level Missing **') AS IEP_BAND, AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_DIM_PROGRAMME_SERVICE.DESCRIPTION, AT_DIM_PROGRAMME_TYPE.DESCRIPTION AS ACTIVITY_DESCRIPTION, TRUNC(AT_FACT_OFFENDER_ACTIVITY.START_TIME) AS ACTIVITY_SESSION_DATE, AT_FACT_OFFENDER_ACTIVITY.STATUS, AT_FACT_OFFENDER_ACTIVITY.START_TIME, AT_FACT_OFFENDER_ACTIVITY.END_TIME, ((AT_FACT_OFFENDER_ACTIVITY.END_TIME - AT_FACT_OFFENDER_ACTIVITY.START_TIME) * 24 * 60 * 60) / 60 / 60 AS ACTIVITY_SESSION_DURATION, COALESCE(AT_FACT_OFFENDER_ACTIVITY.SLOT_CATEGORY_CODE, 'No Slot') AS SLOT_AS_DIMENSION, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_FACT_OFFENDER_ACTIVITY.ALLOCATED_FLAG, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION, AT_OFFENDER_BOOKING.SURNAME, AT_FACT_OFFENDER_ACTIVITY.COMMENT_TEXT, AT_DIM_PROGRAMME_SERVICE.CODE, AT_DIM_SERVICE_CATEGORY.CODE AS ACTIVITY_SERVICE_CATEGORY_CODE, AT_DIM_PROGRAMME_TYPE.CODE AS ACTIVITY_CODE, AT_DIM_ACTIVITY_STATUS.DESCRIPTION AS ACTIVITY_SESSION_STATUS_DESC35, AT_CELL.UNIT_1_CODE FROM BODIMIS.FACT_OFFENDER_ACTIVITY AT_FACT_OFFENDER_ACTIVITY, BODIMIS.DIM_CELL AT_DIM_LOCATION, BODIMIS.DIM_ESTABLISHMENT AT_ACTIVITY_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_PROGRAMME_SERVICE AT_DIM_PROGRAMME_SERVICE, BODIMIS.DIM_PROGRAMME_TYPE AT_DIM_PROGRAMME_TYPE, BODIMIS.DIM_REFERENCE_CODES AT_DIM_SERVICE_CATEGORY, BODIMIS.DIM_REFERENCE_CODES AT_DIM_ACTIVITY_STATUS, BODIMIS.DIM_CELL AT_CELL WHERE (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_FACT_OFFENDER_ACTIVITY.OFFENDER_BOOKING_SK) AND (AT_DIM_PROGRAMME_TYPE.PROGRAMME_TYPE_SK = AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_TYPE_SK) AND (AT_DIM_ACTIVITY_STATUS.CODE_DOMAIN (+) = 'PS_PA_OC') AND (AT_DIM_ACTIVITY_STATUS.CODE (+) = AT_FACT_OFFENDER_ACTIVITY.STATUS) AND (AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_SK = AT_FACT_OFFENDER_ACTIVITY.ESTABLISHMENT_SK) AND (AT_DIM_PROGRAMME_SERVICE.PROGRAMME_SERVICE_SK = AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_SERVICE_SK) AND (AT_DIM_SERVICE_CATEGORY.CODE_DOMAIN (+) = 'PS_CATEGORY') AND (AT_DIM_SERVICE_CATEGORY.CODE = AT_DIM_PROGRAMME_SERVICE.PROGRAM_CATEGORY) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_SK = AT_DIM_LOCATION.UNIT_4_SK (+)) AND (AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_) AND TRUNC(AT_FACT_OFFENDER_ACTIVITY.START_TIME) BETWEEN TO_DATE('25-09-2023 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('25-09-2023 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_FACT_OFFENDER_ACTIVITY.ALLOCATED_FLAG = 'Y')), dataset_ AS (SELECT ESTABLISHMENT_CODE_NK, IEP_BAND, ESTABLISHMENT_DESCRIPTION, DESCRIPTION, ACTIVITY_DESCRIPTION, ACTIVITY_SESSION_DATE, STATUS, START_TIME, END_TIME, ACTIVITY_SESSION_DURATION, SLOT_AS_DIMENSION, OFFENDER_ID_DISPLAY, ALLOCATED_FLAG, UNIT_4_SHORT_DESCRIPTION, SURNAME, COMMENT_TEXT, CODE, ACTIVITY_SERVICE_CATEGORY_CODE, ACTIVITY_CODE, ACTIVITY_SESSION_STATUS_DESC35, UNIT_1_CODE, INITCAP(ACTIVITY_DESCRIPTION) AS V_ACTIVITY_DESC, COUNT(ACTIVITIES.OFFENDER_ID_DISPLAY) AS V_SCHEDULED_PRISONERS, COUNT(ACTIVITIES.OFFENDER_ID_DISPLAY) OVER (PARTITION BY STATUS = 'ATT') AS V_ACTUAL_ATTENDED, COUNT(ACTIVITIES.OFFENDER_ID_DISPLAY) OVER (PARTITION BY STATUS = 'ACCAB') AS V_ACCEPTABLE_ABSENCE, COUNT(ACTIVITIES.OFFENDER_ID_DISPLAY) OVER (PARTITION BY STATUS = 'CANC') AS V_CANCELLED, COUNT(ACTIVITIES.OFFENDER_ID_DISPLAY) OVER (PARTITION BY STATUS = 'NREQ') AS V_NOT_REQUIRED, COUNT(ACTIVITIES.OFFENDER_ID_DISPLAY) OVER (PARTITION BY STATUS = 'UNACAB') AS V_UNACCEPT_ABSENCE, COUNT(ACTIVITIES.OFFENDER_ID_DISPLAY) OVER (PARTITION BY STATUS = 'UNBEH') AS V_UNACCEPT_BEHAVIOUR, COUNT(ACTIVITIES.OFFENDER_ID_DISPLAY) OVER (PARTITION BY STATUS = 'REST') AS V_REST_DAY, COUNT(ACTIVITIES.OFFENDER_ID_DISPLAY) OVER (PARTITION BY STATUS = 'COURT') AS V_COURT, COUNT(ACTIVITIES.OFFENDER_ID_DISPLAY) OVER (PARTITION BY STATUS IS NULL) AS V_NOT_RECORDED, COUNT(ACTIVITIES.OFFENDER_ID_DISPLAY) AS V_COUNT_NOMS, SENTENCED_ AS V_SENTENCED_, INITCAP(ACTIVITY_DESCRIPTION) AS V_WORDCAP_ACTIVITY_DESCRIPTION, COUNT(V_CONCAT_NOMS_AND_SESSION) AS V_SUM_SCHEDULED, CASE WHEN ACTIVITY_SESSION_STATUS_DESC35 IS NULL THEN 'Not Attended' ELSE 'Total Prisoners with' || ' ' || (ACTIVITY_SESSION_STATUS_DESC35) || ' ' || 'status' END AS V_SUM_ATTENDANCE_DISPLAY, 'TBD' AS V_COUNT_CASE_NOTE, 'TBD' AS V_MAX_CONCAT_IEP_CHANGE_DATE, 'TBD' AS V_MAX_CONCAT_IEP_HISTORIC_BAND FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Activity Establishment Code",
+            "legacyId": "DP0.DO6b1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "IEP_BAND",
+            "type": "string",
+            "display": "IEP Band",
+            "legacyId": "DP0.DOe4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Activity Establishment Name",
+            "legacyId": "DP0.DO6b2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Activity Service Description",
+            "legacyId": "DP0.DO650",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ACTIVITY_DESCRIPTION",
+            "type": "string",
+            "display": "Activity Description",
+            "legacyId": "DP0.DO64c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ACTIVITY_SESSION_DATE",
+            "type": "date",
+            "display": "Activity Session Date",
+            "legacyId": "DP0.DO70c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "STATUS",
+            "type": "string",
+            "display": "Activity Session Status Code",
+            "legacyId": "DP0.DO64f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "START_TIME",
+            "type": "date",
+            "display": "Activity Session Start Date/Time",
+            "legacyId": "DP0.DO9d7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "END_TIME",
+            "type": "date",
+            "display": "Activity Session End Time",
+            "legacyId": "DP0.DOa68",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "ACTIVITY_SESSION_DURATION",
+            "type": "double",
+            "display": "Activity Session Duration",
+            "legacyId": "DP0.DO799",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "SLOT_AS_DIMENSION",
+            "type": "string",
+            "display": "Slot as Dimension",
+            "legacyId": "DP0.DOa63",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "ALLOCATED_FLAG",
+            "type": "string",
+            "display": "Allocated Flag",
+            "legacyId": "DP0.DO81d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "UNIT_4_SHORT_DESCRIPTION",
+            "type": "string",
+            "display": "Prisoner Location",
+            "legacyId": "DP0.DOa7c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP0.DO7b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "Activity Session Comments",
+            "legacyId": "DP0.DO80c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "CODE",
+            "type": "string",
+            "display": "Activity Service Code",
+            "legacyId": "DP0.DO7e9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "ACTIVITY_SERVICE_CATEGORY_CODE",
+            "type": "string",
+            "display": "Activity Service Category Code",
+            "legacyId": "DP0.DO7ea",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 18,
+            "name": "ACTIVITY_CODE",
+            "type": "string",
+            "display": "Activity Code",
+            "legacyId": "DP0.DO7e7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 19,
+            "name": "ACTIVITY_SESSION_STATUS_DESC35",
+            "type": "string",
+            "display": "Activity Session Status Description",
+            "legacyId": "DP0.DO817",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 20,
+            "name": "UNIT_1_CODE",
+            "type": "string",
+            "display": "Unit Description 1 - Short",
+            "legacyId": "DP0.DO4c3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 21,
+            "name": "V_ACTIVITY_DESC",
+            "type": "string",
+            "display": "V_ACTIVITY_DESC",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 22,
+            "name": "V_SCHEDULED_PRISONERS",
+            "type": "string",
+            "display": "V_SCHEDULED_PRISONERS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 23,
+            "name": "V_ACTUAL_ATTENDED",
+            "type": "string",
+            "display": "V_ACTUAL_ATTENDED",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 24,
+            "name": "V_ACCEPTABLE_ABSENCE",
+            "type": "string",
+            "display": "V_ACCEPTABLE_ABSENCE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 25,
+            "name": "V_CANCELLED",
+            "type": "string",
+            "display": "V_CANCELLED",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 26,
+            "name": "V_NOT_REQUIRED",
+            "type": "string",
+            "display": "V_NOT_REQUIRED",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 27,
+            "name": "V_UNACCEPT_ABSENCE",
+            "type": "string",
+            "display": "V_UNACCEPT_ABSENCE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 28,
+            "name": "V_UNACCEPT_BEHAVIOUR",
+            "type": "string",
+            "display": "V_UNACCEPT_BEHAVIOUR",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 29,
+            "name": "V_REST_DAY",
+            "type": "string",
+            "display": "V_REST_DAY",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 30,
+            "name": "V_COURT",
+            "type": "string",
+            "display": "V_COURT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 31,
+            "name": "V_NOT_RECORDED",
+            "type": "string",
+            "display": "V_NOT_RECORDED",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 32,
+            "name": "V_COUNT_NOMS",
+            "type": "string",
+            "display": "V_COUNT_NOMS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 33,
+            "name": "V_SENTENCED_",
+            "type": "string",
+            "display": "V_SENTENCED_",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 34,
+            "name": "V_WORDCAP_ACTIVITY_DESCRIPTION",
+            "type": "string",
+            "display": "V_WORDCAP_ACTIVITY_DESCRIPTION",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 35,
+            "name": "V_SUM_SCHEDULED",
+            "type": "string",
+            "display": "V_SUM_SCHEDULED",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 36,
+            "name": "V_SUM_ATTENDANCE_DISPLAY",
+            "type": "string",
+            "display": "V_SUM_ATTENDANCE_DISPLAY",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 37,
+            "name": "V_COUNT_CASE_NOTE",
+            "type": "string",
+            "display": "V_COUNT_CASE_NOTE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 38,
+            "name": "V_MAX_CONCAT_IEP_CHANGE_DATE",
+            "type": "string",
+            "display": "V_MAX_CONCAT_IEP_CHANGE_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 39,
+            "name": "V_MAX_CONCAT_IEP_HISTORIC_BAND",
+            "type": "string",
+            "display": "V_MAX_CONCAT_IEP_HISTORIC_BAND",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP1",
+      "name": "MIS Load",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP1.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP9",
+      "name": "Sentence",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Sentenced' WHEN FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH = '00/00/00' THEN 'Unsentenced' WHEN FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH IS NULL THEN 'Unsentenced' ELSE 'Sentenced' END AS SENTENCED_ FROM BODIMIS.FACT_OFFENDER_ACTIVITY AT_FACT_OFFENDER_ACTIVITY, BODIMIS.DIM_ESTABLISHMENT AT_ACTIVITY_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT DISTINCT BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK = dss.sentence_status_sk) AND dss.sentence_status = 'Active' AND (BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK = BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK) AND (BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK) AND BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG = 'Y') DT_LIFEFLAG, FACT_CURR_KEY_DATES_SENT WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_LIFEFLAG.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_FACT_OFFENDER_ACTIVITY.OFFENDER_BOOKING_SK) AND (AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_SK = AT_FACT_OFFENDER_ACTIVITY.ESTABLISHMENT_SK) AND (AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_) AND TRUNC(AT_FACT_OFFENDER_ACTIVITY.START_TIME) BETWEEN TO_DATE('25-09-2023 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('25-09-2023 00:00:00', 'DD-MM-YYYY HH24:MI:SS'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SENTENCED_ FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP9.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SENTENCED_",
+            "type": "string",
+            "display": "Sentenced?",
+            "legacyId": "DP9.DO5d6",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DPb",
+      "name": "IEP",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, TRUNC(AT_DIM_OFFENDER_IEP_LEVEL.IEP_DATE_TIME) AS IEP_CHANGE_DATE_ONLY, AT_DIM_OFFENDER_IEP_LEVEL.IEP_LEVEL, AT_IEP_ESTABLISHMENT.ESTABLISHMENT_CODE_NK FROM BODIMIS.FACT_OFFENDER_ACTIVITY AT_FACT_OFFENDER_ACTIVITY, BODIMIS.DIM_ESTABLISHMENT AT_IEP_ESTABLISHMENT, BODIMIS.DIM_ESTABLISHMENT AT_ACTIVITY_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_OFFENDER_IEP_LEVEL AT_DIM_OFFENDER_IEP_LEVEL WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_FACT_OFFENDER_ACTIVITY.OFFENDER_BOOKING_SK) AND (AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_SK = AT_FACT_OFFENDER_ACTIVITY.ESTABLISHMENT_SK) AND (AT_DIM_OFFENDER_IEP_LEVEL.OFFENDER_BOOK_ID_NK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_ID_NK) AND (AT_IEP_ESTABLISHMENT.ESTABLISHMENT_SK = AT_DIM_OFFENDER_IEP_LEVEL.ESTABLISHMENT_SK) AND (AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_) AND AT_IEP_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_) AND TRUNC(AT_FACT_OFFENDER_ACTIVITY.START_TIME) BETWEEN TO_DATE('25-09-2023 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('25-09-2023 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TRUNC(AT_DIM_OFFENDER_IEP_LEVEL.IEP_DATE_TIME) BETWEEN TO_DATE('25-09-2023 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('25-09-2023 00:00:00', 'DD-MM-YYYY HH24:MI:SS'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, IEP_CHANGE_DATE_ONLY, IEP_LEVEL, ESTABLISHMENT_CODE_NK FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPb.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DPb.DO7b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "IEP_CHANGE_DATE_ONLY",
+            "type": "date",
+            "display": "IEP Change Date Only",
+            "legacyId": "DPb.DOae7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "IEP Band",
+            "legacyId": "DPb.DOa26",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "IEP Establishment Code",
+            "legacyId": "DPb.DOa28",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DPc",
+      "name": "Case Notes",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_FACT_OFFENDER_CASE_NOTE.CONTACT_TIME FROM BODIMIS.DIM_DATE AT_CASE_NOTE_CONTACT_DATE, BODIMIS.DIM_REFERENCE_CODES AT_CASE_NOTE_SUB_TYPE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_OFF_CASE_NOTE, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_OFFENDER_CASE_NOTE AT_FACT_OFFENDER_CASE_NOTE WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_CASE_NOTE_CONTACT_DATE.DATE_SK = AT_FACT_OFFENDER_CASE_NOTE.CONTACT_DATE_SK) AND (AT_CASE_NOTE_SUB_TYPE.REFERENCE_CODE_SK = AT_FACT_OFFENDER_CASE_NOTE.CASE_NOTE_SUB_TYPE_CODE_SK) AND (AT_CASE_NOTE_SUB_TYPE.CODE_DOMAIN = 'TASK_SUBTYPE') AND (AT_FACT_OFFENDER_CASE_NOTE.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_ESTABLISHMENT_OFF_CASE_NOTE.ESTABLISHMENT_SK = AT_FACT_OFFENDER_CASE_NOTE.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_OFF_CASE_NOTE.ESTABLISHMENT_CODE_NK IN (SELECT SAC.CASELOAD_ID FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC WHERE SAC.USERNAME = (SELECT username FROM context_))) AND (AT_ESTABLISHMENT_OFF_CASE_NOTE.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_CASE_NOTE_CONTACT_DATE.DAY_DATE BETWEEN TO_DATE('25-09-2023 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('25-09-2023 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_CASE_NOTE_SUB_TYPE.CODE IN ('ENTRY WARN', 'IEP_WARN'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, CONTACT_TIME FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPc.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "CONTACT_TIME",
+            "type": "date",
+            "display": "Case Note Contact Date/Time",
+            "legacyId": "DPc.DOa8a",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "225979.RS",
+      "name": "Analysis by Session Date ",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Activity Service Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO650"
+          },
+          {
+            "name": "$ref:ACTIVITY_CODE",
+            "display": "Activity Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO7e7"
+          },
+          {
+            "name": "$ref:V_ACTIVITY_DESC",
+            "display": "Activity Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([Activity Description])"
+          },
+          {
+            "name": "$ref:ACTIVITY_SESSION_DATE",
+            "display": "Activity Session Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO70c"
+          },
+          {
+            "name": "$ref:SLOT_AS_DIMENSION",
+            "display": "Slot as Dimension",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOa63"
+          },
+          {
+            "name": "$ref:ACTIVITY_SESSION_DURATION",
+            "display": "Activity Session Duration",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO799"
+          },
+          {
+            "name": "$ref:V_SCHEDULED_PRISONERS",
+            "display": "Scheduled Prisoners",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number])"
+          },
+          {
+            "name": "$ref:V_ACTUAL_ATTENDED",
+            "display": "Attended",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where([Activity Session Status Code]= \"ATT\")"
+          },
+          {
+            "name": "$ref:V_ACCEPTABLE_ABSENCE",
+            "display": "Accept Absence",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where([Activity Session Status Code]=\"ACCAB\" )\n"
+          },
+          {
+            "name": "$ref:V_CANCELLED",
+            "display": "Cancelled",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where([Activity Session Status Code]=\"CANC\" )"
+          },
+          {
+            "name": "$ref:V_NOT_REQUIRED",
+            "display": "Not Required",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where([Activity Session Status Code]=\"NREQ\" )"
+          },
+          {
+            "name": "$ref:V_UNACCEPT_ABSENCE",
+            "display": "Unaccept Absence",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where([Activity Session Status Code]=\"UNACAB\")"
+          },
+          {
+            "name": "$ref:V_UNACCEPT_BEHAVIOUR",
+            "display": "Unaacept Behav (Att.)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where([Activity Session Status Code]=\"UNBEH\")"
+          },
+          {
+            "name": "$ref:V_REST_DAY",
+            "display": "Rest Day",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where([Activity Session Status Code]=\"REST\")"
+          },
+          {
+            "name": "$ref:V_COURT",
+            "display": "Court",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where([Activity Session Status Code]=\"COURT\")"
+          },
+          {
+            "name": "$ref:V_NOT_RECORDED",
+            "display": "Not Recorded",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where(IsNull([Activity Session Status Code]))"
+          }
+        ]
+      }
+    },
+    {
+      "id": "226642.RS",
+      "name": "Analysis by Activity Description",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Activity Service Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO650"
+          },
+          {
+            "name": "$ref:ACTIVITY_CODE",
+            "display": "Activity Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO7e7"
+          },
+          {
+            "name": "$ref:V_ACTIVITY_DESC",
+            "display": "Activity Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([Activity Description])"
+          },
+          {
+            "name": "$ref:ACTIVITY_SESSION_DATE",
+            "display": "Activity Session Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO70c"
+          },
+          {
+            "name": "$ref:SLOT_AS_DIMENSION",
+            "display": "Slot as Dimension",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOa63"
+          },
+          {
+            "name": "$ref:ACTIVITY_SESSION_DURATION",
+            "display": "Activity Session Duration",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO799"
+          },
+          {
+            "name": "$ref:V_SCHEDULED_PRISONERS",
+            "display": "Scheduled Prisoners",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number])"
+          },
+          {
+            "name": "$ref:V_ACTUAL_ATTENDED",
+            "display": "Attended",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where([Activity Session Status Code]= \"ATT\")"
+          },
+          {
+            "name": "$ref:V_ACCEPTABLE_ABSENCE",
+            "display": "Accept. Absence",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where([Activity Session Status Code]=\"ACCAB\" )\n"
+          },
+          {
+            "name": "$ref:V_CANCELLED",
+            "display": "Cancelled",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where([Activity Session Status Code]=\"CANC\" )"
+          },
+          {
+            "name": "$ref:V_NOT_REQUIRED",
+            "display": "Not Required",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where([Activity Session Status Code]=\"NREQ\" )"
+          },
+          {
+            "name": "$ref:V_UNACCEPT_ABSENCE",
+            "display": "Unaccept Absence",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where([Activity Session Status Code]=\"UNACAB\")"
+          },
+          {
+            "name": "$ref:V_UNACCEPT_BEHAVIOUR",
+            "display": "Unaacept Behav (Att.)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where([Activity Session Status Code]=\"UNBEH\")"
+          },
+          {
+            "name": "$ref:V_REST_DAY",
+            "display": "Rest Day",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where([Activity Session Status Code]=\"REST\")"
+          },
+          {
+            "name": "$ref:V_COURT",
+            "display": "Court",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where([Activity Session Status Code]=\"COURT\")"
+          },
+          {
+            "name": "$ref:V_NOT_RECORDED",
+            "display": "Not Recorded",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number]) Where(IsNull([Activity Session Status Code]))"
+          }
+        ]
+      }
+    },
+    {
+      "id": "226717.RS",
+      "name": "Simple view",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ACTIVITY_CODE",
+            "display": "Activity Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO7e7"
+          },
+          {
+            "name": "$ref:V_ACTIVITY_DESC",
+            "display": "=FormatDate([Activity Session Start Date/Time]; \"ddd\")",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([Activity Description])"
+          },
+          {
+            "name": "$ref:START_TIME",
+            "display": "Activity Session Start Date/Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9d7"
+          },
+          {
+            "name": "$ref:SLOT_AS_DIMENSION",
+            "display": "Slot as Dimension",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOa63"
+          },
+          {
+            "name": "$ref:ACTIVITY_SESSION_STATUS_DESC35",
+            "display": "Activity Session Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO817"
+          },
+          {
+            "name": "$ref:COMMENT_TEXT",
+            "display": "Activity Session Comments",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO80c"
+          },
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "Activity Session Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "226127.RS",
+      "name": "Detail view",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Activity Service Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO650"
+          },
+          {
+            "name": "$ref:ACTIVITY_SESSION_DATE",
+            "display": "Activity Session Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO70c"
+          },
+          {
+            "name": "$ref:SLOT_AS_DIMENSION",
+            "display": "Slot as Dimension",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOa63"
+          },
+          {
+            "name": "$ref:START_TIME",
+            "display": "Activity Session Start Date/Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9d7"
+          },
+          {
+            "name": "$ref:END_TIME",
+            "display": "Activity Session End Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOa68"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO76"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO7b"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Prisoner Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOa7c"
+          },
+          {
+            "name": "$ref:V_SENTENCED_",
+            "display": "Sentenced?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Sentenced?]"
+          },
+          {
+            "name": "$ref:ACTIVITY_SESSION_DURATION",
+            "display": "Activity Session Duration",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO799"
+          },
+          {
+            "name": "$ref:ACTIVITY_SESSION_STATUS_DESC35",
+            "display": "Activity Session Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO817"
+          },
+          {
+            "name": "$ref:COMMENT_TEXT",
+            "display": "Activity Session Comments",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO80c"
+          },
+          {
+            "name": "$ref:V_WORDCAP_ACTIVITY_DESCRIPTION",
+            "display": "Activity Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([Activity Description])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "227033.RS",
+      "name": "Analysis % by Day",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Activity Service Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO650"
+          },
+          {
+            "name": "$ref:ACTIVITY_CODE",
+            "display": "Activity Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO7e7"
+          },
+          {
+            "name": "$ref:V_ACTIVITY_DESC",
+            "display": "Activity Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([Activity Description])"
+          },
+          {
+            "name": "$ref:ACTIVITY_SESSION_DATE",
+            "display": "Activity Session Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO70c"
+          },
+          {
+            "name": "$ref:SLOT_AS_DIMENSION",
+            "display": "Slot as Dimension",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOa63"
+          },
+          {
+            "name": "$ref:ACTIVITY_SESSION_DURATION",
+            "display": "Activity Session Duration",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO799"
+          },
+          {
+            "name": "$ref:V_SCHEDULED_PRISONERS",
+            "display": "Scheduled Prisoners",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number])"
+          },
+          {
+            "name": "$ref:V_PERCENT_ATTENDED",
+            "display": "% Attended",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([v_Actual_Attended]/[v_Scheduled _Prisoners])"
+          },
+          {
+            "name": "$ref:V_PERCENT_ACCEPT_ABSENCE",
+            "display": "% Accept Absence",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([v_Acceptable_Absence]/[v_Scheduled _Prisoners])"
+          },
+          {
+            "name": "$ref:V_PERCENT_CANCELLED",
+            "display": "% Cancelled",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([v_Cancelled]/[v_Scheduled _Prisoners])"
+          },
+          {
+            "name": "$ref:V_PERCENT_NOT_REQUIRED",
+            "display": "% Not Required",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([v_Not_required]/[v_Scheduled _Prisoners])"
+          },
+          {
+            "name": "$ref:V_PERCENT_UNACCEPT_ABSENCE",
+            "display": "% Unaccept Absence",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([v_Unaccept_Absence]/[v_Scheduled _Prisoners])"
+          },
+          {
+            "name": "$ref:V_PERCENT_UNACCEPT_BEHAVIOUR",
+            "display": "% Unaccept Beh (Att.)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([v_Unaccept_Behaviour]/[v_Scheduled _Prisoners])"
+          },
+          {
+            "name": "$ref:V_PERCENT_REST_DAY",
+            "display": "% Rest Day",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([v_Rest_day]/[v_Scheduled _Prisoners])"
+          },
+          {
+            "name": "$ref:V_PERCENT_COURT",
+            "display": "% Court",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([v_Court]/[v_Scheduled _Prisoners])"
+          },
+          {
+            "name": "$ref:V_PERCENT_NOT_RECORDED",
+            "display": "% Not Recorded",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([v_Not_Recorded]/[v_Scheduled _Prisoners])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "227210.RS",
+      "name": "Analysis % by Date Range",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Activity Service Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO650"
+          },
+          {
+            "name": "$ref:ACTIVITY_CODE",
+            "display": "Activity Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO7e7"
+          },
+          {
+            "name": "$ref:V_ACTIVITY_DESC",
+            "display": "Activity Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([Activity Description])"
+          },
+          {
+            "name": "$ref:V_SUM_SCHEDULED",
+            "display": "Scheduled Prisoners",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([v_concat_NOMS_and_Session])"
+          },
+          {
+            "name": "$ref:V_PERCENT_ATTENDED_CONCAT",
+            "display": "% Attended",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([v_Actual_Attended_Concat]/[v_Sum_Scheduled])"
+          },
+          {
+            "name": "$ref:V_PERCENT_ACCEPT_ABSENCE_CON31",
+            "display": "% Accept Absence",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([v_Acceptable_Absence_Concat]/[v_Sum_Scheduled])"
+          },
+          {
+            "name": "$ref:V_PERCENT_CANCELLED_CONCAT",
+            "display": "% Cancelled",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([v_Cancelled_Concat]/[v_Sum_Scheduled])"
+          },
+          {
+            "name": "$ref:V_PERCENT_NOT_REQUIRED_CONCAT",
+            "display": "% Not Required",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([v_Not_required_Concat]/[v_Sum_Scheduled])"
+          },
+          {
+            "name": "$ref:V_PERCENT_UNACCEPT_ABSENCE_C33",
+            "display": "% Unaccept Absence",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([v_Unaccept_Absence_Concat]/[v_Sum_Scheduled])"
+          },
+          {
+            "name": "$ref:V_PERCENT_UNACCEPT_BEHAVIOUR35",
+            "display": "% Unaccept Beh (Att.)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([v_Unaccept_Behaviour_Concat]/[v_Sum_Scheduled])"
+          },
+          {
+            "name": "$ref:V_PERCENT_REST_DAY_CONCAT",
+            "display": "% Rest Day",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([v_Rest_day_Concat]/[v_Sum_Scheduled])"
+          },
+          {
+            "name": "$ref:V_PERCENT_COURT_CONCAT",
+            "display": "% Court",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([v_Court_Concat]/[v_Sum_Scheduled])"
+          },
+          {
+            "name": "$ref:V_PERCENT_NOT_RECORDED_CONCAT",
+            "display": "% Not Recorded",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([v_Not_Recorded_Concat]/[v_Sum_Scheduled])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "227715.RS",
+      "name": "By Unit 1 and Status",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:UNIT_1_CODE",
+            "display": "Unit Description 1 - Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4c3"
+          },
+          {
+            "name": "$ref:ACTIVITY_CODE",
+            "display": "Activity Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO7e7"
+          },
+          {
+            "name": "$ref:V_ACTIVITY_DESC",
+            "display": "Unit Description 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([Activity Description])"
+          },
+          {
+            "name": "$ref:START_TIME",
+            "display": "Activity Session Start Date/Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9d7"
+          },
+          {
+            "name": "$ref:SLOT_AS_DIMENSION",
+            "display": "Slot as Dimension",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOa63"
+          },
+          {
+            "name": "$ref:ACTIVITY_SESSION_STATUS_DESC35",
+            "display": "Activity Session Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO817"
+          },
+          {
+            "name": "$ref:COMMENT_TEXT",
+            "display": "Activity Session Comments",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO80c"
+          },
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "Activity Session Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Activities].[NOMS Number])"
+          },
+          {
+            "name": "$ref:V_SUM_ATTENDANCE_DISPLAY",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Activity Session Status Description]); \"Not Attended\";\"Total Prisoners with\" + \" \" + ([Activity Session Status Description]) + \" \" +\"status\")"
+          },
+          {
+            "name": "$ref:UNIT_1_CODE",
+            "display": "Unit Description 1 - Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4c3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "228034.RS",
+      "name": "IEP Warnings and IEP Changes in time frame",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Activity Service Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO650"
+          },
+          {
+            "name": "$ref:V_ACTIVITY_DESC",
+            "display": "Activity Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([Activity Description])"
+          },
+          {
+            "name": "$ref:ACTIVITY_SESSION_DATE",
+            "display": "Activity Session Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO70c"
+          },
+          {
+            "name": "$ref:SLOT_AS_DIMENSION",
+            "display": "Slot as Dimension",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOa63"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Prisoner Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOa7c"
+          },
+          {
+            "name": "$ref:ACTIVITY_SESSION_DURATION",
+            "display": "Activity Session Duration",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO799"
+          },
+          {
+            "name": "$ref:ACTIVITY_SESSION_STATUS_DESC35",
+            "display": "Activity Session Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO817"
+          },
+          {
+            "name": "$ref:COMMENT_TEXT",
+            "display": "Activity Session Comments",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO80c"
+          },
+          {
+            "name": "$ref:V_COUNT_CASE_NOTE",
+            "display": "No. of IEP Warning Case Notes in time frame",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([v_concat_case_note_and_NOMS]) Where ([v_case_note_null] = 1) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:IEP_BAND",
+            "display": "IEP Band",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOe4"
+          },
+          {
+            "name": "$ref:V_MAX_CONCAT_IEP_CHANGE_DATE",
+            "display": "Date(s) of IEP Changes in time frame",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_concat_IEP_Change_date] Where ([IEP Change Date Only]=[v_max_IEP_Change_date]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_MAX_CONCAT_IEP_HISTORIC_BAND",
+            "display": "IEP Change(s) in time frame",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_concat_IEP_Historic_Band] Where ([IEP].[IEP Band]=[v_max_IEP_Historic_band]) In ([NOMS Number])"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_COUNT_CASE_NOTE :: Error: =Count([v_concat_case_note_and_NOMS]) Where ([v_case_note_null] = 1) In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:70",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_MAX_CONCAT_IEP_CHANGE_DATE :: Error: =[v_concat_IEP_Change_date] Where ([IEP Change Date Only]=[v_max_IEP_Change_date]) In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:84",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_MAX_CONCAT_IEP_HISTORIC_BAND :: Error: =[v_concat_IEP_Historic_Band] Where ([IEP].[IEP Band]=[v_max_IEP_Historic_band]) In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:82",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_SENTENCED_ :: ReferenceError: error is not defined",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_PERCENT_ATTENDED :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_PERCENT_ACCEPT_ABSENCE :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_PERCENT_CANCELLED :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_PERCENT_NOT_REQUIRED :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_PERCENT_UNACCEPT_ABSENCE :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_PERCENT_UNACCEPT_BEHAVIOUR :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_PERCENT_REST_DAY :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_PERCENT_COURT :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_PERCENT_NOT_RECORDED :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_PERCENT_ATTENDED_CONCAT :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_PERCENT_ACCEPT_ABSENCE_CON31 :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_PERCENT_CANCELLED_CONCAT :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_PERCENT_NOT_REQUIRED_CONCAT :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_PERCENT_UNACCEPT_ABSENCE_C33 :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_PERCENT_UNACCEPT_BEHAVIOUR35 :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_PERCENT_REST_DAY_CONCAT :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_PERCENT_COURT_CONCAT :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_PERCENT_NOT_RECORDED_CONCAT :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_COUNT_CASE_NOTE :: Error: =Count([v_concat_case_note_and_NOMS]) Where ([v_case_note_null] = 1) In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:70",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_MAX_CONCAT_IEP_CHANGE_DATE :: Error: =[v_concat_IEP_Change_date] Where ([IEP Change Date Only]=[v_max_IEP_Change_date]) In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:84",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_MAX_CONCAT_IEP_HISTORIC_BAND :: Error: =[v_concat_IEP_Historic_Band] Where ([IEP].[IEP Band]=[v_max_IEP_Historic_band]) In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:82",
+      "entityId": "FljBhwDZJAsA0CEFAACnryMAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENT_ATTENDED does not have corresponding dataset schema field",
+      "entityId": "227033.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENT_ACCEPT_ABSENCE does not have corresponding dataset schema field",
+      "entityId": "227033.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENT_CANCELLED does not have corresponding dataset schema field",
+      "entityId": "227033.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENT_NOT_REQUIRED does not have corresponding dataset schema field",
+      "entityId": "227033.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENT_UNACCEPT_ABSENCE does not have corresponding dataset schema field",
+      "entityId": "227033.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENT_UNACCEPT_BEHAVIOUR does not have corresponding dataset schema field",
+      "entityId": "227033.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENT_REST_DAY does not have corresponding dataset schema field",
+      "entityId": "227033.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENT_COURT does not have corresponding dataset schema field",
+      "entityId": "227033.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENT_NOT_RECORDED does not have corresponding dataset schema field",
+      "entityId": "227033.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENT_ATTENDED_CONCAT does not have corresponding dataset schema field",
+      "entityId": "227210.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENT_ACCEPT_ABSENCE_CON31 does not have corresponding dataset schema field",
+      "entityId": "227210.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENT_CANCELLED_CONCAT does not have corresponding dataset schema field",
+      "entityId": "227210.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENT_NOT_REQUIRED_CONCAT does not have corresponding dataset schema field",
+      "entityId": "227210.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENT_UNACCEPT_ABSENCE_C33 does not have corresponding dataset schema field",
+      "entityId": "227210.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENT_UNACCEPT_BEHAVIOUR35 does not have corresponding dataset schema field",
+      "entityId": "227210.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENT_REST_DAY_CONCAT does not have corresponding dataset schema field",
+      "entityId": "227210.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENT_COURT_CONCAT does not have corresponding dataset schema field",
+      "entityId": "227210.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERCENT_NOT_RECORDED_CONCAT does not have corresponding dataset schema field",
+      "entityId": "227210.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3376639/DP0",
+      "entityType": "dataset"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DP9",
+      "entityType": "dataset"
+    }
+  ]
+}

@@ -1,0 +1,369 @@
+{
+  "id": "okm052oABJUtWeIAhviEcEP6PRw",
+  "name": "ORS Contingency_Print_Activities",
+  "description": "Emergency fix 21/02/2019 to correct error in logic regarding OFFENDER_START_DATE and OFFENDER_END_DATE - see spec and NSR-170 for details<br/>This is a contingency report that prints a list of all prisoner activities for 'Active-In' or 'Active-Out' prisoners scheduled for today and the next three days. The report has 6 tabs each sorted as follows:<br/>1. Wing and Surname <br/>2. Activity Place<br/>3. Location(Cell Order)<br/>4. Activity Description and Surname<br/>5. Activity Description and Location<br/>6. By Surname<br/>CON0002- v00.01.07",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "CON0002 v00.01.07"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377239/DP2",
+      "name": "Print Activities",
+      "description": "Activities",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_HEADER_BLOCK.STATUS_2, AT_COURSE_SCHEDULES.START_TIME, AT_COURSE_SCHEDULES.END_TIME, AT_OFFENDER_BOOKING.IN_OUT_STATUS, AT_OFFENDER_RELIGION.PROFILE_CODE, CASE WHEN MAX(CASE WHEN AT_OFFENDER_ALERTS.ALERT_CODE = 'HA' THEN CASE WHEN AT_OFFENDER_ALERTS.ALERT_TYPE = 'H' THEN CASE WHEN AT_OFFENDER_ALERTS.ALERT_STATUS = 'ACTIVE' THEN 2 ELSE 1 END ELSE 1 END ELSE 1 END) OVER (PARTITION BY (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID)) = 2 THEN 'Y' ELSE 'N' END AS ACCT, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) = 0 THEN NULL ELSE SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) + 1, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) = 0 THEN LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION) ELSE INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) - INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) END - 1) END AS UNIT_CODE_1, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_ACTIVITY_LOCATION.INTERNAL_LOCATION_CODE, V_OFFENDER_COURSE_EVENTS.DESCRIPTION, V_OFFENDER_COURSE_EVENTS.EVENT_STATUS, AT_SLOT_REFERENCE.DESCRIPTION AS SLOT, TO_DATE(TO_CHAR((CURRENT_TIMESTAMP), 'DD/MM/YYYY'), 'DD/MM/YYYY') AS CONTINGENCY_TODAY_, TO_DATE(TO_CHAR((CURRENT_TIMESTAMP + 3), 'DD/MM/YYYY'), 'DD/MM/YYYY') AS NEXT_3_DAYS, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID, V_OFFENDER_COURSE_EVENTS.EVENT_DATE FROM V_OFFENDER_COURSE_EVENTS, OMS_OWNER.COURSE_SCHEDULES AT_COURSE_SCHEDULES, OMS_OWNER.OFFENDER_PROGRAM_PROFILES AT_PROGRAM_PROFILES, OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.REFERENCE_CODES AT_SLOT_REFERENCE, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFFENDER_RELIGION, OMS_OWNER.COURSE_ACTIVITIES AT_COURSE_ACTIVITIES, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_ACTIVITY_LOCATION, OMS_OWNER.OFFENDER_ALERTS AT_OFFENDER_ALERTS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = V_OFFENDER_COURSE_EVENTS.OFFENDER_BOOK_ID) AND (V_OFFENDER_COURSE_EVENTS.CRS_SCH_ID = AT_COURSE_SCHEDULES.CRS_SCH_ID AND V_OFFENDER_COURSE_EVENTS.CRS_ACTY_ID = AT_COURSE_SCHEDULES.CRS_ACTY_ID) AND (AT_COURSE_SCHEDULES.CRS_ACTY_ID = AT_COURSE_ACTIVITIES.CRS_ACTY_ID) AND (AT_COURSE_ACTIVITIES.INTERNAL_LOCATION_ID = AT_ACTIVITY_LOCATION.INTERNAL_LOCATION_ID) AND (AT_COURSE_SCHEDULES.SLOT_CATEGORY_CODE = AT_SLOT_REFERENCE.CODE (+)) AND (AT_SLOT_REFERENCE.DOMAIN (+) = 'PA_SLOT') AND (AT_PROGRAM_PROFILES.OFF_PRGREF_ID = V_OFFENDER_COURSE_EVENTS.OFF_PRGREF_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_ALERTS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDER_RELIGION.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_RELIGION.PROFILE_TYPE (+) = 'RELF') AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (WING_CASELOAD_SECURITY.USERNAME = UPPER('DPRWS')) AND (WING_CASELOAD_SECURITY.USERNAME = UPPER('DPRWS')) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (((((V_OFFENDER_COURSE_EVENTS.EVENT_DATE) >= AT_PROGRAM_PROFILES.OFFENDER_START_DATE AND (V_OFFENDER_COURSE_EVENTS.EVENT_DATE) <= AT_PROGRAM_PROFILES.OFFENDER_END_DATE OR AT_PROGRAM_PROFILES.OFFENDER_END_DATE IS NULL))) AND (AT_PROGRAM_PROFILES.OFFENDER_PROGRAM_STATUS = 'ALLOC' AND AT_PROGRAM_PROFILES.SUSPENDED_FLAG = 'N') AND (NOT V_OFFENDER_COURSE_EVENTS.EVENT_STATUS IN ('CANC', 'SUS')) AND AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = UPPER(SUBSTR('DPRWS', 1, 3))) AND (V_OFFENDER_COURSE_EVENTS.AGY_LOC_ID = UPPER(SUBSTR('DPRWS', 1, 3))) AND V_OFFENDER_COURSE_EVENTS.EVENT_DATE BETWEEN TO_DATE(TO_CHAR((CURRENT_TIMESTAMP), 'DD/MM/YYYY'), 'DD/MM/YYYY') AND TO_DATE(TO_CHAR((CURRENT_TIMESTAMP + 3), 'DD/MM/YYYY'), 'DD/MM/YYYY'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, STATUS_2, START_TIME, END_TIME, IN_OUT_STATUS, PROFILE_CODE, ACCT, UNIT_CODE_1, UNIT_DESCRIPTION_4_SHORT, INTERNAL_LOCATION_CODE, DESCRIPTION, EVENT_STATUS, SLOT, CONTINGENCY_TODAY_, NEXT_3_DAYS, AGY_LOC_ID, EVENT_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP2.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP2.DO10046",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "STATUS_2",
+            "type": "string",
+            "display": "Security Category",
+            "legacyId": "DP2.DO10265",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "START_TIME",
+            "type": "date",
+            "display": "Activity Start Time",
+            "legacyId": "DP2.DO5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "END_TIME",
+            "type": "date",
+            "display": "Activity End Time",
+            "legacyId": "DP2.DO6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "IN_OUT_STATUS",
+            "type": "string",
+            "display": "In Out Status",
+            "legacyId": "DP2.DO1049a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "PROFILE_CODE",
+            "type": "string",
+            "display": "Religion",
+            "legacyId": "DP2.DO100b0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "ACCT",
+            "type": "string",
+            "display": "ACCT",
+            "legacyId": "DP2.DO10585",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "UNIT_CODE_1",
+            "type": "string",
+            "display": "Unit Code 1",
+            "legacyId": "DP2.DO10472",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP2.DO10427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "INTERNAL_LOCATION_CODE",
+            "type": "string",
+            "display": "Activity Place",
+            "legacyId": "DP2.DO7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Activity Description",
+            "legacyId": "DP2.DOd6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "EVENT_STATUS",
+            "type": "string",
+            "display": "Event Status",
+            "legacyId": "DP2.DOb8",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "SLOT",
+            "type": "string",
+            "display": "Slot",
+            "legacyId": "DP2.DOda",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "CONTINGENCY_TODAY_",
+            "type": "date",
+            "display": "Contingency Today (Date Only)",
+            "legacyId": "DP2.DOf6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "NEXT_3_DAYS",
+            "type": "date",
+            "display": "Next 3 Days",
+            "legacyId": "DP2.DOf7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP2.DO1043b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 18,
+            "name": "EVENT_DATE",
+            "type": "date",
+            "display": "Activity Schedule Date*",
+            "legacyId": "DP2.DOc9",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "122228.RS",
+      "name": "By Wing, Slot and Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377239/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1043b"
+          }
+        ]
+      }
+    },
+    {
+      "id": "170740.RS",
+      "name": "By Slot and Activity Place",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377239/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1043b"
+          }
+        ]
+      }
+    },
+    {
+      "id": "122037.RS",
+      "name": "By Slot and Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377239/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1043b"
+          }
+        ]
+      }
+    },
+    {
+      "id": "164482.RS",
+      "name": "By Slot and Activity Description",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377239/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1043b"
+          }
+        ]
+      }
+    },
+    {
+      "id": "164739.RS",
+      "name": "By Slot, Activity Description and Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377239/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1043b"
+          }
+        ]
+      }
+    },
+    {
+      "id": "164801.RS",
+      "name": "By Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377239/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1043b"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,157 @@
+{
+  "id": "oked5PoADNLONlUAlAGEcEPm5L8",
+  "name": "ORS Prisoner Accumulated Spend Report",
+  "description": "This report produces a list of prisoners who have accumulated an amount in their Spending account which is greater than or equal to ten times their current Transfer limit. The report identifies the prisoners who reach this criteria and displays NOMS number, surname, forenames, amount equal to ten times transfer limit, balance in spending account and difference between spending balance and 10 times transfer limit.<br/>FIN0020 - v00.00.08 Last Modified: 20/01/09",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "FIN0020 v00.00.08 drop8"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376816/DP3",
+      "name": "Prisoner Accumulated Spend",
+      "description": "Finance",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDERS_LOCATIONS.DESCRIPTION, AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, CASE WHEN NOT AT_MAIN_LEGAL_STATUS.DESCRIPTION IS NULL THEN AT_MAIN_LEGAL_STATUS.DESCRIPTION ELSE 'Undefined' END AS MAIN_LEGAL_STATUS_, CASE WHEN AT_MAIN_LEGAL_STATUS_SEQ.CODE IN ('A_CFINE', 'AFIXED', 'CIV_RMD', 'CIVIL', 'CIVIL_CON', 'CIVIL_DT', 'DEF_SENT', 'DEPORT', 'DET', 'DIED', 'DISCHARGED', 'DISCONT', 'DTTO', 'EXTRAD', 'POLICE', 'NON-CUST', 'REC_DEP', 'REFER', 'REST_ORD', 'RX', 'S35MHA', 'S36MHA', 'S48MHA', 'SEC43', 'SUP_ORD', 'SUSP_SEN', 'TRL', 'UNFIT', 'UNKNOWN', 'YO_CFINE', 'YOC_CONT') THEN 'Unconvicted' ELSE 'Convicted' END AS CONVICTED_UNCONVICTED_STATUS, CASE WHEN (CASE WHEN AT_MAIN_LEGAL_STATUS_SEQ.CODE IN ('A_CFINE', 'AFIXED', 'CIV_RMD', 'CIVIL', 'CIVIL_CON', 'CIVIL_DT', 'DEF_SENT', 'DEPORT', 'DET', 'DIED', 'DISCHARGED', 'DISCONT', 'DTTO', 'EXTRAD', 'POLICE', 'NON-CUST', 'REC_DEP', 'REFER', 'REST_ORD', 'RX', 'S35MHA', 'S36MHA', 'S48MHA', 'SEC43', 'SUP_ORD', 'SUSP_SEN', 'TRL', 'UNFIT', 'UNKNOWN', 'YO_CFINE', 'YOC_CONT') THEN 'Unconvicted' ELSE 'Convicted' END) = 'Convicted' THEN (AT_IEP_LVL_TRNSF_LIMT.CONVICTED_TRANSFER_LIMIT * 10) WHEN (CASE WHEN AT_MAIN_LEGAL_STATUS_SEQ.CODE IN ('A_CFINE', 'AFIXED', 'CIV_RMD', 'CIVIL', 'CIVIL_CON', 'CIVIL_DT', 'DEF_SENT', 'DEPORT', 'DET', 'DIED', 'DISCHARGED', 'DISCONT', 'DTTO', 'EXTRAD', 'POLICE', 'NON-CUST', 'REC_DEP', 'REFER', 'REST_ORD', 'RX', 'S35MHA', 'S36MHA', 'S48MHA', 'SEC43', 'SUP_ORD', 'SUSP_SEN', 'TRL', 'UNFIT', 'UNKNOWN', 'YO_CFINE', 'YOC_CONT') THEN 'Unconvicted' ELSE 'Convicted' END) = 'Unconvicted' THEN (AT_IEP_LVL_TRNSF_LIMT.REMAND_TRANSFER_LIMIT * 10) END AS TRANSFER_LIMIT_X_10, CASE WHEN (AT_ACCOUNT_CODES.ACCOUNT_NAME) = 'Spends' THEN (AT_OFFENDER_SUB_ACCOUNTS.BALANCE) ELSE 0 END AS SPEND_ACCOUNT_BALANCE FROM OMS_OWNER.REFERENCE_CODES AT_MAIN_LEGAL_STATUS, OMS_OWNER.REFERENCE_CODES AT_MAIN_LEGAL_STATUS_SEQ, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, USER_ACCESSIBLE_CASELOADS, OMS_OWNER.IEP_LEVELS AT_IEP_LVL_TRNSF_LIMT, OMS_OWNER.OFFENDER_SUB_ACCOUNTS AT_OFFENDER_SUB_ACCOUNTS, OMS_OWNER.ACCOUNT_CODES AT_ACCOUNT_CODES, OMS_OWNER.OFFENDER_IMPRISON_STATUSES AT_OFFENDER_IMPRISON_STATUSES, (SELECT OFFENDER_BOOK_ID, IMPRISONMENT_STATUS, EFFECTIVE_DATE, EFFECTIVE_TIME, EXPIRY_DATE, AGY_LOC_ID FROM OFFENDER_IMPRISON_STATUSES WHERE (OFFENDER_BOOK_ID, IMPRISON_STATUS_SEQ) IN (SELECT OFFENDER_BOOK_ID, MAX(IMPRISON_STATUS_SEQ) FROM OFFENDER_IMPRISON_STATUSES GROUP BY OFFENDER_BOOK_ID)) DT_OFFENDER_IMPRISON_STATUS, (SELECT OFFENDER_BOOK_ID, AGY_LOC_ID, IEP_LEVEL FROM OFFENDER_IEP_LEVELS WHERE (OFFENDER_BOOK_ID, IEP_LEVEL_SEQ) IN (SELECT OFFENDER_BOOK_ID, MAX(IEP_LEVEL_SEQ) FROM OFFENDER_IEP_LEVELS GROUP BY OFFENDER_BOOK_ID)) DT_OFF_IEP_LEVEL_TRNSF_LIMT WHERE (AT_OFFENDER_SUB_ACCOUNTS.OFFENDER_ID (+) = AT_OFFENDER_BOOKING.ROOT_OFFENDER_ID) AND (AT_ACCOUNT_CODES.ACCOUNT_CODE = AT_OFFENDER_SUB_ACCOUNTS.TRUST_ACCOUNT_CODE) AND (DT_OFF_IEP_LEVEL_TRNSF_LIMT.AGY_LOC_ID = AT_IEP_LVL_TRNSF_LIMT.AGY_LOC_ID AND DT_OFF_IEP_LEVEL_TRNSF_LIMT.IEP_LEVEL = AT_IEP_LVL_TRNSF_LIMT.IEP_LEVEL) AND (DT_OFF_IEP_LEVEL_TRNSF_LIMT.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER.OFFENDER_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID (+)) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (AT_OFFENDER_IMPRISON_STATUSES.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_MAIN_LEGAL_STATUS.CODE (+) = AT_OFFENDER_IMPRISON_STATUSES.IMPRISONMENT_STATUS) AND (AT_MAIN_LEGAL_STATUS.DOMAIN (+) = 'IMP_STS') AND (AT_OFFENDER_IMPRISON_STATUSES.IMPRISON_STATUS_SEQ = (SELECT MAX(a.imprison_status_seq) FROM OFFENDER_IMPRISON_STATUSES a WHERE a.offender_book_id = AT_OFFENDER_IMPRISON_STATUSES.OFFENDER_BOOK_ID GROUP BY a.offender_book_id) OR AT_OFFENDER_IMPRISON_STATUSES.IMPRISON_STATUS_SEQ IS NULL) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_MAIN_LEGAL_STATUS_SEQ.DOMAIN (+) = 'IMP_STS') AND (AT_MAIN_LEGAL_STATUS_SEQ.CODE (+) = DT_OFFENDER_IMPRISON_STATUS.IMPRISONMENT_STATUS) AND (DT_OFFENDER_IMPRISON_STATUS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('PBENSON')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('PBENSON')) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = ('Y')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ((SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_)) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */ AND AT_ACCOUNT_CODES.ACCOUNT_CODE = 2102 AND CASE WHEN (AT_ACCOUNT_CODES.ACCOUNT_NAME) = 'Spends' THEN (AT_OFFENDER_SUB_ACCOUNTS.BALANCE) ELSE 0 END >= CASE WHEN (CASE WHEN AT_MAIN_LEGAL_STATUS_SEQ.CODE IN ('A_CFINE', 'AFIXED', 'CIV_RMD', 'CIVIL', 'CIVIL_CON', 'CIVIL_DT', 'DEF_SENT', 'DEPORT', 'DET', 'DIED', 'DISCHARGED', 'DISCONT', 'DTTO', 'EXTRAD', 'POLICE', 'NON-CUST', 'REC_DEP', 'REFER', 'REST_ORD', 'RX', 'S35MHA', 'S36MHA', 'S48MHA', 'SEC43', 'SUP_ORD', 'SUSP_SEN', 'TRL', 'UNFIT', 'UNKNOWN', 'YO_CFINE', 'YOC_CONT') THEN 'Unconvicted' ELSE 'Convicted' END) = 'Convicted' THEN (AT_IEP_LVL_TRNSF_LIMT.CONVICTED_TRANSFER_LIMIT * 10) WHEN (CASE WHEN AT_MAIN_LEGAL_STATUS_SEQ.CODE IN ('A_CFINE', 'AFIXED', 'CIV_RMD', 'CIVIL', 'CIVIL_CON', 'CIVIL_DT', 'DEF_SENT', 'DEPORT', 'DET', 'DIED', 'DISCHARGED', 'DISCONT', 'DTTO', 'EXTRAD', 'POLICE', 'NON-CUST', 'REC_DEP', 'REFER', 'REST_ORD', 'RX', 'S35MHA', 'S36MHA', 'S48MHA', 'SEC43', 'SUP_ORD', 'SUSP_SEN', 'TRL', 'UNFIT', 'UNKNOWN', 'YO_CFINE', 'YOC_CONT') THEN 'Unconvicted' ELSE 'Convicted' END) = 'Unconvicted' THEN (AT_IEP_LVL_TRNSF_LIMT.REMAND_TRANSFER_LIMIT * 10) END AND NOT AT_MAIN_LEGAL_STATUS_SEQ.CODE IS NULL)), dataset_ AS (SELECT DESCRIPTION, OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, MAIN_LEGAL_STATUS_, CONVICTED_UNCONVICTED_STATUS, TRANSFER_LIMIT_X_10, SPEND_ACCOUNT_BALANCE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP3.DO1033b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP3.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP3.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP3.DO10046",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "MAIN_LEGAL_STATUS_",
+            "type": "string",
+            "display": "Main Legal Status (Description or undefined)",
+            "legacyId": "DP3.DO1082b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "CONVICTED_UNCONVICTED_STATUS",
+            "type": "string",
+            "display": "Convicted / Unconvicted Status",
+            "legacyId": "DP3.DO10716",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "TRANSFER_LIMIT_X_10",
+            "type": "double",
+            "display": "Transfer Limit x 10",
+            "legacyId": "DP3.DO4440",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "SPEND_ACCOUNT_BALANCE",
+            "type": "double",
+            "display": "Spend Account Balance",
+            "legacyId": "DP3.DOd7",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "76196.RS",
+      "name": "Prisoner Accumulated Spend Report",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376816/DP3",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO1033b"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,577 @@
+{
+  "id": "FiVDcl6UTwgAWRAAAHBLpV9EACJIAAzC",
+  "name": "ORS Gym Scheduled Activities ",
+  "description": "Thi report returns those Prisoners who have a scheduled Gym Activity along with any other activity / workplace they are scheduled to attend.<br/>ACT0040 v00.02 Last Modified 12/10/2021",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACT0040 v00.02",
+      "Activities",
+      "Gym"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377239/DP2",
+      "name": "Gym Activity",
+      "description": "OR - Activities",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, decode(instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,1),0,null,substr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,1)+1,decode(instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,2),0,length(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION),instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,2)-instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,1))-1)), substr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,length(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID)+2,length(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)), AT_ACTIVITY_LOCATION.INTERNAL_LOCATION_CODE, V_OFFENDER_COURSE_EVENTS.DESCRIPTION, AT_SLOT_REFERENCE.DESCRIPTION, AT_COURSE_SCHEDULES.START_TIME, AT_COURSE_SCHEDULES.END_TIME, decode(instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,2),0,null,substr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,2)+1,decode(instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,3),0,length(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION),instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,3)-instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,2))-1)), trunc(months_between(sysdate,AT_OFFENDER.BIRTH_DATE)/12), AT_OFFENDER.BIRTH_DATE, DT_IEP_BAND_LAST.IEP_LEVEL, Case When AT_OFFENDER.RACE_CODE='W8' then 'W3' when AT_OFFENDER.RACE_CODE='O1' then 'A4' else AT_OFFENDER.RACE_CODE END FROM V_OFFENDER_COURSE_EVENTS, OMS_OWNER.COURSE_SCHEDULES AT_COURSE_SCHEDULES, OMS_OWNER.OFFENDER_PROGRAM_PROFILES AT_PROGRAM_PROFILES, OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.REFERENCE_CODES AT_SLOT_REFERENCE, ( SELECT iep_level, description, agy_loc_id, offender_book_id, iep_date FROM ( SELECT iep.iep_level, rc.description, iep.agy_loc_id, iep.offender_book_id, iep.iep_date, ROW_NUMBER() OVER (PARTITION BY iep.offender_book_id ORDER BY iep.iep_time DESC, iep.iep_level_seq DESC) row_seq_filter FROM oms_owner.offender_iep_levels iep LEFT OUTER JOIN oms_owner.reference_codes rc ON iep.iep_level = rc.code AND rc.domain = 'IEP_LEVEL' ) WHERE row_seq_filter = 1 ) DT_IEP_BAND_LAST, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.COURSE_ACTIVITIES AT_COURSE_ACTIVITIES, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_ACTIVITY_LOCATION, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, USER_ACCESSIBLE_CASELOADS WHERE ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID=V_OFFENDER_COURSE_EVENTS.OFFENDER_BOOK_ID ) AND ( V_OFFENDER_COURSE_EVENTS.CRS_SCH_ID=AT_COURSE_SCHEDULES.CRS_SCH_ID and V_OFFENDER_COURSE_EVENTS.CRS_ACTY_ID=AT_COURSE_SCHEDULES.CRS_ACTY_ID ) AND ( AT_COURSE_SCHEDULES.CRS_ACTY_ID=AT_COURSE_ACTIVITIES.CRS_ACTY_ID ) AND ( AT_COURSE_ACTIVITIES.INTERNAL_LOCATION_ID=AT_ACTIVITY_LOCATION.INTERNAL_LOCATION_ID ) AND ( AT_COURSE_SCHEDULES.SLOT_CATEGORY_CODE=AT_SLOT_REFERENCE.CODE(+) ) AND ( AT_SLOT_REFERENCE.DOMAIN(+)='PA_SLOT' ) AND ( AT_PROGRAM_PROFILES.OFF_PRGREF_ID=V_OFFENDER_COURSE_EVENTS.OFF_PRGREF_ID ) AND ( AT_OFFENDER.OFFENDER_ID=AT_OFFENDER_BOOKING.OFFENDER_ID ) AND ( AT_OFFENDER_BOOKING.LIVING_UNIT_ID=AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID ) AND ( AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE='INST' ) AND ( DT_IEP_BAND_LAST.OFFENDER_BOOK_ID(+)=AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID ) AND ( USER_ACCESSIBLE_CASELOADS.USERNAME=UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) ) AND ( AT_OFFENDERS_LOCATIONS.AGY_LOC_ID=USER_ACCESSIBLE_CASELOADS.CASELOAD_ID ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID=AT_OFFENDER_BOOKING.AGY_LOC_ID ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID=AT_OFFENDERS_LOCATIONS.AGY_LOC_ID(+) ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID NOT IN ('OUT','TRN') AND AT_CASELOAD_LOCATIONS.CASELOAD_ID NOT IN ('ADMINC', 'CADM_I','MULTI') ) AND ( AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID=AT_WING_ESTABLISHMENT.AGY_LOC_ID ) AND ( AT_WING_ESTABLISHMENT.AGY_LOC_ID=WING_CASELOAD_SECURITY.CASELOAD_ID ) AND ( WING_CASELOAD_SECURITY.USERNAME=UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) ) AND ( WING_CASELOAD_SECURITY.USERNAME=UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) ) AND ( WING_CASELOAD_SECURITY.USERNAME=UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) ) AND ( ( ( AT_COURSE_ACTIVITIES.CRS_ACTY_ID ) IN (SELECT UNKNOWN_PARAMETER FROM prompt_ /*= #Prompt('Please Select Activities : ','A','LOV\\Gym Activity ID',multi,constrained,Not_Persistent) */ ) ) AND ( @Prompt('Enter Date Greater than or Equal to Today','D',,mono,free) = to_date(to_char(AT_COURSE_SCHEDULES.SCHEDULE_DATE,'dd/mm/yyyy')) AND to_date(to_char(AT_COURSE_SCHEDULES.SCHEDULE_DATE,'dd/mm/yyyy'))>=trunc(sysdate) ) AND ( V_OFFENDER_COURSE_EVENTS.EVENT_STATUS not in ('CANC', 'SUS') ) AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = @prompt('Establishment Code:','A','Establishment\\Establishment Code',Mono,Free,Not_Persistent,,User:0) AND (USER_ACCESSIBLE_CASELOADS.USERNAME=UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ ))) AND V_OFFENDER_COURSE_EVENTS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #prompt('Establishment Code:','A','Activity\\Agy Loc Id',Mono,Free,Not_Persistent,,User:1) */ ) AND AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' AND V_OFFENDER_COURSE_EVENTS.EVENT_DATE >= trunc(sysdate) AND AT_PROGRAM_PROFILES.SUSPENDED_FLAG = 'N' )), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@prompt('Establishment Code:','A','Activity\\Agy Loc Id',Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "unknown_parameter",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Please Select Activities : ",
+          "description": "@Prompt('Please Select Activities : ','A','LOV\\Gym Activity ID',multi,constrained,Not_Persistent)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3377239/DP6",
+      "name": "Other Activities",
+      "description": "OR - Activities",
+      "datasource": "nomis",
+      "query": "DP2_ AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, decode(instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,1),0,null,substr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,1)+1,decode(instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,2),0,length(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION),instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,2)-instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,1))-1)), substr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,length(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID)+2,length(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)), AT_ACTIVITY_LOCATION.INTERNAL_LOCATION_CODE, V_OFFENDER_COURSE_EVENTS.DESCRIPTION, AT_SLOT_REFERENCE.DESCRIPTION, AT_COURSE_SCHEDULES.START_TIME, AT_COURSE_SCHEDULES.END_TIME, decode(instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,2),0,null,substr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,2)+1,decode(instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,3),0,length(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION),instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,3)-instr(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION,'-',1,2))-1)), trunc(months_between(sysdate,AT_OFFENDER.BIRTH_DATE)/12), AT_OFFENDER.BIRTH_DATE, DT_IEP_BAND_LAST.IEP_LEVEL, Case When AT_OFFENDER.RACE_CODE='W8' then 'W3' when AT_OFFENDER.RACE_CODE='O1' then 'A4' else AT_OFFENDER.RACE_CODE END FROM V_OFFENDER_COURSE_EVENTS, OMS_OWNER.COURSE_SCHEDULES AT_COURSE_SCHEDULES, OMS_OWNER.OFFENDER_PROGRAM_PROFILES AT_PROGRAM_PROFILES, OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.REFERENCE_CODES AT_SLOT_REFERENCE, ( SELECT iep_level, description, agy_loc_id, offender_book_id, iep_date FROM ( SELECT iep.iep_level, rc.description, iep.agy_loc_id, iep.offender_book_id, iep.iep_date, ROW_NUMBER() OVER (PARTITION BY iep.offender_book_id ORDER BY iep.iep_time DESC, iep.iep_level_seq DESC) row_seq_filter FROM oms_owner.offender_iep_levels iep LEFT OUTER JOIN oms_owner.reference_codes rc ON iep.iep_level = rc.code AND rc.domain = 'IEP_LEVEL' ) WHERE row_seq_filter = 1 ) DT_IEP_BAND_LAST, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.COURSE_ACTIVITIES AT_COURSE_ACTIVITIES, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_ACTIVITY_LOCATION, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, USER_ACCESSIBLE_CASELOADS WHERE ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID=V_OFFENDER_COURSE_EVENTS.OFFENDER_BOOK_ID ) AND ( V_OFFENDER_COURSE_EVENTS.CRS_SCH_ID=AT_COURSE_SCHEDULES.CRS_SCH_ID and V_OFFENDER_COURSE_EVENTS.CRS_ACTY_ID=AT_COURSE_SCHEDULES.CRS_ACTY_ID ) AND ( AT_COURSE_SCHEDULES.CRS_ACTY_ID=AT_COURSE_ACTIVITIES.CRS_ACTY_ID ) AND ( AT_COURSE_ACTIVITIES.INTERNAL_LOCATION_ID=AT_ACTIVITY_LOCATION.INTERNAL_LOCATION_ID ) AND ( AT_COURSE_SCHEDULES.SLOT_CATEGORY_CODE=AT_SLOT_REFERENCE.CODE(+) ) AND ( AT_SLOT_REFERENCE.DOMAIN(+)='PA_SLOT' ) AND ( AT_PROGRAM_PROFILES.OFF_PRGREF_ID=V_OFFENDER_COURSE_EVENTS.OFF_PRGREF_ID ) AND ( AT_OFFENDER.OFFENDER_ID=AT_OFFENDER_BOOKING.OFFENDER_ID ) AND ( AT_OFFENDER_BOOKING.LIVING_UNIT_ID=AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID ) AND ( AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE='INST' ) AND ( DT_IEP_BAND_LAST.OFFENDER_BOOK_ID(+)=AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID ) AND ( USER_ACCESSIBLE_CASELOADS.USERNAME=UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) ) AND ( AT_OFFENDERS_LOCATIONS.AGY_LOC_ID=USER_ACCESSIBLE_CASELOADS.CASELOAD_ID ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID=AT_OFFENDER_BOOKING.AGY_LOC_ID ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID=AT_OFFENDERS_LOCATIONS.AGY_LOC_ID(+) ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID NOT IN ('OUT','TRN') AND AT_CASELOAD_LOCATIONS.CASELOAD_ID NOT IN ('ADMINC', 'CADM_I','MULTI') ) AND ( AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID=AT_WING_ESTABLISHMENT.AGY_LOC_ID ) AND ( AT_WING_ESTABLISHMENT.AGY_LOC_ID=WING_CASELOAD_SECURITY.CASELOAD_ID ) AND ( WING_CASELOAD_SECURITY.USERNAME=UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) ) AND ( WING_CASELOAD_SECURITY.USERNAME=UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) ) AND ( WING_CASELOAD_SECURITY.USERNAME=UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) ) AND ( ( ( AT_COURSE_ACTIVITIES.CRS_ACTY_ID ) IN (SELECT UNKNOWN_PARAMETER FROM prompt_ /*= #Prompt('Please Select Activities : ','A','LOV\\Gym Activity ID',multi,constrained,Not_Persistent) */ ) ) AND ( @Prompt('Enter Date Greater than or Equal to Today','D',,mono,free) = to_date(to_char(AT_COURSE_SCHEDULES.SCHEDULE_DATE,'dd/mm/yyyy')) AND to_date(to_char(AT_COURSE_SCHEDULES.SCHEDULE_DATE,'dd/mm/yyyy'))>=trunc(sysdate) ) AND ( V_OFFENDER_COURSE_EVENTS.EVENT_STATUS not in ('CANC', 'SUS') ) AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = @prompt('Establishment Code:','A','Establishment\\Establishment Code',Mono,Free,Not_Persistent,,User:0) AND (USER_ACCESSIBLE_CASELOADS.USERNAME=UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ ))) AND V_OFFENDER_COURSE_EVENTS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #prompt('Establishment Code:','A','Activity\\Agy Loc Id',Mono,Free,Not_Persistent,,User:1) */ ) AND AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' AND V_OFFENDER_COURSE_EVENTS.EVENT_DATE >= trunc(sysdate) AND AT_PROGRAM_PROFILES.SUSPENDED_FLAG = 'N' )), dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_ACTIVITY_LOCATION.INTERNAL_LOCATION_CODE, V_OFFENDER_COURSE_EVENTS.DESCRIPTION FROM V_OFFENDER_COURSE_EVENTS, OMS_OWNER.COURSE_SCHEDULES AT_COURSE_SCHEDULES, OMS_OWNER.OFFENDER_PROGRAM_PROFILES AT_PROGRAM_PROFILES, OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.COURSE_ACTIVITIES AT_COURSE_ACTIVITIES, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_ACTIVITY_LOCATION, USER_ACCESSIBLE_CASELOADS, undefined_ WHERE ((AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = V_OFFENDER_COURSE_EVENTS.OFFENDER_BOOK_ID) AND (V_OFFENDER_COURSE_EVENTS.CRS_SCH_ID = AT_COURSE_SCHEDULES.CRS_SCH_ID AND V_OFFENDER_COURSE_EVENTS.CRS_ACTY_ID = AT_COURSE_SCHEDULES.CRS_ACTY_ID) AND (AT_COURSE_SCHEDULES.CRS_ACTY_ID = AT_COURSE_ACTIVITIES.CRS_ACTY_ID) AND (AT_COURSE_ACTIVITIES.INTERNAL_LOCATION_ID = AT_ACTIVITY_LOCATION.INTERNAL_LOCATION_ID) AND (AT_PROGRAM_PROFILES.OFF_PRGREF_ID = V_OFFENDER_COURSE_EVENTS.OFF_PRGREF_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND ((NOT V_OFFENDER_COURSE_EVENTS.EVENT_STATUS IN ('CANC', 'SUS')) AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #prompt('Establishment Code:','A','Establishment\\Establishment Code',Mono,Free,Not_Persistent,,User:0) */) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND V_OFFENDER_COURSE_EVENTS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #prompt('Establishment Code:','A','Activity\\Agy Loc Id',Mono,Free,Not_Persistent,,User:1) */) AND AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' AND V_OFFENDER_COURSE_EVENTS.EVENT_DATE >= TRUNC(CURRENT_TIMESTAMP) AND AT_PROGRAM_PROFILES.SUSPENDED_FLAG = 'N' AND NOT V_OFFENDER_COURSE_EVENTS.DESCRIPTION IN (SELECT * FROM DP2_))) AND (undefined)), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, INTERNAL_LOCATION_CODE, DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@prompt('Establishment Code:','A','Establishment\\Establishment Code',Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "unknown_parameter",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Please Select Activities : ",
+          "description": "@Prompt('Please Select Activities : ','A','LOV\\Gym Activity ID',multi,constrained,Not_Persistent)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP6.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "INTERNAL_LOCATION_CODE",
+            "type": "string",
+            "display": "Activity Place",
+            "legacyId": "DP6.DO7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Activity Description",
+            "legacyId": "DP6.DOd6",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "165245.RS",
+      "name": "Gym by Wing",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377239/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:V_WING_AND_LANDING",
+            "display": "Wing and Land",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "= Concatenation([Unit Code 1];[Unit Code 2])"
+          },
+          {
+            "name": "$ref:DP2_DO10045",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10046",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10A15",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10088",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10427",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10715",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DOD6",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO7",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO5",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO6",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_MAX_CONCAT_WORKPLACE",
+            "display": "Other Activities",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_concat_workplace]Where ([v_Workplace]= [v_Max_Workplace]) In ([Other Activities].[NOMS Number])"
+          },
+          {
+            "name": "$ref:V_WING_AND_LANDING",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "= Concatenation([Unit Code 1];[Unit Code 2])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "165669.RS",
+      "name": "Gym by Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377239/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP2_DO10045",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10046",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10A15",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10088",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10427",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10715",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DOD6",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO7",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO5",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO6",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_MAX_CONCAT_WORKPLACE",
+            "display": "Other Activities",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_concat_workplace]Where ([v_Workplace]= [v_Max_Workplace]) In ([Other Activities].[NOMS Number])"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveEmbeddedPrompts did not resolve all prompts for 3377239/DP2",
+      "entityId": "FiVDcl6UTwgAWRAAAHBLpV9EACJIAAzC",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid",
+      "entityId": "FiVDcl6UTwgAWRAAAHBLpV9EACJIAAzC",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveEmbeddedPrompts did not resolve all prompts for 3377239/DP2",
+      "entityId": "FiVDcl6UTwgAWRAAAHBLpV9EACJIAAzC",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid",
+      "entityId": "FiVDcl6UTwgAWRAAAHBLpV9EACJIAAzC",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_MAX_CONCAT_WORKPLACE :: Error: =[v_concat_workplace]Where ([v_Workplace]= [v_Max_Workplace]) In ([Other Activities].[NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:63",
+      "entityId": "FiVDcl6UTwgAWRAAAHBLpV9EACJIAAzC",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields",
+      "entityId": "3377239/DP2",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_WING_AND_LANDING does not have corresponding dataset schema field",
+      "entityId": "165245.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10045 does not have corresponding dataset schema field",
+      "entityId": "165245.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10046 does not have corresponding dataset schema field",
+      "entityId": "165245.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10A15 does not have corresponding dataset schema field",
+      "entityId": "165245.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10088 does not have corresponding dataset schema field",
+      "entityId": "165245.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10427 does not have corresponding dataset schema field",
+      "entityId": "165245.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10715 does not have corresponding dataset schema field",
+      "entityId": "165245.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DOD6 does not have corresponding dataset schema field",
+      "entityId": "165245.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO7 does not have corresponding dataset schema field",
+      "entityId": "165245.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO5 does not have corresponding dataset schema field",
+      "entityId": "165245.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO6 does not have corresponding dataset schema field",
+      "entityId": "165245.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MAX_CONCAT_WORKPLACE does not have corresponding dataset schema field",
+      "entityId": "165245.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_WING_AND_LANDING does not have corresponding dataset schema field",
+      "entityId": "165245.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10045 does not have corresponding dataset schema field",
+      "entityId": "165669.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10046 does not have corresponding dataset schema field",
+      "entityId": "165669.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10A15 does not have corresponding dataset schema field",
+      "entityId": "165669.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10088 does not have corresponding dataset schema field",
+      "entityId": "165669.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10427 does not have corresponding dataset schema field",
+      "entityId": "165669.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10715 does not have corresponding dataset schema field",
+      "entityId": "165669.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DOD6 does not have corresponding dataset schema field",
+      "entityId": "165669.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO7 does not have corresponding dataset schema field",
+      "entityId": "165669.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO5 does not have corresponding dataset schema field",
+      "entityId": "165669.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO6 does not have corresponding dataset schema field",
+      "entityId": "165669.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MAX_CONCAT_WORKPLACE does not have corresponding dataset schema field",
+      "entityId": "165669.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: NJS-005: invalid value for parameter 1",
+      "entityId": "3377239/DP2",
+      "entityType": "dataset"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: NJS-005: invalid value for parameter 1",
+      "entityId": "3377239/DP6",
+      "entityType": "dataset"
+    }
+  ]
+}

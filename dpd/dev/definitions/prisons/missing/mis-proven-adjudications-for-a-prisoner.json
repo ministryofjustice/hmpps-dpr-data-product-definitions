@@ -1,0 +1,359 @@
+{
+  "id": "klac6b0ACvjTbHkA_0oAISgV_bQ",
+  "name": "MIS Proven Adjudications For A Prisoner",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ADJ0006 v00.00.01"
+    ]
+  },
+  "description": "Displays Adjudication data for a single prisoner on his or her current booking.<br/>The adjudication details section contains data on the incident date, adjudication establishment, charge laid, charge laid date, finding, Sanction, number of ADA and verdict date.<br/>ADJ0006 v00.00.01   Last Updated 18/01/2016               ",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375377/DP4",
+      "name": "Adjudication Details",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DT_OFFENDER_ADJUDICATION.AGENCY_INCIDENT_ID_NK, DT_OFFENDER_ADJUDICATION.OIC_INCIDENT_ID, DT_OFFENDER_ADJUDICATION.OIC_HEARING_ID_NK, AT_ADJUDICATION_ESTAB.ESTABLISHMENT_CODE_NK, AT_DIM_OIC_OFFENCE_CHARGE.OIC_OFFENCE_CODE, AT_DIM_OIC_OFFENCE_CHARGE.DESCRIPTION, AT_DIM_DATE_CHARGE_LAID.DAY_DATE, DT_OFFENDER_ADJUDICATION.REPORT_DATE, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.INITIALS, AT_FACT_INCIDENT_CHARGE_RESULT.FINDING_CODE, AT_DIM_DATE_VERDICT.DAY_DATE AS VERDICT_DATE, AT_INCIDENT_SANCTION.CODE, BODIMIS.FACT_INCIDENT_SANCTION.STATUS, BODIMIS.FACT_INCIDENT_SANCTION.SANCTION_DAYS, BODIMIS.FACT_INCIDENT_SANCTION.SANCTION_MONTHS, BODIMIS.FACT_INCIDENT_SANCTION.CONSECUTIVE_SANCTION_SEQ FROM BODIMIS.FACT_INCIDENT_CHARGE_RESULT AT_FACT_INCIDENT_CHARGE_RESULT, BODIMIS.DIM_REFERENCE_CODES AT_INCIDENT_SANCTION, BODIMIS.DIM_ESTABLISHMENT AT_ADJUDICATION_ESTAB, BODIMIS.DIM_OIC_OFFENCE AT_DIM_OIC_OFFENCE_CHARGE, (SELECT a.oic_incident_id, c.offender_booking_sk, c.agency_incident_id_nk, c.charge_seq_nk, c.oic_offence_sk, a.oic_hearing_id_nk, a.party_seq_nk, a.establishment_sk, c.report_date, a.oic_hearing_type, a.notification_charge_date_sk FROM bodimis.fact_incident_charge c LEFT OUTER JOIN bodimis.fact_offender_adjudication a ON c.agency_incident_id_nk = a.agency_incident_id_nk AND c.offender_booking_sk = a.offender_booking_sk) DT_OFFENDER_ADJUDICATION, BODIMIS.DIM_DATE AT_DIM_DATE_CHARGE_LAID, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DIM_DATE_VERDICT, BODIMIS.FACT_INCIDENT_SANCTION WHERE (AT_DIM_DATE_CHARGE_LAID.DATE_SK (+) = DT_OFFENDER_ADJUDICATION.NOTIFICATION_CHARGE_DATE_SK) AND (AT_DIM_DATE_VERDICT.DATE_SK (+) = AT_FACT_INCIDENT_CHARGE_RESULT.DELIVERY_DATE_SK) AND (AT_DIM_OIC_OFFENCE_CHARGE.OIC_OFFENCE_SK = DT_OFFENDER_ADJUDICATION.OIC_OFFENCE_SK) AND (DT_OFFENDER_ADJUDICATION.OFFENDER_BOOKING_SK = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_ADJUDICATION_ESTAB.ESTABLISHMENT_SK (+) = DT_OFFENDER_ADJUDICATION.ESTABLISHMENT_SK) AND (DT_OFFENDER_ADJUDICATION.AGENCY_INCIDENT_ID_NK = AT_FACT_INCIDENT_CHARGE_RESULT.AGENCY_INCIDENT_ID (+) AND DT_OFFENDER_ADJUDICATION.OIC_HEARING_ID_NK = AT_FACT_INCIDENT_CHARGE_RESULT.OIC_HEARING_ID_NK (+) AND DT_OFFENDER_ADJUDICATION.OFFENDER_BOOKING_SK = AT_FACT_INCIDENT_CHARGE_RESULT.OFFENDER_BOOKING_SK (+) AND DT_OFFENDER_ADJUDICATION.CHARGE_SEQ_NK = AT_FACT_INCIDENT_CHARGE_RESULT.CHARGE_SEQ (+)) AND (AT_FACT_INCIDENT_CHARGE_RESULT.OIC_HEARING_ID_NK = BODIMIS.FACT_INCIDENT_SANCTION.OIC_HEARING_ID (+) AND AT_FACT_INCIDENT_CHARGE_RESULT.RESULT_SEQ_NK = BODIMIS.FACT_INCIDENT_SANCTION.RESULT_SEQ (+)) AND (AT_INCIDENT_SANCTION.CODE (+) = BODIMIS.FACT_INCIDENT_SANCTION.OIC_SANCTION_CODE) AND (AT_INCIDENT_SANCTION.CODE_DOMAIN (+) = 'OIC_SANCT') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('Enter NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0) */) AND AT_FACT_INCIDENT_CHARGE_RESULT.FINDING_CODE = 'PROVED' AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y'))), dataset_ AS (SELECT AGENCY_INCIDENT_ID_NK, OIC_INCIDENT_ID, OIC_HEARING_ID_NK, ESTABLISHMENT_CODE_NK, OIC_OFFENCE_CODE, DESCRIPTION, DAY_DATE, REPORT_DATE, SURNAME, INITIALS, FINDING_CODE, VERDICT_DATE, CODE, STATUS, SANCTION_DAYS, SANCTION_MONTHS, CONSECUTIVE_SANCTION_SEQ, 'TBD' AS V_ADA FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number:",
+          "description": "@prompt('Enter NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "AGENCY_INCIDENT_ID_NK",
+            "type": "double",
+            "display": "Agency Incident ID",
+            "legacyId": "DP4.DO759",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OIC_INCIDENT_ID",
+            "type": "double",
+            "display": "OIC Incident ID",
+            "legacyId": "DP4.DO75a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "OIC_HEARING_ID_NK",
+            "type": "double",
+            "display": "OIC Hearing ID",
+            "legacyId": "DP4.DO758",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Adjudication Establishment Code",
+            "legacyId": "DP4.DO6c1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "OIC_OFFENCE_CODE",
+            "type": "string",
+            "display": "Charge Code",
+            "legacyId": "DP4.DO282",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Charge Description",
+            "legacyId": "DP4.DO26d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Charge Laid Date",
+            "legacyId": "DP4.DO280",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "REPORT_DATE",
+            "type": "date",
+            "display": "Incident Reported Date",
+            "legacyId": "DP4.DO751",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP4.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "INITIALS",
+            "type": "string",
+            "display": "Offender Initials",
+            "legacyId": "DP4.DO1012d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "FINDING_CODE",
+            "type": "string",
+            "display": "Hearing Finding",
+            "legacyId": "DP4.DO26e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "VERDICT_DATE",
+            "type": "date",
+            "display": "Verdict Date",
+            "legacyId": "DP4.DO281",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "CODE",
+            "type": "string",
+            "display": "Sanction Code",
+            "legacyId": "DP4.DO763",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "STATUS",
+            "type": "string",
+            "display": "Sanction Status",
+            "legacyId": "DP4.DO762",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "SANCTION_DAYS",
+            "type": "double",
+            "display": "Sanction Days",
+            "legacyId": "DP4.DO761",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "SANCTION_MONTHS",
+            "type": "double",
+            "display": "Sanction Months",
+            "legacyId": "DP4.DO75f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "CONSECUTIVE_SANCTION_SEQ",
+            "type": "double",
+            "display": "Consecutive Sanction Seq",
+            "legacyId": "DP4.DO76e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "V_ADA",
+            "type": "string",
+            "display": "V_ADA",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DP3",
+      "name": "Load End Date",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP3.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "140447.RS",
+      "name": "Adjudication Details",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP4",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:AGENCY_INCIDENT_ID_NK",
+            "display": "Agency Incident ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO759"
+          },
+          {
+            "name": "$ref:OIC_INCIDENT_ID",
+            "display": "OIC Incident ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO75a"
+          },
+          {
+            "name": "$ref:REPORT_DATE",
+            "display": "Incident Reported Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO751"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Adjudication Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO6c1"
+          },
+          {
+            "name": "$ref:OIC_OFFENCE_CODE",
+            "display": "Charge Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO282"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Charge Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO26d"
+          },
+          {
+            "name": "$ref:VERDICT_DATE",
+            "display": "Verdict Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO281"
+          },
+          {
+            "name": "$ref:V_ADA",
+            "display": "Verdict Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([Sanction Days] + [Sanction Months]) Where ([Sanction Code] = \"ADA\")"
+          },
+          {
+            "name": "$ref:CODE",
+            "display": "Sanction Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO763"
+          },
+          {
+            "name": "$ref:CONSECUTIVE_SANCTION_SEQ",
+            "display": "Consecutive Sanction Seq",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO76e"
+          },
+          {
+            "name": "$ref:STATUS",
+            "display": "Sanction Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO762"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_ADA :: Error: =([Sanction Days] + [Sanction Months]) Where ([Sanction Code] = \"ADA\") ==> Error: Expected end of input but \"W\" found.\n at undefined:1:40",
+      "entityId": "klac6b0ACvjTbHkA_0oAISgV_bQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_ADA :: Error: =([Sanction Days] + [Sanction Months]) Where ([Sanction Code] = \"ADA\") ==> Error: Expected end of input but \"W\" found.\n at undefined:1:40",
+      "entityId": "klac6b0ACvjTbHkA_0oAISgV_bQ",
+      "entityType": "dpd"
+    }
+  ]
+}

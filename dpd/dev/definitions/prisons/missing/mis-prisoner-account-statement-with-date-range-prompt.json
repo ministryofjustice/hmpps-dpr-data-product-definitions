@@ -1,0 +1,872 @@
+{
+  "id": "Flq1F1xDhQUAvsoBAHD7cl8IACJIAFJ8",
+  "name": "MIS Prisoner Account Statement with Date Range Prompt",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "FIN0050 v3.0 LSRT017"
+    ]
+  },
+  "description": "FIN0050 - v3.0 This report lists the opening and closing balances and all transactions for one prisoner at a time, for a date range defined at runtime. Report also includes Offender Payroll Statement with pay breakdown",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376115/DPc",
+      "name": "MIS Load End Date",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DPc.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376115/DP13",
+      "name": "Balance",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.SURNAME, AT_CELL.UNIT_4_DESCRIPTION, AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_NAME, SUM(COALESCE(CASE WHEN NOT AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE_SK IS NULL THEN AT_FACT_OFF_ACC_HIST_BALANCE.GROSS_BALANCE END, 0)) AS SUM_OF_ACCOUNT_OPENING_BALANCE FROM BODIMIS.FACT_OFF_ACC_HIST_BALANCE AT_FACT_OFF_ACC_HIST_BALANCE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_CELL AT_CELL, BODIMIS.DIM_ACCOUNT_CODE AT_DIM_ACCOUNT_CODE_ACCOUNTS, BODIMIS.DIM_DATE AT_HIST_BALANCE_DATES WHERE (AT_HIST_BALANCE_DATES.DATE_SK = AT_FACT_OFF_ACC_HIST_BALANCE.BALANCE_DATE_SK) AND (AT_FACT_OFF_ACC_HIST_BALANCE.ACCOUNT_CODE_SK = AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE_SK) AND (AT_OFFENDER_BOOKING.ALIAS_OFFENDER_SK = AT_FACT_OFF_ACC_HIST_BALANCE.ALIAS_OFFENDER_SK AND AT_OFFENDER_BOOKING.BOOKING_SEQ = 1) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY = 'A5369DT') AND (AT_HIST_BALANCE_DATES.DAY_DATE = TO_DATE('26-11-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS')) AND (AT_FACT_OFF_ACC_HIST_BALANCE.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE IN (2101, 2102, 2103))) GROUP BY AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.SURNAME, AT_CELL.UNIT_4_DESCRIPTION, AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_NAME), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FIRST_NAME, SURNAME, UNIT_4_DESCRIPTION, ACCOUNT_NAME, SUM_OF_ACCOUNT_OPENING_BALANCE, 'TBD' AS V_RUNNING_BALANCE, ACCOUNT_NAME AS V_ACCOUNT_NAME_, 'TBD' AS V_OPENING_BALANCE_TEXT, 'TBD' AS V_CLOSING_BALANCE_TEXT FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP13.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP13.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP13.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "UNIT_4_DESCRIPTION",
+            "type": "string",
+            "display": "Unit Description 4",
+            "legacyId": "DP13.DO10136",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ACCOUNT_NAME",
+            "type": "string",
+            "display": "Account Name",
+            "legacyId": "DP13.DO3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "SUM_OF_ACCOUNT_OPENING_BALANCE",
+            "type": "double",
+            "display": "Sum of Account Opening-Balance",
+            "legacyId": "DP13.DO170",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "V_RUNNING_BALANCE",
+            "type": "string",
+            "display": "V_RUNNING_BALANCE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 7,
+            "name": "V_ACCOUNT_NAME_",
+            "type": "string",
+            "display": "V_ACCOUNT_NAME_",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 8,
+            "name": "V_OPENING_BALANCE_TEXT",
+            "type": "string",
+            "display": "V_OPENING_BALANCE_TEXT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 9,
+            "name": "V_CLOSING_BALANCE_TEXT",
+            "type": "string",
+            "display": "V_CLOSING_BALANCE_TEXT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376115/DP14",
+      "name": "Transactions",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.SURNAME, AT_CELL.UNIT_4_DESCRIPTION, AT_DIM_TRANSACTION_TYPE.DESCRIPTION, AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_NAME, SUM(CASE WHEN (AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE) = 'CR' THEN (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT) ELSE 0 END) AS CREDIT_AMOUNT, SUM(CASE WHEN (AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE) = 'DR' THEN (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT) ELSE 0 END) AS DEBIT_AMOUNT, AT_FACT_OFFENDER_TRANSACTION.TXN_ID, AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE, AT_FACT_OFFENDER_TRANSACTION.TXN_ENTRY_TIME FROM BODIMIS.FACT_OFFENDER_TRANSACTION AT_FACT_OFFENDER_TRANSACTION, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_ESTABLISHMENT AT_CASELOADS, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_CELL AT_CELL, BODIMIS.DIM_TRANSACTION_TYPE AT_DIM_TRANSACTION_TYPE, BODIMIS.DIM_ACCOUNT_CODE AT_DIM_ACCOUNT_CODE_TXN, BODIMIS.DIM_TXN_POSTING_TYPE AT_DIM_TXN_POSTING_TYPE, BODIMIS.DIM_DATE AT_BUSINESS_DATE WHERE (AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_TYPE_SK) AND (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_POSTING_TYPE_SK = AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_SK) AND (AT_FACT_OFFENDER_TRANSACTION.ACCOUNT_CODE_SK = AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE_SK) AND (AT_OFFENDER_BOOKING.ALIAS_OFFENDER_SK = AT_FACT_OFFENDER_TRANSACTION.ALIAS_OFFENDER_SK AND AT_OFFENDER_BOOKING.BOOKING_SEQ = 1) AND (AT_CASELOADS.ESTABLISHMENT_SK = AT_FACT_OFFENDER_TRANSACTION.ESTABLISHMENT_SK) AND (AT_BUSINESS_DATE.DATE_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_BUSINESS_DATE_SK) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY = 'A5369DT') AND ((AT_BUSINESS_DATE.DAY_DATE) BETWEEN (TO_DATE('26-11-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS')) AND (TO_DATE('16-12-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS'))) AND (AT_CASELOADS.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE IN (2101, 2102, 2103))) GROUP BY AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.SURNAME, AT_CELL.UNIT_4_DESCRIPTION, AT_DIM_TRANSACTION_TYPE.DESCRIPTION, AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_NAME, AT_FACT_OFFENDER_TRANSACTION.TXN_ID, AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE, AT_FACT_OFFENDER_TRANSACTION.TXN_ENTRY_TIME), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FIRST_NAME, SURNAME, UNIT_4_DESCRIPTION, DESCRIPTION, ACCOUNT_NAME, CREDIT_AMOUNT, DEBIT_AMOUNT, TXN_ID, TRANSACTION_POSTING_TYPE_CODE, TXN_ENTRY_TIME, 'TBD' AS V_RUNNING_BALANCE, ACCOUNT_NAME AS V_ACCOUNT_NAME_, 'TBD' AS V_OPENING_BALANCE_TEXT, 'TBD' AS V_CLOSING_BALANCE_TEXT, CASE WHEN TRANSACTION_DETAILS_PAY_DESC35 IS NULL THEN 'Not Recorded' ELSE TRANSACTION_DETAILS_PAY_DESC35 END AS V_PAY_DESCRIPTION, CASE WHEN DAY_DATE IS NULL THEN 'Not Recorded' ELSE DAY_DATE END AS V_ACTIVITY_DATE, CASE WHEN DETAILED_TRANSACTIONS.DESCRIPTION = 'Offender Payroll' THEN PAY_AMOUNT ELSE DETAILED_TRANSACTIONS.CREDIT_AMOUNT END AS V_PAY_AMOUNT FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP14.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP14.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP14.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "UNIT_4_DESCRIPTION",
+            "type": "string",
+            "display": "Unit Description 4",
+            "legacyId": "DP14.DO10136",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Transaction Type Description",
+            "legacyId": "DP14.DO7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ACCOUNT_NAME",
+            "type": "string",
+            "display": "Transaction Account Name",
+            "legacyId": "DP14.DO66",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "CREDIT_AMOUNT",
+            "type": "double",
+            "display": "Credit Amount",
+            "legacyId": "DP14.DO11c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "DEBIT_AMOUNT",
+            "type": "double",
+            "display": "Debit Amount",
+            "legacyId": "DP14.DO11d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "TXN_ID",
+            "type": "double",
+            "display": "Offender Transaction ID",
+            "legacyId": "DP14.DO599",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "TRANSACTION_POSTING_TYPE_CODE",
+            "type": "string",
+            "display": "Transaction Posting Type (DR/CR)",
+            "legacyId": "DP14.DOa",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "TXN_ENTRY_TIME",
+            "type": "date",
+            "display": "Transaction Date and Time",
+            "legacyId": "DP14.DO59",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "V_RUNNING_BALANCE",
+            "type": "string",
+            "display": "V_RUNNING_BALANCE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 12,
+            "name": "V_ACCOUNT_NAME_",
+            "type": "string",
+            "display": "V_ACCOUNT_NAME_",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 13,
+            "name": "V_OPENING_BALANCE_TEXT",
+            "type": "string",
+            "display": "V_OPENING_BALANCE_TEXT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 14,
+            "name": "V_CLOSING_BALANCE_TEXT",
+            "type": "string",
+            "display": "V_CLOSING_BALANCE_TEXT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 15,
+            "name": "V_PAY_DESCRIPTION",
+            "type": "string",
+            "display": "V_PAY_DESCRIPTION",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 16,
+            "name": "V_ACTIVITY_DATE",
+            "type": "string",
+            "display": "V_ACTIVITY_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 17,
+            "name": "V_PAY_AMOUNT",
+            "type": "string",
+            "display": "V_PAY_AMOUNT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376115/DP15",
+      "name": "Account Names",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_NAME FROM BODIMIS.DIM_ACCOUNT_CODE AT_DIM_ACCOUNT_CODE_ACCOUNTS WHERE (AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE IN (2101, 2102, 2103))), dataset_ AS (SELECT ACCOUNT_NAME FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ACCOUNT_NAME",
+            "type": "string",
+            "display": "Account Name",
+            "legacyId": "DP15.DO3",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376115/DP16",
+      "name": "Detailed Transactions",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.SURNAME, AT_CELL.UNIT_4_DESCRIPTION, AT_DIM_TRANSACTION_TYPE.DESCRIPTION, AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_NAME, SUM(CASE WHEN (AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE) = 'DR' THEN (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT) ELSE 0 END) AS DEBIT_AMOUNT, AT_FACT_OFFENDER_TRANSACTION.TXN_ID, AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE, CASE WHEN AT_FACT_OFFENDER_TRANS_DETAIL.PAY_TYPE_CODE = 'SESSION' THEN AT_DIM_PROGRAMME_TYPE_FOTD.DESCRIPTION ELSE AT_PAY_TYPE_CODES.DESCRIPTION END AS TRANSACTION_DETAILS_PAY_DESC35, AT_FACT_OFFENDER_TRANS_DETAIL.PAY_AMOUNT, AT_FACT_OFFENDER_TRANS_DETAIL.PIECE_WORK, AT_FACT_OFFENDER_TRANS_DETAIL.BONUS_PAY, AT_FACT_OFFENDER_TRANS_DETAIL.SLOT_CATEGORY_CODE, AT_TRANS_DETAILS_ACTIVITY_DATE.DAY_DATE, SUM(CASE WHEN (AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE) = 'CR' THEN (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT) ELSE 0 END) AS CREDIT_AMOUNT, AT_DIM_DATE_TRANSACTIONS.DAY_DATE AS TRANSACTION_DATE_ FROM BODIMIS.FACT_OFFENDER_TRANSACTION AT_FACT_OFFENDER_TRANSACTION, BODIMIS.DIM_DATE AT_TRANS_DETAILS_ACTIVITY_DATE, BODIMIS.DIM_REFERENCE_CODES AT_PAY_TYPE_CODES, BODIMIS.DIM_PROGRAMME_TYPE AT_DIM_PROGRAMME_TYPE_FOTD, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_ESTABLISHMENT AT_CASELOADS, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_CELL AT_CELL, BODIMIS.DIM_TRANSACTION_TYPE AT_DIM_TRANSACTION_TYPE, BODIMIS.DIM_ACCOUNT_CODE AT_DIM_ACCOUNT_CODE_TXN, BODIMIS.DIM_TXN_POSTING_TYPE AT_DIM_TXN_POSTING_TYPE, BODIMIS.FACT_OFFENDER_TRANS_DETAIL AT_FACT_OFFENDER_TRANS_DETAIL, BODIMIS.DIM_DATE AT_DIM_DATE_TRANSACTIONS, BODIMIS.DIM_DATE AT_BUSINESS_DATE WHERE (AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_TYPE_SK) AND (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_POSTING_TYPE_SK = AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_SK) AND (AT_DIM_DATE_TRANSACTIONS.DATE_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_DATE_SK) AND (AT_FACT_OFFENDER_TRANSACTION.ACCOUNT_CODE_SK = AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE_SK) AND (AT_OFFENDER_BOOKING.ALIAS_OFFENDER_SK = AT_FACT_OFFENDER_TRANSACTION.ALIAS_OFFENDER_SK AND AT_OFFENDER_BOOKING.BOOKING_SEQ = 1) AND (AT_CASELOADS.ESTABLISHMENT_SK = AT_FACT_OFFENDER_TRANSACTION.ESTABLISHMENT_SK) AND (AT_BUSINESS_DATE.DATE_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_BUSINESS_DATE_SK) AND (AT_FACT_OFFENDER_TRANSACTION.TXN_ID = AT_FACT_OFFENDER_TRANS_DETAIL.TXN_ID (+) AND AT_FACT_OFFENDER_TRANSACTION.TXN_ENTRY_SEQ = AT_FACT_OFFENDER_TRANS_DETAIL.TXN_ENTRY_SEQ (+)) AND (AT_FACT_OFFENDER_TRANS_DETAIL.PAY_TYPE_CODE = AT_PAY_TYPE_CODES.CODE (+)) AND (AT_FACT_OFFENDER_TRANS_DETAIL.ACTIVITY_DATE_SK = AT_TRANS_DETAILS_ACTIVITY_DATE.DATE_SK (+)) AND (AT_PAY_TYPE_CODES.CODE_DOMAIN (+) = 'PAY_TYPE') AND (AT_FACT_OFFENDER_TRANS_DETAIL.PROGRAMME_TYPE_SK = AT_DIM_PROGRAMME_TYPE_FOTD.PROGRAMME_TYPE_SK (+)) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY = 'A5369DT') AND ((AT_BUSINESS_DATE.DAY_DATE) BETWEEN (TO_DATE('26-11-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS')) AND (TO_DATE('16-12-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS'))) AND (AT_CASELOADS.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE IN (2101, 2102, 2103))) GROUP BY AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.SURNAME, AT_CELL.UNIT_4_DESCRIPTION, AT_DIM_TRANSACTION_TYPE.DESCRIPTION, AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_NAME, AT_FACT_OFFENDER_TRANSACTION.TXN_ID, AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE, CASE WHEN AT_FACT_OFFENDER_TRANS_DETAIL.PAY_TYPE_CODE = 'SESSION' THEN AT_DIM_PROGRAMME_TYPE_FOTD.DESCRIPTION ELSE AT_PAY_TYPE_CODES.DESCRIPTION END, AT_FACT_OFFENDER_TRANS_DETAIL.PAY_AMOUNT, AT_FACT_OFFENDER_TRANS_DETAIL.PIECE_WORK, AT_FACT_OFFENDER_TRANS_DETAIL.BONUS_PAY, AT_FACT_OFFENDER_TRANS_DETAIL.SLOT_CATEGORY_CODE, AT_TRANS_DETAILS_ACTIVITY_DATE.DAY_DATE, AT_DIM_DATE_TRANSACTIONS.DAY_DATE), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FIRST_NAME, SURNAME, UNIT_4_DESCRIPTION, DESCRIPTION, ACCOUNT_NAME, DEBIT_AMOUNT, TXN_ID, TRANSACTION_POSTING_TYPE_CODE, TRANSACTION_DETAILS_PAY_DESC35, PAY_AMOUNT, PIECE_WORK, BONUS_PAY, SLOT_CATEGORY_CODE, DAY_DATE, CREDIT_AMOUNT, TRANSACTION_DATE_, CASE WHEN TRANSACTION_DETAILS_PAY_DESC35 IS NULL THEN 'Not Recorded' ELSE TRANSACTION_DETAILS_PAY_DESC35 END AS V_PAY_DESCRIPTION, CASE WHEN DAY_DATE IS NULL THEN 'Not Recorded' ELSE DAY_DATE END AS V_ACTIVITY_DATE, CASE WHEN DETAILED_TRANSACTIONS.DESCRIPTION = 'Offender Payroll' THEN PAY_AMOUNT ELSE DETAILED_TRANSACTIONS.CREDIT_AMOUNT END AS V_PAY_AMOUNT FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP16.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP16.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP16.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "UNIT_4_DESCRIPTION",
+            "type": "string",
+            "display": "Unit Description 4",
+            "legacyId": "DP16.DO10136",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Transaction Type Description",
+            "legacyId": "DP16.DO7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ACCOUNT_NAME",
+            "type": "string",
+            "display": "Transaction Account Name",
+            "legacyId": "DP16.DO66",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DEBIT_AMOUNT",
+            "type": "double",
+            "display": "Debit Amount",
+            "legacyId": "DP16.DO11d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "TXN_ID",
+            "type": "double",
+            "display": "Offender Transaction ID",
+            "legacyId": "DP16.DO599",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "TRANSACTION_POSTING_TYPE_CODE",
+            "type": "string",
+            "display": "Transaction Posting Type (DR/CR)",
+            "legacyId": "DP16.DOa",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "TRANSACTION_DETAILS_PAY_DESC35",
+            "type": "string",
+            "display": "Transaction Details - Pay Description",
+            "legacyId": "DP16.DO680",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "PAY_AMOUNT",
+            "type": "double",
+            "display": "Transaction Details - Pay Amount",
+            "legacyId": "DP16.DO66d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "PIECE_WORK",
+            "type": "double",
+            "display": "Transaction Details - Piece Work",
+            "legacyId": "DP16.DO66e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "BONUS_PAY",
+            "type": "double",
+            "display": "Transaction Details - Bonus Pay",
+            "legacyId": "DP16.DO66f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "SLOT_CATEGORY_CODE",
+            "type": "string",
+            "display": "Transaction Details - Slot Category Code",
+            "legacyId": "DP16.DO67c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Transaction Details - Activity Date",
+            "legacyId": "DP16.DO676",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "CREDIT_AMOUNT",
+            "type": "double",
+            "display": "Credit Amount",
+            "legacyId": "DP16.DO11c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "TRANSACTION_DATE_",
+            "type": "date",
+            "display": "Transaction Date (Date Only)",
+            "legacyId": "DP16.DO39",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "V_PAY_DESCRIPTION",
+            "type": "string",
+            "display": "V_PAY_DESCRIPTION",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 18,
+            "name": "V_ACTIVITY_DATE",
+            "type": "string",
+            "display": "V_ACTIVITY_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 19,
+            "name": "V_PAY_AMOUNT",
+            "type": "string",
+            "display": "V_PAY_AMOUNT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "123695.RS",
+      "name": "Parameters Page",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    },
+    {
+      "id": "203133.RS",
+      "name": "Prisoner Statement",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376115/DP14",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:TXN_ENTRY_TIME",
+            "display": "Transaction Date and Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP14.DO59"
+          },
+          {
+            "name": "$ref:TXN_ENTRY_TIME",
+            "display": "Transaction Date and Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP14.DO59"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Transaction Type Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO7"
+          },
+          {
+            "name": "$ref:CREDIT_AMOUNT",
+            "display": "Credit Amount",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO11c"
+          },
+          {
+            "name": "$ref:DEBIT_AMOUNT",
+            "display": "Debit Amount",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO11d"
+          },
+          {
+            "name": "$ref:V_RUNNING_BALANCE",
+            "display": "Balance",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Sum of Account Opening-Balance] + RunningSum([Transactions].[Credit Amount]-[Transactions].[Debit Amount];FORCE_COL;([Transactions].[NOMS Number];[Account Name]))+0"
+          },
+          {
+            "name": "$ref:V_ACCOUNT_NAME_",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Account Name] In Section"
+          },
+          {
+            "name": "$ref:V_OPENING_BALANCE_TEXT",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=\"Opening \"+[v_Account Name (Section)]+\" Balance as at \"+ToDate(Left(UserResponse([Transactions];\"Enter Start Date\");10);\"dd/MM/yyyy\")"
+          },
+          {
+            "name": "$ref:SUM_OF_ACCOUNT_OPENING_BALANCE",
+            "display": "Sum of Account Opening-Balance",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO170"
+          },
+          {
+            "name": "$ref:V_CLOSING_BALANCE_TEXT",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=\"Closing \"+[v_Account Name (Section)]+\" Balance as at \"+ToDate(Left(UserResponse([Transactions];\"Enter End Date\");10);\"dd/MM/yyyy\")"
+          },
+          {
+            "name": "$ref:V_RUNNING_BALANCE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Sum of Account Opening-Balance] + RunningSum([Transactions].[Credit Amount]-[Transactions].[Debit Amount];FORCE_COL;([Transactions].[NOMS Number];[Account Name]))+0"
+          }
+        ]
+      }
+    },
+    {
+      "id": "203220.RS",
+      "name": "Prisoner Payroll Statement",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376115/DP14",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (TRANSACTIONS_TRANSACTION_TYP41 IN ('Offender Payroll','Earnings') AND TRANSACTIONS_TRANSACTION_POS38 = 'CR'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Transaction Type Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO7"
+          },
+          {
+            "name": "$ref:TRANSACTION_DATE_",
+            "display": "Transaction Date (Date Only)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP16.DO39"
+          },
+          {
+            "name": "$ref:V_PAY_DESCRIPTION",
+            "display": "Pay Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If IsNull([Transaction Details - Pay Description]) Then \"Not Recorded\" Else [Transaction Details - Pay Description]"
+          },
+          {
+            "name": "$ref:V_ACTIVITY_DATE",
+            "display": "Activity Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If IsNull([Transaction Details - Activity Date]) Then \"Not Recorded\" Else [Transaction Details - Activity Date]"
+          },
+          {
+            "name": "$ref:SLOT_CATEGORY_CODE",
+            "display": "Transaction Details - Slot Category Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP16.DO67c"
+          },
+          {
+            "name": "$ref:V_PAY_AMOUNT",
+            "display": "Pay Amount",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If[Detailed Transactions].[Transaction Type Description]= \"Offender Payroll\" Then [Transaction Details - Pay Amount]Else [Detailed Transactions].[Credit Amount]"
+          },
+          {
+            "name": "$ref:BONUS_PAY",
+            "display": "Transaction Details - Bonus Pay",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP16.DO66f"
+          },
+          {
+            "name": "$ref:PIECE_WORK",
+            "display": "Transaction Details - Piece Work",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP16.DO66e"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Transaction Type Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO7"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_RUNNING_BALANCE :: Error: =[Sum of Account Opening-Balance] + RunningSum([Transactions].[Credit Amount]-[Transactions].[Debit Amount];FORCE_COL;([Transactions].[NOMS Number];[Account Name]))+0 ==> Error: Expected end of input but \"+\" found.\n at undefined:1:35",
+      "entityId": "Flq1F1xDhQUAvsoBAHD7cl8IACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_OPENING_BALANCE_TEXT :: Error: =\"Opening \"+[v_Account Name (Section)]+\" Balance as at \"+ToDate(Left(UserResponse([Transactions];\"Enter Start Date\");10);\"dd/MM/yyyy\") ==> Error: Expected end of input but \"+\" found.\n at undefined:1:57",
+      "entityId": "Flq1F1xDhQUAvsoBAHD7cl8IACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_CLOSING_BALANCE_TEXT :: Error: =\"Closing \"+[v_Account Name (Section)]+\" Balance as at \"+ToDate(Left(UserResponse([Transactions];\"Enter End Date\");10);\"dd/MM/yyyy\") ==> Error: Expected end of input but \"+\" found.\n at undefined:1:57",
+      "entityId": "Flq1F1xDhQUAvsoBAHD7cl8IACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_RUNNING_BALANCE :: Error: =[Sum of Account Opening-Balance] + RunningSum([Transactions].[Credit Amount]-[Transactions].[Debit Amount];FORCE_COL;([Transactions].[NOMS Number];[Account Name]))+0 ==> Error: Expected end of input but \"+\" found.\n at undefined:1:35",
+      "entityId": "Flq1F1xDhQUAvsoBAHD7cl8IACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_OPENING_BALANCE_TEXT :: Error: =\"Opening \"+[v_Account Name (Section)]+\" Balance as at \"+ToDate(Left(UserResponse([Transactions];\"Enter Start Date\");10);\"dd/MM/yyyy\") ==> Error: Expected end of input but \"+\" found.\n at undefined:1:57",
+      "entityId": "Flq1F1xDhQUAvsoBAHD7cl8IACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_CLOSING_BALANCE_TEXT :: Error: =\"Closing \"+[v_Account Name (Section)]+\" Balance as at \"+ToDate(Left(UserResponse([Transactions];\"Enter End Date\");10);\"dd/MM/yyyy\") ==> Error: Expected end of input but \"+\" found.\n at undefined:1:57",
+      "entityId": "Flq1F1xDhQUAvsoBAHD7cl8IACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_RUNNING_BALANCE :: Error: =[Sum of Account Opening-Balance] + RunningSum([Transactions].[Credit Amount]-[Transactions].[Debit Amount];FORCE_COL;([Transactions].[NOMS Number];[Account Name]))+0 ==> Error: Expected end of input but \"+\" found.\n at undefined:1:35",
+      "entityId": "Flq1F1xDhQUAvsoBAHD7cl8IACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_OPENING_BALANCE_TEXT :: Error: =\"Opening \"+[v_Account Name (Section)]+\" Balance as at \"+ToDate(Left(UserResponse([Transactions];\"Enter Start Date\");10);\"dd/MM/yyyy\") ==> Error: Expected end of input but \"+\" found.\n at undefined:1:57",
+      "entityId": "Flq1F1xDhQUAvsoBAHD7cl8IACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_CLOSING_BALANCE_TEXT :: Error: =\"Closing \"+[v_Account Name (Section)]+\" Balance as at \"+ToDate(Left(UserResponse([Transactions];\"Enter End Date\");10);\"dd/MM/yyyy\") ==> Error: Expected end of input but \"+\" found.\n at undefined:1:57",
+      "entityId": "Flq1F1xDhQUAvsoBAHD7cl8IACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_RUNNING_BALANCE :: Error: =[Sum of Account Opening-Balance] + RunningSum([Transactions].[Credit Amount]-[Transactions].[Debit Amount];FORCE_COL;([Transactions].[NOMS Number];[Account Name]))+0 ==> Error: Expected end of input but \"+\" found.\n at undefined:1:35",
+      "entityId": "Flq1F1xDhQUAvsoBAHD7cl8IACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_OPENING_BALANCE_TEXT :: Error: =\"Opening \"+[v_Account Name (Section)]+\" Balance as at \"+ToDate(Left(UserResponse([Transactions];\"Enter Start Date\");10);\"dd/MM/yyyy\") ==> Error: Expected end of input but \"+\" found.\n at undefined:1:57",
+      "entityId": "Flq1F1xDhQUAvsoBAHD7cl8IACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_CLOSING_BALANCE_TEXT :: Error: =\"Closing \"+[v_Account Name (Section)]+\" Balance as at \"+ToDate(Left(UserResponse([Transactions];\"Enter End Date\");10);\"dd/MM/yyyy\") ==> Error: Expected end of input but \"+\" found.\n at undefined:1:57",
+      "entityId": "Flq1F1xDhQUAvsoBAHD7cl8IACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_PAY_DESCRIPTION :: ReferenceError: error is not defined",
+      "entityId": "Flq1F1xDhQUAvsoBAHD7cl8IACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[0] requires property \"dataset\"",
+      "entityId": "Flq1F1xDhQUAvsoBAHD7cl8IACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 123695.RS does not have corresponding dataset undefined",
+      "entityId": "123695.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field SUM_OF_ACCOUNT_OPENING_BALANCE does not have corresponding dataset schema field",
+      "entityId": "203133.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field TRANSACTION_DATE_ does not have corresponding dataset schema field",
+      "entityId": "203220.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field SLOT_CATEGORY_CODE does not have corresponding dataset schema field",
+      "entityId": "203220.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field BONUS_PAY does not have corresponding dataset schema field",
+      "entityId": "203220.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field PIECE_WORK does not have corresponding dataset schema field",
+      "entityId": "203220.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3376115/DP14",
+      "entityType": "dataset"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3376115/DP16",
+      "entityType": "dataset"
+    }
+  ]
+}

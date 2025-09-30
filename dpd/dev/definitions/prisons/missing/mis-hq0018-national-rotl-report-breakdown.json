@@ -1,0 +1,259 @@
+{
+  "id": "kljSNOQAC4syWYwA6f8AFE.rcVQ",
+  "name": "MIS HQ0018 National ROTL Report Breakdown",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "HQ0018"
+    ]
+  },
+  "description": "\tThe report only focuses on outward ROTL movements as it was agreed that counting the inward movements would give a false picture of events.<br/><br/>This report is designed to be run as a national report to display the number of Releases on Temporary Licences (ROTL) which have occurred for all establishments for a date range selected at runtime. The report will be used by the PAG team and replaces a system whereby individual establishments would need to run a local report then submit to the PAG team on a monthly basis.",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP4",
+      "name": "TAP Movements",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_FACT_MOV_EXT.DIRECTION_CODE, COUNT(AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY || AT_FACT_MOV_EXT.MOVEMENT_SEQ) AS COUNT_OF_EXTERNAL_MOVEMENTS, AT_DIM_DATE_EXT_MOV.DAY_DATE, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_DESCRIPTION, AT_DIM_ESCORT.ESCORT_DESCRIPTION, AT_FACT_MOV_EXT.REASON_CODE FROM BODIMIS.DIM_ESCORT AT_DIM_ESCORT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_FROM WHERE (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (CASE WHEN AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.FROM_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_DIM_ESCORT.ESCORT_SK (+) = AT_FACT_MOV_EXT.ESCORT_SK) AND (AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK IN (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter value(s) for Movement Location From Code:','A','External Movements\\Movement Location From Code with Security',Multi,Free,Not_Persistent,,User:2) */) AND AT_DIM_DATE_EXT_MOV.DAY_DATE BETWEEN (SELECT START_DATE FROM prompt_ /* = #prompt('Enter Start Date:','D',,Mono,Free,Not_Persistent,,User:0) */) AND (SELECT END_DATE FROM prompt_ /* = #prompt('Enter End Date:','D',,Mono,Free,Not_Persistent,,User:1) */) AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'OUT' AND AT_FACT_MOV_EXT.TYPE IN ('Temporary Absence / Home Leave', 'Temporary Absence')) GROUP BY AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_FACT_MOV_EXT.DIRECTION_CODE, AT_DIM_DATE_EXT_MOV.DAY_DATE, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_DESCRIPTION, AT_DIM_ESCORT.ESCORT_DESCRIPTION, AT_FACT_MOV_EXT.REASON_CODE), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, DIRECTION_CODE, COUNT_OF_EXTERNAL_MOVEMENTS, DAY_DATE, ESTABLISHMENT_DESCRIPTION, ESCORT_DESCRIPTION, REASON_CODE, CASE WHEN COUNT_OF_EXTERNAL_MOVEMENTS IS NULL THEN 0 ELSE COUNT_OF_EXTERNAL_MOVEMENTS END AS V_COUNT_OF_TAPS FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "unknown_parameter",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter value(s) for Movement Location From Code:",
+          "description": "@prompt('Enter value(s) for Movement Location From Code:','A','External Movements\\Movement Location From Code with Security',Multi,Free,Not_Persistent,,User:2)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Start Date:",
+          "description": "@prompt('Enter Start Date:','D',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter End Date:",
+          "description": "@prompt('Enter End Date:','D',,Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP4.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DIRECTION_CODE",
+            "type": "string",
+            "display": "Movement Direction Code (External)",
+            "legacyId": "DP4.DO103fd",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "COUNT_OF_EXTERNAL_MOVEMENTS",
+            "type": "double",
+            "display": "Count of External Movements",
+            "legacyId": "DP4.DO10673",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Movement Date Only (External)",
+            "legacyId": "DP4.DO1015c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Location From Description (External)",
+            "legacyId": "DP4.DO1015d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ESCORT_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Escort",
+            "legacyId": "DP4.DO108ed",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "REASON_CODE",
+            "type": "string",
+            "display": "Movement Reason Code (External)",
+            "legacyId": "DP4.DO103fc",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "V_COUNT_OF_TAPS",
+            "type": "string",
+            "display": "V_COUNT_OF_TAPS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DPa",
+      "name": "Establishments",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_FROM), dataset_ AS (SELECT ESTABLISHMENT_DESCRIPTION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Location From Description (External)",
+            "legacyId": "DPa.DO15d",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP9",
+      "name": "MIS load",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP9.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "217560.RS",
+      "name": "ROTL Breakdown",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP4",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:REASON_CODE",
+            "display": "Movement Reason Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO103fc"
+          },
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Movement Date Only (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO1015c"
+          },
+          {
+            "name": "$ref:DIRECTION_CODE",
+            "display": "Movement Direction Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO103fd"
+          },
+          {
+            "name": "$ref:ESCORT_DESCRIPTION",
+            "display": "Movement Escort",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO108ed"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10076"
+          },
+          {
+            "name": "$ref:V_COUNT_OF_TAPS",
+            "display": "No. Of Outward ROTL Moves",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Count of External Movements]);0;[Count of External Movements])"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

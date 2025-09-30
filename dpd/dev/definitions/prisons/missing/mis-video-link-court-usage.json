@@ -1,0 +1,222 @@
+{
+  "id": "klJ9CVgAAHG.cIsA6xQAISgV_bQ",
+  "name": "MIS Video Link Court Usage",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "HQ9019"
+    ]
+  },
+  "description": "HQ9019 v1.0  This report prompts for a date range and returns the number of Video Link movements to court recorded in the Nomis movements module. The data is presented over time and by establishment.",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP2",
+      "name": "Video Link",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_DESCRIPTION, TO_NUMBER(TO_CHAR(AT_DIM_DATE_EXT_MOV.DAY_DATE, 'SYYYY')) AS YEAR_OF_MOVEMENT_DATE_ONLY_, TO_NUMBER(TO_CHAR(AT_DIM_DATE_EXT_MOV.DAY_DATE, 'MM')) AS MONTH_OF_MOVEMENT_DATE_ONLY_, COUNT(AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY || AT_FACT_MOV_EXT.MOVEMENT_SEQ) AS COUNT_OF_EXTERNAL_MOVEMENTS FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_FROM, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT WHERE (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_SK (+) = AT_FACT_MOV_EXT.FROM_LOCATION_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_DIM_DATE_EXT_MOV.DAY_DATE >= (SELECT START_DATE FROM prompt_ /* = #prompt('Enter Movement Start Date','D',,Mono,Free,Not_Persistent,,User:0) */) AND AT_DIM_DATE_EXT_MOV.DAY_DATE <= (SELECT END_DATE FROM prompt_ /* = #prompt('Enter Movement End Date','D',,Mono,Free,Not_Persistent,,User:1) */) AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'OUT' AND AT_FACT_MOV_EXT.TYPE = 'Court' AND AT_FACT_MOV_EXT.REASON_CODE = 'VL' AND NOT AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK IN ('TRN', 'ZZGHI')) GROUP BY AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_DESCRIPTION, TO_NUMBER(TO_CHAR(AT_DIM_DATE_EXT_MOV.DAY_DATE, 'SYYYY')), TO_NUMBER(TO_CHAR(AT_DIM_DATE_EXT_MOV.DAY_DATE, 'MM'))), dataset_ AS (SELECT ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION, YEAR_OF_MOVEMENT_DATE_ONLY_, MONTH_OF_MOVEMENT_DATE_ONLY_, COUNT_OF_EXTERNAL_MOVEMENTS FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Movement Start Date",
+          "description": "@prompt('Enter Movement Start Date','D',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Movement End Date",
+          "description": "@prompt('Enter Movement End Date','D',,Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Movement Location From Code (External)",
+            "legacyId": "DP2.DO103ff",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Location From Description (External)",
+            "legacyId": "DP2.DO1015d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "YEAR_OF_MOVEMENT_DATE_ONLY_",
+            "type": "double",
+            "display": "Year of Movement Date Only (External)",
+            "legacyId": "DP2.DO10a19",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "MONTH_OF_MOVEMENT_DATE_ONLY_",
+            "type": "double",
+            "display": "Month of Movement Date Only (External)",
+            "legacyId": "DP2.DO10a1a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "COUNT_OF_EXTERNAL_MOVEMENTS",
+            "type": "double",
+            "display": "Count of External Movements",
+            "legacyId": "DP2.DO10673",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP3",
+      "name": "Load End Date",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS MIS_LOAD_LOG_LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT MIS_LOAD_LOG_LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "MIS_LOAD_LOG_LOAD_END_DATE",
+            "type": "date",
+            "display": "MIS Load Log.Load End Date",
+            "legacyId": "DP3.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "137327.RS",
+      "name": "Video Link Usage",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "crosstab",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_EXTERNAL_MOVEMENTS",
+            "display": "Count of External Movements",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10673"
+          },
+          {
+            "name": "$ref:YEAR_OF_MOVEMENT_DATE_ONLY_",
+            "display": "Year of Movement Date Only (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10a19"
+          },
+          {
+            "name": "$ref:MONTH_OF_MOVEMENT_DATE_ONLY_",
+            "display": "Month of Movement Date Only (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10a1a"
+          },
+          {
+            "name": "$ref:COUNT_OF_EXTERNAL_MOVEMENTS",
+            "display": "Count of External Movements",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10673"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Movement Location From Description (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1015d"
+          },
+          {
+            "name": "$ref:COUNT_OF_EXTERNAL_MOVEMENTS",
+            "display": "Count of External Movements",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10673"
+          },
+          {
+            "name": "$ref:COUNT_OF_EXTERNAL_MOVEMENTS",
+            "display": "Count of External Movements",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10673"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "instance.report[0].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "klJ9CVgAAHG.cIsA6xQAISgV_bQ",
+      "entityType": "dpd"
+    }
+  ]
+}

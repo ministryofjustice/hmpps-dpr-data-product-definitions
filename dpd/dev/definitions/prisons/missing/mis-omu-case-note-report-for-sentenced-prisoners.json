@@ -1,0 +1,785 @@
+{
+  "id": "FtNa6l1ffgkAssUBAHCLZl8VACJIAFJ8",
+  "name": "MIS OMU Case Note Report for Sentenced Prisoners",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "SEN0048 v00.00.01",
+      "OMU",
+      "Case Notes"
+    ]
+  },
+  "description": "Report displays data over 3 tabs: All Sentenced Prisoners, Prisoners who have had an OMU Case Note and those Prisoners who haven't had an OMU Case note entered since their Sentence date.<br/>SEN0048 - v00.00.01 Last Modified: 06/12/2019 ",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP2",
+      "name": "Sentence",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE, FACT_CURR_KEY_DATES_SENT.SED, DT_CURRENT_RELEASE_DATE.CURR_RELEASE_DATE, Case When DT_LIFEFLAG.LIFE_SENTENCE_FLAG='Y' then 'Life' Else FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH End, FACT_CURR_KEY_DATES_SENT.TUSED_DATE, FACT_CURR_KEY_DATES_SENT.SSD, FACT_CURR_KEY_DATES_SENT.CURR_PRRD_DATE, AT_DIM_OFFENCE.OFFENCE_NAME, CASE WHEN AT_SENT_START_DATE.DAY_DATE < '31/12/9000' THEN AT_SENT_START_DATE.DAY_DATE END, CASE WHEN AT_OFFENCE_DATE.DAY_DATE < '31/12/9000' THEN AT_OFFENCE_DATE.DAY_DATE END, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION FROM BODIMIS.DIM_DATE AT_SENT_START_DATE, BODIMIS.DIM_DATE AT_OFFENCE_DATE, BODIMIS.DIM_OFFENCE AT_DIM_OFFENCE, BODIMIS.DIM_CELL AT_DIM_LOCATION, BODIMIS.FACT_COURT_CHARGE AT_FACT_COURT_CHARGE, BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, FACT_CURR_KEY_DATES_SENT, (   Select AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK as OFFENDER_BOOKING_SK, case when AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE From --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_DATE AT_RELEASE_DATE where --AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK=AT_FACT_SENTENCE.OFFENDER_BOOKING_SK(+) AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK=AT_RELEASE_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' --and AT_RELEASE_DATE.DAY_DATE !='31/12/9000' ) DT_CURRENT_RELEASE_DATE, (  SELECT distinct BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE ( BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK=dss.sentence_status_sk) AND dss.sentence_status='Active' AND ( BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK=BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK ) AND ( BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK=BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK ) AND ( BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK=BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK ) and BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG='Y' ) DT_LIFEFLAG, BODIMIS.DIM_COURT_CASE AT_COURT_CASE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE WHERE ( AT_FACT_COURT_CHARGE.OFFENCE_SK=AT_DIM_OFFENCE.OFFENCE_SK(+) ) AND ( AT_FACT_COURT_CHARGE.OFFENCE_DATE_SK=AT_OFFENCE_DATE.DATE_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK(+) ) AND ( AT_COURT_CASE.COURT_CASE_SK=AT_FACT_COURT_CHARGE.COURT_CASE_SK(+) ) AND ( AT_FACT_SENTENCE.SENTENCE_START_DATE_SK=AT_SENT_START_DATE.DATE_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_CURRENT_RELEASE_DATE.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_LIFEFLAG.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=AT_COURT_CASE.OFFENDER_BOOKING_SK(+) ) AND ( AT_COURT_CASE.COURT_CASE_SK=AT_FACT_SENTENCE.COURT_CASE_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.ESTABLISHMENT_SK=AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK ) AND ( AT_ESTABLISHMENT_TAP.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.LIVING_UNIT_SK=AT_DIM_LOCATION.UNIT_4_SK(+) ) AND ( ( AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK in (SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #Prompt('Establishment Code (All for all)','A','Associated Establishment\\Associated Establishment Code',multi,free,Not_Persistent,User:69) */ ) Or 'All' in (SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #Prompt('Establishment Code (All for all)','A','Associated Establishment\\Associated Establishment Code',multi,free,Not_Persistent,User:69) */ ) ) AND ( AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG = 'Y' AND AT_COURT_CASE.MOST_SERIOUS_COUNT = 1 ) AND ( AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND='Y' ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND ( AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' ) AND Case When DT_LIFEFLAG.LIFE_SENTENCE_FLAG='Y' then 'Sentenced' when FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH='00/00/00' then 'Unsentenced' when FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH is null then 'Unsentenced' else 'Sentenced' End = 'Sentenced' )), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code (All for all)','A','Associated Establishment\\Associated Establishment Code',multi,free,Not_Persistent,User:69)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3376639/DPe",
+      "name": "Case Note",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "DP2_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE, FACT_CURR_KEY_DATES_SENT.SED, DT_CURRENT_RELEASE_DATE.CURR_RELEASE_DATE, Case When DT_LIFEFLAG.LIFE_SENTENCE_FLAG='Y' then 'Life' Else FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH End, FACT_CURR_KEY_DATES_SENT.TUSED_DATE, FACT_CURR_KEY_DATES_SENT.SSD, FACT_CURR_KEY_DATES_SENT.CURR_PRRD_DATE, AT_DIM_OFFENCE.OFFENCE_NAME, CASE WHEN AT_SENT_START_DATE.DAY_DATE < '31/12/9000' THEN AT_SENT_START_DATE.DAY_DATE END, CASE WHEN AT_OFFENCE_DATE.DAY_DATE < '31/12/9000' THEN AT_OFFENCE_DATE.DAY_DATE END, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION FROM BODIMIS.DIM_DATE AT_SENT_START_DATE, BODIMIS.DIM_DATE AT_OFFENCE_DATE, BODIMIS.DIM_OFFENCE AT_DIM_OFFENCE, BODIMIS.DIM_CELL AT_DIM_LOCATION, BODIMIS.FACT_COURT_CHARGE AT_FACT_COURT_CHARGE, BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, FACT_CURR_KEY_DATES_SENT, (   Select AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK as OFFENDER_BOOKING_SK, case when AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE From --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_DATE AT_RELEASE_DATE where --AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK=AT_FACT_SENTENCE.OFFENDER_BOOKING_SK(+) AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK=AT_RELEASE_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' --and AT_RELEASE_DATE.DAY_DATE !='31/12/9000' ) DT_CURRENT_RELEASE_DATE, (  SELECT distinct BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE ( BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK=dss.sentence_status_sk) AND dss.sentence_status='Active' AND ( BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK=BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK ) AND ( BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK=BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK ) AND ( BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK=BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK ) and BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG='Y' ) DT_LIFEFLAG, BODIMIS.DIM_COURT_CASE AT_COURT_CASE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE WHERE ( AT_FACT_COURT_CHARGE.OFFENCE_SK=AT_DIM_OFFENCE.OFFENCE_SK(+) ) AND ( AT_FACT_COURT_CHARGE.OFFENCE_DATE_SK=AT_OFFENCE_DATE.DATE_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK(+) ) AND ( AT_COURT_CASE.COURT_CASE_SK=AT_FACT_COURT_CHARGE.COURT_CASE_SK(+) ) AND ( AT_FACT_SENTENCE.SENTENCE_START_DATE_SK=AT_SENT_START_DATE.DATE_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_CURRENT_RELEASE_DATE.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_LIFEFLAG.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=AT_COURT_CASE.OFFENDER_BOOKING_SK(+) ) AND ( AT_COURT_CASE.COURT_CASE_SK=AT_FACT_SENTENCE.COURT_CASE_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.ESTABLISHMENT_SK=AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK ) AND ( AT_ESTABLISHMENT_TAP.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.LIVING_UNIT_SK=AT_DIM_LOCATION.UNIT_4_SK(+) ) AND ( ( AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK in (SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #Prompt('Establishment Code (All for all)','A','Associated Establishment\\Associated Establishment Code',multi,free,Not_Persistent,User:69) */ ) Or 'All' in (SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #Prompt('Establishment Code (All for all)','A','Associated Establishment\\Associated Establishment Code',multi,free,Not_Persistent,User:69) */ ) ) AND ( AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG = 'Y' AND AT_COURT_CASE.MOST_SERIOUS_COUNT = 1 ) AND ( AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND='Y' ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND ( AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' ) AND Case When DT_LIFEFLAG.LIFE_SENTENCE_FLAG='Y' then 'Sentenced' when FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH='00/00/00' then 'Unsentenced' when FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH is null then 'Unsentenced' else 'Sentenced' End = 'Sentenced' )), dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_FACT_OFFENDER_CASE_NOTE.CONTACT_TIME, AT_CASE_NOTE_CONTACT_DATE.DAY_DATE, AT_ESTABLISHMENT_OFF_CASE_NOTE.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT_OFF_CASE_NOTE.ESTABLISHMENT_DESCRIPTION FROM BODIMIS.DIM_DATE AT_CASE_NOTE_CONTACT_DATE, BODIMIS.DIM_REFERENCE_CODES AT_CASE_NOTE_SUB_TYPE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_OFF_CASE_NOTE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_OFFENDER_CASE_NOTE AT_FACT_OFFENDER_CASE_NOTE, undefined_ WHERE ((AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_CASE_NOTE_CONTACT_DATE.DATE_SK = AT_FACT_OFFENDER_CASE_NOTE.CONTACT_DATE_SK) AND (AT_CASE_NOTE_SUB_TYPE.REFERENCE_CODE_SK = AT_FACT_OFFENDER_CASE_NOTE.CASE_NOTE_SUB_TYPE_CODE_SK) AND (AT_CASE_NOTE_SUB_TYPE.CODE_DOMAIN = 'TASK_SUBTYPE') AND (AT_FACT_OFFENDER_CASE_NOTE.OFFENDER_BOOKING_SK = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_ESTABLISHMENT_OFF_CASE_NOTE.ESTABLISHMENT_SK = AT_FACT_OFFENDER_CASE_NOTE.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_OFF_CASE_NOTE.ESTABLISHMENT_CODE_NK IN (SELECT SAC.CASELOAD_ID FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC WHERE SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)))) AND (AT_CASE_NOTE_SUB_TYPE.CODE = 'OMU' AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Associated Establishment\\Associated Establishment Code',multi,free,Not_Persistent,User:69) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Associated Establishment\\Associated Establishment Code',multi,free,Not_Persistent,User:69) */)) AND AT_CASE_NOTE_CONTACT_DATE.DAY_DATE >= (SELECT * FROM DP2_))) AND (undefined)), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, CONTACT_TIME, DAY_DATE, ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code (All for all)','A','Associated Establishment\\Associated Establishment Code',multi,free,Not_Persistent,User:69)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPe.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "CONTACT_TIME",
+            "type": "date",
+            "display": "Case Note Contact Date/Time",
+            "legacyId": "DPe.DOa8a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Case Note Contact Date",
+            "legacyId": "DPe.DOae0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Case Note Establishment Code",
+            "legacyId": "DPe.DOb70",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Case Note Establishment Description",
+            "legacyId": "DPe.DOb71",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DPf",
+      "name": "POM",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, DT_OFFENDER_CONTACT_ADDRESS.FIRST_NAME, DT_OFFENDER_CONTACT_ADDRESS.LAST_NAME FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT ROW_NUMBER() OVER (PARTITION BY dooc.offender_booking_sk, dooc.relationship ORDER BY dooc.active_flag DESC, dooc.address_flag DESC, dooc.mis_load_id DESC) AS row_seq_filter, dooc.*, CASE WHEN dooc.next_of_kin_flag = 'Y' THEN 'NEXTOFKIN' ELSE 'CONTACT' END AS Con_Addr_Type, CASE WHEN dooc.next_of_kin_flag = 'Y' THEN 'Next of Kin' ELSE 'Contact' END AS ConAddrTypeDesc FROM bodimis.dim_offender_other_contacts dooc) DT_OFFENDER_CONTACT_ADDRESS WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK (+)) AND (DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK IS NULL OR DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((DT_OFFENDER_CONTACT_ADDRESS.ACTIVE_FLAG (+) = 'Y') AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Associated Establishment\\Associated Establishment Code',multi,free,Not_Persistent,User:69) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Associated Establishment\\Associated Establishment Code',multi,free,Not_Persistent,User:69) */)) AND DT_OFFENDER_CONTACT_ADDRESS.RELATIONSHIP = 'Prison Offender Manager')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FIRST_NAME, LAST_NAME FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code (All for all)','A','Associated Establishment\\Associated Establishment Code',multi,free,Not_Persistent,User:69)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPf.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Other Contact First Name",
+            "legacyId": "DPf.DOad6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Other Contact Last Name",
+            "legacyId": "DPf.DOad8",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP4",
+      "name": "MIS Load Log",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP4.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "82602.RS",
+      "name": "All Sentenced Prisoners",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP2_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10A7C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO100DE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO32D",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_MIN_CASE_NOTE_DATE",
+            "display": "Min Case Note Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Min([Case Note Contact Date])"
+          },
+          {
+            "name": "$ref:V_CASE_NOTE_ESTAB",
+            "display": "Case Note Establishment",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Max([Case Note Establishment Description]) Where ([v_Case_Note_Date]= [v_Min_Case_Note_Date]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_TIME_BETWEEN_SENTENCE_STAR46",
+            "display": "Days between Sentence Date and Case Note",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=DaysBetween([Current Sentence Start Date];[v_Min_Case_Note_Date])"
+          },
+          {
+            "name": "$ref:V_14_DAYS",
+            "display": "Case Note entered over 14 days from date of Sentence?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_Time_between_Sentence_Start_and_Contact_date] >14;\"Yes\";\"No\")"
+          },
+          {
+            "name": "$ref:DP2_DO2D0",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO565",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_POM",
+            "display": "Prison Offender Manager",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([Other Contact First Name] + \" \" + [Other Contact Last Name])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "83217.RS",
+      "name": "Has OMU Case Note",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_14_DAYS = 'Yes')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP2_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10A7C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO100DE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO32D",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_MIN_CASE_NOTE_DATE",
+            "display": "Min Case Note Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Min([Case Note Contact Date])"
+          },
+          {
+            "name": "$ref:V_CASE_NOTE_ESTAB",
+            "display": "Case Note Establishment",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Max([Case Note Establishment Description]) Where ([v_Case_Note_Date]= [v_Min_Case_Note_Date]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_TIME_BETWEEN_SENTENCE_STAR46",
+            "display": "Days between Sentence Date and Case Note",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=DaysBetween([Current Sentence Start Date];[v_Min_Case_Note_Date])"
+          },
+          {
+            "name": "$ref:V_14_DAYS",
+            "display": "Case Note entered over 14 days from date of Sentence?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_Time_between_Sentence_Start_and_Contact_date] >14;\"Yes\";\"No\")"
+          },
+          {
+            "name": "$ref:DP2_DO2D0",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO565",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_POM",
+            "display": "Prison Offender Manager",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([Other Contact First Name] + \" \" + [Other Contact Last Name])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "83102.RS",
+      "name": "No OMU Contact since Sentence",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_NO_CONTACT = 'No Contact')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP2_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10A7C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO100DE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO4B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO32D",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO2D0",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO565",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_POM",
+            "display": "Prison Offender Manager",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([Other Contact First Name] + \" \" + [Other Contact Last Name])"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Expected table name but got None. Line 1, Col: 1261.\n  hen AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE \u001b[4mFrom\u001b[0m --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENT]",
+      "entityId": "FtNa6l1ffgkAssUBAHCLZl8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Expected table name but got None. Line 1, Col: 1261.\n  hen AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE \u001b[4mFrom\u001b[0m --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENT]",
+      "entityId": "FtNa6l1ffgkAssUBAHCLZl8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_CASE_NOTE_ESTAB :: Error: =Max([Case Note Establishment Description]) Where ([v_Case_Note_Date]= [v_Min_Case_Note_Date]) In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:96",
+      "entityId": "FtNa6l1ffgkAssUBAHCLZl8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields (comments -- in query)",
+      "entityId": "3375368/DP2",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO1007B does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10080 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10A7C does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO100DE does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO32D does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MIN_CASE_NOTE_DATE does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_CASE_NOTE_ESTAB does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_TIME_BETWEEN_SENTENCE_STAR46 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_14_DAYS does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO2D0 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO565 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_POM does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO1007B does not have corresponding dataset schema field",
+      "entityId": "83217.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10080 does not have corresponding dataset schema field",
+      "entityId": "83217.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10A7C does not have corresponding dataset schema field",
+      "entityId": "83217.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO100DE does not have corresponding dataset schema field",
+      "entityId": "83217.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO32D does not have corresponding dataset schema field",
+      "entityId": "83217.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MIN_CASE_NOTE_DATE does not have corresponding dataset schema field",
+      "entityId": "83217.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_CASE_NOTE_ESTAB does not have corresponding dataset schema field",
+      "entityId": "83217.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_TIME_BETWEEN_SENTENCE_STAR46 does not have corresponding dataset schema field",
+      "entityId": "83217.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_14_DAYS does not have corresponding dataset schema field",
+      "entityId": "83217.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO2D0 does not have corresponding dataset schema field",
+      "entityId": "83217.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO565 does not have corresponding dataset schema field",
+      "entityId": "83217.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_POM does not have corresponding dataset schema field",
+      "entityId": "83217.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO1007B does not have corresponding dataset schema field",
+      "entityId": "83102.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10080 does not have corresponding dataset schema field",
+      "entityId": "83102.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10A7C does not have corresponding dataset schema field",
+      "entityId": "83102.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO100DE does not have corresponding dataset schema field",
+      "entityId": "83102.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO4B does not have corresponding dataset schema field",
+      "entityId": "83102.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO32D does not have corresponding dataset schema field",
+      "entityId": "83102.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO2D0 does not have corresponding dataset schema field",
+      "entityId": "83102.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO565 does not have corresponding dataset schema field",
+      "entityId": "83102.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_POM does not have corresponding dataset schema field",
+      "entityId": "83102.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3375368/DP2",
+      "entityType": "dataset"
+    }
+  ]
+}

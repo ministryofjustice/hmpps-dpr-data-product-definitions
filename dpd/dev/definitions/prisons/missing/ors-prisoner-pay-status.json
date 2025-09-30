@@ -1,0 +1,701 @@
+{
+  "id": "FiSOT1pqLAAAZdAAAHBbSF8DACJIAAzC",
+  "name": "ORS Prisoner Pay Status",
+  "description": "This report prompts for an establishment code and returns any prisoners who have an active no pay status or an active special pay status.<br/>ACT0015 - v00.00.02 Last Modified:12/01/2018",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACT0015 v00.00.02 LSRT0044"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP0",
+      "name": "No Pay",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.LAST_NAME, TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) AS AGE, AT_HEADER_BLOCK.STATUS_3, AT_HEADER_BLOCK.OFF_ALERTS, AT_IMPRISON_STATUSES.DESCRIPTION, AT_ALL_LIVING_UNITS.DESCRIPTION AS LOCATION, AT_OFFENDER_BOOKING.IN_OUT_STATUS, AT_NO_PAY_DESC.DESCRIPTION AS NO_PAY_REASON_DESCRIPTION, AT_OFFENDER_NO_PAY_PERIODS.START_DATE, AT_OFFENDER_NO_PAY_PERIODS.END_DATE, AT_OFFENDER_NO_PAY_PERIODS.COMMENT_TEXT, DT_IEP_BAND_LAST.IEP_LEVEL FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_NO_PAY_DESC, (SELECT iep_level, description, agy_loc_id, offender_book_id, iep_date FROM (SELECT iep.iep_level, rc.description, iep.agy_loc_id, iep.offender_book_id, iep.iep_date, ROW_NUMBER() OVER (PARTITION BY iep.offender_book_id ORDER BY iep.iep_time DESC, iep.iep_level_seq DESC) AS row_seq_filter FROM oms_owner.offender_iep_levels iep LEFT OUTER JOIN oms_owner.reference_codes rc ON iep.iep_level = rc.code AND rc.domain = 'IEP_LEVEL') WHERE row_seq_filter = 1) DT_IEP_BAND_LAST, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.IMPRISONMENT_STATUSES AT_IMPRISON_STATUSES, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS, OMS_OWNER.OFFENDER_NO_PAY_PERIODS AT_OFFENDER_NO_PAY_PERIODS, OMS_OWNER.OFFENDER_IMPRISON_STATUSES AT_OFFENDER_IMPRISON_STATUSES WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_IMPRISON_STATUSES.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_IMPRISON_STATUSES.LATEST_STATUS = 'Y' OR AT_OFFENDER_IMPRISON_STATUSES.LATEST_STATUS IS NULL) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (DT_IEP_BAND_LAST.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_IMPRISON_STATUSES.IMPRISONMENT_STATUS (+) = AT_OFFENDER_IMPRISON_STATUSES.IMPRISONMENT_STATUS) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_NO_PAY_PERIODS.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_NO_PAY_PERIODS.REASON_CODE = AT_NO_PAY_DESC.CODE (+)) AND (AT_NO_PAY_DESC.DOMAIN (+) = 'NOPAY_RSN') AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_)) AND AT_OFFENDER_NO_PAY_PERIODS.START_DATE <= TRUNC(CURRENT_TIMESTAMP) AND (AT_OFFENDER_NO_PAY_PERIODS.END_DATE >= TRUNC(CURRENT_TIMESTAMP) OR AT_OFFENDER_NO_PAY_PERIODS.END_DATE IS NULL))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FIRST_NAME, LAST_NAME, AGE, STATUS_3, OFF_ALERTS, DESCRIPTION, LOCATION, IN_OUT_STATUS, NO_PAY_REASON_DESCRIPTION, START_DATE, END_DATE, COMMENT_TEXT, IEP_LEVEL FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP0.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP0.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "AGE",
+            "type": "double",
+            "display": "Age",
+            "legacyId": "DP0.DO72",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "STATUS_3",
+            "type": "string",
+            "display": "Header Block CSRA",
+            "legacyId": "DP0.DOf39",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "OFF_ALERTS",
+            "type": "string",
+            "display": "Summary of Alerts",
+            "legacyId": "DP0.DOc69",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Main Legal Status - Description",
+            "legacyId": "DP0.DO4b6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "LOCATION",
+            "type": "string",
+            "display": "Location",
+            "legacyId": "DP0.DO9fe",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "IN_OUT_STATUS",
+            "type": "string",
+            "display": "In Out Status",
+            "legacyId": "DP0.DOcde",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "NO_PAY_REASON_DESCRIPTION",
+            "type": "string",
+            "display": "No Pay Reason Description",
+            "legacyId": "DP0.DO1073",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "START_DATE",
+            "type": "date",
+            "display": "No Pay Start Date",
+            "legacyId": "DP0.DO106e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "END_DATE",
+            "type": "date",
+            "display": "No Pay End Date",
+            "legacyId": "DP0.DO106f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "No Pay Comment Text",
+            "legacyId": "DP0.DO1070",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "IEP Level",
+            "legacyId": "DP0.DO715",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP2",
+      "name": "Special Pay",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.LAST_NAME, TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) AS AGE, AT_HEADER_BLOCK.STATUS_3, AT_HEADER_BLOCK.OFF_ALERTS, AT_IMPRISON_STATUSES.DESCRIPTION, AT_ALL_LIVING_UNITS.DESCRIPTION AS LOCATION, AT_OFFENDER_BOOKING.IN_OUT_STATUS, AT_SPECIAL_PAY_DESC.DESCRIPTION AS SPECIAL_PAY_DESCRIPTION, AT_OFFENDER_PAY_STATUSES.START_DATE, AT_OFFENDER_PAY_STATUSES.END_DATE, DT_IEP_BAND_LAST.IEP_LEVEL FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_SPECIAL_PAY_DESC, (SELECT iep_level, description, agy_loc_id, offender_book_id, iep_date FROM (SELECT iep.iep_level, rc.description, iep.agy_loc_id, iep.offender_book_id, iep.iep_date, ROW_NUMBER() OVER (PARTITION BY iep.offender_book_id ORDER BY iep.iep_time DESC, iep.iep_level_seq DESC) AS row_seq_filter FROM oms_owner.offender_iep_levels iep LEFT OUTER JOIN oms_owner.reference_codes rc ON iep.iep_level = rc.code AND rc.domain = 'IEP_LEVEL') WHERE row_seq_filter = 1) DT_IEP_BAND_LAST, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.IMPRISONMENT_STATUSES AT_IMPRISON_STATUSES, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS, OMS_OWNER.OFFENDER_PAY_STATUSES AT_OFFENDER_PAY_STATUSES, OMS_OWNER.OFFENDER_IMPRISON_STATUSES AT_OFFENDER_IMPRISON_STATUSES WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_IMPRISON_STATUSES.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_IMPRISON_STATUSES.LATEST_STATUS = 'Y' OR AT_OFFENDER_IMPRISON_STATUSES.LATEST_STATUS IS NULL) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (DT_IEP_BAND_LAST.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_IMPRISON_STATUSES.IMPRISONMENT_STATUS (+) = AT_OFFENDER_IMPRISON_STATUSES.IMPRISONMENT_STATUS) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_PAY_STATUSES.OFFENDER_BOOK_ID) AND (AT_OFFENDER_PAY_STATUSES.SPECIAL_PAY_TYPE_CODE = AT_SPECIAL_PAY_DESC.CODE (+)) AND (AT_SPECIAL_PAY_DESC.DOMAIN (+) = 'PAY_TYPE' AND AT_SPECIAL_PAY_DESC.PARENT_CODE (+) = 'SPECIAL') AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_)) AND AT_OFFENDER_PAY_STATUSES.START_DATE <= TRUNC(CURRENT_TIMESTAMP) AND (AT_OFFENDER_PAY_STATUSES.END_DATE >= TRUNC(CURRENT_TIMESTAMP) OR AT_OFFENDER_PAY_STATUSES.END_DATE IS NULL))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FIRST_NAME, LAST_NAME, AGE, STATUS_3, OFF_ALERTS, DESCRIPTION, LOCATION, IN_OUT_STATUS, SPECIAL_PAY_DESCRIPTION, START_DATE, END_DATE, IEP_LEVEL FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP2.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP2.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "AGE",
+            "type": "double",
+            "display": "Age",
+            "legacyId": "DP2.DO72",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "STATUS_3",
+            "type": "string",
+            "display": "Header Block CSRA",
+            "legacyId": "DP2.DOf39",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "OFF_ALERTS",
+            "type": "string",
+            "display": "Summary of Alerts",
+            "legacyId": "DP2.DOc69",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Main Legal Status - Description",
+            "legacyId": "DP2.DO4b6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "LOCATION",
+            "type": "string",
+            "display": "Location",
+            "legacyId": "DP2.DO9fe",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "IN_OUT_STATUS",
+            "type": "string",
+            "display": "In Out Status",
+            "legacyId": "DP2.DOcde",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "SPECIAL_PAY_DESCRIPTION",
+            "type": "string",
+            "display": "Special Pay Description",
+            "legacyId": "DP2.DO1074",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "START_DATE",
+            "type": "date",
+            "display": "Special Pay Start Date",
+            "legacyId": "DP2.DO106b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "END_DATE",
+            "type": "date",
+            "display": "Special Pay End Date",
+            "legacyId": "DP2.DO106c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "IEP Level",
+            "legacyId": "DP2.DO715",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "892.RS",
+      "name": "No Pay (By NOMS)",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO44"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO46"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO45"
+          },
+          {
+            "name": "$ref:AGE",
+            "display": "Age",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO72"
+          },
+          {
+            "name": "$ref:OFF_ALERTS",
+            "display": "Summary of Alerts",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOc69"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Main Legal Status - Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4b6"
+          },
+          {
+            "name": "$ref:IEP_LEVEL",
+            "display": "IEP Level",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO715"
+          },
+          {
+            "name": "$ref:LOCATION",
+            "display": "Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9fe"
+          },
+          {
+            "name": "$ref:IN_OUT_STATUS",
+            "display": "In Out Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOcde"
+          },
+          {
+            "name": "$ref:NO_PAY_REASON_DESCRIPTION",
+            "display": "No Pay Reason Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1073"
+          },
+          {
+            "name": "$ref:START_DATE",
+            "display": "No Pay Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO106e"
+          },
+          {
+            "name": "$ref:END_DATE",
+            "display": "No Pay End Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO106f"
+          },
+          {
+            "name": "$ref:COMMENT_TEXT",
+            "display": "No Pay Comment Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1070"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1081.RS",
+      "name": "No Pay (By Cell)",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO44"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO46"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO45"
+          },
+          {
+            "name": "$ref:AGE",
+            "display": "Age",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO72"
+          },
+          {
+            "name": "$ref:OFF_ALERTS",
+            "display": "Summary of Alerts",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOc69"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Main Legal Status - Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4b6"
+          },
+          {
+            "name": "$ref:IEP_LEVEL",
+            "display": "IEP Level",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO715"
+          },
+          {
+            "name": "$ref:LOCATION",
+            "display": "Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9fe"
+          },
+          {
+            "name": "$ref:IN_OUT_STATUS",
+            "display": "In Out Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOcde"
+          },
+          {
+            "name": "$ref:NO_PAY_REASON_DESCRIPTION",
+            "display": "No Pay Reason Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1073"
+          },
+          {
+            "name": "$ref:START_DATE",
+            "display": "No Pay Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO106e"
+          },
+          {
+            "name": "$ref:END_DATE",
+            "display": "No Pay End Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO106f"
+          },
+          {
+            "name": "$ref:COMMENT_TEXT",
+            "display": "No Pay Comment Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1070"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1008.RS",
+      "name": "Special Pay",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO44"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO46"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO45"
+          },
+          {
+            "name": "$ref:AGE",
+            "display": "Age",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO72"
+          },
+          {
+            "name": "$ref:OFF_ALERTS",
+            "display": "Summary of Alerts",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOc69"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Main Legal Status - Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO4b6"
+          },
+          {
+            "name": "$ref:IEP_LEVEL",
+            "display": "IEP Level",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO715"
+          },
+          {
+            "name": "$ref:LOCATION",
+            "display": "Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO9fe"
+          },
+          {
+            "name": "$ref:IN_OUT_STATUS",
+            "display": "In Out Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOcde"
+          },
+          {
+            "name": "$ref:SPECIAL_PAY_DESCRIPTION",
+            "display": "Special Pay Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1074"
+          },
+          {
+            "name": "$ref:START_DATE",
+            "display": "Special Pay Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO106b"
+          },
+          {
+            "name": "$ref:END_DATE",
+            "display": "Special Pay End Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO106c"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,454 @@
+{
+  "id": "okZTBVQACSAcHR0ATxeD8K7B948",
+  "name": "MIS Financial Reconciliation",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "FIN0013 v00.01.02"
+    ]
+  },
+  "description": "Shows establishment level totals (opening and closing balances) for Cash, Spend and Savings accounts based on the date chosen at runtime.<br/>FIN0013 - v00.01.02 Last Modified: 24/03/09",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376115/DPd",
+      "name": "Account Balances",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_NAME, SUM(COALESCE(CASE WHEN NOT AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE_SK IS NULL THEN AT_FACT_OFF_ACC_HIST_BALANCE.GROSS_BALANCE END, 0)) AS SUM_OF_ACCOUNT_OPENING_BALANCE, SUM(COALESCE(CASE WHEN NOT AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE_SK IS NULL THEN AT_FACT_OFF_ACC_HIST_BALANCE.HOLD_BALANCE END, 0)) AS SUM_OF_PRIVATE_CASH_ACCOUNT_51 FROM BODIMIS.FACT_OFF_ACC_HIST_BALANCE AT_FACT_OFF_ACC_HIST_BALANCE, BODIMIS.DIM_ESTABLISHMENT AT_CASELOADS_OFF_HIST_BAL, BODIMIS.DIM_ACCOUNT_CODE AT_DIM_ACCOUNT_CODE_ACCOUNTS, BODIMIS.DIM_DATE AT_HIST_BALANCE_DATES WHERE (AT_HIST_BALANCE_DATES.DATE_SK = AT_FACT_OFF_ACC_HIST_BALANCE.BALANCE_DATE_SK) AND (AT_FACT_OFF_ACC_HIST_BALANCE.ACCOUNT_CODE_SK = AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE_SK) AND (AT_CASELOADS_OFF_HIST_BAL.ESTABLISHMENT_SK = AT_FACT_OFF_ACC_HIST_BALANCE.ESTABLISHMENT_SK) AND (((AT_CASELOADS_OFF_HIST_BAL.ESTABLISHMENT_CODE_NK) = (SELECT CASELOAD_ID FROM prompt_ /* = #Prompt('Caseload ID','A','Caseload List of values with security\\Caseload Id LOV with security',mono,constrained,Not_Persistent) */)) AND AT_HIST_BALANCE_DATES.DAY_DATE = (SELECT TXN_DATE FROM prompt_ /* = #prompt('Enter Transaction Date','D',,Mono,Free,Not_Persistent,,User:0) */)) GROUP BY AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_NAME), dataset_ AS (SELECT ACCOUNT_NAME, SUM_OF_ACCOUNT_OPENING_BALANCE, SUM_OF_PRIVATE_CASH_ACCOUNT_51, SUM(CASE WHEN TRANSACTION_POSTING_TYPE_CODE = 'CR' THEN TRANSACTION_ENTRY_AMOUNT ELSE 0 END) - V_NEW_BALANCE_ADJUSTMENT_CREDIT_AMOUNT - V_NEW_MONEY_IN AS V_NEW_NET_CREDIT, SUM(CASE WHEN TRANSACTION_POSTING_TYPE_CODE = 'DR' THEN TRANSACTION_ENTRY_AMOUNT ELSE 0 END) - V_NEW_BALANCE_ADJUSTMENT_DEBIT_AMOUNT - V_NEW_MONEY_OUT AS V_NEW_NET_DEBIT, SUM(CASE WHEN TRANSACTION_TYPE = 'AJ' THEN CASE WHEN TRANSACTION_POSTING_TYPE_CODE = 'CR' THEN TRANSACTION_ENTRY_AMOUNT ELSE 0 END ELSE 0 END) AS V_NEW_BALANCE_ADJUSTMENT_CRE38, SUM(CASE WHEN TRANSACTION_TYPE = 'AJ' THEN CASE WHEN TRANSACTION_POSTING_TYPE_CODE = 'DR' THEN TRANSACTION_ENTRY_AMOUNT ELSE 0 END ELSE 0 END) AS V_NEW_BALANCE_ADJUSTMENT_DEB37, SUM_OF_ACCOUNT_OPENING_BALANCE || SUM(CASE WHEN TRANSACTION_POSTING_TYPE_CODE = 'CR' THEN TRANSACTION_ENTRY_AMOUNT ELSE 0 END) - SUM(CASE WHEN TRANSACTION_POSTING_TYPE_CODE = 'DR' THEN TRANSACTION_ENTRY_AMOUNT ELSE 0 END) AS V_NEW_CLOSING_BALANCE, V_NEW_CLOSING_BALANCE || SUM_OF_PRIVATE_CASH_ACCOUNT_51 AS V_NEW_GROSS_BALANCE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "caseload_id",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Caseload ID",
+          "description": "@Prompt('Caseload ID','A','Caseload List of values with security\\Caseload Id LOV with security',mono,constrained,Not_Persistent)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "txn_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Transaction Date",
+          "description": "@prompt('Enter Transaction Date','D',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ACCOUNT_NAME",
+            "type": "string",
+            "display": "Account Name",
+            "legacyId": "DPd.DO3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SUM_OF_ACCOUNT_OPENING_BALANCE",
+            "type": "double",
+            "display": "Sum of Account Opening-Balance",
+            "legacyId": "DPd.DO170",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "SUM_OF_PRIVATE_CASH_ACCOUNT_51",
+            "type": "double",
+            "display": "Sum of Private Cash Account Holding Opening-Balance",
+            "legacyId": "DPd.DO6a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "V_NEW_NET_CREDIT",
+            "type": "string",
+            "display": "V_NEW_NET_CREDIT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 4,
+            "name": "V_NEW_NET_DEBIT",
+            "type": "string",
+            "display": "V_NEW_NET_DEBIT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 5,
+            "name": "V_NEW_BALANCE_ADJUSTMENT_CRE38",
+            "type": "string",
+            "display": "V_NEW_BALANCE_ADJUSTMENT_CRE38",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 6,
+            "name": "V_NEW_BALANCE_ADJUSTMENT_DEB37",
+            "type": "string",
+            "display": "V_NEW_BALANCE_ADJUSTMENT_DEB37",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 7,
+            "name": "V_NEW_CLOSING_BALANCE",
+            "type": "string",
+            "display": "V_NEW_CLOSING_BALANCE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 8,
+            "name": "V_NEW_GROSS_BALANCE",
+            "type": "string",
+            "display": "V_NEW_GROSS_BALANCE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376115/DPe",
+      "name": "New Transactions",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_NAME, AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE, AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT, AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE FROM BODIMIS.FACT_OFFENDER_TRANSACTION AT_FACT_OFFENDER_TRANSACTION, BODIMIS.DIM_ESTABLISHMENT AT_CASELOADS, BODIMIS.DIM_ACCOUNT_CODE AT_DIM_ACCOUNT_CODE_TXN, BODIMIS.DIM_TRANSACTION_TYPE AT_DIM_TRANSACTION_TYPE, BODIMIS.DIM_TXN_POSTING_TYPE AT_DIM_TXN_POSTING_TYPE, BODIMIS.DIM_DATE AT_BUSINESS_DATE WHERE (AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_TYPE_SK) AND (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_POSTING_TYPE_SK = AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_SK) AND (AT_FACT_OFFENDER_TRANSACTION.ACCOUNT_CODE_SK = AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE_SK) AND (AT_CASELOADS.ESTABLISHMENT_SK = AT_FACT_OFFENDER_TRANSACTION.ESTABLISHMENT_SK) AND (AT_BUSINESS_DATE.DATE_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_BUSINESS_DATE_SK) AND ((AT_CASELOADS.ESTABLISHMENT_CODE_NK = (SELECT CASELOAD_ID FROM prompt_ /* = #Prompt('Caseload ID','A','Caseload List of values with security\\Caseload Id LOV with security',mono,constrained,Not_Persistent) */)) AND AT_BUSINESS_DATE.DAY_DATE = (SELECT TXN_DATE FROM prompt_ /* = #prompt('Enter Transaction Date','D',,Mono,Free,Not_Persistent,,User:0) */))), dataset_ AS (SELECT ACCOUNT_NAME, TRANSACTION_TYPE, TRANSACTION_ENTRY_AMOUNT, TRANSACTION_POSTING_TYPE_CODE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "caseload_id",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Caseload ID",
+          "description": "@Prompt('Caseload ID','A','Caseload List of values with security\\Caseload Id LOV with security',mono,constrained,Not_Persistent)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "txn_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Transaction Date",
+          "description": "@prompt('Enter Transaction Date','D',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ACCOUNT_NAME",
+            "type": "string",
+            "display": "Transaction Account Name",
+            "legacyId": "DPe.DO66",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "TRANSACTION_TYPE",
+            "type": "string",
+            "display": "Transaction Type Code",
+            "legacyId": "DPe.DO6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "TRANSACTION_ENTRY_AMOUNT",
+            "type": "double",
+            "display": "Transaction Entry Amount",
+            "legacyId": "DPe.DO28",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "TRANSACTION_POSTING_TYPE_CODE",
+            "type": "string",
+            "display": "Transaction Posting Type (DR/CR)",
+            "legacyId": "DPe.DOa",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376115/DP11",
+      "name": "Account Names",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_NAME FROM BODIMIS.DIM_ACCOUNT_CODE AT_DIM_ACCOUNT_CODE_TXN WHERE AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE IN (2101, 2102, 2103)), dataset_ AS (SELECT ACCOUNT_NAME FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ACCOUNT_NAME",
+            "type": "string",
+            "display": "Transaction Account Name",
+            "legacyId": "DP11.DO66",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376115/DP10",
+      "name": "MIS Load Date",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP10.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "97102.RS",
+      "name": "Financial Reconciliation",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376115/DPd",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:SUM_OF_ACCOUNT_OPENING_BALANCE",
+            "display": "Sum of Account Opening-Balance",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPd.DO170"
+          },
+          {
+            "name": "$ref:V_NEW_NET_CREDIT",
+            "display": "Bal Adjustment Credits (+)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum(If([Transaction Posting Type (DR/CR)]=\"CR\";[Transaction Entry Amount];0))-[v_New_Balance_Adjustment_Credit_Amount]-[v_New_Money_In]"
+          },
+          {
+            "name": "$ref:V_NEW_NET_DEBIT",
+            "display": "Available Closing Balance",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum(If([Transaction Posting Type (DR/CR)]=\"DR\";[Transaction Entry Amount];0))-[v_New_Balance Adjustment_Debit_Amount]-[v_New_Money_Out]"
+          },
+          {
+            "name": "$ref:V_NEW_MONEY_IN",
+            "display": "=Sum([Sum of Account Opening-Balance])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum(If([Transaction Type Code] InList(\"TIR\";\"FLSPEN\";\"FLCASH\";\"FLSAV\");[Transaction Entry Amount];0))"
+          },
+          {
+            "name": "$ref:V_NEW_MONEY_OUT",
+            "display": "=Sum([v_New_Net_Debit])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum(If([Transaction Type Code] InList(\"TOR\";\"TLSPEN\";\"TLCASH\";\"TLSAV\");[Transaction Entry Amount];0))"
+          },
+          {
+            "name": "$ref:V_NEW_BALANCE_ADJUSTMENT_CRE38",
+            "display": "=Sum([v_New_Balance Adjustment_Debit_Amount])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum(If([Transaction Type Code]=\"AJ\";If([Transaction Posting Type (DR/CR)]=\"CR\";[Transaction Entry Amount];0);0))"
+          },
+          {
+            "name": "$ref:V_NEW_BALANCE_ADJUSTMENT_DEB37",
+            "display": "=Sum([Sum of Private Cash Account Holding Opening-Balance])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum(If([Transaction Type Code]=\"AJ\";If([Transaction Posting Type (DR/CR)]=\"DR\";[Transaction Entry Amount];0);0))"
+          },
+          {
+            "name": "$ref:V_NEW_CLOSING_BALANCE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Sum of Account Opening-Balance]+Sum(If([Transaction Posting Type (DR/CR)]=\"CR\";[Transaction Entry Amount];0))-Sum(If([Transaction Posting Type (DR/CR)]=\"DR\";[Transaction Entry Amount];0))"
+          },
+          {
+            "name": "$ref:SUM_OF_PRIVATE_CASH_ACCOUNT_51",
+            "display": "Sum of Private Cash Account Holding Opening-Balance",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPd.DO6a"
+          },
+          {
+            "name": "$ref:V_NEW_GROSS_BALANCE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_New_Closing_Balance]+[Sum of Private Cash Account Holding Opening-Balance]"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_NEW_NET_CREDIT :: ReferenceError: error is not defined",
+      "entityId": "okZTBVQACSAcHR0ATxeD8K7B948",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_NEW_NET_DEBIT :: ReferenceError: error is not defined",
+      "entityId": "okZTBVQACSAcHR0ATxeD8K7B948",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_NEW_BALANCE_ADJUSTMENT_CRE38 :: ReferenceError: error is not defined",
+      "entityId": "okZTBVQACSAcHR0ATxeD8K7B948",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_NEW_BALANCE_ADJUSTMENT_DEB37 :: ReferenceError: error is not defined",
+      "entityId": "okZTBVQACSAcHR0ATxeD8K7B948",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_NEW_CLOSING_BALANCE :: ReferenceError: error is not defined",
+      "entityId": "okZTBVQACSAcHR0ATxeD8K7B948",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_NEW_NET_CREDIT :: ReferenceError: error is not defined",
+      "entityId": "okZTBVQACSAcHR0ATxeD8K7B948",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_NEW_NET_DEBIT :: ReferenceError: error is not defined",
+      "entityId": "okZTBVQACSAcHR0ATxeD8K7B948",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_NEW_MONEY_IN :: Error: argument 'sql': 'NoneType' object cannot be converted to 'PyString'",
+      "entityId": "okZTBVQACSAcHR0ATxeD8K7B948",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_NEW_MONEY_OUT :: Error: argument 'sql': 'NoneType' object cannot be converted to 'PyString'",
+      "entityId": "okZTBVQACSAcHR0ATxeD8K7B948",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_NEW_BALANCE_ADJUSTMENT_CRE38 :: ReferenceError: error is not defined",
+      "entityId": "okZTBVQACSAcHR0ATxeD8K7B948",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_NEW_BALANCE_ADJUSTMENT_DEB37 :: ReferenceError: error is not defined",
+      "entityId": "okZTBVQACSAcHR0ATxeD8K7B948",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_NEW_CLOSING_BALANCE :: ReferenceError: error is not defined",
+      "entityId": "okZTBVQACSAcHR0ATxeD8K7B948",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_NEW_MONEY_IN does not have corresponding dataset schema field",
+      "entityId": "97102.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_NEW_MONEY_OUT does not have corresponding dataset schema field",
+      "entityId": "97102.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3376115/DPd",
+      "entityType": "dataset"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3376115/DPe",
+      "entityType": "dataset"
+    }
+  ]
+}

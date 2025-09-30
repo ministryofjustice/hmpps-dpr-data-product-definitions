@@ -1,0 +1,168 @@
+{
+  "id": "okefD9YABVgvaBgANgCEcEPmVys",
+  "name": "MIS Activity Attendances Not Recorded Report",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACT0001 v00.00.08 LSRIT022"
+    ]
+  },
+  "description": "Provides a list of prisoners who were due to attend prison activities within a specified time period but have not had a record of attendance.<br/>ACT0001 - v00.00.08 Last Modified: 02/08/10",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP9",
+      "name": "Activity Attendances Not Recorded",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_DIM_PROGRAMME_TYPE.DESCRIPTION, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.INITIALS, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END, AT_FACT_OFFENDER_ACTIVITY.START_TIME, AT_FACT_OFFENDER_ACTIVITY.END_TIME, AT_FACT_OFFENDER_ACTIVITY.STATUS FROM BODIMIS.FACT_OFFENDER_ACTIVITY AT_FACT_OFFENDER_ACTIVITY, BODIMIS.DIM_ESTABLISHMENT AT_ACTIVITY_ESTABLISHMENT, BODIMIS.DIM_PROGRAMME_TYPE AT_DIM_PROGRAMME_TYPE, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB WHERE ( AT_OFFENDER_BOOKING.BIRTH_DATE_SK=AT_DOB.DATE_SK ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=AT_FACT_OFFENDER_ACTIVITY.OFFENDER_BOOKING_SK ) AND ( AT_DIM_PROGRAMME_TYPE.PROGRAMME_TYPE_SK=AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_TYPE_SK ) AND ( AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_SK=AT_FACT_OFFENDER_ACTIVITY.ESTABLISHMENT_SK ) AND ( ( AT_FACT_OFFENDER_ACTIVITY.ALLOCATED_FLAG = 'Y' ) AND ( AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK =(SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #Prompt('Establishment Code:','A','Activities\\Activity Establishment Code',mono,free,Not_Persistent,User:70) */ ) ) AND ( AT_FACT_OFFENDER_ACTIVITY.START_TIME >= (SELECT START_DATE FROM prompt_ /*= #Prompt('Enter Begin Date (DD/MM/YYYY):','D',,mono,free,Not_Persistent,User:3) */ ) and AT_FACT_OFFENDER_ACTIVITY.START_TIME < to_date((SELECT END_DATE FROM prompt_ /*= #Prompt('Enter End Date (DD/MM/YYYY):','D',,mono,free,Not_Persistent,User:4) */ )) + 1 ) AND ( AT_DIM_PROGRAMME_TYPE.DESCRIPTION in (SELECT ACTIVITY_NAME FROM prompt_ /*= #Prompt('Activity Name (All for all)','A','Activities\\Activity Description',multi,free,Not_Persistent,User:83) */ ) Or 'All' in (SELECT ACTIVITY_NAME FROM prompt_ /*= #Prompt('Activity Name (All for all)','A','Activities\\Activity Description',multi,free,Not_Persistent,User:83) */ ) ) AND AT_FACT_OFFENDER_ACTIVITY.SUSPENDED_FLAG = 'N' AND AT_FACT_OFFENDER_ACTIVITY.STATUS Is Null )), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code:','A','Activities\\Activity Establishment Code',mono,free,Not_Persistent,User:70)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "activity_name",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Activity Name (All for all)",
+          "description": "@Prompt('Activity Name (All for all)','A','Activities\\Activity Description',multi,free,Not_Persistent,User:83)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Begin Date (DD/MM/YYYY):",
+          "description": "@Prompt('Enter Begin Date (DD/MM/YYYY):','D',,mono,free,Not_Persistent,User:3)",
+          "mandatory": "true"
+        },
+        {
+          "index": 3,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter End Date (DD/MM/YYYY):",
+          "description": "@Prompt('Enter End Date (DD/MM/YYYY):','D',,mono,free,Not_Persistent,User:4)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3376639/DP13",
+      "name": "MIS Load Date",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP13.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "200881.RS",
+      "name": "Activity Attendances Not Recorded Report",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ACTIVITY_SESSION_STATUS_CODE NOT(IN ('ATT','CANC')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DP9_DO1064C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Required keyword: 'format' missing for <class 'sqlglot.expressions.StrToDate'>. Line 1, Col: 1852.\n  E FROM prompt_ /*= #Prompt('Enter End Date (DD/MM/YYYY):','D',,mono,free,Not_Persistent,User:4) */ )\u001b[4m)\u001b[0m + 1 ) AND ( AT_DIM_PROGRAMME_TYPE.DESCRIPTION in (SELECT ACTIVITY_NAME FROM prompt_ /*= #Prompt('Ac]",
+      "entityId": "okefD9YABVgvaBgANgCEcEPmVys",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields",
+      "entityId": "3375368/DP9",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1064C does not have corresponding dataset schema field",
+      "entityId": "200881.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3375368/DP9",
+      "entityType": "dataset"
+    }
+  ]
+}

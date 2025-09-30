@@ -1,0 +1,382 @@
+{
+  "id": "klZS5n8ADxjxHM4BBf8AISgXYiw",
+  "name": "ORS Outstanding Advances with Inactive Prisoners",
+  "description": "This report provides a list of all prisoners with Outstanding Advances. This is based on prisoners who are currently in the user's establishment regardless of where the advance was applied. Extra tab with a list of Inactive Prisoners with Outstanding Advances<br/>FIN0057 - v 00.00.02 Last Modified: 15/11/11",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "FIN0057 - v 00.00.02 LSRIT036"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376816/DP2",
+      "name": "Advances Outstanding",
+      "description": "Finance",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_HEADER_BLOCK.IN_OUT_STATUS, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID, OFFENDER_DEDUCTIONS.CASELOAD_ID, OFFENDER_DEDUCTIONS.EFFECTIVE_DATE, SUM(OFFENDER_DEDUCTIONS.MAX_TOTAL_AMOUNT) AS ORIGINAL_ADVANCE, SUM(OFFENDER_DEDUCTIONS.DEDUCTION_AMOUNT) AS ALREADY_PAID, SUM(OFFENDER_DEDUCTIONS.ADJUSTMENT_AMOUNT) AS ADJUSTMENT_AMOUNT, AT_HEADER_BLOCK.STATUS_DISPLAY, TRIM((AT_OFFENDER.TITLE) || ' ' || (AT_OFFENDER.FIRST_NAME) || ' ' || (AT_OFFENDER.LAST_NAME)) AS FULL_NAME, AT_HEADER_BLOCK.STATUS_DISPLAY || ' ' || AT_HEADER_BLOCK.IN_OUT_STATUS AS COMMUNITY_STATUS FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, USER_ACCESSIBLE_CASELOADS, OFFENDER_DEDUCTIONS WHERE (OFFENDER_DEDUCTIONS.OFFENDER_ID = AT_OFFENDER_BOOKING.ROOT_OFFENDER_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) GROUP BY AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_HEADER_BLOCK.IN_OUT_STATUS, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID, OFFENDER_DEDUCTIONS.CASELOAD_ID, OFFENDER_DEDUCTIONS.EFFECTIVE_DATE, AT_HEADER_BLOCK.STATUS_DISPLAY, TRIM((AT_OFFENDER.TITLE) || ' ' || (AT_OFFENDER.FIRST_NAME) || ' ' || (AT_OFFENDER.LAST_NAME)), AT_HEADER_BLOCK.STATUS_DISPLAY || ' ' || AT_HEADER_BLOCK.IN_OUT_STATUS HAVING SUM(OFFENDER_DEDUCTIONS.MAX_TOTAL_AMOUNT) > 0), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, IN_OUT_STATUS, AGY_LOC_ID, CASELOAD_ID, EFFECTIVE_DATE, ORIGINAL_ADVANCE, ALREADY_PAID, ADJUSTMENT_AMOUNT, STATUS_DISPLAY, FULL_NAME, COMMUNITY_STATUS, ADVANCES_OUTSTANDING.ORIGINAL_ADVANCE - ADVANCES_OUTSTANDING.ALREADY_PAID - ADVANCES_OUTSTANDING.ADJUSTMENT_AMOUNT AS V_OUTSTANDING_ADVANCE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "IN_OUT_STATUS",
+            "type": "string",
+            "display": "In Out Status",
+            "legacyId": "DP2.DO10cde",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP2.DO1043b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "CASELOAD_ID",
+            "type": "string",
+            "display": "Caseload Id",
+            "legacyId": "DP2.DO467c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "EFFECTIVE_DATE",
+            "type": "date",
+            "display": "Effective Date",
+            "legacyId": "DP2.DO4479",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ORIGINAL_ADVANCE",
+            "type": "double",
+            "display": "Original Advance",
+            "legacyId": "DP2.DO447f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ALREADY_PAID",
+            "type": "double",
+            "display": "Already Paid",
+            "legacyId": "DP2.DO4480",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "ADJUSTMENT_AMOUNT",
+            "type": "double",
+            "display": "Adjustment Amount",
+            "legacyId": "DP2.DO477f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "STATUS_DISPLAY",
+            "type": "string",
+            "display": "Status Display",
+            "legacyId": "DP2.DO10cdf",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "FULL_NAME",
+            "type": "string",
+            "display": "Full Name",
+            "legacyId": "DP2.DO10047",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "COMMUNITY_STATUS",
+            "type": "string",
+            "display": "Community Status",
+            "legacyId": "DP2.DO10e3a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "V_OUTSTANDING_ADVANCE",
+            "type": "string",
+            "display": "V_OUTSTANDING_ADVANCE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376816/DP9",
+      "name": "AO Inactive",
+      "description": "Finance",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, TRIM((AT_OFFENDER.TITLE) || ' ' || (AT_OFFENDER.FIRST_NAME) || ' ' || (AT_OFFENDER.LAST_NAME)) AS FULL_NAME, SUM(OFFENDER_DEDUCTIONS.MAX_TOTAL_AMOUNT) AS ORIGINAL_ADVANCE, SUM(OFFENDER_DEDUCTIONS.DEDUCTION_AMOUNT) AS ALREADY_PAID, SUM(OFFENDER_DEDUCTIONS.ADJUSTMENT_AMOUNT) AS ADJUSTMENT_AMOUNT, OFFENDER_DEDUCTIONS.EFFECTIVE_DATE, OFFENDER_DEDUCTIONS.CASELOAD_ID FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OFFENDER_DEDUCTIONS WHERE (OFFENDER_DEDUCTIONS.OFFENDER_ID = AT_OFFENDER_BOOKING.ROOT_OFFENDER_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (AT_HEADER_BLOCK.STATUS_DISPLAY || ' ' || AT_HEADER_BLOCK.IN_OUT_STATUS = 'Inactive OUT' AND OFFENDER_DEDUCTIONS.CASELOAD_ID = (SELECT establishment_code FROM prompt_)) GROUP BY AT_OFFENDER.OFFENDER_ID_DISPLAY, TRIM((AT_OFFENDER.TITLE) || ' ' || (AT_OFFENDER.FIRST_NAME) || ' ' || (AT_OFFENDER.LAST_NAME)), OFFENDER_DEDUCTIONS.EFFECTIVE_DATE, OFFENDER_DEDUCTIONS.CASELOAD_ID HAVING SUM(OFFENDER_DEDUCTIONS.MAX_TOTAL_AMOUNT) > 0), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FULL_NAME, ORIGINAL_ADVANCE, ALREADY_PAID, ADJUSTMENT_AMOUNT, EFFECTIVE_DATE, CASELOAD_ID FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP9.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FULL_NAME",
+            "type": "string",
+            "display": "Full Name",
+            "legacyId": "DP9.DO10047",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ORIGINAL_ADVANCE",
+            "type": "double",
+            "display": "Original Advance",
+            "legacyId": "DP9.DO447f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ALREADY_PAID",
+            "type": "double",
+            "display": "Already Paid",
+            "legacyId": "DP9.DO4480",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ADJUSTMENT_AMOUNT",
+            "type": "double",
+            "display": "Adjustment Amount",
+            "legacyId": "DP9.DO477f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "EFFECTIVE_DATE",
+            "type": "date",
+            "display": "Effective Date",
+            "legacyId": "DP9.DO4479",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "CASELOAD_ID",
+            "type": "string",
+            "display": "Caseload Id",
+            "legacyId": "DP9.DO467c",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "997.RS",
+      "name": "Outstanding Advances",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376816/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_OUTSTANDING_ADVANCE > 0)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10044"
+          },
+          {
+            "name": "$ref:FULL_NAME",
+            "display": "Full Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10047"
+          },
+          {
+            "name": "$ref:COMMUNITY_STATUS",
+            "display": "Community Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10e3a"
+          },
+          {
+            "name": "$ref:CASELOAD_ID",
+            "display": "Caseload Id",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO467c"
+          },
+          {
+            "name": "$ref:EFFECTIVE_DATE",
+            "display": "Effective Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO4479"
+          },
+          {
+            "name": "$ref:ORIGINAL_ADVANCE",
+            "display": "Original Advance",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO447f"
+          },
+          {
+            "name": "$ref:ALREADY_PAID",
+            "display": "Already Paid",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO4480"
+          },
+          {
+            "name": "$ref:ADJUSTMENT_AMOUNT",
+            "display": "Adjustment Amount",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO477f"
+          },
+          {
+            "name": "$ref:V_OUTSTANDING_ADVANCE",
+            "display": "Outstanding Advance",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Advances Outstanding].[Original Advance]-[Advances Outstanding].[Already Paid]-[Advances Outstanding].[Adjustment Amount]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1367.RS",
+      "name": "Outstanding Advances Inactive Prisoners",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376816/DP9",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_OA_INACTIVE_DIM > 0)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:CASELOAD_ID",
+            "display": "Caseload Id",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP9.DO467c"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00904: \"ADVANCES_OUTSTANDING\".\"ADJUSTMENT_AMOUNT\": invalid identifier\nHelp: https://docs.oracle.com/error-help/db/ora-00904/",
+      "entityId": "3376816/DP2",
+      "entityType": "dataset"
+    }
+  ]
+}

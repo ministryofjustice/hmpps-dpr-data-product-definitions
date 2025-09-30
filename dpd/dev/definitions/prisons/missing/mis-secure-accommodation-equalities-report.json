@@ -1,0 +1,384 @@
+{
+  "id": "klZN.0wACPTlGkwA..8AFE.rcVQ",
+  "name": "MIS Secure Accommodation Equalities Report",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACC0027 v00.00.01"
+    ]
+  },
+  "description": "Prompts for Date Range and Establishment.  Lists all Prisoners that have been located in Secure Accommodation during date range and lists all disabilities, whether they are active, Ethnic Code, Nationality, Religion & Sexual Orientation<br/>ACC0027 v00.00.01",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP2",
+      "name": "Secure Accommodation Report",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, AT_BED_ASSIGNMENT_HISTORY.ASSIGNMENT_TIME, AT_BED_ASSIGNMENT_HISTORY.ASSIGNMENT_END_TIME, AT_TO_CELL.UNIT_4_DESCRIPTION, COALESCE(AT_OFFENDER_BOOKING.RELIGION_DESCRIPTION, 'Not Specified') AS RELIGION_DESCRIPTION, AT_OFFENDER_BOOKING.NATIONALITY_DESCRIPTION, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, AT_OFFENDER_BOOKING.SEX_ORIENTATION_DESCRIPTION, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE_DESCRIPTION, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE, CASE WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE IS NULL THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'I' THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'ON' AND NOT BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'PRD', 'RD', 'NR') THEN 'Y' ELSE 'N' END AS DISABILITY_ACTIVE_FLAG, AT_OFFENDER_BOOKING.GENDER_CODE FROM BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.FACT_BED_ASSIGNMENT_HISTORY AT_BED_ASSIGNMENT_HISTORY, BODIMIS.DIM_CELL AT_TO_CELL, BODIMIS.DIM_OFFENDER_PERSONAL_CARE WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_BED_ASSIGNMENT_HISTORY.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_BED_ASSIGNMENT_HISTORY.LIVING_UNIT_SK = AT_TO_CELL.UNIT_4_SK (+)) AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.DIM_OFFENDER_PERSONAL_CARE.OFFENDER_BOOKING_SK (+)) AND (AT_TO_CELL.UNIT_4_DESCRIPTION IN ('ACI-P-1-001', 'ACI-P-1-002', 'ACI-P-1-003', 'ACI-P-1-004', 'ACI-P-1-005', 'ACI-P-1-006', 'ACI-P-1-007', 'ACI-P-1-008', 'ACI-P-1-009', 'ACI-P-1-010', 'ACI-P-1-011', 'ACI-P-1-012', 'ACI-P-1-013', 'ACI-P-1-014', 'ACI-P-1-015', 'ACI-P-1-016', 'ACI-P-1-017', 'ACI-P-1-018', 'ACI-P-1-019', 'ACI-P-1-020', 'ACI-P-1-021', 'ACI-P-1-022', 'ACI-P-1-023', 'ACI-P-1-024', 'ACI-P-1-025', 'ACI-P-1-026') AND AT_BED_ASSIGNMENT_HISTORY.ASSIGNMENT_TIME <= TO_DATE('25-11-2015 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND (AT_BED_ASSIGNMENT_HISTORY.ASSIGNMENT_END_TIME BETWEEN TO_DATE('01-11-2015 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND CURRENT_TIMESTAMP OR AT_BED_ASSIGNMENT_HISTORY.ASSIGNMENT_END_TIME IS NULL) AND (AT_OFFENDER_BOOKING.BOOKING_SEQ = 1))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, DATE_OF_BIRTH, ASSIGNMENT_TIME, ASSIGNMENT_END_TIME, UNIT_4_DESCRIPTION, RELIGION_DESCRIPTION, NATIONALITY_DESCRIPTION, ETHNIC_CODE, SEX_ORIENTATION_DESCRIPTION, CODE, CODE_DESCRIPTION, TYPE, DISABILITY_ACTIVE_FLAG, GENDER_CODE, ASSIGNMENT_TIME || ' - ' || ASSIGNMENT_END_TIME AS V_IN_CELL_BETWEEN, 'TBD' AS V_ACTIVE_CARE_CONCAT FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP2.DO7b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP2.DO85",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ASSIGNMENT_TIME",
+            "type": "date",
+            "display": "Movement Assignment Date and Time",
+            "legacyId": "DP2.DO3ca",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ASSIGNMENT_END_TIME",
+            "type": "date",
+            "display": "Movement Assignment End Date and Time (Internal)",
+            "legacyId": "DP2.DO3cb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "UNIT_4_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Location To Description (Internal)",
+            "legacyId": "DP2.DO162",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "RELIGION_DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DP2.DOb3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "NATIONALITY_DESCRIPTION",
+            "type": "string",
+            "display": "Nationality Description",
+            "legacyId": "DP2.DOb5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP2.DO9b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "SEX_ORIENTATION_DESCRIPTION",
+            "type": "string",
+            "display": "Sexual Orientation Description",
+            "legacyId": "DP2.DO970",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "CODE",
+            "type": "string",
+            "display": "Care Code",
+            "legacyId": "DP2.DO97c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "CODE_DESCRIPTION",
+            "type": "string",
+            "display": "Care Code Description",
+            "legacyId": "DP2.DO97d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "TYPE",
+            "type": "string",
+            "display": "Care Type",
+            "legacyId": "DP2.DO97a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "DISABILITY_ACTIVE_FLAG",
+            "type": "string",
+            "display": "Disability Active Flag",
+            "legacyId": "DP2.DOa9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "GENDER_CODE",
+            "type": "string",
+            "display": "Gender Code",
+            "legacyId": "DP2.DOa8",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "V_IN_CELL_BETWEEN",
+            "type": "string",
+            "display": "V_IN_CELL_BETWEEN",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 16,
+            "name": "V_ACTIVE_CARE_CONCAT",
+            "type": "string",
+            "display": "V_ACTIVE_CARE_CONCAT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP3",
+      "name": "MIS Load",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP3.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP5",
+      "name": "Seg Cells",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT CASE WHEN AT_CELL.UNIT_1_TYPE = 'SEG' OR AT_CELL.UNIT_2_TYPE = 'SEG' OR AT_CELL.UNIT_3_TYPE = 'SEG' OR AT_CELL.UNIT_4_TYPE = 'SEG' THEN 'Y' ELSE 'N' END AS CELL_SEGREGATION_FLAG, AT_CELL.UNIT_4_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_CELL AT_CELL WHERE (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND ((AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK IN (SELECT establishment_code FROM prompt_) OR (AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK IS NULL)) AND CASE WHEN AT_CELL.UNIT_1_TYPE = 'SEG' OR AT_CELL.UNIT_2_TYPE = 'SEG' OR AT_CELL.UNIT_3_TYPE = 'SEG' OR AT_CELL.UNIT_4_TYPE = 'SEG' THEN 'Y' ELSE 'N' END IN ('Y'))), dataset_ AS (SELECT CELL_SEGREGATION_FLAG, UNIT_4_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "CELL_SEGREGATION_FLAG",
+            "type": "string",
+            "display": "Cell Segregation Flag",
+            "legacyId": "DP5.DOa74",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "UNIT_4_DESCRIPTION",
+            "type": "string",
+            "display": "Unit Description 4",
+            "legacyId": "DP5.DO136",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "194162.RS",
+      "name": "Secure Accommodation",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_MAX_ACTIVE IN (1))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO76"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO7b"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO85"
+          },
+          {
+            "name": "$ref:V_IN_CELL_BETWEEN",
+            "display": "Period in Secure Accom",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Movement Assignment Date and Time]+\" - \"+[Movement Assignment End Date and Time (Internal)]"
+          },
+          {
+            "name": "$ref:UNIT_4_DESCRIPTION",
+            "display": "Movement Location To Description (Internal)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO162"
+          },
+          {
+            "name": "$ref:V_ACTIVE_CARE_CONCAT",
+            "display": "Active Disability?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=([Care Type]+\" - \"+[Care Code Description]) Where ([Disability Active Flag] = \"Y\")"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO9b"
+          },
+          {
+            "name": "$ref:NATIONALITY_DESCRIPTION",
+            "display": "Nationality Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOb5"
+          },
+          {
+            "name": "$ref:RELIGION_DESCRIPTION",
+            "display": "Religion Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOb3"
+          },
+          {
+            "name": "$ref:GENDER_CODE",
+            "display": "Gender Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOa8"
+          },
+          {
+            "name": "$ref:SEX_ORIENTATION_DESCRIPTION",
+            "display": "Sexual Orientation Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO970"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_ACTIVE_CARE_CONCAT :: Error: =([Care Type]+\" - \"+[Care Code Description]) Where ([Disability Active Flag] = \"Y\") ==> Error: Expected end of input but \"W\" found.\n at undefined:1:46",
+      "entityId": "klZN.0wACPTlGkwA..8AFE.rcVQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_ACTIVE_CARE_CONCAT :: Error: =([Care Type]+\" - \"+[Care Code Description]) Where ([Disability Active Flag] = \"Y\") ==> Error: Expected end of input but \"W\" found.\n at undefined:1:46",
+      "entityId": "klZN.0wACPTlGkwA..8AFE.rcVQ",
+      "entityType": "dpd"
+    }
+  ]
+}

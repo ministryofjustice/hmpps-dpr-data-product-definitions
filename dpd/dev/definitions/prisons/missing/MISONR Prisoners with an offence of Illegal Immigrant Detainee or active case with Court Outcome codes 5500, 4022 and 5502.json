@@ -1,0 +1,236 @@
+{
+  "id": "Fo5CwQFCPggAv5U7AABnSmn.ACJIAGE1",
+  "name": "MISONR Prisoners with an offence of Illegal Immigrant Detainee or active case with Court Outcome codes 5500, 4022 and 5502",
+  "description": "SEN0057 v2.0 Last Modified: 06/10/2023\nThis report retrieves all Prisoners who have an active Offence of ILLEGAL IMMIGRANT/DETAINEE or an active case with a court outcome code of 5500 (Immigration Detainee), 4022 (Extradited). Remand Prisoners are excluded.",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "SEN0057",
+      "Immigration",
+      "Detainee",
+      "IS91"
+]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP0",
+      "name": "Immigration",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_DIM_COURT.COURT_DESCRIPTION, FACT_CURR_KEY_DATES_SENT.CURR_ERSED_DATE, AT_OFFENDER_BOOKING.HO_REF, AT_OFFENDER_BOOKING.PNC_ID, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION, DT_LIFEFLAG.LIFE_SENTENCE_FLAG, Case When AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '1' Then 'Y' Else 'N' End, FACT_CURR_KEY_DATES_SENT.CURR_CRD_DATE, FACT_CURR_KEY_DATES_SENT.CURR_ARD_DATE, FACT_CURR_KEY_DATES_SENT.CURR_RELEASE_DATE, AT_DIM_OFFENCE.OFFENCE_NAME, AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG, AT_FACT_COURT_EVENT.OUTCOME, AT_DIM_OUTCOME_REASON_EVENT.OUTCOME_REASON_DESCRIPTION, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END, AT_DIM_OUTCOME_REASON.OUTCOME_REASON_DESCRIPTION, Case When DT_LIFEFLAG.LIFE_SENTENCE_FLAG='Y' then 'Sentenced' when FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH='00/00/00' then 'Unsentenced' when FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH is null then 'Unsentenced' else 'Sentenced' End, BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_DESCRIPTION, AT_OFFENDER_BOOKING.GENDER_CODE, AT_OFFENDER_BOOKING.NATIONALITY_DESCRIPTION FROM BODIMIS.DIM_OFFENCE AT_DIM_OFFENCE, BODIMIS.FACT_COURT_CHARGE AT_FACT_COURT_CHARGE, BODIMIS.DIM_COURT AT_DIM_COURT, BODIMIS.DIM_OUTCOME_REASON AT_DIM_OUTCOME_REASON_EVENT, BODIMIS.DIM_OUTCOME_REASON AT_DIM_OUTCOME_REASON, BODIMIS.ETL_LOAD_LOG, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.FACT_COURT_EVENT AT_FACT_COURT_EVENT, BODIMIS.DIM_COURT_CASE_STATUS AT_DIM_COURT_CASE_STATUS, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, FACT_CURR_KEY_DATES_SENT, ( --derives a single 'Y' if a prisoner has one or more life sentences where the sentence status is active. The table is outer-joined to dim_offender_booking in the universe. SELECT distinct BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE ( BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK=dss.sentence_status_sk) AND dss.sentence_status='Active' AND ( BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK=BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK ) AND ( BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK=BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK ) AND ( BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK=BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK ) and BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG='Y' ) DT_LIFEFLAG, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_COURT_CASE AT_COURT_CASE WHERE ( AT_COURT_CASE.COURT_SK=AT_DIM_COURT.COURT_SK(+) ) AND ( AT_FACT_COURT_CHARGE.OFFENCE_SK=AT_DIM_OFFENCE.OFFENCE_SK(+) ) AND ( AT_COURT_CASE.COURT_CASE_SK=AT_FACT_COURT_CHARGE.COURT_CASE_SK(+) ) AND ( AT_COURT_CASE.COURT_CASE_SK=AT_FACT_COURT_EVENT.COURT_CASE_SK(+) ) AND ( AT_COURT_CASE.COURT_CASE_STATUS_SK=AT_DIM_COURT_CASE_STATUS.COURT_CASE_STATUS_SK(+) ) AND ( AT_COURT_CASE.OUTCOME_REASON_SK=AT_DIM_OUTCOME_REASON.OUTCOME_REASON_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_LIFEFLAG.OFFENDER_BOOKING_SK(+) ) AND ( AT_FACT_COURT_EVENT.OUTCOME=AT_DIM_OUTCOME_REASON_EVENT.OUTCOME_REASON_NK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK(+) ) AND ( AT_COURT_CASE.OFFENDER_BOOKING_SK(+)=AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK ) AND ( AT_OFFENDER_BOOKING.BIRTH_DATE_SK=AT_DOB.DATE_SK ) AND ( BODIMIS.ETL_LOAD_LOG.LOAD_ID=(select max(LOAD_ID) from BODIMIS.ETL_LOAD_LOG WHERE LOAD_END_DATETIME IS NOT NULL) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('CQE98K') AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('CQE98K') AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.ESTABLISHMENT_SK=AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK ) AND ( AT_ESTABLISHMENT_TAP.ACTIVE_FLAG='Y' ) AND ( ( AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK in ('BAI') Or 'All' in ('BAI') ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND ( AT_DIM_COURT_CASE_STATUS.COURT_CASE_STATUS = 'Active' ) AND ( AT_DIM_OFFENCE.OFFENCE_NAME IN ( 'ILLEGAL IMMIGRANT/DETAINEE' ) OR AT_FACT_COURT_EVENT.OUTCOME IN ( '5500','4022','5502' ) ) AND Case when AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE In ('14FTR_ORA','14FTRHDC_ORA','CUR_ORA','FTR/08','FTR_HDC','FTR_HDC_ORA','FTR_ORA','FTR_SCH15','FTRSCH15_ORA','HDR_ORA','LR','LR_ALP','LR_ALP_LASPO','LR_DLP','LR_DPP','LR_EPP','LR_ES','LR_HDC','LR_IPP','LR_LASPO_AR','LR_LASPO_DR','LR_LIFE','LR_MLP','LR_ORA','LR_SEC236A','LR_SEC91_ORA','LR_YOI','LR_YOI_ORA','FTRSCH18_ORA','FTRSCH18','LR_EDS18','LR_EDS21','LR_SOPC18','LR_SOPC21','LRSEC250_ORA','LR_ALP_CDE18','LR_ALP_CDE21','LR_EDSU18') then 'Recall' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '0' then 'Dead' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '1' then 'Indeterminate Sentence' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND in ('2','3') then 'Sentenced' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND in ('4','5','6','7') then 'Convicted Unsentenced' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND in ('9','10') or AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'CIV_RMD' then 'Civil Prisoner' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND in ('8','11') then 'Immigration Detainee' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND in ('12','13','14') then 'Remand' when AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'UNKNOWN' then 'Unknown' Else 'Other' End <> 'Remand' AND Case When AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '1' Then 'Y' Else 'N' End = 'N' AND Case When DT_LIFEFLAG.LIFE_SENTENCE_FLAG='Y' then 'Sentenced' when FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH='00/00/00' then 'Unsentenced' when FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH is null then 'Unsentenced' else 'Sentenced' End = 'Unsentenced' )), dataset_ AS (SELECT  FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3375368/DP4",
+      "name": "All",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG, FACT_CURR_KEY_DATES_SENT.CURR_ERSED_DATE, AT_DIM_COURT.COURT_DESCRIPTION, AT_DIM_OFFENCE.OFFENCE_NAME, Case When AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '1' Then 'Y' Else 'N' End, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION, FACT_CURR_KEY_DATES_SENT.CURR_ARD_DATE, FACT_CURR_KEY_DATES_SENT.CURR_CRD_DATE, FACT_CURR_KEY_DATES_SENT.CURR_RELEASE_DATE, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END, AT_OFFENDER_BOOKING.NATIONALITY_CODE, AT_OFFENDER_BOOKING.NATIONALITY_DESCRIPTION, AT_DIM_OUTCOME_REASON.OUTCOME_REASON_DESCRIPTION, Case When DT_LIFEFLAG.LIFE_SENTENCE_FLAG='Y' then 'Sentenced' when FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH='00/00/00' then 'Unsentenced' when FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH is null then 'Unsentenced' else 'Sentenced' End, BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE, AT_OFFENDER_BOOKING.HO_REF, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_DESCRIPTION, AT_OFFENDER_BOOKING.GENDER_CODE FROM BODIMIS.DIM_OFFENCE AT_DIM_OFFENCE, BODIMIS.FACT_COURT_CHARGE AT_FACT_COURT_CHARGE, BODIMIS.DIM_COURT AT_DIM_COURT, BODIMIS.DIM_OUTCOME_REASON AT_DIM_OUTCOME_REASON, BODIMIS.ETL_LOAD_LOG, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_COURT_CASE_STATUS AT_DIM_COURT_CASE_STATUS, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, FACT_CURR_KEY_DATES_SENT, BODIMIS.DIM_DATE AT_DOB, ( --derives a single 'Y' if a prisoner has one or more life sentences where the sentence status is active. The table is outer-joined to dim_offender_booking in the universe. SELECT distinct BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE ( BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK=dss.sentence_status_sk) AND dss.sentence_status='Active' AND ( BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK=BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK ) AND ( BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK=BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK ) AND ( BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK=BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK ) and BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG='Y' ) DT_LIFEFLAG, BODIMIS.DIM_COURT_CASE AT_COURT_CASE WHERE ( AT_COURT_CASE.COURT_SK=AT_DIM_COURT.COURT_SK(+) ) AND ( AT_FACT_COURT_CHARGE.OFFENCE_SK=AT_DIM_OFFENCE.OFFENCE_SK(+) ) AND ( AT_COURT_CASE.COURT_CASE_SK=AT_FACT_COURT_CHARGE.COURT_CASE_SK(+) ) AND ( AT_COURT_CASE.COURT_CASE_STATUS_SK=AT_DIM_COURT_CASE_STATUS.COURT_CASE_STATUS_SK(+) ) AND ( AT_COURT_CASE.OUTCOME_REASON_SK=AT_DIM_OUTCOME_REASON.OUTCOME_REASON_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_LIFEFLAG.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK(+) ) AND ( AT_COURT_CASE.OFFENDER_BOOKING_SK(+)=AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK ) AND ( AT_OFFENDER_BOOKING.BIRTH_DATE_SK=AT_DOB.DATE_SK ) AND ( BODIMIS.ETL_LOAD_LOG.LOAD_ID=(select max(LOAD_ID) from BODIMIS.ETL_LOAD_LOG WHERE LOAD_END_DATETIME IS NOT NULL) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('CQE98K') AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('CQE98K') AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.ESTABLISHMENT_SK=AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK ) AND ( AT_ESTABLISHMENT_TAP.ACTIVE_FLAG='Y' ) AND ( ( AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK in ('BAI') Or 'All' in ('BAI') ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND ( AT_DIM_COURT_CASE_STATUS.COURT_CASE_STATUS = 'Active' ) )), dataset_ AS (SELECT  FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3377299/DP8",
+      "name": "ACCT ?",
+      "description": "OR - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT CASE WHEN MAX(CASE WHEN AT_OFFENDER_ALERTS.ALERT_CODE = 'HA' THEN CASE WHEN AT_OFFENDER_ALERTS.ALERT_TYPE = 'H' THEN CASE WHEN AT_OFFENDER_ALERTS.ALERT_STATUS = 'ACTIVE' THEN 2 ELSE 1 END ELSE 1 END ELSE 1 END) OVER (PARTITION BY (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID)) = 2 THEN 'Y' ELSE 'N' END AS ACCT, AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.OFFENDER_ALERTS AT_OFFENDER_ALERTS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_ALERTS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A1107DY', 'A2116EQ', 'A3403EY', 'A4933EX', 'A6626EY', 'A6718AW', 'A7703EN', 'A8538EY', 'A9045DM', 'A9811ET') AND AT_OFFENDER_ALERTS.ALERT_STATUS IN ('ACTIVE'))), dataset_ AS (SELECT ACCT, OFFENDER_ID_DISPLAY FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ACCT",
+            "type": "string",
+            "display": "ACCT",
+            "legacyId": "DP8.DO585",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP8.DO44",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375896/DP9",
+      "name": "RoSH",
+      "description": "ONR - Ad-hoc Reports",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, SUBSTR(ASSESSMENT.CALC_HIGHEST_RISK, 4) AS RISK_LEVEL_ FROM OFFENDER, ASSESSMENT WHERE (OFFENDER.OFFENDER_ID = ASSESSMENT.OFFENDER_ID (+)) AND (SUBSTR(OFFENDER.OFFENDER_ID_DISPLAY, 1, 10) = TAGMIS_CASELOAD_SECURITY('CQE98K', OFFENDER.OFFENDER_ID_DISPLAY)) AND (OFFENDER.LIMIT_ACCESS_OFFENDER_INDICAT = 0) AND ASSESSMENT.ASSESSMENT_ID IN (SELECT LAST_VALUE(ASSESSMENT.assessment_id) OVER (PARTITION BY ASSESSMENT.offender_id ORDER BY ASSESSMENT.date_completed rows BETWEEN CURRENT ROW AND UNBOUNDED following) AS last_ass_for_offender FROM ASSESSMENT, OFFENDER WHERE (OFFENDER.OFFENDER_ID = ASSESSMENT.OFFENDER_ID (+)) AND (ASSESSMENT.single_date_completed = 'Y' AND completed_assessment <> 'Abandoned' AND NOT OFFENDER.Offender_id IS NULL) AND (SUBSTR(OFFENDER.OFFENDER_ID_DISPLAY, 1, 10) = TAGMIS_CASELOAD_SECURITY('CQE98K', OFFENDER.OFFENDER_ID_DISPLAY)) AND (OFFENDER.LIMIT_ACCESS_OFFENDER_INDICAT = 0) AND (OFFENDER.OFFENDER_ID_DISPLAY IN ('A1107DY', 'A2116EQ', 'A3403EY', 'A4933EX', 'A6626EY', 'A6718AW', 'A7703EN', 'A8538EY', 'A9045DM', 'A9811ET') AND COALESCE(ASSESSMENT.COMPLETED_ASSESSMENT, 'Not Specified') = 'True' AND OFFENDER.HISTORIC_OFFENDER_CALC = 'Current'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, RISK_LEVEL_ FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP9.DO264",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 1,
+            "name": "RISK_LEVEL_",
+            "type": "string",
+            "display": "Risk Level (10 6)",
+            "legacyId": "DP9.DOf2f",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "203693.RS",
+      "name": "By Estab and Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP0",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ())"
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP0.DO10076",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP0.DO1007b",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP0.DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_Possible_further_charges",
+            "display": "",
+            "formula": "=If([v_Count_outcome]>1;\"Yes\")",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_30_days_to_release",
+            "display": "",
+            "formula": "=If(DaysBetween(CurrentDate();[Current Release Date]) <=30;\"Y\";\"N\")",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DP0.DO61c",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_max_concat_outcome_code",
+            "display": "",
+            "formula": "=[v_concat_outcome_code] Where ([Court Event Outcome Code]=[v_max_outcome_code]) In ([NOMS Number])",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_max_concat_outcome_des",
+            "display": "",
+            "formula": "=[v_concat_court_event_outcome_desc]Where ([Court Event Outcome Description]=[v_max_outcome_desc]) In ([NOMS Number])",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_max_concat_offence",
+            "display": "",
+            "formula": "=[v_concat_offence] Where ([Offence Name]= [v_max_offence]) In ([NOMS Number])",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_max_concat_court",
+            "display": "",
+            "formula": "=[v_concat_court]Where ([Court]= [v_max_court]) In ([NOMS Number])",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_ACCT?",
+            "display": "",
+            "formula": "=If(([ACCT] = \"Y\");\"Y\")",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:v_RoSH_Level",
+            "display": "",
+            "formula": "=[Risk Level (10 6)]",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    }
+  ]
+}

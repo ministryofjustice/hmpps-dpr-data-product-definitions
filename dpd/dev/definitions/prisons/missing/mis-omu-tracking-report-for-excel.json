@@ -1,0 +1,551 @@
+{
+  "id": "klnBO_oACN1yVJgA5P8AFE.rcVQ",
+  "name": "MIS OMU Tracking Report for Excel",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "SEN0035 v00.00.01",
+      "Key Dates",
+      "Release: CRO",
+      "Religion"
+    ]
+  },
+  "description": "The report retrieves various Sentence information on the Prisoner such as Key Dates, Legal Status, Sentence Length, Sentence Start Date, Offence and CRO Number. The report has been designed to be exported and used in Excel.<br/>SEN0035 - v00.00.01 Last Modified: 13/10/2017 ",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP2",
+      "name": "Sentence",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.BOOKING_NUMBER, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE, DT_CURRENT_KEY_DATES.SED, CASE WHEN AT_RELEASE_DATE.DAY_DATE < '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE END, Case When DT_LIFEFLAG.LIFE_SENTENCE_FLAG='Y' then 'Life' Else DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH End, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, DT_CURRENT_KEY_DATES.TUSED, DT_CURRENT_KEY_DATES.SSD, DT_CURRENT_KEY_DATES.CURR_PRRD_DATE, AT_DIM_OFFENCE.OFFENCE_NAME, CASE WHEN AT_SENT_START_DATE.DAY_DATE < '31/12/9000' THEN AT_SENT_START_DATE.DAY_DATE END, AT_OFFENDER_BOOKING.ACTIVE_STATUS, AT_OFFENDER_BOOKING.IN_OUT, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END, floor((months_between(( trunc(sysdate) ), ( CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END ))) / 12), nvl(AT_OFFENDER_BOOKING.IEP_BAND,'** Incentive Level Missing **'), NVL(AT_OFFENDER_BOOKING.RELIGION_DESCRIPTION,'Not Specified'), AT_OFFENDER_BOOKING.CRO_NUMBER, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE='MERGE' Then 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL Then 'Code Missing' when AT_DIM_ETHNICITY_CODES.CODE='W8' then 'White: Gypsy or Irish Traveller' when AT_DIM_ETHNICITY_CODES.CODE='O1' then 'Asian/Asian British: Chinese' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION end, CASE WHEN AT_SED_DATE.DAY_DATE < '31/12/9000' THEN AT_SED_DATE.DAY_DATE END, AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG, DT_CURRENT_KEY_DATES.CURR_ARD_DATE, DT_CURRENT_KEY_DATES.CURR_CRD_DATE, DT_ADMISSION.MOVEMENT_TIME, MAX(CASE WHEN AT_EVENT_DATE.DAY_DATE >= SYSDATE THEN AT_EVENT_DATE.DAY_DATE ELSE NULL END), DT_CURRENT_KEY_DATES.CURR_HDCED_DATE, DT_CURRENT_KEY_DATES.CURR_LED_DATE, CASE When DT_LIFEFLAG.LIFE_SENTENCE_FLAG='Y' Then 'Life' When substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2) = '99' Then 'Life' When DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH ='00/00/00' then 'No sentence' When DT_LIFEFLAG.LIFE_SENTENCE_FLAG is null and substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2)='00' and to_number(substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,4,2)) <6 then 'Less than 6 Months' When DT_LIFEFLAG.LIFE_SENTENCE_FLAG is null and substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2)='00' and to_number(substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,4,2))<12 then '6 Months to less than 1 Year' When DT_LIFEFLAG.LIFE_SENTENCE_FLAG is null and substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2)<>'00' and to_number(substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2))<2 then '1 Year to less than 2 Years' When DT_LIFEFLAG.LIFE_SENTENCE_FLAG is null and substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2) not in ('00','01') and to_number(substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2))<3 then '2 Years to less than 3 Years' When DT_LIFEFLAG.LIFE_SENTENCE_FLAG is null and substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2) not in ('00','01','02') and to_number(substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2))<4 then '3 Years to less than 4 Years' When DT_LIFEFLAG.LIFE_SENTENCE_FLAG is null and substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2) not in ('00','01','02','03') and to_number(substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2))<10 then '4 Years to less than 10 Years' When DT_LIFEFLAG.LIFE_SENTENCE_FLAG is null and to_number(substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2)) >=10 then '10 Years or more and Less than Life' When DT_LIFEFLAG.LIFE_SENTENCE_FLAG is null and DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH is null then 'No sentence' Else 'Not Categorised' END, AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG, AT_FACT_COURT_CHARGE.OFFENDER_CHARGE_ID_NK, DT_CURRENT_RELEASE_DATE.CURR_RELEASE_DATE, AT_OFFENDER_BOOKING.PNC_ID FROM BODIMIS.DIM_DATE AT_RELEASE_DATE, BODIMIS.DIM_DATE AT_SENT_START_DATE, BODIMIS.DIM_DATE AT_SED_DATE, BODIMIS.DIM_DATE AT_EVENT_DATE, BODIMIS.DIM_OFFENCE AT_DIM_OFFENCE, ( Select AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK as OFFENDER_BOOKING_SK, case when AT_APD_DATE.DAY_DATE <> '31/12/9000' Then AT_APD_DATE.DAY_DATE end as CURR_APD_DATE, case when AT_ARD_DATE.DAY_DATE <> '31/12/9000' Then AT_ARD_DATE.DAY_DATE end as CURR_ARD_DATE, case when AT_CRD_DATE.DAY_DATE <> '31/12/9000' Then AT_CRD_DATE.DAY_DATE end as CURR_CRD_DATE, case when AT_ETD_DATE.DAY_DATE <> '31/12/9000' Then AT_ETD_DATE.DAY_DATE end as CURR_ETD_DATE, case when AT_HDCAD_DATE.DAY_DATE <> '31/12/9000' Then AT_HDCAD_DATE.DAY_DATE end as CURR_HDCAD_DATE, case when AT_HDCED_DATE.DAY_DATE <> '31/12/9000' Then AT_HDCED_DATE.DAY_DATE end as CURR_HDCED_DATE, case when AT_PED_DATE.DAY_DATE <> '31/12/9000' Then AT_PED_DATE.DAY_DATE end as CURR_PED_DATE, case when AT_LED_DATE.DAY_DATE <> '31/12/9000' Then AT_LED_DATE.DAY_DATE end as CURR_LED_DATE, case when AT_LTD_DATE.DAY_DATE <> '31/12/9000' Then AT_LTD_DATE.DAY_DATE end as CURR_LTD_DATE, case when AT_MTD_DATE.DAY_DATE <> '31/12/9000' Then AT_MTD_DATE.DAY_DATE end as CURR_MTD_DATE, case when AT_NPD_DATE.DAY_DATE <> '31/12/9000' Then AT_NPD_DATE.DAY_DATE end as CURR_NPD_DATE, case when AT_PRRD_DATE.DAY_DATE <> '31/12/9000' Then AT_PRRD_DATE.DAY_DATE end as CURR_PRRD_DATE, case when AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE, case when AT_SED_DATE.DAY_DATE <> '31/12/9000' Then AT_SED_DATE.DAY_DATE end as SED, MIN(case when AT_SENT_START_DATE.DAY_DATE <> '31/12/9000' Then AT_SENT_START_DATE.DAY_DATE end) as SSD, case when AT_TARIFF_DATE.DAY_DATE <> '31/12/9000' Then AT_TARIFF_DATE.DAY_DATE end as TARIFF, case when AT_ROTL_DATE.DAY_DATE <> '31/12/9000' Then AT_ROTL_DATE.DAY_DATE end as CURR_ROTL_DATE, case when AT_ERSED_DATE.DAY_DATE <> '31/12/9000' Then AT_ERSED_DATE.DAY_DATE end as CURR_ERSED_DATE, case when AT_TERSED_DATE.DAY_DATE <> '31/12/9000' Then AT_TERSED_DATE.DAY_DATE end as CURR_TERSED_DATE, at_fact_offender_sentence.tused_date_sk as tused_sk, nullif(td.day_date, to_date('31/12/9000', 'DD/MM/YYYY')) as tused From BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_DATE AT_ARD_DATE, BODIMIS.DIM_DATE AT_APD_DATE, BODIMIS.DIM_DATE AT_CRD_DATE, BODIMIS.DIM_DATE AT_ETD_DATE, BODIMIS.DIM_DATE AT_HDCAD_DATE, BODIMIS.DIM_DATE AT_HDCED_DATE, BODIMIS.DIM_DATE AT_PED_DATE, BODIMIS.DIM_DATE AT_LED_DATE, BODIMIS.DIM_DATE AT_LTD_DATE, BODIMIS.DIM_DATE AT_MTD_DATE, BODIMIS.DIM_DATE AT_NPD_DATE, BODIMIS.DIM_DATE AT_PRRD_DATE, BODIMIS.DIM_DATE AT_RELEASE_DATE, BODIMIS.DIM_DATE AT_SED_DATE, BODIMIS.DIM_DATE AT_SENT_START_DATE, BODIMIS.DIM_DATE AT_TARIFF_DATE, BODIMIS.DIM_DATE AT_ROTL_DATE, BODIMIS.DIM_DATE AT_ERSED_DATE, BODIMIS.DIM_DATE AT_TERSED_DATE, bodimis.dim_date td where AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK=AT_FACT_SENTENCE.OFFENDER_BOOKING_SK(+) and AT_FACT_OFFENDER_SENTENCE.ARD_DATE_SK=AT_ARD_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.APD_DATE_SK=AT_APD_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.CRD_DATE_SK=AT_CRD_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.ETD_DATE_SK=AT_ETD_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.HDCAD_DATE_SK=AT_HDCAD_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.HDCED_DATE_SK=AT_HDCED_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.PED_DATE_SK=AT_PED_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.LED_DATE_SK=AT_LED_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.LTD_DATE_SK=AT_LTD_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.MTD_DATE_SK=AT_MTD_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.NPD_DATE_SK= AT_NPD_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.PED_DATE_SK=AT_PED_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.PRRD_DATE_SK=AT_PRRD_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK=AT_RELEASE_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.SED_DATE_SK=AT_SED_DATE.DATE_SK(+) and AT_FACT_SENTENCE.SENTENCE_START_DATE_SK=AT_SENT_START_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.TARIFF_DATE_SK=AT_TARIFF_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.ROTL_DATE_SK=AT_ROTL_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.ERSED_DATE_SK=AT_ERSED_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.TERSED_DATE_SK=AT_TERSED_DATE.DATE_SK(+) and at_fact_offender_sentence.tused_date_sk = td.date_sk(+) and AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' GROUP BY AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK, case when AT_APD_DATE.DAY_DATE <> '31/12/9000' Then AT_APD_DATE.DAY_DATE end, case when AT_ARD_DATE.DAY_DATE <> '31/12/9000' Then AT_ARD_DATE.DAY_DATE end, case when AT_CRD_DATE.DAY_DATE <> '31/12/9000' Then AT_CRD_DATE.DAY_DATE end, case when AT_ETD_DATE.DAY_DATE <> '31/12/9000' Then AT_ETD_DATE.DAY_DATE end, case when AT_HDCAD_DATE.DAY_DATE <> '31/12/9000' Then AT_HDCAD_DATE.DAY_DATE end, case when AT_HDCED_DATE.DAY_DATE <> '31/12/9000' Then AT_HDCED_DATE.DAY_DATE end, case when AT_PED_DATE.DAY_DATE <> '31/12/9000' Then AT_PED_DATE.DAY_DATE end, case when AT_LED_DATE.DAY_DATE <> '31/12/9000' Then AT_LED_DATE.DAY_DATE end, case when AT_LTD_DATE.DAY_DATE <> '31/12/9000' Then AT_LTD_DATE.DAY_DATE end, case when AT_MTD_DATE.DAY_DATE <> '31/12/9000' Then AT_MTD_DATE.DAY_DATE end, case when AT_NPD_DATE.DAY_DATE <> '31/12/9000' Then AT_NPD_DATE.DAY_DATE end, case when AT_PRRD_DATE.DAY_DATE <> '31/12/9000' Then AT_PRRD_DATE.DAY_DATE end, case when AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end, case when at_sed_date.day_date <> '31/12/9000' then at_sed_date.day_date end, case when AT_TARIFF_DATE.DAY_DATE <> '31/12/9000' Then AT_TARIFF_DATE.DAY_DATE END, case when AT_ROTL_DATE.DAY_DATE <> '31/12/9000' Then AT_ROTL_DATE.DAY_DATE END, case when AT_ERSED_DATE.DAY_DATE <> '31/12/9000' Then AT_ERSED_DATE.DAY_DATE END, case when AT_TERSED_DATE.DAY_DATE <> '31/12/9000' Then AT_TERSED_DATE.DAY_DATE END, at_fact_offender_sentence.tused_date_sk, td.day_date ) DT_CURRENT_KEY_DATES, ( Select ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk , fme.from_location_type, max(fme.MOVEMENT_SEQ ) as MOVEMENT_SEQ, max(d.day_date) as MOVEMENT_TIME, trunc(ETL.LOAD_END_DATETIME) as LOAD_DATE From BODIMIS.FACT_MOVEMENT_EXTERNAL fme, BODIMIS.DIM_OFFENDER_BOOKING ob, BODIMIS.DIM_ESTABLISHMENT est, BODIMIS.ETL_LOAD_LOG ETL, BODIMIS.DIM_DATE d Where ob.ESTABLISHMENT_SK=est.ESTABLISHMENT_SK and d.date_sk=fme.date_sk and fme.offender_booking_sk=ob.offender_booking_sk and ob.active_status IN('Active In','Active Out') And ob.MIS_CURRENT_RECORD_IND = 'Y' and ob.ACTIVE_FLAG = 'Y' and ETL.LOAD_ID=(select max(LOAD_ID) from BODIMIS.ETL_LOAD_LOG WHERE LOAD_END_DATETIME IS NOT NULL) And ob.ESTABLISHMENT_SK=fme.to_location_sk and fme.movement_seq= (select max(fme2.movement_seq ) from BODIMIS.FACT_MOVEMENT_EXTERNAL fme2 where fme.offender_booking_sk=fme2.offender_booking_sk and fme2.direction_code='IN' And fme2.TYPE='Admission' And fme2.To_location_type='Establishment' and fme2.reason_code <> 'R') GROUP BY ob.offender_id_display, fme.offender_booking_sk,est.establishment_code_nk,fme.to_location_sk,fme.from_location_sk,fme.from_location_type,ETL.LOAD_END_DATETIME ) DT_ADMISSION, BODIMIS.DIM_CELL AT_DIM_LOCATION, BODIMIS.FACT_COURT_CHARGE AT_FACT_COURT_CHARGE, BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.FACT_COURT_EVENT AT_FACT_COURT_EVENT, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, ( SELECT BODIMIS.FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK, BODIMIS.FACT_OFFENDER_SENTENCE.EFFECTIVE_SENTENCE_LENGTH FROM BODIMIS.FACT_OFFENDER_SENTENCE WHERE ( BODIMIS.FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' ) ) DT_CURREFFSENLEN, (  SELECT distinct BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE ( BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK=dss.sentence_status_sk) AND dss.sentence_status='Active' AND ( BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK=BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK ) AND ( BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK=BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK ) AND ( BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK=BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK ) and BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG='Y' ) DT_LIFEFLAG, BODIMIS.DIM_DATE AT_DOB, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, (   Select AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK as OFFENDER_BOOKING_SK, case when AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE From --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_DATE AT_RELEASE_DATE where --AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK=AT_FACT_SENTENCE.OFFENDER_BOOKING_SK(+) AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK=AT_RELEASE_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' --and AT_RELEASE_DATE.DAY_DATE !='31/12/9000' ) DT_CURRENT_RELEASE_DATE, BODIMIS.DIM_CELL AT_CELL, BODIMIS.DIM_COURT_CASE AT_COURT_CASE WHERE ( AT_FACT_COURT_CHARGE.OFFENCE_SK=AT_DIM_OFFENCE.OFFENCE_SK(+) ) AND ( AT_FACT_COURT_EVENT.EVENT_DATE_SK=AT_EVENT_DATE.DATE_SK(+) ) AND ( AT_FACT_OFFENDER_SENTENCE.SED_DATE_SK=AT_SED_DATE.DATE_SK(+) ) AND ( AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK=AT_RELEASE_DATE.DATE_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK(+) ) AND ( AT_COURT_CASE.COURT_CASE_SK=AT_FACT_COURT_CHARGE.COURT_CASE_SK(+) ) AND ( AT_COURT_CASE.COURT_CASE_SK=AT_FACT_COURT_EVENT.COURT_CASE_SK(+) ) AND ( AT_FACT_SENTENCE.SENTENCE_START_DATE_SK=AT_SENT_START_DATE.DATE_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_CURRENT_KEY_DATES.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_CURRENT_RELEASE_DATE.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_CURREFFSENLEN.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_LIFEFLAG.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=AT_COURT_CASE.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.BIRTH_DATE_SK=AT_DOB.DATE_SK ) AND ( AT_CELL.ESTABLISHMENT_SK=AT_ESTABLISHMENT.ESTABLISHMENT_SK ) AND ( AT_CELL.UNIT_4_SK=AT_OFFENDER_BOOKING.LIVING_UNIT_SK ) AND ( AT_COURT_CASE.COURT_CASE_SK=AT_FACT_SENTENCE.COURT_CASE_SK(+) ) AND ( AT_ESTABLISHMENT.ACTIVE_FLAG='Y' ) AND ( AT_DIM_ETHNICITY_CODES.CODE(+)=AT_OFFENDER_BOOKING.ETHNICITY_CODE ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username from context_) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username from context_) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.ESTABLISHMENT_SK=AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK ) AND ( AT_ESTABLISHMENT_TAP.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_ADMISSION.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.LIVING_UNIT_SK=AT_DIM_LOCATION.UNIT_4_SK(+) ) AND ( ( AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK in ((SELECT establishment_code from prompt_)) Or 'All' in ((SELECT establishment_code from prompt_)) ) AND ( AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND='Y' ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND ( AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG = 'Y' OR AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG Is Null ) ) GROUP BY AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.BOOKING_NUMBER, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE, DT_CURRENT_KEY_DATES.SED, CASE WHEN AT_RELEASE_DATE.DAY_DATE < '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE END, Case When DT_LIFEFLAG.LIFE_SENTENCE_FLAG='Y' then 'Life' Else DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH End, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, DT_CURRENT_KEY_DATES.TUSED, DT_CURRENT_KEY_DATES.SSD, DT_CURRENT_KEY_DATES.CURR_PRRD_DATE, AT_DIM_OFFENCE.OFFENCE_NAME, CASE WHEN AT_SENT_START_DATE.DAY_DATE < '31/12/9000' THEN AT_SENT_START_DATE.DAY_DATE END, AT_OFFENDER_BOOKING.ACTIVE_STATUS, AT_OFFENDER_BOOKING.IN_OUT, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END, floor((months_between(( trunc(sysdate) ), ( CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END ))) / 12), nvl(AT_OFFENDER_BOOKING.IEP_BAND,'** Incentive Level Missing **'), NVL(AT_OFFENDER_BOOKING.RELIGION_DESCRIPTION,'Not Specified'), AT_OFFENDER_BOOKING.CRO_NUMBER, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE='MERGE' Then 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL Then 'Code Missing' when AT_DIM_ETHNICITY_CODES.CODE='W8' then 'White: Gypsy or Irish Traveller' when AT_DIM_ETHNICITY_CODES.CODE='O1' then 'Asian/Asian British: Chinese' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION end, CASE WHEN AT_SED_DATE.DAY_DATE < '31/12/9000' THEN AT_SED_DATE.DAY_DATE END, AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG, DT_CURRENT_KEY_DATES.CURR_ARD_DATE, DT_CURRENT_KEY_DATES.CURR_CRD_DATE, DT_ADMISSION.MOVEMENT_TIME, DT_CURRENT_KEY_DATES.CURR_HDCED_DATE, DT_CURRENT_KEY_DATES.CURR_LED_DATE, CASE When DT_LIFEFLAG.LIFE_SENTENCE_FLAG='Y' Then 'Life' When substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2) = '99' Then 'Life' When DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH ='00/00/00' then 'No sentence' When DT_LIFEFLAG.LIFE_SENTENCE_FLAG is null and substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2)='00' and to_number(substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,4,2)) <6 then 'Less than 6 Months' When DT_LIFEFLAG.LIFE_SENTENCE_FLAG is null and substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2)='00' and to_number(substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,4,2))<12 then '6 Months to less than 1 Year' When DT_LIFEFLAG.LIFE_SENTENCE_FLAG is null and substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2)<>'00' and to_number(substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2))<2 then '1 Year to less than 2 Years' When DT_LIFEFLAG.LIFE_SENTENCE_FLAG is null and substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2) not in ('00','01') and to_number(substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2))<3 then '2 Years to less than 3 Years' When DT_LIFEFLAG.LIFE_SENTENCE_FLAG is null and substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2) not in ('00','01','02') and to_number(substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2))<4 then '3 Years to less than 4 Years' When DT_LIFEFLAG.LIFE_SENTENCE_FLAG is null and substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2) not in ('00','01','02','03') and to_number(substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2))<10 then '4 Years to less than 10 Years' When DT_LIFEFLAG.LIFE_SENTENCE_FLAG is null and to_number(substr(DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH,1,2)) >=10 then '10 Years or more and Less than Life' When DT_LIFEFLAG.LIFE_SENTENCE_FLAG is null and DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH is null then 'No sentence' Else 'Not Categorised' END, AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG, AT_FACT_COURT_CHARGE.OFFENDER_CHARGE_ID_NK, DT_CURRENT_RELEASE_DATE.CURR_RELEASE_DATE, AT_OFFENDER_BOOKING.PNC_ID), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3375368/DP4",
+      "name": "MIS Load Log",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP4.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "82602.RS",
+      "name": "OMU Tracker",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP2_DO10076",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10077",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10A7C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO25C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO70",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO47",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO48",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO1EF",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO32D",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO2D0",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO1009D",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO107CE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO104D5",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO104D4",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_MAIN_OFFENCE",
+            "display": "Main Offence",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Offence Name] Where([Main Offence Flag]= \"Y\") In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:DP2_DO6A",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO46",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO565",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10085",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10082",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO100E4",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_LASTEXDATE",
+            "display": "Date Report Run",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=ToDate(LastExecutionDate();\"dd/MM/yyyy\")"
+          },
+          {
+            "name": "$ref:DP2_DO100B3",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO100DE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO100DB",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO100DA",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Expected table name but got None. Line 1, Col: 12794.\n  hen AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE \u001b[4mFrom\u001b[0m --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENT]",
+      "entityId": "klnBO_oACN1yVJgA5P8AFE.rcVQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_MAIN_OFFENCE :: Error: =[Offence Name] Where([Main Offence Flag]= \"Y\") In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:49",
+      "entityId": "klnBO_oACN1yVJgA5P8AFE.rcVQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields (comments -- in query)",
+      "entityId": "3375368/DP2",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10076 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10077 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO1007B does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10080 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10A7C does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO25C does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO70 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO47 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO48 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO1EF does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO32D does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO2D0 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO1009D does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO107CE does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO104D5 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO104D4 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MAIN_OFFENCE does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO6A does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO46 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO565 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10085 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10082 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO100E4 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_LASTEXDATE does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO100B3 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO100DE does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO100DB does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO100DA does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3375368/DP2",
+      "entityType": "dataset"
+    }
+  ]
+}

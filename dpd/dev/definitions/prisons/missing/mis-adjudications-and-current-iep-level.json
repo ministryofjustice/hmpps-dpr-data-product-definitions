@@ -1,0 +1,364 @@
+{
+  "id": "FgvI_V6H9w0AJZMBAHB7Ql8KACJIAFe4",
+  "name": "MIS Adjudications and Current IEP Level",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ADJ0015 v00.00.01"
+    ]
+  },
+  "description": "Provides a list of all Prisoners currently in the Estblishment, along with their IEP Level and the number of adjudications.<br/>ADJ0015 v00.00.01  Date Last Modified: 29/06/2020",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375377/DP2",
+      "name": "All Current Prisoners",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, COALESCE(AT_OFFENDER_BOOKING.IEP_BAND, '** Incentive Level Missing **') AS IEP_BAND FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING WHERE (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, FIRST_NAME, ETHNIC_CODE, IEP_BAND FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP2.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP2.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP2.DO1009b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "IEP_BAND",
+            "type": "string",
+            "display": "IEP Band",
+            "legacyId": "DP2.DO100e4",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DP6",
+      "name": "Adjudications (4)",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, COALESCE(AT_OFFENDER_BOOKING.IEP_BAND, '** Incentive Level Missing **') AS IEP_BAND, DT_OFFENDER_ADJUDICATION.AGENCY_INCIDENT_ID_NK, AT_FACT_INCIDENT_CHARGE_RESULT.FINDING_CODE FROM BODIMIS.FACT_INCIDENT_CHARGE_RESULT AT_FACT_INCIDENT_CHARGE_RESULT, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT a.oic_incident_id, c.offender_booking_sk, c.agency_incident_id_nk, c.charge_seq_nk, c.oic_offence_sk, a.oic_hearing_id_nk, a.party_seq_nk, a.establishment_sk, c.report_date, a.oic_hearing_type, a.notification_charge_date_sk FROM bodimis.fact_incident_charge c LEFT OUTER JOIN bodimis.fact_offender_adjudication a ON c.agency_incident_id_nk = a.agency_incident_id_nk AND c.offender_booking_sk = a.offender_booking_sk) DT_OFFENDER_ADJUDICATION WHERE (DT_OFFENDER_ADJUDICATION.OFFENDER_BOOKING_SK = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (DT_OFFENDER_ADJUDICATION.AGENCY_INCIDENT_ID_NK = AT_FACT_INCIDENT_CHARGE_RESULT.AGENCY_INCIDENT_ID (+) AND DT_OFFENDER_ADJUDICATION.OIC_HEARING_ID_NK = AT_FACT_INCIDENT_CHARGE_RESULT.OIC_HEARING_ID_NK (+) AND DT_OFFENDER_ADJUDICATION.OFFENDER_BOOKING_SK = AT_FACT_INCIDENT_CHARGE_RESULT.OFFENDER_BOOKING_SK (+) AND DT_OFFENDER_ADJUDICATION.CHARGE_SEQ_NK = AT_FACT_INCIDENT_CHARGE_RESULT.CHARGE_SEQ (+)) AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND DT_OFFENDER_ADJUDICATION.REPORT_DATE BETWEEN TO_DATE('01-06-2020 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('29-06-2020 00:00:00', 'DD-MM-YYYY HH24:MI:SS'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, FIRST_NAME, ETHNIC_CODE, IEP_BAND, AGENCY_INCIDENT_ID_NK, FINDING_CODE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP6.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP6.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP6.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP6.DO1009b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "IEP_BAND",
+            "type": "string",
+            "display": "IEP Band",
+            "legacyId": "DP6.DO100e4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "AGENCY_INCIDENT_ID_NK",
+            "type": "double",
+            "display": "Agency Incident ID",
+            "legacyId": "DP6.DO759",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "FINDING_CODE",
+            "type": "string",
+            "display": "Hearing Finding",
+            "legacyId": "DP6.DO26e",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DP4",
+      "name": "MIS Load",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP4.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "118178.RS",
+      "name": "Prisoners with Adjudications",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_AGENCY_INCIDENT_ID IS NOT NULL)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1009b"
+          },
+          {
+            "name": "$ref:V_COUNT_AGENCY_INCIDENT_ID",
+            "display": "No. of Adjudications",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([v_Agency_Incident_id]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_COUNT_PROVEN_ADJUDICATIONS",
+            "display": "No. of Proven, Prosecuted or Police Referrals",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count ([v_Proven_Adjudications]) In ([NOMS Number])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "116773.RS",
+      "name": "All Prisoners",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1009b"
+          },
+          {
+            "name": "$ref:V_COUNT_AGENCY_INCIDENT_ID",
+            "display": "No. of Adjudications",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([v_Agency_Incident_id]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_COUNT_PROVEN_ADJUDICATIONS",
+            "display": "No. of Proven, Prosecuted or Police Referrals",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count ([v_Proven_Adjudications]) In ([NOMS Number])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "118295.RS",
+      "name": "Stats",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_COUNT_AGENCY_INCIDENT_ID :: Error: Invalid expression / Unexpected token. Line 1, Col: 32.\n  COUNT(V_AGENCY_INCIDENT_ID) IN \u001b[4m,\u001b[0mOFFENDER_ID_DISPLAY,",
+      "entityId": "FgvI_V6H9w0AJZMBAHB7Ql8KACJIAFe4",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_COUNT_PROVEN_ADJUDICATIONS :: Error: Invalid expression / Unexpected token. Line 1, Col: 34.\n  COUNT(V_PROVEN_ADJUDICATIONS) IN \u001b[4m,\u001b[0mOFFENDER_ID_DISPLAY,",
+      "entityId": "FgvI_V6H9w0AJZMBAHB7Ql8KACJIAFe4",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[2] requires property \"dataset\"",
+      "entityId": "FgvI_V6H9w0AJZMBAHB7Ql8KACJIAFe4",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_AGENCY_INCIDENT_ID does not have corresponding dataset schema field",
+      "entityId": "118178.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_PROVEN_ADJUDICATIONS does not have corresponding dataset schema field",
+      "entityId": "118178.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_AGENCY_INCIDENT_ID does not have corresponding dataset schema field",
+      "entityId": "116773.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_PROVEN_ADJUDICATIONS does not have corresponding dataset schema field",
+      "entityId": "116773.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 118295.RS does not have corresponding dataset undefined",
+      "entityId": "118295.RS",
+      "entityType": "variant"
+    }
+  ]
+}

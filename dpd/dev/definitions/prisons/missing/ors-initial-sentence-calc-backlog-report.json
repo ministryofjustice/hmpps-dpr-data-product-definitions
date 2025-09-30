@@ -1,0 +1,338 @@
+{
+  "id": "Fia_HQE90wwA.0YEAACXzT4AACJIAGc1",
+  "name": "ORS Initial Sentence Calc Backlog Report",
+  "description": "This report returns those Prisoners who have a Legal Status Grouping of 'Sentenced', 'Unknown' or 'Other' that have not had a Sentence Calculation carried out.<br/>SEN0056 v2 Last Modified: 17/07/2023",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "SEN0056",
+      "Key Dates",
+      "Sentence Calculation"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP1",
+      "name": "Sentenced Population",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, DT_ADMISSION.ADMISSION_DATE, AT_OFFENDERS_LOCATIONS.DESCRIPTION, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END AS CURRENT_RELEASE_DATE, AT_IMPRISON_STATUSES.DESCRIPTION AS MAIN_LEGAL_STATUS_DESCRIPTION, CASE WHEN AT_IMPRISON_STATUSES.IMPRISONMENT_STATUS IN ('14FTR_ORA', '14FTRHDC_ORA', 'CUR_ORA', 'FTR/08', 'FTR_HDC', 'FTR_HDC_ORA', 'FTR_ORA', 'FTR_SCH15', 'FTRSCH15_ORA', 'HDR_ORA', 'LR', 'LR_ALP', 'LR_ALP_LASPO', 'LR_DLP', 'LR_DPP', 'LR_EPP', 'LR_ES', 'LR_HDC', 'LR_IPP', 'LR_LASPO_AR', 'LR_LASPO_DR', 'LR_LIFE', 'LR_MLP', 'LR_ORA', 'LR_SEC236A', 'LR_SEC91_ORA', 'LR_YOI', 'LR_YOI_ORA', 'FTRSCH18_ORA', 'FTRSCH18', 'LR_ALP_CDE18', 'LR_ALP_CDE21', 'LR_EDS18', 'LR_EDS21', 'LR_SOPC18', 'LR_SOPC21', 'LRSEC250_ORA', 'LR_EDSU18') THEN 'Recall' WHEN AT_IMPRISON_STATUSES.BAND_CODE = '0' THEN 'Dead' WHEN AT_IMPRISON_STATUSES.BAND_CODE = '1' THEN 'Indeterminate Sentence' WHEN AT_IMPRISON_STATUSES.BAND_CODE IN ('2', '3') THEN 'Sentenced' WHEN AT_IMPRISON_STATUSES.BAND_CODE IN ('4', '5', '6', '7') THEN 'Convicted Unsentenced' WHEN AT_IMPRISON_STATUSES.BAND_CODE IN ('9', '10') OR AT_IMPRISON_STATUSES.IMPRISONMENT_STATUS = 'CIV_RMD' THEN 'Civil Prisoners' WHEN AT_IMPRISON_STATUSES.BAND_CODE IN ('8', '11') THEN 'Immigration Detainees' WHEN AT_IMPRISON_STATUSES.BAND_CODE IN ('12', '13', '14') THEN 'Remand' WHEN AT_IMPRISON_STATUSES.IMPRISONMENT_STATUS = 'UNKNOWN' THEN 'Unknown' ELSE 'Other' END AS LEGAL_STATUS_GROUPING FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.IMPRISONMENT_STATUSES AT_IMPRISON_STATUSES, (SELECT DISTINCT m.OFFENDER_BOOK_ID, MAX(m.MOVEMENT_TIME) AS ADMISSION_DATE FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS m, OMS_OWNER.offender_bookings h WHERE h.booking_status = 'O' AND h.active_flag = 'Y' AND m.direction_code = 'IN' AND m.Movement_type = 'ADM' AND m.to_agy_loc_id = h.agy_loc_id AND h.offender_book_id = m.offender_book_id GROUP BY m.OFFENDER_BOOK_ID) DT_ADMISSION, USER_ACCESSIBLE_CASELOADS, OMS_OWNER.OFFENDER_RELEASE_DETAILS AT_OFFENDER_RELEASE_DETAILS, (SELECT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID, CASE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE ELSE NULL END AS Last_Rel_Date, EFFECTIVE_SENTENCE_LENGTH FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) DT_LAST_RELEASE_DATE, OMS_OWNER.OFFENDER_IMPRISON_STATUSES AT_OFFENDER_IMPRISON_STATUSES WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_IMPRISON_STATUSES.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_IMPRISON_STATUSES.LATEST_STATUS = 'Y' OR AT_OFFENDER_IMPRISON_STATUSES.LATEST_STATUS IS NULL) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_RELEASE_DETAILS.OFFENDER_BOOK_ID (+)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_LAST_RELEASE_DATE.OFFENDER_BOOK_ID (+)) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_IMPRISON_STATUSES.IMPRISONMENT_STATUS (+) = AT_OFFENDER_IMPRISON_STATUSES.IMPRISONMENT_STATUS) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_ADMISSION.OFFENDER_BOOK_ID (+)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END IS NULL AND AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID IS NULL AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID <> 'ZZGHI' AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND CASE WHEN AT_IMPRISON_STATUSES.IMPRISONMENT_STATUS IN ('14FTR_ORA', '14FTRHDC_ORA', 'CUR_ORA', 'FTR/08', 'FTR_HDC', 'FTR_HDC_ORA', 'FTR_ORA', 'FTR_SCH15', 'FTRSCH15_ORA', 'HDR_ORA', 'LR', 'LR_ALP', 'LR_ALP_LASPO', 'LR_DLP', 'LR_DPP', 'LR_EPP', 'LR_ES', 'LR_HDC', 'LR_IPP', 'LR_LASPO_AR', 'LR_LASPO_DR', 'LR_LIFE', 'LR_MLP', 'LR_ORA', 'LR_SEC236A', 'LR_SEC91_ORA', 'LR_YOI', 'LR_YOI_ORA', 'FTRSCH18_ORA', 'FTRSCH18', 'LR_ALP_CDE18', 'LR_ALP_CDE21', 'LR_EDS18', 'LR_EDS21', 'LR_SOPC18', 'LR_SOPC21', 'LRSEC250_ORA', 'LR_EDSU18') THEN 'Recall' WHEN AT_IMPRISON_STATUSES.BAND_CODE = '0' THEN 'Dead' WHEN AT_IMPRISON_STATUSES.BAND_CODE = '1' THEN 'Indeterminate Sentence' WHEN AT_IMPRISON_STATUSES.BAND_CODE IN ('2', '3') THEN 'Sentenced' WHEN AT_IMPRISON_STATUSES.BAND_CODE IN ('4', '5', '6', '7') THEN 'Convicted Unsentenced' WHEN AT_IMPRISON_STATUSES.BAND_CODE IN ('9', '10') OR AT_IMPRISON_STATUSES.IMPRISONMENT_STATUS = 'CIV_RMD' THEN 'Civil Prisoners' WHEN AT_IMPRISON_STATUSES.BAND_CODE IN ('8', '11') THEN 'Immigration Detainees' WHEN AT_IMPRISON_STATUSES.BAND_CODE IN ('12', '13', '14') THEN 'Remand' WHEN AT_IMPRISON_STATUSES.IMPRISONMENT_STATUS = 'UNKNOWN' THEN 'Unknown' ELSE 'Other' END IN ('Other', 'Sentenced', 'Unknown') AND NOT AT_IMPRISON_STATUSES.DESCRIPTION IN ('Adjourned Sine Die - To Lie On File', 'Case Withdrawn Or Not Tried', 'Freed On The Rising Of The Court', 'Non Custodial Punishment'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, ADMISSION_DATE, DESCRIPTION, LAST_NAME, FIRST_NAME, CURRENT_RELEASE_DATE, MAIN_LEGAL_STATUS_DESCRIPTION, LEGAL_STATUS_GROUPING, 'TBD' AS V_MAX_CONCAT_COURT_CASE_OUTC31, 'TBD' AS V_MAX_CONCAT_COURT_EVENT_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP1.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ADMISSION_DATE",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DP1.DOc6a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP1.DO33b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP1.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Given Name 1",
+            "legacyId": "DP1.DO1066",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "CURRENT_RELEASE_DATE",
+            "type": "date",
+            "display": "Current Release Date",
+            "legacyId": "DP1.DOb29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "MAIN_LEGAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Main Legal Status - Description",
+            "legacyId": "DP1.DO4b6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "LEGAL_STATUS_GROUPING",
+            "type": "string",
+            "display": "Legal Status Grouping",
+            "legacyId": "DP1.DO108a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "V_MAX_CONCAT_COURT_CASE_OUTC31",
+            "type": "string",
+            "display": "V_MAX_CONCAT_COURT_CASE_OUTC31",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 9,
+            "name": "V_MAX_CONCAT_COURT_EVENT_DATE",
+            "type": "string",
+            "display": "V_MAX_CONCAT_COURT_EVENT_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP11",
+      "name": "Court Event",
+      "description": "MIS - Sentence",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_DIM_OUTCOME_REASON.OUTCOME_REASON_DESCRIPTION, AT_EVENT_DATE.DAY_DATE FROM BODIMIS.DIM_DATE AT_EVENT_DATE, BODIMIS.DIM_OUTCOME_REASON AT_DIM_OUTCOME_REASON, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.FACT_COURT_EVENT AT_FACT_COURT_EVENT, BODIMIS.DIM_COURT_CASE_STATUS AT_DIM_COURT_CASE_STATUS, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_COURT_CASE AT_COURT_CASE, BODIMIS.DIM_CELL AT_CELL WHERE (AT_FACT_COURT_EVENT.EVENT_DATE_SK = AT_EVENT_DATE.DATE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK (+)) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_COURT_EVENT.COURT_CASE_SK (+)) AND (AT_COURT_CASE.COURT_CASE_STATUS_SK = AT_DIM_COURT_CASE_STATUS.COURT_CASE_STATUS_SK (+)) AND (AT_COURT_CASE.OUTCOME_REASON_SK = AT_DIM_OUTCOME_REASON.OUTCOME_REASON_SK (+)) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_DIM_COURT_CASE_STATUS.COURT_CASE_STATUS = 'Active') AND AT_FACT_OFFENDER_SENTENCE.OFFENDER_SENT_CALCULATION_ID IS NULL AND NOT AT_EVENT_DATE.DAY_DATE IS NULL AND AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK <> 'ZZGHI' AND CASE WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('14FTR_ORA', '14FTRHDC_ORA', 'CUR_ORA', 'FTR/08', 'FTR_HDC', 'FTR_HDC_ORA', 'FTR_ORA', 'FTR_SCH15', 'FTRSCH15_ORA', 'HDR_ORA', 'LR', 'LR_ALP', 'LR_ALP_LASPO', 'LR_DLP', 'LR_DPP', 'LR_EPP', 'LR_ES', 'LR_HDC', 'LR_IPP', 'LR_LASPO_AR', 'LR_LASPO_DR', 'LR_LIFE', 'LR_MLP', 'LR_ORA', 'LR_SEC236A', 'LR_SEC91_ORA', 'LR_YOI', 'LR_YOI_ORA', 'FTRSCH18_ORA', 'FTRSCH18', 'LR_EDS18', 'LR_EDS21', 'LR_SOPC18', 'LR_SOPC21', 'LRSEC250_ORA', 'LR_ALP_CDE18', 'LR_ALP_CDE21', 'LR_EDSU18') THEN 'Recall' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '0' THEN 'Dead' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '1' THEN 'Indeterminate Sentence' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('2', '3') THEN 'Sentenced' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('4', '5', '6', '7') THEN 'Convicted Unsentenced' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('9', '10') OR AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'CIV_RMD' THEN 'Civil Prisoner' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('8', '11') THEN 'Immigration Detainee' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('12', '13', '14') THEN 'Remand' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'UNKNOWN' THEN 'Unknown' ELSE 'Other' END IN ('Other', 'Sentenced', 'Unknown') AND NOT AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION IN ('Adjourned Sine Die - To Lie On File', 'Case Withdrawn Or Not Tried', 'Freed On The Rising Of The Court', 'Non Custodial Punishment'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, OUTCOME_REASON_DESCRIPTION, DAY_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP11.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OUTCOME_REASON_DESCRIPTION",
+            "type": "string",
+            "display": "Court Case Outcome",
+            "legacyId": "DP11.DO52",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Court Event Date",
+            "legacyId": "DP11.DO259",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "200739.RS",
+      "name": "Details",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP1",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO33b"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO45"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO1066"
+          },
+          {
+            "name": "$ref:LEGAL_STATUS_GROUPING",
+            "display": "Legal Status Grouping",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO108a"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP1.DO44"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_DESCRIPTION",
+            "display": "Main Legal Status - Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO4b6"
+          },
+          {
+            "name": "$ref:ADMISSION_DATE",
+            "display": "Admission Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DOc6a"
+          },
+          {
+            "name": "$ref:V_MAX_CONCAT_COURT_CASE_OUTC31",
+            "display": "Court Case Outcomes",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_concat_court_case_outcome] Where ([Court Case Outcome]= [v_max_court_case_outcome]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_MAX_CONCAT_COURT_EVENT_DATE",
+            "display": "Court Event Dates",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_concat_court_event_date] Where ([Court Event Date]= [v_max_court_event_date]) In ([NOMS Number])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "202282.RS",
+      "name": "No. of Prisoners",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP1",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO33b"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_MAX_CONCAT_COURT_CASE_OUTC31 :: Error: =[v_concat_court_case_outcome] Where ([Court Case Outcome]= [v_max_court_case_outcome]) In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:89",
+      "entityId": "Fia_HQE90wwA.0YEAACXzT4AACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_MAX_CONCAT_COURT_EVENT_DATE :: Error: =[v_concat_court_event_date] Where ([Court Event Date]= [v_max_court_event_date]) In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:83",
+      "entityId": "Fia_HQE90wwA.0YEAACXzT4AACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_MAX_CONCAT_COURT_CASE_OUTC31 :: Error: =[v_concat_court_case_outcome] Where ([Court Case Outcome]= [v_max_court_case_outcome]) In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:89",
+      "entityId": "Fia_HQE90wwA.0YEAACXzT4AACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_MAX_CONCAT_COURT_EVENT_DATE :: Error: =[v_concat_court_event_date] Where ([Court Event Date]= [v_max_court_event_date]) In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:83",
+      "entityId": "Fia_HQE90wwA.0YEAACXzT4AACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00942: table or view does not exist\nHelp: https://docs.oracle.com/error-help/db/ora-00942/",
+      "entityId": "3375368/DP11",
+      "entityType": "dataset"
+    }
+  ]
+}

@@ -1,0 +1,703 @@
+{
+  "id": "FpAezF06dQsAFxYAAHALxF4KACJIAFe4",
+  "name": "MIS NSR806 Discharge Feedback Form",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "SEN0003 v00.02.05 LSRIT036"
+    ]
+  },
+  "description": "Is for a specified prisoner and is sent to the supervising officer at least seven days before the prisoner is released; it is produced as a form and outputs details about the prisoner including reporting arrangements, areas of need and employment. The supervising officer completes the form and forwards it to the Custody to Work Unit.<br/>SEN0003 - v00.02.06 Last Modified: 14/11/19",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP2",
+      "name": "DFB",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.MIDDLE_NAME_1, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, AT_OFFENDER_BOOKING.GENDER_CODE, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, CASE WHEN AT_DIM_ETHNICITY_CODES.DESCRIPTION = 'Chinese' THEN 'Asian/Asian British: Chinese' WHEN AT_DIM_ETHNICITY_CODES.DESCRIPTION = 'White : Irish Traveller/Gypsy' THEN 'White: Gypsy or Irish Traveller' WHEN AT_DIM_ETHNICITY_CODES.DESCRIPTION IS NULL THEN 'Code Missing' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION END AS ETHNIC_GROUP, CASE WHEN AT_MOVEMENT_EXTERNAL.TYPE = 'Community Report In' THEN CASE WHEN AT_MOVEMENT_EXTERNAL.DIRECTION_CODE = 'OUT' THEN AT_REPORTING_DATE.DAY_DATE ELSE NULL END ELSE NULL END AS DATE_TO_REPORT, CASE WHEN AT_MOVEMENT_EXTERNAL.TYPE = 'Community Report In' THEN CASE WHEN AT_MOVEMENT_EXTERNAL.DIRECTION_CODE = 'OUT' THEN AT_MOVEMENT_EXTERNAL.REPORTING_TIME ELSE NULL END ELSE NULL END AS TIME_TO_REPORT, CASE WHEN AT_FACT_MOV_EXT.TYPE = 'Community Report In' AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'OUT' THEN AT_PROB_OFF_EXT_MOV_TO.PROB_OFFICE_DESCRIPTION ELSE NULL END AS SUPERVISING_SERVICE, CASE WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) <= 17 THEN 'Juvenile' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) BETWEEN 18 AND 20 THEN 'Young Person' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) >= 21 THEN 'Adult' END AS ADULT_YOUNG_PERSON_INDICATOR FROM BODIMIS.DIM_DATE AT_REPORTING_DATE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_MOVEMENT_EXTERNAL, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_PROBATION_OFFICE AT_PROB_OFF_EXT_MOV_TO, BODIMIS.DIM_CELL AT_CELL WHERE (AT_MOVEMENT_EXTERNAL.REPORTING_DATE_SK = AT_REPORTING_DATE.DATE_SK (+)) AND (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_MOVEMENT_EXTERNAL.OFFENDER_BOOKING_SK (+)) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (CASE WHEN AT_FACT_MOV_EXT.TO_LOCATION_TYPE = 'Probation Office' THEN AT_FACT_MOV_EXT.TO_LOCATION_SK END = AT_PROB_OFF_EXT_MOV_TO.PROBATION_OFFICE_SK (+)) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #Prompt('Enter NOMS Number',,,mono,free,Not_Persistent,User:1) */)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND AT_OFFENDER_BOOKING.IN_OUT = 'IN        ')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, FIRST_NAME, MIDDLE_NAME_1, DATE_OF_BIRTH, OFFENDER_AGE, GENDER_CODE, ESTABLISHMENT_DESCRIPTION, ETHNIC_GROUP, DATE_TO_REPORT, TIME_TO_REPORT, SUPERVISING_SERVICE, ADULT_YOUNG_PERSON_INDICATOR, CURR_LED_DATE AS V_LICENSEEXPIRYDATE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number",
+          "description": "@Prompt('Enter NOMS Number',,,mono,free,Not_Persistent,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP2.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP2.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "MIDDLE_NAME_1",
+            "type": "string",
+            "display": "Offender Given Name 2",
+            "legacyId": "DP2.DO10081",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP2.DO10085",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DP2.DO10082",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "GENDER_CODE",
+            "type": "string",
+            "display": "Gender Code",
+            "legacyId": "DP2.DO100a8",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP2.DO10129",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "ETHNIC_GROUP",
+            "type": "string",
+            "display": "Ethnic Group",
+            "legacyId": "DP2.DO1009c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "DATE_TO_REPORT",
+            "type": "date",
+            "display": "Date to Report",
+            "legacyId": "DP2.DO5c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "TIME_TO_REPORT",
+            "type": "date",
+            "display": "Time to Report",
+            "legacyId": "DP2.DO5d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "SUPERVISING_SERVICE",
+            "type": "string",
+            "display": "Supervising Service",
+            "legacyId": "DP2.DO10134",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "ADULT_YOUNG_PERSON_INDICATOR",
+            "type": "string",
+            "display": "Adult/Young Person Indicator",
+            "legacyId": "DP2.DO10083",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "V_LICENSEEXPIRYDATE",
+            "type": "string",
+            "display": "V_LICENSEEXPIRYDATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP3",
+      "name": "MIS Load Log",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP3.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP5",
+      "name": "Sentence Dates",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN AT_MOVEMENT_EXTERNAL.TYPE = 'Release' THEN AT_MOVEMENT_EXTERNAL.REASON ELSE 'LDR' END AS RELEASE_REASON, CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' ELSE FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH END AS CURRENT_EFFECTIVE_SENTENCE_L33, FACT_CURR_KEY_DATES_SENT.SED, FACT_CURR_KEY_DATES_SENT.CURR_RELEASE_DATE, AT_FACT_OFFENDER_SENTENCE.RELEASE_CALC_DATE_TYPE, DT_LATEST_RELEASE.REASON, AT_MIN_SENTENCE_DATE.DAY_DATE, AT_DIM_ARD_CRD_DATE.DAY_DATE AS HDC_CURFEW_CONDITION_EXPIRY_32, FACT_CURR_KEY_DATES_SENT.SED AS SED_, FACT_CURR_KEY_DATES_SENT.SSD, FACT_CURR_KEY_DATES_SENT.CURR_LED_DATE, CASE WHEN AT_OFFENDER_BOOKING.YOUNG_PERSON_INDICATOR IN ('Young Offender', 'Juvenile') THEN ADD_MONTHS(AT_RELEASE_DATE.DAY_DATE, 3) END AS SUPERVISION_EXPIRY_DATE_EXPE32 FROM BODIMIS.DIM_DATE AT_MIN_SENTENCE_DATE, BODIMIS.DIM_DATE AT_DIM_ARD_CRD_DATE, BODIMIS.DIM_DATE AT_RELEASE_DATE, BODIMIS.FACT_CURFEW_ASSESSMENT AT_CURFEW_ASSESSMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_MOVEMENT_EXTERNAL, (SELECT DISTINCT BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK = dss.sentence_status_sk) AND dss.sentence_status = 'Active' AND (BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK = BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK) AND (BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK) AND BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG = 'Y') DT_LIFEFLAG, FACT_CURR_KEY_DATES_SENT, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, (SELECT F_M_E.OFFENDER_BOOKING_SK, F_M_E.MOVEMENT_SEQ, F_M_E.DATE_SK, F_M_E.MOVEMENT_TIME, F_M_E.REASON, F_M_E.TYPE, F_M_E.REASON_CODE FROM BODIMIS.FACT_MOVEMENT_EXTERNAL F_M_E WHERE (F_M_E.OFFENDER_BOOKING_SK, F_M_E.MOVEMENT_SEQ, F_M_E.DATE_SK, F_M_E.MOVEMENT_TIME) IN (SELECT F_M_E.OFFENDER_BOOKING_SK, F_M_E.MOVEMENT_SEQ, MAX(F_M_E.DATE_SK), MAX(F_M_E.MOVEMENT_TIME) FROM BODIMIS.FACT_MOVEMENT_EXTERNAL F_M_E WHERE F_M_E.TYPE = 'Release' GROUP BY F_M_E.OFFENDER_BOOKING_SK, F_M_E.MOVEMENT_SEQ)) DT_LATEST_RELEASE, (SELECT * FROM (SELECT sentence_start_date_sk, offender_booking_sk, sentence_seq_nk, sentence_type_sk, court_case_sk, sentence_termination_date_sk, expiry_date_sk, ROW_NUMBER() OVER (PARTITION BY offender_booking_sk ORDER BY sentence_start_date_sk, sentence_seq_nk) AS row_seq_filter FROM bodimis.fact_case_sentence) WHERE row_seq_filter = 1) DT_FIRST_SENTENCE WHERE (AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK = AT_RELEASE_DATE.DATE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK (+)) AND (AT_CURFEW_ASSESSMENT.ARD_CRD_DATE_SK = AT_DIM_ARD_CRD_DATE.DATE_SK (+)) AND (DT_LATEST_RELEASE.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_LIFEFLAG.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_MOVEMENT_EXTERNAL.OFFENDER_BOOKING_SK (+)) AND (DT_FIRST_SENTENCE.SENTENCE_START_DATE_SK = AT_MIN_SENTENCE_DATE.DATE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_FIRST_SENTENCE.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_CURFEW_ASSESSMENT.OFFENDER_BOOKING_SK (+)) AND ((AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #Prompt('Enter NOMS Number',,,mono,free,Not_Persistent,User:1) */)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND AT_OFFENDER_BOOKING.IN_OUT = 'IN' AND (1 = 1))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, RELEASE_REASON, CURRENT_EFFECTIVE_SENTENCE_L33, SED, CURR_RELEASE_DATE, RELEASE_CALC_DATE_TYPE, REASON, DAY_DATE, HDC_CURFEW_CONDITION_EXPIRY_32, SED_, SSD, CURR_LED_DATE, SUPERVISION_EXPIRY_DATE_EXPE32 FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number",
+          "description": "@Prompt('Enter NOMS Number',,,mono,free,Not_Persistent,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP5.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "RELEASE_REASON",
+            "type": "string",
+            "display": "Release Reason",
+            "legacyId": "DP5.DO43",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "CURRENT_EFFECTIVE_SENTENCE_L33",
+            "type": "string",
+            "display": "Current Effective Sentence Length",
+            "legacyId": "DP5.DO2ef",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "SED",
+            "type": "date",
+            "display": "Sentence Completion Date",
+            "legacyId": "DP5.DO6e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "CURR_RELEASE_DATE",
+            "type": "date",
+            "display": "Current Release Date",
+            "legacyId": "DP5.DO2e6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "RELEASE_CALC_DATE_TYPE",
+            "type": "string",
+            "display": "Scheduled Release Name",
+            "legacyId": "DP5.DO1ea",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "REASON",
+            "type": "string",
+            "display": "Last Release Reason",
+            "legacyId": "DP5.DO1e0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Minimum Sentence Date",
+            "legacyId": "DP5.DO1db",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "HDC_CURFEW_CONDITION_EXPIRY_32",
+            "type": "date",
+            "display": "HDC Curfew Condition Expiry Date",
+            "legacyId": "DP5.DO58",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "SED_",
+            "type": "date",
+            "display": "SED (Sentence End Date)",
+            "legacyId": "DP5.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "SSD",
+            "type": "date",
+            "display": "Current Sentence Start Date",
+            "legacyId": "DP5.DO32d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "CURR_LED_DATE",
+            "type": "date",
+            "display": "LED (Licence Expiry Date )",
+            "legacyId": "DP5.DO6a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "SUPERVISION_EXPIRY_DATE_EXPE32",
+            "type": "date",
+            "display": "Supervision Expiry Date Expected",
+            "legacyId": "DP5.DO6f",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP7",
+      "name": "Reception Employments",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN (COALESCE(CASE WHEN AT_EMPLOYMENT_START_DATE.DAY_DATE = TO_DATE('31/12/9000', 'dd/mm/yyyy') OR (AT_EMPLOYMENT_START_DATE.DAY_DATE IS NULL AND TO_DATE('31/12/9000', 'dd/mm/yyyy') IS NULL) THEN TO_DATE('01/01/1900', 'dd/mm/yyyy') ELSE AT_EMPLOYMENT_START_DATE.DAY_DATE END, TO_DATE('01/01/1901', 'dd/mm/yyyy')) < AT_MOVEMENT_DATE.DAY_DATE AND AT_MOVEMENT_EXTERNAL.TYPE = 'Admission') THEN AT_DIM_OFFENDER_EMPLOYMENT.OCCUPATION_DESCRIPTION ELSE NULL END /* *************************** */ AS RECEPTION_EMPLOYMENT, CASE WHEN COALESCE(TO_CHAR(AT_EMPLOYMENT_START_DATE.DAY_DATE, 'dd/mm/yyyy'), 'No employment') = '31/12/9000' THEN 'No date entered' ELSE COALESCE(TO_CHAR(AT_EMPLOYMENT_START_DATE.DAY_DATE, 'dd/mm/yyyy'), 'No employment') END /* *************************** */ /* *************************** */ AS EMPLOYMENT_START_DATE FROM BODIMIS.DIM_DATE AT_EMPLOYMENT_START_DATE, BODIMIS.DIM_OFFENDER_EMPLOYMENT AT_DIM_OFFENDER_EMPLOYMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_MOVEMENT_EXTERNAL, BODIMIS.DIM_DATE AT_MOVEMENT_DATE WHERE (AT_DIM_OFFENDER_EMPLOYMENT.START_DATE_SK = AT_EMPLOYMENT_START_DATE.DATE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_DIM_OFFENDER_EMPLOYMENT.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_MOVEMENT_EXTERNAL.OFFENDER_BOOKING_SK (+)) AND (AT_MOVEMENT_DATE.DATE_SK (+) = AT_MOVEMENT_EXTERNAL.DATE_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #Prompt('Enter NOMS Number',,,mono,free,Not_Persistent,User:1) */)) AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND AT_OFFENDER_BOOKING.IN_OUT = 'IN        ' AND ((COALESCE(CASE WHEN AT_EMPLOYMENT_START_DATE.DAY_DATE = TO_DATE('31/12/9000', 'dd/mm/yyyy') OR (AT_EMPLOYMENT_START_DATE.DAY_DATE IS NULL AND TO_DATE('31/12/9000', 'dd/mm/yyyy') IS NULL) THEN TO_DATE('01/01/1900', 'dd/mm/yyyy') ELSE AT_EMPLOYMENT_START_DATE.DAY_DATE END, TO_DATE('01/01/1901', 'dd/mm/yyyy')) < AT_MOVEMENT_DATE.DAY_DATE AND AT_MOVEMENT_EXTERNAL.TYPE = 'Admission')))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, RECEPTION_EMPLOYMENT, EMPLOYMENT_START_DATE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number",
+          "description": "@Prompt('Enter NOMS Number',,,mono,free,Not_Persistent,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP7.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "RECEPTION_EMPLOYMENT",
+            "type": "string",
+            "display": "Reception Employment",
+            "legacyId": "DP7.DO6d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "EMPLOYMENT_START_DATE",
+            "type": "string",
+            "display": "Employment Start Date",
+            "legacyId": "DP7.DO55b",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP6",
+      "name": "Planned Discharge Employments",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN COALESCE(AT_EMPLOYMENT_END_DATE.DAY_DATE, TO_DATE('31/12/9999', 'dd/mm/yyyy')) > AT_RELEASE_DATE.DAY_DATE THEN AT_DIM_OFFENDER_EMPLOYMENT.OCCUPATION_DESCRIPTION ELSE NULL END /* *************************** */ AS PLANNED_DISCHARGE_EMPLOYMENT, CASE WHEN COALESCE(TO_CHAR(AT_EMPLOYMENT_END_DATE.DAY_DATE, 'dd/mm/yyyy'), 'No employment') = '31/12/9000' THEN 'No date entered' ELSE COALESCE(TO_CHAR(AT_EMPLOYMENT_END_DATE.DAY_DATE, 'dd/mm/yyyy'), 'No employment') END /* *************************** */ /* *************************** */ AS EMPLOYMENT_END_DATE FROM BODIMIS.DIM_DATE AT_EMPLOYMENT_END_DATE, BODIMIS.DIM_DATE AT_RELEASE_DATE, BODIMIS.DIM_OFFENDER_EMPLOYMENT AT_DIM_OFFENDER_EMPLOYMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE WHERE (AT_DIM_OFFENDER_EMPLOYMENT.END_DATE_SK = AT_EMPLOYMENT_END_DATE.DATE_SK (+)) AND (AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK = AT_RELEASE_DATE.DATE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_DIM_OFFENDER_EMPLOYMENT.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #Prompt('Enter NOMS Number',,,mono,free,Not_Persistent,User:1) */)) AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND AT_OFFENDER_BOOKING.IN_OUT = 'IN        ' AND (COALESCE(AT_EMPLOYMENT_END_DATE.DAY_DATE, TO_DATE('31/12/9999', 'dd/mm/yyyy')) > AT_RELEASE_DATE.DAY_DATE))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, PLANNED_DISCHARGE_EMPLOYMENT, EMPLOYMENT_END_DATE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number",
+          "description": "@Prompt('Enter NOMS Number',,,mono,free,Not_Persistent,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP6.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "PLANNED_DISCHARGE_EMPLOYMENT",
+            "type": "string",
+            "display": "Planned Discharge Employment",
+            "legacyId": "DP6.DO82",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "EMPLOYMENT_END_DATE",
+            "type": "string",
+            "display": "Employment End date",
+            "legacyId": "DP6.DO55c",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP8",
+      "name": "First Remand",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, DT_FIRST_REMAND.FIRSTREMANDDATE FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT ce.offender_booking_sk, MIN(d.day_date) AS FirstRemandDate FROM bodimis.fact_court_event ce, bodimis.dim_date d WHERE ce.event_date_sk = d.date_sk AND ce.outcome IN ('4531', '4532', '4533', '4534', '4548', '4549', '4559', '4560', '4561', '4564', '4565') GROUP BY ce.offender_booking_sk /* ************************ */ /* ************************ */) DT_FIRST_REMAND WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_FIRST_REMAND.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #Prompt('Enter NOMS Number',,,mono,free,Not_Persistent,User:1) */)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FIRSTREMANDDATE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number",
+          "description": "@Prompt('Enter NOMS Number',,,mono,free,Not_Persistent,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP8.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRSTREMANDDATE",
+            "type": "date",
+            "display": "Date Of First Remand",
+            "legacyId": "DP8.DO10102",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DPa",
+      "name": "Lifers",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, DT_LIFEFLAG.LIFE_SENTENCE_FLAG FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT DISTINCT BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK = dss.sentence_status_sk) AND dss.sentence_status = 'Active' AND (BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK = BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK) AND (BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK) AND BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG = 'Y') DT_LIFEFLAG WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_LIFEFLAG.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #Prompt('Enter NOMS Number',,,mono,free,Not_Persistent,User:1) */)) AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LIFE_SENTENCE_FLAG FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number",
+          "description": "@Prompt('Enter NOMS Number',,,mono,free,Not_Persistent,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPa.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LIFE_SENTENCE_FLAG",
+            "type": "string",
+            "display": "Life Sentence Flag (Current Sentence)",
+            "legacyId": "DPa.DO58f",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DPb",
+      "name": "Alerts",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, 'Please manually check' AS RISK_TO_CHILDREN_ALERT, CASE WHEN AT_ALERT.ALERT_CODE_NK IN ('SR', 'SOR') AND AT_OFFENDER_ALERT.ALERT_STATUS = 'ACTIVE' THEN 'Yes' ELSE 'No' END AS REQ_TO_REG_UNDER_SEX_OFFENDE34 FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT, BODIMIS.DIM_ALERT AT_ALERT WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK (+)) AND (AT_ALERT.ALERT_SK (+) = AT_OFFENDER_ALERT.ALERT_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #Prompt('Enter NOMS Number',,,mono,free,Not_Persistent,User:1) */)) AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND AT_OFFENDER_BOOKING.IN_OUT = 'IN')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, RISK_TO_CHILDREN_ALERT, REQ_TO_REG_UNDER_SEX_OFFENDE34 FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number",
+          "description": "@Prompt('Enter NOMS Number',,,mono,free,Not_Persistent,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPb.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "RISK_TO_CHILDREN_ALERT",
+            "type": "string",
+            "display": "Risk to Children Alert",
+            "legacyId": "DPb.DO10151",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "REQ_TO_REG_UNDER_SEX_OFFENDE34",
+            "type": "string",
+            "display": "Req to Reg Under Sex Offenders Act",
+            "legacyId": "DPb.DO100be",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DPc",
+      "name": "Offender Address",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, DT_OFFENDER_ADDRESSES.FLAT || ' '|| DT_OFFENDER_ADDRESSES.PREMISE || ' '|| DT_OFFENDER_ADDRESSES.STREET || ' '|| DT_OFFENDER_ADDRESSES.LOCALITY || ' '|| DT_OFFENDER_ADDRESSES.CITY_DESC || ' '|| DT_OFFENDER_ADDRESSES.POSTAL_CODE || ' '|| DT_OFFENDER_ADDRESSES.COUNTRY_DESC, DT_OFFENDER_ADDRESSES.NO_FIXED_ADDRESS_FLAG, DT_OFFENDER_ADDRESSES.PRIMARY_FLAG, Case when DT_OFFENDER_ADDRESSES.ADDRESS_USAGE in ('RELEASE','DBH','DNF','DPH','DSH','DST','DUT','DAP','DBA','DOH') then 'Y' else 'N' end , DT_OFFENDER_ADDRESSES.POSTAL_CODE, DT_OFFENDER_ADDRESSES.ADDR_USAGE_DESCRIPTION, DT_OFFENDER_ADDRESSES.USAGE_ACTIVE_FLAG, Case when DT_OFFENDER_ADDRESSES.ADDRESS_USAGE in ('RECEP') then 'Y' else 'N' end FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, ( select ROW_NUMBER() OVER (PARTITION BY ss.OWNER_ID ORDER BY PRIMARY_FLAG desc, ss.address_active_flag desc, ss.USAGE_ACTIVE_FLAG desc, ss.usages_dttm DESC nulls last) row_seq_filter, ss.* from ( select * from ( select AT_DIM_ADDRESSES.OWNER_ID, AT_DIM_ADDRESS_USAGES.ADDRESS_ID_NK, AT_DIM_ADDRESS_USAGES.ADDRESS_USAGE, AT_DIM_ADDRESS_USAGES.ADDR_USAGE_DESCRIPTION, AT_DIM_ADDRESS_USAGES.ACTIVE_FLAG as USAGE_ACTIVE_FLAG, AT_DIM_ADDRESSES.flat, AT_DIM_ADDRESSES.premise, AT_DIM_ADDRESSES.Street, AT_DIM_ADDRESSES.locality, AT_DIM_ADDRESSES.city_code, AT_DIM_ADDRESSES.city_desc, AT_DIM_ADDRESSES.county_code, AT_DIM_ADDRESSES.county_desc, AT_DIM_ADDRESSES.postal_code, AT_DIM_ADDRESSES.COUNTRY_CODE, AT_DIM_ADDRESSES.country_desc, AT_DIM_ADDRESSES.HOME_TEL_NO, AT_DIM_ADDRESSES.HOME_EXT_NO, AT_DIM_ADDRESSES.NO_FIXED_ADDRESS_FLAG, AT_DIM_ADDRESSES.establishment_sk, AT_DIM_ADDRESSES.PRIMARY_FLAG, AT_DIM_ADDRESSES.active_flag as address_active_flag, AT_DIM_ADDRESS_USAGES.CREATE_DATETIME, AT_DIM_ADDRESS_USAGES.MODIFY_DATETIME, COALESCE(AT_DIM_ADDRESS_USAGES.modify_datetime, AT_DIM_ADDRESS_USAGES.create_datetime) as usages_dttm from BODIMIS.DIM_ADDRESS_USAGES AT_DIM_ADDRESS_USAGES inner join BODIMIS.dim_addresses AT_DIM_ADDRESSES on AT_DIM_ADDRESS_USAGES.address_id_nk = AT_DIM_ADDRESSES.address_id_nk and AT_DIM_ADDRESSES.owner_class='OFF'  ) Addr_usages --where Addr_usages.usages_dttm is not null ) ss ) DT_OFFENDER_ADDRESSES, BODISTAGING.REF_OFFENDERS AT_BODISTAG_REF_OFFENDERS WHERE ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_ID=AT_BODISTAG_REF_OFFENDERS.OFFENDER_ID(+) ) AND ( AT_BODISTAG_REF_OFFENDERS.ROOT_OFFENDER_ID=DT_OFFENDER_ADDRESSES.OWNER_ID(+) ) AND ( ( AT_OFFENDER_BOOKING.IN_OUT = 'IN' ) AND ( AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /*= #Prompt('Enter NOMS Number',,,mono,free,Not_Persistent,User:1) */ ) ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND DT_OFFENDER_ADDRESSES.PRIMARY_FLAG IN ( 'Y' ) AND ( DT_OFFENDER_ADDRESSES.ADDRESS_ACTIVE_FLAG='Y' ) )), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number",
+          "description": "@Prompt('Enter NOMS Number',,,mono,free,Not_Persistent,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3376639/DPd",
+      "name": "OM Address",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, TRIM(CASE WHEN NOT DT_OFFENDER_CONTACT_ADDRESS.TITLE IS NULL THEN DT_OFFENDER_CONTACT_ADDRESS.TITLE || ' ' END || CASE WHEN NOT DT_OFFENDER_CONTACT_ADDRESS.FIRST_NAME IS NULL THEN DT_OFFENDER_CONTACT_ADDRESS.FIRST_NAME || ' ' END || CASE WHEN NOT DT_OFFENDER_CONTACT_ADDRESS.MIDDLE_NAME IS NULL THEN DT_OFFENDER_CONTACT_ADDRESS.MIDDLE_NAME || ' ' END || DT_OFFENDER_CONTACT_ADDRESS.LAST_NAME) AS OTHER_CONTACT_NAME, DT_OFFENDER_CONTACT_ADDRESS.FLAT || ' ' || DT_OFFENDER_CONTACT_ADDRESS.PREMISE AS OTHER_CONTACT_HOUSE_INFORMAT31, DT_OFFENDER_CONTACT_ADDRESS.STREET, DT_OFFENDER_CONTACT_ADDRESS.locality || (CASE WHEN DT_OFFENDER_CONTACT_ADDRESS.locality IS NULL THEN DT_OFFENDER_CONTACT_ADDRESS.city WHEN NOT DT_OFFENDER_CONTACT_ADDRESS.locality IS NULL AND DT_OFFENDER_CONTACT_ADDRESS.city IS NULL THEN NULL WHEN DT_OFFENDER_CONTACT_ADDRESS.locality IS NULL AND DT_OFFENDER_CONTACT_ADDRESS.city IS NULL THEN NULL WHEN NOT DT_OFFENDER_CONTACT_ADDRESS.locality IS NULL THEN ', ' || DT_OFFENDER_CONTACT_ADDRESS.city ELSE ', ' || DT_OFFENDER_CONTACT_ADDRESS.city END) || (CASE WHEN NOT DT_OFFENDER_CONTACT_ADDRESS.county IS NULL AND NOT DT_OFFENDER_CONTACT_ADDRESS.city IS NULL THEN ', ' || DT_OFFENDER_CONTACT_ADDRESS.county WHEN NOT DT_OFFENDER_CONTACT_ADDRESS.county IS NULL AND DT_OFFENDER_CONTACT_ADDRESS.city IS NULL AND NOT DT_OFFENDER_CONTACT_ADDRESS.locality IS NULL THEN ', ' || DT_OFFENDER_CONTACT_ADDRESS.county WHEN NOT DT_OFFENDER_CONTACT_ADDRESS.county IS NULL AND NOT DT_OFFENDER_CONTACT_ADDRESS.city IS NULL THEN ', ' || DT_OFFENDER_CONTACT_ADDRESS.county WHEN NOT DT_OFFENDER_CONTACT_ADDRESS.county IS NULL AND DT_OFFENDER_CONTACT_ADDRESS.city IS NULL AND DT_OFFENDER_CONTACT_ADDRESS.locality IS NULL THEN DT_OFFENDER_CONTACT_ADDRESS.county ELSE NULL END) AS OTHER_CONTACT_AREA, DT_OFFENDER_CONTACT_ADDRESS.POST_CODE, DT_OFFENDER_CONTACT_ADDRESS.TEL_NO FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT ROW_NUMBER() OVER (PARTITION BY dooc.offender_booking_sk, dooc.relationship ORDER BY dooc.active_flag DESC, dooc.address_flag DESC, dooc.mis_load_id DESC) AS row_seq_filter, dooc.*, CASE WHEN dooc.next_of_kin_flag = 'Y' THEN 'NEXTOFKIN' ELSE 'CONTACT' END AS Con_Addr_Type, CASE WHEN dooc.next_of_kin_flag = 'Y' THEN 'Next of Kin' ELSE 'Contact' END AS ConAddrTypeDesc FROM bodimis.dim_offender_other_contacts dooc) DT_OFFENDER_CONTACT_ADDRESS WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK (+)) AND (DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK IS NULL OR DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((AT_OFFENDER_BOOKING.IN_OUT = 'IN') AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #Prompt('Enter NOMS Number',,,mono,free,Not_Persistent,User:1) */)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (DT_OFFENDER_CONTACT_ADDRESS.ROW_SEQ_FILTER (+) = 1) AND (DT_OFFENDER_CONTACT_ADDRESS.ACTIVE_FLAG (+) = 'Y') AND (DT_OFFENDER_CONTACT_ADDRESS.RELATIONSHIP (+) = 'Probation Officer'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, OTHER_CONTACT_NAME, OTHER_CONTACT_HOUSE_INFORMAT31, STREET, OTHER_CONTACT_AREA, POST_CODE, TEL_NO FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number",
+          "description": "@Prompt('Enter NOMS Number',,,mono,free,Not_Persistent,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPd.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OTHER_CONTACT_NAME",
+            "type": "string",
+            "display": "Other Contact Name",
+            "legacyId": "DPd.DOa1b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "OTHER_CONTACT_HOUSE_INFORMAT31",
+            "type": "string",
+            "display": "Other Contact House Information",
+            "legacyId": "DPd.DOa1d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "STREET",
+            "type": "string",
+            "display": "Other Contact Street",
+            "legacyId": "DPd.DOa1e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "OTHER_CONTACT_AREA",
+            "type": "string",
+            "display": "Other Contact Area",
+            "legacyId": "DPd.DOa1f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "POST_CODE",
+            "type": "string",
+            "display": "Other Contact Post Code",
+            "legacyId": "DPd.DOa20",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "TEL_NO",
+            "type": "string",
+            "display": "Other Contact Tel No",
+            "legacyId": "DPd.DOa21",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "164945.RS",
+      "name": "Discharge Feedback Form",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:TIME_TO_REPORT",
+            "display": "Time to Report",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO5d"
+          },
+          {
+            "name": "$ref:V_LICENSEEXPIRYDATE",
+            "display": "      Relationships",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[LED (Licence Expiry Date )]"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Expecting ). Line 1, Col: 2159.\n  ESS_USAGES.address_id_nk = AT_DIM_ADDRESSES.address_id_nk and AT_DIM_ADDRESSES.owner_class='OFF'  ) \u001b[4mAddr_usages\u001b[0m --where Addr_usages.usages_dttm is not null ) ss ) DT_OFFENDER_ADDRESSES, BODISTAGING.REF_OFFENDERS]",
+      "entityId": "FpAezF06dQsAFxYAAHALxF4KACJIAFe4",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields (comments -- in query)",
+      "entityId": "3376639/DPc",
+      "entityType": "dataset"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DP2",
+      "entityType": "dataset"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DP5",
+      "entityType": "dataset"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3376639/DPc",
+      "entityType": "dataset"
+    }
+  ]
+}

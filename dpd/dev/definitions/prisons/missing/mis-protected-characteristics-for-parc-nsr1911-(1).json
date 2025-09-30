@@ -1,0 +1,447 @@
+{
+  "id": "FuuFL2DY6AQAUHIAAHCrzF4LACJIAFe4",
+  "name": "MIS Protected Characteristics for Parc NSR1911 (1)",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0116 - Protected Characteristics"
+    ]
+  },
+  "description": "Provides a percentage breakdown of Age, Religion, Sexual Orientation, Disability and Ethnicity across an establishment chosen at runtime. The purpose and formatting of the report have been designed to be able to easily send statistics to the PPAS team for inclusion on the performance hub on a weekly basis. <br/>PDD0116 - v00.00.01",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DPb",
+      "name": "Characteristics",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.MARITAL_STATUS_DESCRIPTION, AT_OFFENDER_BOOKING.MATERNITY_STATUS_DESCRIPTION, COALESCE(AT_OFFENDER_BOOKING.RELIGION_DESCRIPTION, 'Not Specified') AS RELIGION_DESCRIPTION, AT_OFFENDER_BOOKING.SEX_ORIENTATION_DESCRIPTION, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, AT_OFFENDER_BOOKING.GENDER_CODE, AT_OFFENDER_BOOKING.GENDER_DESCRIPTION, CASE WHEN AT_DIM_ETHNICITY_CODES.DESCRIPTION = 'Chinese' THEN 'Asian/Asian British: Chinese' WHEN AT_DIM_ETHNICITY_CODES.DESCRIPTION = 'White : Irish Traveller/Gypsy' THEN 'White: Gypsy or Irish Traveller' WHEN AT_DIM_ETHNICITY_CODES.DESCRIPTION IS NULL THEN 'Code Missing' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION END AS ETHNIC_GROUP, AT_OFFENDER_BOOKING.SEXUAL_ORIENTATION_CODE, AT_OFFENDER_BOOKING.NATIONALITY_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, MARITAL_STATUS_DESCRIPTION, MATERNITY_STATUS_DESCRIPTION, RELIGION_DESCRIPTION, SEX_ORIENTATION_DESCRIPTION, SURNAME, FIRST_NAME, OFFENDER_AGE, GENDER_CODE, GENDER_DESCRIPTION, ETHNIC_GROUP, SEXUAL_ORIENTATION_CODE, NATIONALITY_DESCRIPTION, COUNT(CHARACTERISTICS.OFFENDER_ID_DISPLAY) OVER (PARTITION BY OFFENDER_AGE < 18) AS V_AGE_UNDER_18, COUNT(CHARACTERISTICS.OFFENDER_ID_DISPLAY) OVER (PARTITION BY OFFENDER_AGE >= 18) AS V_AGE_18_ FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPb.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "MARITAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Marital Status Description",
+            "legacyId": "DPb.DOaf",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "MATERNITY_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Maternity Status",
+            "legacyId": "DPb.DOb0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "RELIGION_DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DPb.DOb3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "SEX_ORIENTATION_DESCRIPTION",
+            "type": "string",
+            "display": "Sexual Orientation Description",
+            "legacyId": "DPb.DO970",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DPb.DO7b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DPb.DO80",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DPb.DO82",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "GENDER_CODE",
+            "type": "string",
+            "display": "Gender Code",
+            "legacyId": "DPb.DOa8",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "GENDER_DESCRIPTION",
+            "type": "string",
+            "display": "Gender Description",
+            "legacyId": "DPb.DOa9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ETHNIC_GROUP",
+            "type": "string",
+            "display": "Ethnic Group",
+            "legacyId": "DPb.DO9c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "SEXUAL_ORIENTATION_CODE",
+            "type": "string",
+            "display": "Sexual Orientation Code",
+            "legacyId": "DPb.DO96f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "NATIONALITY_DESCRIPTION",
+            "type": "string",
+            "display": "Nationality Description",
+            "legacyId": "DPb.DOb5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "V_AGE_UNDER_18",
+            "type": "string",
+            "display": "V_AGE_UNDER_18",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 14,
+            "name": "V_AGE_18_",
+            "type": "string",
+            "display": "V_AGE_18_",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP9",
+      "name": "MIS load",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP9.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DPd",
+      "name": "Disability",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE IS NULL THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'I' THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'ON' AND NOT BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'PRD', 'RD', 'NR') THEN 'Y' ELSE 'N' END AS DISABILITY_ACTIVE_FLAG, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE_DESCRIPTION, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE_DESCRIPTION, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_OFFENDER_PERSONAL_CARE WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.DIM_OFFENDER_PERSONAL_CARE.OFFENDER_BOOKING_SK (+)) AND ((AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND CASE WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE IS NULL THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'I' THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'ON' AND NOT BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'PRD', 'RD', 'NR') THEN 'Y' ELSE 'N' END IN ('Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, DISABILITY_ACTIVE_FLAG, TYPE_DESCRIPTION, CODE_DESCRIPTION, STATUS_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPd.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DISABILITY_ACTIVE_FLAG",
+            "type": "string",
+            "display": "Disability Active Flag",
+            "legacyId": "DPd.DOa9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "TYPE_DESCRIPTION",
+            "type": "string",
+            "display": "Care Type Description",
+            "legacyId": "DPd.DO97b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "CODE_DESCRIPTION",
+            "type": "string",
+            "display": "Care Code Description",
+            "legacyId": "DPd.DO97d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Care Status Description",
+            "legacyId": "DPd.DO97f",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP10",
+      "name": "No Disability",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE IS NULL THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'I' THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'ON' AND NOT BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'PRD', 'RD', 'NR') THEN 'Y' ELSE 'N' END AS DISABILITY_ACTIVE_FLAG, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE_DESCRIPTION, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE_DESCRIPTION, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_OFFENDER_PERSONAL_CARE WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.DIM_OFFENDER_PERSONAL_CARE.OFFENDER_BOOKING_SK (+)) AND (NOT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY IN ('A5744CP', 'A5635AL', 'A4943AJ', 'A4666CA', 'A9034AD', 'A6252AZ', 'A5923AK', 'A0783AG', 'A8669DE', 'A8975AQ', 'A1116CF', 'A1627CN', 'A5671CH', 'A5122CW', 'A2505AM', 'A3277DQ', 'A4873AW', 'A6290AC', 'A4188AC', 'A2682CC', 'A3815AE', 'A1488DV', 'A8164AT', 'A0569DW', 'A2806CN', 'A1198AH', 'A1948AD', 'A4988CL', 'A4667AE', 'A0385AG', 'A1853AM', 'A0423AL', 'A2759AJ', 'A5834AQ', 'A1439AP', 'A4879DC', 'A6515CN', 'A3042AF', 'A7072AL', 'A0820AE', 'A9484AC', 'A3719AV', 'A1433AG', 'A7517CW', 'A6438AM', 'A9319AN', 'A9287DH', 'A6892CT', 'A5030AG', 'A1540DE', 'A6179CC', 'A4637DH', 'A9080AA', 'A0862AL', 'A5372AC', 'A2741CP', 'A3794AZ', 'A9515DA', 'A9631AG', 'A7002AJ', 'A6202CR', 'A7345CN', 'A6754CP', 'A0607AE', 'A0317CG', 'A6961AP', 'A8373CW', 'A9219DX', 'A3474CR', 'A7515AY', 'A3384DT', 'A8810AA', 'A7897AG', 'A4806CP', 'A5091CX', 'A5339CL', 'A0943CX', 'A7649DL', 'A3606AL', 'A0655DD', 'A2051DC', 'A4095AT', 'A6335AJ', 'A2175AK', 'A9495AW', 'A8174AR', 'A0699AC', 'A6734EA', 'A1476AG', 'A1898AK', 'A4611DA', 'A8394AM', 'A3141AJ', 'A5712AF', 'A3261DE', 'A0751AK', 'A9303AV', 'A1966AR', 'A0910AG', 'A4214AC', 'A2997DV', 'A3637AD', 'A5280EA', 'A9963DV', 'A4848EH', 'A4661AJ', 'A6288AD', 'A0569CK', 'A2259AE', 'A2289AY', 'A1292DV', 'A9781AG', 'A8880AA', 'A7336AL', 'A2086DJ', 'A0024AN', 'A3338EF', 'A4409AV', 'A2036AE', 'A6608DX', 'A1536EF', 'A8427CN', 'A7445EC', 'A9143DN', 'A1731AP', 'A4947AK', 'A4137CC', 'A7810CP', 'A0202DV', 'A4295AK', 'A7906CL', 'A2794CX', 'A9716CY', 'A2152CE', 'A8916DY', 'A9585EF', 'A5761DT', 'A9337AH', 'A4648DX', 'A7207CD', 'A0583AR', 'A5866EJ', 'A8678AX', 'A8183EG', 'A0763AK', 'A7507AG', 'A1305AJ', 'A8334AM', 'A2170AL', 'A7163CX', 'A4978DH', 'A7296CE', 'A4355EE', 'A5202AJ', 'A2647AW', 'A9378CH', 'A8777DQ', 'A9705AG', 'A0898EA', 'A7774AH', 'A1150EF', 'A9469AL', 'A2912AA', 'A2738EG', 'A8748AV', 'A0148AD', 'A6259EL', 'A9000EF', 'A1706AV', 'A1379AK', 'A0600AW', 'A7632AF', 'A1269AG', 'A5026DW', 'A5600AP', 'A1221EL', 'A9459EH', 'A0445AG', 'A4138EF', 'A9567AG', 'A1347EK', 'A2773AC', 'A2821CW', 'A1256EM', 'A2020AM', 'A5949AP', 'A3536AD', 'A8535EK', 'A7015AD', 'A8718AG', 'A5486AH', 'A6442ED', 'A6641AV', 'A1600AC', 'A5956CT', 'A4001EF', 'A9481CV', 'A2544AT', 'A2617DZ', 'A4658EN') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'NR'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, DISABILITY_ACTIVE_FLAG, TYPE_DESCRIPTION, CODE_DESCRIPTION, STATUS_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP10.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DISABILITY_ACTIVE_FLAG",
+            "type": "string",
+            "display": "Disability Active Flag",
+            "legacyId": "DP10.DOa9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "TYPE_DESCRIPTION",
+            "type": "string",
+            "display": "Care Type Description",
+            "legacyId": "DP10.DO97b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "CODE_DESCRIPTION",
+            "type": "string",
+            "display": "Care Code Description",
+            "legacyId": "DP10.DO97d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Care Status Description",
+            "legacyId": "DP10.DO97f",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP11",
+      "name": "Disability Other",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE IS NULL THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'I' THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'ON' AND NOT BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'PRD', 'RD', 'NR') THEN 'Y' ELSE 'N' END AS DISABILITY_ACTIVE_FLAG, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE_DESCRIPTION, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE_DESCRIPTION, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_OFFENDER_PERSONAL_CARE WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.DIM_OFFENDER_PERSONAL_CARE.OFFENDER_BOOKING_SK (+)) AND (NOT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY IN ('A5744CP', 'A5635AL', 'A4943AJ', 'A4666CA', 'A9034AD', 'A6252AZ', 'A5923AK', 'A0783AG', 'A8669DE', 'A8975AQ', 'A1116CF', 'A1627CN', 'A5671CH', 'A5122CW', 'A2505AM', 'A3277DQ', 'A4873AW', 'A6290AC', 'A4188AC', 'A2682CC', 'A3815AE', 'A1488DV', 'A8164AT', 'A0569DW', 'A2806CN', 'A1198AH', 'A1948AD', 'A4988CL', 'A4667AE', 'A0385AG', 'A1853AM', 'A0423AL', 'A2759AJ', 'A5834AQ', 'A1439AP', 'A4879DC', 'A6515CN', 'A3042AF', 'A7072AL', 'A0820AE', 'A9484AC', 'A3719AV', 'A1433AG', 'A7517CW', 'A6438AM', 'A9319AN', 'A9287DH', 'A6892CT', 'A5030AG', 'A1540DE', 'A6179CC', 'A4637DH', 'A9080AA', 'A0862AL', 'A5372AC', 'A2741CP', 'A3794AZ', 'A9515DA', 'A9631AG', 'A7002AJ', 'A6202CR', 'A7345CN', 'A6754CP', 'A0607AE', 'A0317CG', 'A6961AP', 'A8373CW', 'A9219DX', 'A3474CR', 'A7515AY', 'A3384DT', 'A8810AA', 'A7897AG', 'A4806CP', 'A5091CX', 'A5339CL', 'A0943CX', 'A7649DL', 'A3606AL', 'A0655DD', 'A2051DC', 'A4095AT', 'A6335AJ', 'A2175AK', 'A9495AW', 'A8174AR', 'A0699AC', 'A6734EA', 'A1476AG', 'A1898AK', 'A4611DA', 'A8394AM', 'A3141AJ', 'A5712AF', 'A3261DE', 'A0751AK', 'A9303AV', 'A1966AR', 'A0910AG', 'A4214AC', 'A2997DV', 'A3637AD', 'A5280EA', 'A9963DV', 'A4848EH', 'A4661AJ', 'A6288AD', 'A0569CK', 'A2259AE', 'A2289AY', 'A1292DV', 'A9781AG', 'A8880AA', 'A7336AL', 'A2086DJ', 'A0024AN', 'A3338EF', 'A4409AV', 'A2036AE', 'A6608DX', 'A1536EF', 'A8427CN', 'A7445EC', 'A9143DN', 'A1731AP', 'A4947AK', 'A4137CC', 'A7810CP', 'A0202DV', 'A4295AK', 'A7906CL', 'A2794CX', 'A9716CY', 'A2152CE', 'A8916DY', 'A9585EF', 'A5761DT', 'A9337AH', 'A4648DX', 'A7207CD', 'A0583AR', 'A5866EJ', 'A8678AX', 'A8183EG', 'A0763AK', 'A7507AG', 'A1305AJ', 'A8334AM', 'A2170AL', 'A7163CX', 'A4978DH', 'A7296CE', 'A4355EE', 'A5202AJ', 'A2647AW', 'A9378CH', 'A8777DQ', 'A9705AG', 'A0898EA', 'A7774AH', 'A1150EF', 'A9469AL', 'A2912AA', 'A2738EG', 'A8748AV', 'A0148AD', 'A6259EL', 'A9000EF', 'A1706AV', 'A1379AK', 'A0600AW', 'A7632AF', 'A1269AG', 'A5026DW', 'A5600AP', 'A1221EL', 'A9459EH', 'A0445AG', 'A4138EF', 'A9567AG', 'A1347EK', 'A2773AC', 'A2821CW', 'A1256EM', 'A2020AM', 'A5949AP', 'A3536AD', 'A8535EK', 'A7015AD', 'A8718AG', 'A5486AH', 'A6442ED', 'A6641AV', 'A1600AC', 'A5956CT', 'A4001EF', 'A9481CV', 'A2544AT', 'A2617DZ', 'A4658EN') AND NOT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY IN ('A2140CZ', 'A3572DC', 'A5508AJ', 'A0939CX', 'A8889DJ', 'A3908DA', 'A1542AG', 'A8888AE', 'A6836DM', 'A8271AC', 'A1116AD', 'A9148AA', 'A8522DD', 'A7288AA', 'A3633AL', 'A1768AG', 'A9955CF', 'A9131DJ', 'A2945AV', 'A3270CF', 'A6538DE', 'A3266AX', 'A6862CF', 'A3472DQ', 'A2451DW', 'A3319CH', 'A8079CY', 'A8705AA', 'A1733AR', 'A3783AJ', 'A8627CE', 'A7514CY', 'A6825CH', 'A9879CK', 'A6672AW', 'A5361CN', 'A1012AH', 'A4530DM', 'A9339CL', 'A6014AR', 'A9875AL', 'A6435AN', 'A2928DH', 'A9498DD', 'A8570AY', 'A8694AA', 'A1202DK', 'A2204CK', 'A7353CW', 'A8000AD', 'A6595DN', 'A1619AG', 'A5177DQ', 'A8495CR', 'A8732CF', 'A4594DV', 'A6865AX', 'A5073AA', 'A4949AZ', 'A4848CL', 'A9651CJ', 'A8451AW', 'A1377DF', 'A3341AL', 'A2863CG', 'A6226CJ', 'A6243CP', 'A5880AG', 'A0529EH', 'A9382CE', 'A3362DW', 'A2343AM', 'A2366AJ', 'A7694CC', 'A1937AL', 'A1143AE', 'A5801AK', 'A2212DM', 'A9605AD', 'A5928AL', 'A7853CE', 'A2071AF', 'A3004CK', 'A9647DJ', 'A9545AE', 'A6117AL', 'A4992CP', 'A0785CF', 'A8589AF', 'A2746CR', 'A8005AX', 'A4212CA', 'A6762CC', 'A2518DT', 'A8712DX', 'A8772DC', 'A0816AQ', 'A2001AJ', 'A0701CH', 'A5404AJ', 'A9434AQ', 'A9548CQ', 'A6741AM', 'A2039AC', 'A5452AQ', 'A4548AE', 'A4752AF', 'A1758CM', 'A5537AQ', 'A4147DE', 'A6091AL', 'A8496AE', 'A2978EA', 'A1831CG', 'A0197AC', 'A9084AA', 'A4622CP', 'A1249CG', 'A5940CQ', 'A4922AN', 'A1291AK', 'A7771AG', 'A4291AE', 'A6764DY', 'A1224CJ', 'A2175EH', 'A9602AF', 'A1015AD', 'A7320DW', 'A6769DX', 'A7453DM', 'A0160CT', 'A3029DL', 'A1814AQ', 'A5750AK', 'A5966AK', 'A8080AY', 'A8446AY', 'A9878CY', 'A4262CC', 'A4933AT', 'A2024DZ', 'A7028DG', 'A7627DZ', 'A1098DV', 'A2256AH', 'A6865CA', 'A7456AC', 'A4484CY', 'A7690AT', 'A9144DK', 'A1411AM', 'A9190DM', 'A2649AA', 'A7755AG', 'A7820AZ', 'A8984AE', 'A1267AC', 'A7068AC', 'A9219AK', 'A1352AJ', 'A4609AA', 'A8156DX', 'A3835CM', 'A9952DA', 'A7351AE', 'A1850AY', 'A0571DV', 'A1404AN', 'A7338AK', 'A0399DQ', 'A6169AC', 'A4311ED', 'A2525CY', 'A0991DR', 'A5527CG', 'A7767CV', 'A4924DN', 'A9416CC', 'A9452AA', 'A8971DH', 'A3577AC', 'A2646DF', 'A8186AY', 'A1976DJ', 'A9139AY', 'A5987AD', 'A1904DV', 'A1192CD', 'A6467CX', 'A8756AE', 'A3476AP', 'A7697AF', 'A1618CJ', 'A0408AP', 'A6700AC', 'A6044EK', 'A5120DT', 'A9821AL', 'A2952AM', 'A4325AP', 'A2426DC', 'A4503DL', 'A1747CV', 'A4464AK', 'A8475CA', 'A0792EG', 'A6009DM', 'A2061CN', 'A6316AA', 'A8919AP', 'A9869CY', 'A7023CY', 'A4174AT', 'A9245CM', 'A9731AR', 'A2067CQ', 'A6753AE', 'A1378AQ', 'A9992DE', 'A0009AH', 'A5196AC', 'A0083AD', 'A7288DP', 'A1030AQ', 'A3022AA', 'A1440CW', 'A4597AA', 'A6663EJ', 'A1646AK', 'A5387CG', 'A9581CG', 'A6605AD', 'A6721AK', 'A9158DD', 'A9090AV', 'A9691AN', 'A6306CP', 'A8395CZ', 'A5006AY', 'A6147AD', 'A0182CZ', 'A7739AC', 'A0513EH', 'A0220DP', 'A7747AH', 'A7916AA', 'A1928EA', 'A7847AE', 'A6075AH', 'A6336DD', 'A4694AQ', 'A6795DG', 'A0355AF', 'A6880DC', 'A0985CE', 'A9451CY', 'A6717CH', 'A7326DP', 'A2049CR', 'A6759DP', 'A5721CP', 'A1691AT', 'A8627AG', 'A1496DK', 'A3984CJ', 'A5579AG', 'A4482DX', 'A4607DY', 'A6085CN', 'A1288AH', 'A5917CL', 'A8638DR', 'A7111CM', 'A3021DY', 'A5930DR', 'A1660CM', 'A1522AK', 'A3930DA', 'A2017CM', 'A4773DE', 'A4430CK', 'A7082AF', 'A5615CC', 'A8498DR', 'A1295AG', 'A3977AF', 'A9713EA', 'A3399ED', 'A9464CM', 'A2341AL', 'A3329CZ', 'A1510AF', 'A1408EH', 'A5405AF', 'A9272CC', 'A5925CA', 'A0930AG', 'A3639DF', 'A1676DH', 'A8159DX', 'A1654AH', 'A5706AP', 'A1098CF', 'A6978AV', 'A9732CG', 'A7337AK', 'A0348DA', 'A9226AG', 'A4629CG', 'A0716AG', 'A9013AA', 'A1187AG', 'A7443AV', 'A5138CZ', 'A5263AC', 'A6255EF', 'A9894CT', 'A0237CP', 'A0902AK', 'A5299CL', 'A1111EC', 'A2427DH', 'A7693CF', 'A4439AR', 'A2443AH', 'A1733AV', 'A6541CN', 'A1298CQ', 'A8357AJ', 'A2419AA', 'A1378DZ', 'A9780AQ', 'A0298AT', 'A9256AQ', 'A2009AP', 'A5315AK', 'A4247CM', 'A2697DV', 'A7672AW', 'A3780CF', 'A0445CH', 'A0666CA', 'A7271AW', 'A0403DX', 'A2376EC', 'A6608AA', 'A8075DC', 'A6770AG', 'A2194DL', 'A5318AJ', 'A3511EG', 'A2015ED', 'A3647DZ', 'A6024DZ', 'A7684DD', 'A7249DK', 'A4040ED', 'A7267DC', 'A2313DG', 'A5324DQ', 'A0819ED', 'A6718EK', 'A8628CQ', 'A9852DZ', 'A8636EJ', 'A1877EA', 'A2972AM', 'A9559AK', 'A0525CC', 'A2442CG', 'A4868EA', 'A3458AF', 'A9392AP', 'A4069CV', 'A2088AE', 'A8653EE', 'A7476AN', 'A5125AM', 'A8996ED', 'A8677DZ', 'A5316EE', 'A1194AK', 'A7329DX', 'A4639EE', 'A6844AA', 'A0615CE', 'A2443AL', 'A3419AF', 'A4676AW', 'A6916EJ', 'A5457AW', 'A2078AD', 'A6933EE', 'A6647CM', 'A9049ED', 'A9962AD', 'A0055DA', 'A3758DY', 'A7454EH', 'A9014AE', 'A1298EE', 'A2781AN', 'A0242CW', 'A7009DV', 'A5254DT', 'A8163EG', 'A9455EH', 'A6683CN', 'A6109CT', 'A8985EA', 'A8286DX', 'A7456DY', 'A3309CK', 'A2328AD', 'A3904DA', 'A8867AM', 'A1882AK', 'A6750CW', 'A6140AZ', 'A5331CG', 'A9950ED', 'A0146DZ', 'A0612AF', 'A1149AC', 'A2040AJ', 'A8673AE', 'A7079AJ', 'A6609DK', 'A5260CG', 'A4431CH', 'A0574AC', 'A3662DY', 'A9562CA', 'A2887DJ', 'A6018ED', 'A1535CH', 'A5534CF', 'A8258DT', 'A6642DT', 'A4032AD', 'A6614AP', 'A9397DA', 'A6783EC', 'A3083CL', 'A9395CZ', 'A1415AD', 'A9159ED', 'A7460EE', 'A8340DZ', 'A3377AH', 'A1077DE', 'A3920DK', 'A9452DH', 'A7608EC', 'A4266EC', 'A0364CA', 'A5164EC', 'A0955AC', 'A2482AJ', 'A6384EE', 'A3943DA', 'A1214DK', 'A1544AF', 'A5355CD', 'A1598AK', 'A2925AL', 'A1673AH', 'A3289CC', 'A2807CR', 'A9315DK', 'A5498EE', 'A8658DJ', 'A3677DW', 'A8200AK', 'A5308CY', 'A4752DP', 'A6875AA', 'A3856CJ', 'A6700DZ', 'A0444CG', 'A4287CM', 'A9113AQ', 'A2166DQ', 'A5934DW', 'A9598EH', 'A2424AA', 'A6253EF', 'A5494ED', 'A7021EC', 'A1477AG', 'A9339CW', 'A1257AV', 'A6032EH', 'A8902EE', 'A8949AA', 'A2995EJ', 'A6007DD', 'A9128AG', 'A1859AC', 'A6851DA', 'A1762EF', 'A2380CV', 'A3200DT', 'A5125EH', 'A9482CZ', 'A1466DQ', 'A6617DF', 'A4075DG', 'A9480AJ', 'A4099DM', 'A5538CA', 'A2904EL', 'A8807EL', 'A9857EG', 'A7139CD', 'A8465EG', 'A8106CE', 'A4157EK', 'A4611CG', 'A2643AC', 'A6575EL', 'A3155AZ', 'A1562CA', 'A6570AV', 'A5374AG', 'A4383AV', 'A4783DM', 'A7576CE', 'A5860EM', 'A3263CR', 'A5128AW', 'A0830CD', 'A8273EH', 'A3529EK', 'A1554AC', 'A4116AL', 'A6500DQ', 'A3136AP', 'A3559DD', 'A7112AW', 'A4907AJ', 'A8762DP', 'A7581EH', 'A9613EF', 'A6730EP', 'A1250AK', 'A4908CC', 'A5294EA', 'A0943DY', 'A2582CE', 'A3919EG', 'A9476AJ', 'A7430EL', 'A9054AE', 'A3158AW', 'A2026AR', 'A2042CD', 'A7989EJ', 'A1556CK', 'A0950EK', 'A7487CC', 'A9578DN', 'A5730CR', 'A8956EJ', 'A7804EM', 'A5147DG', 'A6787EM', 'A6789EM', 'A6403CT', 'A0845AK', 'A1395DL', 'A5623EN', 'A6238EA', 'A0672EE', 'A9128EN', 'A9495EJ', 'A6809DZ', 'A4051EK', 'A5287CL', 'A0019CY', 'A9285CW', 'A8257DD', 'A9663EG', 'A1969EP', 'A0272AP', 'A9278DM', 'A0726DR', 'A6985AZ', 'A3796CX', 'A3789EL', 'A4066AM', 'A3043EP', 'A1452AZ', 'A6675AZ', 'A4329EH', 'A0474DH', 'A6724AR') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, DISABILITY_ACTIVE_FLAG, TYPE_DESCRIPTION, CODE_DESCRIPTION, STATUS_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP11.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DISABILITY_ACTIVE_FLAG",
+            "type": "string",
+            "display": "Disability Active Flag",
+            "legacyId": "DP11.DOa9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "TYPE_DESCRIPTION",
+            "type": "string",
+            "display": "Care Type Description",
+            "legacyId": "DP11.DO97b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "CODE_DESCRIPTION",
+            "type": "string",
+            "display": "Care Code Description",
+            "legacyId": "DP11.DO97d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Care Status Description",
+            "legacyId": "DP11.DO97f",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "140507.RS",
+      "name": "Stats",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DPb",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:RELIGION_DESCRIPTION",
+            "display": "Religion Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DOb3"
+          },
+          {
+            "name": "$ref:V_AGE_UNDER_18",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=(Count([Characteristics].[NOMS Number]) Where ([Offender Age] <18))"
+          },
+          {
+            "name": "$ref:V_AGE_18_",
+            "display": "Under 18",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=(Count([Characteristics].[NOMS Number]) Where ([Offender Age] >=18))"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3376639/DPb",
+      "entityType": "dataset"
+    }
+  ]
+}
