@@ -1,0 +1,375 @@
+{
+  "id": "FoZ1J2FJ1AkAS8cAAHB7Ql8LACJIAFe4",
+  "name": "MIS Diversity and Inclusion Report NSR2436",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "Protected Characteristics"
+    ]
+  },
+  "description": "Provides a percentage breakdown of Marital Status, Maternity Status, Religion, Sexual Orientation across the prison population and prisoners who were recalled. Detail tabs also include Age and Disability Flag.<br/>The report prompts the user to select one or more establishments.<br/>PDD0090 - v2.1 Last Modified 15/04/2021",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DPb",
+      "name": "Characteristics",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.MARITAL_STATUS_DESCRIPTION, AT_OFFENDER_BOOKING.MATERNITY_STATUS_DESCRIPTION, COALESCE(AT_OFFENDER_BOOKING.RELIGION_DESCRIPTION, 'Not Specified') AS RELIGION_DESCRIPTION, AT_OFFENDER_BOOKING.SEX_ORIENTATION_DESCRIPTION, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK, AT_OFFENDER_BOOKING.GENDER_DESCRIPTION, CASE WHEN AT_DIM_ETHNICITY_CODES.DESCRIPTION = 'Chinese' THEN 'Asian/Asian British: Chinese' WHEN AT_DIM_ETHNICITY_CODES.DESCRIPTION = 'White : Irish Traveller/Gypsy' THEN 'White: Gypsy or Irish Traveller' WHEN AT_DIM_ETHNICITY_CODES.DESCRIPTION IS NULL THEN 'Code Missing' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION END AS ETHNIC_GROUP, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_DESCRIPTION, CASE WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) IS NULL THEN NULL WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) < 1 THEN 'Under 1 year' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) BETWEEN 1 AND 6 THEN '1 to 6 years' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) BETWEEN 7 AND 11 THEN '7 to 11 years' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) BETWEEN 12 AND 16 THEN '12 to 16 years' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) > 16 AND (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) < 18 THEN '16 to 17 years' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) BETWEEN 18 AND 21 THEN '18 to 21 years' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) BETWEEN 22 AND 29 THEN '22 to 29 years' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) BETWEEN 30 AND 39 THEN '30 to 39 years' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) BETWEEN 40 AND 49 THEN '40 to 49 years' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) BETWEEN 50 AND 59 THEN '50 to 59 years' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) BETWEEN 60 AND 69 THEN '60 to 69 years' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) >= 70 THEN '70 or over' END AS AGE_BAND FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK IN ((SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_)) OR 'All' IN ((SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_))) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, MARITAL_STATUS_DESCRIPTION, MATERNITY_STATUS_DESCRIPTION, RELIGION_DESCRIPTION, SEX_ORIENTATION_DESCRIPTION, ESTABLISHMENT_CODE_NK, GENDER_DESCRIPTION, ETHNIC_GROUP, ESTABLISHMENT_DESCRIPTION, AGE_BAND, CASE WHEN DISABILITY_ACTIVE_FLAG = 'Y' THEN 'Y' ELSE 'N' END AS V_DISABILITY, COUNT(CHARACTERISTICS.OFFENDER_ID_DISPLAY) AS V_COUNT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPb.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "MARITAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Marital Status Description",
+            "legacyId": "DPb.DOaf",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "MATERNITY_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Maternity Status",
+            "legacyId": "DPb.DOb0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "RELIGION_DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DPb.DOb3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "SEX_ORIENTATION_DESCRIPTION",
+            "type": "string",
+            "display": "Sexual Orientation Description",
+            "legacyId": "DPb.DO970",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Associated Establishment Code",
+            "legacyId": "DPb.DO7b2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "GENDER_DESCRIPTION",
+            "type": "string",
+            "display": "Gender Description",
+            "legacyId": "DPb.DOa9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "ETHNIC_GROUP",
+            "type": "string",
+            "display": "Ethnic Group",
+            "legacyId": "DPb.DO9c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Associated Establishment Name",
+            "legacyId": "DPb.DO7b1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "AGE_BAND",
+            "type": "string",
+            "display": "Age Band",
+            "legacyId": "DPb.DO7fd",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "V_DISABILITY",
+            "type": "string",
+            "display": "V_DISABILITY",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 11,
+            "name": "V_COUNT",
+            "type": "string",
+            "display": "V_COUNT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP9",
+      "name": "MIS load",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP9.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DPd",
+      "name": "Disability",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE IS NULL THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'I' THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'ON' AND NOT BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'PRD', 'RD', 'NR') THEN 'Y' ELSE 'N' END AS DISABILITY_ACTIVE_FLAG FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_OFFENDER_PERSONAL_CARE WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.DIM_OFFENDER_PERSONAL_CARE.OFFENDER_BOOKING_SK (+)) AND ((AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK IN ((SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_)) OR 'All' IN ((SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_))) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, DISABILITY_ACTIVE_FLAG FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPd.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DISABILITY_ACTIVE_FLAG",
+            "type": "string",
+            "display": "Disability Active Flag",
+            "legacyId": "DPd.DOa9d",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "135969.RS",
+      "name": "All Prisoners",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DPb",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Associated Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DO7b2"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPb.DO76"
+          },
+          {
+            "name": "$ref:MATERNITY_STATUS_DESCRIPTION",
+            "display": "Maternity Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DOb0"
+          },
+          {
+            "name": "$ref:MARITAL_STATUS_DESCRIPTION",
+            "display": "Marital Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DOaf"
+          },
+          {
+            "name": "$ref:ETHNIC_GROUP",
+            "display": "Ethnic Group",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DO9c"
+          },
+          {
+            "name": "$ref:RELIGION_DESCRIPTION",
+            "display": "Religion Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DOb3"
+          },
+          {
+            "name": "$ref:SEX_ORIENTATION_DESCRIPTION",
+            "display": "Sexual Orientation Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DO970"
+          },
+          {
+            "name": "$ref:V_DISABILITY",
+            "display": "Disability Flag?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Disability Active Flag]=\"Y\"; \"Y\"; \"N\")"
+          }
+        ]
+      }
+    },
+    {
+      "id": "137358.RS",
+      "name": "Diversity Summary",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DPb",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:V_COUNT",
+            "display": "=Percentage(Percentage([v_count]);Col)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Characteristics].[NOMS Number])"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Associated Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DO7b2"
+          },
+          {
+            "name": "$ref:V_DISABILITY",
+            "display": "=Sum([v_count])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Disability Active Flag]=\"Y\"; \"Y\"; \"N\")"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_DISABILITY :: ReferenceError: error is not defined",
+      "entityId": "FoZ1J2FJ1AkAS8cAAHB7Ql8LACJIAFe4",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_DISABILITY :: ReferenceError: error is not defined",
+      "entityId": "FoZ1J2FJ1AkAS8cAAHB7Ql8LACJIAFe4",
+      "entityType": "dpd"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3376639/DPb",
+      "entityType": "dataset"
+    }
+  ]
+}

@@ -1,0 +1,246 @@
+{
+  "id": "olGnJ54AAWJYOSEAOP_D8K7BYZw",
+  "name": "ORS Television Payment Schedule",
+  "description": "This report shows details of all prisoners with active tv deduction payments scheduled in Nomis, even if the prisoners have subsequently been released.<br/>FIN0062 - v00.00.01 Last Modified: 03/01/14",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "FIN0062 v00.00.01 LSRT0048"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376816/DP1",
+      "name": "TV Payment Schedule",
+      "description": "Finance",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, DT_CURRENT_OFFENDER_IEP_LEVEL.IEP_LEVEL, AT_OFF_DEDUCTIONS.TXN_TYPE, AT_OFF_DEDUCTIONS.START_DATE, AT_OFF_DEDUCTIONS.END_DATE, AT_OFF_DEDUCTIONS.PAYMENT_AMOUNT FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, (SELECT offender_book_id, iep_date, iep_time, agy_loc_id, iep_level FROM (SELECT offender_book_id, iep_date, iep_time, agy_loc_id, iep_level, ROW_NUMBER() OVER (PARTITION BY offender_book_id ORDER BY iep_time DESC, iep_level_seq DESC) AS row_seq_filter FROM oms_owner.offender_iep_levels) WHERE row_seq_filter = 1) DT_CURRENT_OFFENDER_IEP_LEVEL, OMS_OWNER.OFFENDER_PAYMENT_PROFILES AT_OFF_DEDUCTIONS, CASELOADS AT_DED_CASELOAD WHERE (AT_OFF_DEDUCTIONS.OFFENDER_ID = at_offender_booking.root_offender_id AND at_offender_booking.booking_seq = 1) AND (AT_DED_CASELOAD.CASELOAD_ID = AT_OFF_DEDUCTIONS.CASELOAD_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (DT_CURRENT_OFFENDER_IEP_LEVEL.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFF_DEDUCTIONS.TXN_TYPE = 'TELE' AND AT_DED_CASELOAD.CASELOAD_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #prompt('Enter Establishment Code','A','Scheduled Payments\\Caseload Code',Mono,Free,Not_Persistent,,User:0) */) AND AT_OFF_DEDUCTIONS.START_DATE <= TRUNC(CURRENT_TIMESTAMP) AND (AT_OFF_DEDUCTIONS.END_DATE >= TRUNC(CURRENT_TIMESTAMP) OR AT_OFF_DEDUCTIONS.END_DATE IS NULL))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, IEP_LEVEL, TXN_TYPE, START_DATE, END_DATE, PAYMENT_AMOUNT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@prompt('Enter Establishment Code','A','Scheduled Payments\\Caseload Code',Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP1.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP1.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP1.DO10046",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "Current IEP Band",
+            "legacyId": "DP1.DO1049c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "TXN_TYPE",
+            "type": "string",
+            "display": "Payment Type",
+            "legacyId": "DP1.DO478b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "START_DATE",
+            "type": "date",
+            "display": "Start Date",
+            "legacyId": "DP1.DO4786",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "END_DATE",
+            "type": "date",
+            "display": "End Date",
+            "legacyId": "DP1.DO4787",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "PAYMENT_AMOUNT",
+            "type": "double",
+            "display": "Weekly Amount",
+            "legacyId": "DP1.DO4788",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376816/DP2",
+      "name": "All Prisoners",
+      "description": "Finance",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.LAST_NAME, DT_ADMISSION.ADMISSION_DATE, DT_CURRENT_OFFENDER_IEP_LEVEL.IEP_LEVEL, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_AGENCY_INTERNAL_LOCATION_L4.CAPACITY, AT_AGENCY_INTERNAL_LOCATION_L4.NO_OF_OCCUPANT FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, (SELECT offender_book_id, iep_date, iep_time, agy_loc_id, iep_level FROM (SELECT offender_book_id, iep_date, iep_time, agy_loc_id, iep_level, ROW_NUMBER() OVER (PARTITION BY offender_book_id ORDER BY iep_time DESC, iep_level_seq DESC) AS row_seq_filter FROM oms_owner.offender_iep_levels) WHERE row_seq_filter = 1) DT_CURRENT_OFFENDER_IEP_LEVEL, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, (SELECT DISTINCT m.OFFENDER_BOOK_ID, MAX(m.MOVEMENT_TIME) AS ADMISSION_DATE FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS m, OMS_OWNER.offender_bookings h WHERE h.booking_status = 'O' AND h.active_flag = 'Y' AND m.direction_code = 'IN' AND m.Movement_reason_code <> 'R' AND m.Movement_type = 'ADM' AND m.to_agy_loc_id = h.agy_loc_id AND h.offender_book_id = m.offender_book_id GROUP BY m.OFFENDER_BOOK_ID) DT_ADMISSION, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (DT_CURRENT_OFFENDER_IEP_LEVEL.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_ADMISSION.OFFENDER_BOOK_ID (+)) AND (WING_CASELOAD_SECURITY.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #prompt('Enter Establishment Code','A','Establishment\\Establishment Code',Mono,Free,Not_Persistent,,User:0) */) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FIRST_NAME, LAST_NAME, ADMISSION_DATE, IEP_LEVEL, UNIT_DESCRIPTION_4_SHORT, CAPACITY, NO_OF_OCCUPANT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@prompt('Enter Establishment Code','A','Establishment\\Establishment Code',Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Given Name 1",
+            "legacyId": "DP2.DO11066",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP2.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ADMISSION_DATE",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DP2.DO10c6a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "Current IEP Band",
+            "legacyId": "DP2.DO1049c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP2.DO10427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "CAPACITY",
+            "type": "double",
+            "display": "Unit Description 4 Capacity",
+            "legacyId": "DP2.DO11095",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "NO_OF_OCCUPANT",
+            "type": "double",
+            "display": "Current Cell Occupants",
+            "legacyId": "DP2.DO11096",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "172852.RS",
+      "name": "Television Payment Schedule",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "instance.report[0] requires property \"dataset\"",
+      "entityId": "olGnJ54AAWJYOSEAOP_D8K7BYZw",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 172852.RS does not have corresponding dataset undefined",
+      "entityId": "172852.RS",
+      "entityType": "variant"
+    }
+  ]
+}

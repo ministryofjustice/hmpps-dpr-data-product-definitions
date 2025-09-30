@@ -1,0 +1,366 @@
+{
+  "id": "klcYsowADROYQ.ABKv8AFE.rcVQ",
+  "name": "MIS National Report Number of offenders with a confirmed released date in the past",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PND0021",
+      "Release Dates",
+      "PND"
+    ]
+  },
+  "description": "Returns National Release Dates  Prior to today with a Grace Period now stands at 5 Days.<br/><br/>PND0021 - v3 Last Modified: 27/03/2023",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP2",
+      "name": "Release Date by Establishment",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, DT_CURRENT_RELEASE_DATE.CURR_RELEASE_DATE, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, DT_ADMISSION.MOVEMENT_TIME FROM ( Select ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk , fme.from_location_type, max(fme.MOVEMENT_SEQ ) as MOVEMENT_SEQ, max(d.day_date) as MOVEMENT_TIME, trunc(ETL.LOAD_END_DATETIME) as LOAD_DATE From BODIMIS.FACT_MOVEMENT_EXTERNAL fme, BODIMIS.DIM_OFFENDER_BOOKING ob, BODIMIS.DIM_ESTABLISHMENT est, BODIMIS.ETL_LOAD_LOG ETL, BODIMIS.DIM_DATE d Where ob.ESTABLISHMENT_SK=est.ESTABLISHMENT_SK and d.date_sk=fme.date_sk and fme.offender_booking_sk=ob.offender_booking_sk and ob.active_status IN('Active In','Active Out') And ob.MIS_CURRENT_RECORD_IND = 'Y' and ob.ACTIVE_FLAG = 'Y' and ETL.LOAD_ID=(select max(LOAD_ID) from BODIMIS.ETL_LOAD_LOG WHERE LOAD_END_DATETIME IS NOT NULL) And ob.ESTABLISHMENT_SK=fme.to_location_sk and fme.movement_seq= (select max(fme2.movement_seq ) from BODIMIS.FACT_MOVEMENT_EXTERNAL fme2 where fme.offender_booking_sk=fme2.offender_booking_sk and fme2.direction_code='IN' And fme2.TYPE='Admission' And fme2.To_location_type='Establishment' and fme2.reason_code <> 'R') GROUP BY ob.offender_id_display, fme.offender_booking_sk,est.establishment_code_nk,fme.to_location_sk,fme.from_location_sk,fme.from_location_type,ETL.LOAD_END_DATETIME ) DT_ADMISSION, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (   Select AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK as OFFENDER_BOOKING_SK, case when AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE From --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_DATE AT_RELEASE_DATE where --AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK=AT_FACT_SENTENCE.OFFENDER_BOOKING_SK(+) AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK=AT_RELEASE_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' --and AT_RELEASE_DATE.DAY_DATE !='31/12/9000' ) DT_CURRENT_RELEASE_DATE, ( select * from dual ) DT_DUAL, BODIMIS.DIM_CELL AT_CELL WHERE ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_CURRENT_RELEASE_DATE.OFFENDER_BOOKING_SK(+) ) AND ( AT_CELL.ESTABLISHMENT_SK=AT_ESTABLISHMENT.ESTABLISHMENT_SK ) AND ( AT_CELL.UNIT_4_SK=AT_OFFENDER_BOOKING.LIVING_UNIT_SK ) AND ( AT_ESTABLISHMENT.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.ESTABLISHMENT_SK=AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK ) AND ( AT_ESTABLISHMENT_TAP.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_ADMISSION.OFFENDER_BOOKING_SK(+) ) AND ( ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND ( AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y' ) AND ( AT_OFFENDER_BOOKING.IN_OUT = 'IN' ) AND DT_ADMISSION.MOVEMENT_TIME <= to_char(trunc(sysdate-7),'DD-MON-YYYY') )), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3375368/DP4",
+      "name": "MIS Load Log",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP4.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DPe",
+      "name": "All Establishments",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK, DT_PND_CURRENT_EST.ESTABLISHMENT_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT DT_PND_CURRENT_EST WHERE (DT_PND_CURRENT_EST.ACTIVE_FLAG = 'Y') AND (DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK IN (SELECT SAC.CASELOAD_ID FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC WHERE SAC.USERNAME = UPPER('DPRWS'))) AND (DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK <> 'ZZGHI')), dataset_ AS (SELECT ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Prison Code",
+            "legacyId": "DPe.DO10110",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Prison Name",
+            "legacyId": "DPe.DO10111",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DPf",
+      "name": "Population",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK, DT_PND_CURRENT_EST.ESTABLISHMENT_DESCRIPTION, COUNT(DISTINCT AT_PND_PRISONER_BOOKING.OFFENDER_ID_DISPLAY) AS PRISON_POPULATION FROM BODIMIS.DIM_ESTABLISHMENT DT_PND_CURRENT_EST, BODIMIS.DIM_OFFENDER_BOOKING AT_PND_PRISONER_BOOKING WHERE (AT_PND_PRISONER_BOOKING.ESTABLISHMENT_SK = DT_PND_CURRENT_EST.ESTABLISHMENT_SK) AND (DT_PND_CURRENT_EST.ACTIVE_FLAG = 'Y') AND (AT_PND_PRISONER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK IN (SELECT SAC.CASELOAD_ID FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC WHERE SAC.USERNAME = UPPER('DPRWS'))) AND (AT_PND_PRISONER_BOOKING.ACTIVE_STATUS IN ('Active In', 'Active Out')) AND (AT_PND_PRISONER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_PND_PRISONER_BOOKING.BOOKING_STATUS = 'O') AND (DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK <> 'ZZGHI') GROUP BY DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK, DT_PND_CURRENT_EST.ESTABLISHMENT_DESCRIPTION), dataset_ AS (SELECT ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION, PRISON_POPULATION, COUNT(NOMS_NUMBER) OVER (PARTITION BY V_RELEASE_DATE_BEFORE_TODAY = 'RDB') AS V_NUMBER_OF_RDB FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Prison Code",
+            "legacyId": "DPf.DO10110",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Prison Name",
+            "legacyId": "DPf.DO10111",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "PRISON_POPULATION",
+            "type": "double",
+            "display": "Prison Population",
+            "legacyId": "DPf.DO100fe",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "V_NUMBER_OF_RDB",
+            "type": "string",
+            "display": "V_NUMBER_OF_RDB",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "82602.RS",
+      "name": "Number with Release Date in the Past",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP2_DO10129",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_NUMBER_OF_RDB",
+            "display": "Population",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number]) Where ([v_Release_date_before_today]=\"RDB\" )"
+          },
+          {
+            "name": "$ref:PRISON_POPULATION",
+            "display": "Prison Population",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPf.DO100fe"
+          },
+          {
+            "name": "$ref:V_NUMBER_OF_RDB_PERCENTAGE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Number_of_RDB]/[Prison Population]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "199666.RS",
+      "name": "Details",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (V_RELEASE_DATE_BEFORE_TODAY IN ('RDB')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP2_DO10129",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10076",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO107CE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Expected table name but got None. Line 1, Col: 1870.\n  hen AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE \u001b[4mFrom\u001b[0m --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENT]",
+      "entityId": "klcYsowADROYQ.ABKv8AFE.rcVQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_NUMBER_OF_RDB_PERCENTAGE :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "klcYsowADROYQ.ABKv8AFE.rcVQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_NUMBER_OF_RDB :: ReferenceError: error is not defined",
+      "entityId": "klcYsowADROYQ.ABKv8AFE.rcVQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_NUMBER_OF_RDB :: ReferenceError: error is not defined",
+      "entityId": "klcYsowADROYQ.ABKv8AFE.rcVQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_NUMBER_OF_RDB_PERCENTAGE :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "klcYsowADROYQ.ABKv8AFE.rcVQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields (comments -- in query)",
+      "entityId": "3375368/DP2",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10129 does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_NUMBER_OF_RDB does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field PRISON_POPULATION does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_NUMBER_OF_RDB_PERCENTAGE does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10129 does not have corresponding dataset schema field",
+      "entityId": "199666.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10076 does not have corresponding dataset schema field",
+      "entityId": "199666.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO1007B does not have corresponding dataset schema field",
+      "entityId": "199666.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10080 does not have corresponding dataset schema field",
+      "entityId": "199666.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO107CE does not have corresponding dataset schema field",
+      "entityId": "199666.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3375368/DP2",
+      "entityType": "dataset"
+    }
+  ]
+}

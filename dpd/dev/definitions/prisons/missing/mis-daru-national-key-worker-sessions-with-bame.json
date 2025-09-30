@@ -1,0 +1,318 @@
+{
+  "id": "FrL.ml3bMQYA8dIBAHD7MV8TACJIAFJ8",
+  "name": "MIS DARU National Key Worker Sessions with BAME",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PPAS"
+    ]
+  },
+  "description": "HQ0021 The report provides a list of Key Worker Session case notes entered at each Establishment together with Age, Ethnicity and sentence information. The report can be run for one, multiple or All establishments.",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP7",
+      "name": "Case note",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_FACT_OFFENDER_CASE_NOTE.CONTACT_TIME, AT_CASE_NOTE_SUB_TYPE.DESCRIPTION, AT_ESTABLISHMENT_OFF_CASE_NOTE.ESTABLISHMENT_DESCRIPTION, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION END AS ETHNIC_DESCRIPTION, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION, COUNT(AT_FACT_OFFENDER_CASE_NOTE.CASE_NOTE_ID_NK) AS COUNT_OF_CASE_NOTES FROM BODIMIS.DIM_DATE AT_CASE_NOTE_CONTACT_DATE, BODIMIS.DIM_REFERENCE_CODES AT_CASE_NOTE_SUB_TYPE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_OFF_CASE_NOTE, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_OFFENDER_CASE_NOTE AT_FACT_OFFENDER_CASE_NOTE, BODIMIS.DIM_DATE AT_DOB WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_CASE_NOTE_CONTACT_DATE.DATE_SK = AT_FACT_OFFENDER_CASE_NOTE.CONTACT_DATE_SK) AND (AT_CASE_NOTE_SUB_TYPE.REFERENCE_CODE_SK = AT_FACT_OFFENDER_CASE_NOTE.CASE_NOTE_SUB_TYPE_CODE_SK) AND (AT_CASE_NOTE_SUB_TYPE.CODE_DOMAIN = 'TASK_SUBTYPE') AND (AT_FACT_OFFENDER_CASE_NOTE.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_ESTABLISHMENT_OFF_CASE_NOTE.ESTABLISHMENT_SK = AT_FACT_OFFENDER_CASE_NOTE.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_OFF_CASE_NOTE.ESTABLISHMENT_CODE_NK IN (SELECT SAC.CASELOAD_ID FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC WHERE SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)))) AND ((AT_ESTABLISHMENT_OFF_CASE_NOTE.ESTABLISHMENT_CODE_NK IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Offender Case Notes\\Case Note Establishment Code',multi,free,Not_Persistent,User:69) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Offender Case Notes\\Case Note Establishment Code',multi,free,Not_Persistent,User:69) */)) AND AT_CASE_NOTE_CONTACT_DATE.DAY_DATE >= (SELECT START_DATE FROM prompt_ /* = #prompt('Enter Start Date:','D',,Mono,Free,Not_Persistent,,User:0) */) AND AT_CASE_NOTE_CONTACT_DATE.DAY_DATE <= (SELECT END_DATE FROM prompt_ /* = #prompt('Enter End Date:','D',,Mono,Free,Not_Persistent,,User:1) */) AND AT_CASE_NOTE_SUB_TYPE.CODE = 'KS') GROUP BY AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_FACT_OFFENDER_CASE_NOTE.CONTACT_TIME, AT_CASE_NOTE_SUB_TYPE.DESCRIPTION, AT_ESTABLISHMENT_OFF_CASE_NOTE.ESTABLISHMENT_DESCRIPTION, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION END, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12), AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, CONTACT_TIME, DESCRIPTION, ESTABLISHMENT_DESCRIPTION, ETHNIC_DESCRIPTION, OFFENDER_AGE, MAIN_LEGAL_STATUS_DESCRIPTION, COUNT_OF_CASE_NOTES, V_SENT_LENGTH AS V_DIM_SENT_LENGTH FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code (All for all)','A','Offender Case Notes\\Case Note Establishment Code',multi,free,Not_Persistent,User:69)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Start Date:",
+          "description": "@prompt('Enter Start Date:','D',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter End Date:",
+          "description": "@prompt('Enter End Date:','D',,Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP7.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "CONTACT_TIME",
+            "type": "date",
+            "display": "Case Note Contact Date/Time",
+            "legacyId": "DP7.DOa8a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Case Note Sub Type Description",
+            "legacyId": "DP7.DOaf6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Case Note Establishment Description",
+            "legacyId": "DP7.DOb71",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ETHNIC_DESCRIPTION",
+            "type": "string",
+            "display": "Ethnic Description",
+            "legacyId": "DP7.DO9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DP7.DO82",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "MAIN_LEGAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Main Legal Status Description",
+            "legacyId": "DP7.DOdf",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "COUNT_OF_CASE_NOTES",
+            "type": "double",
+            "display": "Count of Case Notes",
+            "legacyId": "DP7.DOb28",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "V_DIM_SENT_LENGTH",
+            "type": "string",
+            "display": "V_DIM_SENT_LENGTH",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP3",
+      "name": "MIS Load Log",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP3.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DPd",
+      "name": "Sentence",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' WHEN NOT FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH IS NULL THEN CASE WHEN TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) IS NULL THEN NULL ELSE TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) || ' yrs ' END || CASE WHEN TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 4, 2)) IS NULL THEN NULL ELSE TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 4, 2)) || ' mths ' END || CASE WHEN TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 7, 2)) IS NULL THEN NULL ELSE TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 7, 2)) || ' days ' END ELSE '' END AS SENTENCE_LENGTH_FORMATTED FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT DISTINCT BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK = dss.sentence_status_sk) AND dss.sentence_status = 'Active' AND (BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK = BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK) AND (BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK) AND BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG = 'Y') DT_LIFEFLAG, FACT_CURR_KEY_DATES_SENT WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_LIFEFLAG.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Associated Establishment\\Associated Establishment Code',multi,free,Not_Persistent,User:69) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Associated Establishment\\Associated Establishment Code',multi,free,Not_Persistent,User:69) */))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SENTENCE_LENGTH_FORMATTED FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code (All for all)','A','Associated Establishment\\Associated Establishment Code',multi,free,Not_Persistent,User:69)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPd.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SENTENCE_LENGTH_FORMATTED",
+            "type": "string",
+            "display": "Sentence Length Formatted",
+            "legacyId": "DPd.DO42",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "220142.RS",
+      "name": "Key Worker Sessions",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP7",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Case Note Establishment Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DOb71"
+          },
+          {
+            "name": "$ref:CONTACT_TIME",
+            "display": "Case Note Contact Date/Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DOa8a"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP7.DO76"
+          },
+          {
+            "name": "$ref:ETHNIC_DESCRIPTION",
+            "display": "Ethnic Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO9d"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_DESCRIPTION",
+            "display": "Main Legal Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DOdf"
+          },
+          {
+            "name": "$ref:OFFENDER_AGE",
+            "display": "Offender Age",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO82"
+          },
+          {
+            "name": "$ref:V_DIM_SENT_LENGTH",
+            "display": "Sent Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Sent_Length]"
+          },
+          {
+            "name": "$ref:COUNT_OF_CASE_NOTES",
+            "display": "Count of Case Notes",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP7.DOb28"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3376639/DP7",
+      "entityType": "dataset"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DPd",
+      "entityType": "dataset"
+    }
+  ]
+}

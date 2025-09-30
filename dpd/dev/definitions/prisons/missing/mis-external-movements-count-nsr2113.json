@@ -1,0 +1,169 @@
+{
+  "id": "FkSTfWCXUQMAk_UBAHAb6V4LACJIAFe4",
+  "name": "MIS External Movements count NSR2113",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "MOV0054 v3.0"
+    ]
+  },
+  "description": "MOV0054 v3.0 Last Modified: 10/02/2021 Outputs a list of Receptions and Discharges into and Establishment for a specified date range in the past by movement type.",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP2",
+      "name": "Admissions",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_FACT_MOV_EXT.TYPE, AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_CODE_NK, COUNT(AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY || AT_FACT_MOV_EXT.MOVEMENT_SEQ) AS COUNT_OF_EXTERNAL_MOVEMENTS FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_TO, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV WHERE (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (CASE WHEN AT_FACT_MOV_EXT.TO_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.TO_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_DIM_DATE_EXT_MOV.DAY_DATE <= TO_DATE('31-03-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_DIM_DATE_EXT_MOV.DAY_DATE >= TO_DATE('01-01-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'IN' AND AT_FACT_MOV_EXT.TYPE IN ('Admission')) GROUP BY AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_FACT_MOV_EXT.TYPE, AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_CODE_NK), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, TYPE, ESTABLISHMENT_CODE_NK, COUNT_OF_EXTERNAL_MOVEMENTS, COUNT(OFFENDER_ID_DISPLAY) AS V_COUNT_OFFENDERS FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "TYPE",
+            "type": "string",
+            "display": "Movement Type (External)",
+            "legacyId": "DP2.DO103ec",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Movement Location To Code (External)",
+            "legacyId": "DP2.DO10400",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "COUNT_OF_EXTERNAL_MOVEMENTS",
+            "type": "double",
+            "display": "Count of External Movements",
+            "legacyId": "DP2.DO10673",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "V_COUNT_OFFENDERS",
+            "type": "string",
+            "display": "V_COUNT_OFFENDERS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP3",
+      "name": "Load End Date",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP3.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "214245.RS",
+      "name": "Admissions",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Movement Location To Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10400"
+          },
+          {
+            "name": "$ref:TYPE",
+            "display": "Movement Type (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103ec"
+          },
+          {
+            "name": "$ref:COUNT_OF_EXTERNAL_MOVEMENTS",
+            "display": "Count of External Movements",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10673"
+          },
+          {
+            "name": "$ref:V_COUNT_OFFENDERS",
+            "display": "Count Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

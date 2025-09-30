@@ -1,0 +1,280 @@
+{
+  "id": "okXi1joACVD1Q5AAIgGD8LAV8Ys",
+  "name": "ORS NOMIS Inactive User Report",
+  "description": "This report provides a list of users who haven't logged into NOMIS within a default period of the last 14 days; the end user may change the default period at runtime. In addition, users are listed who had accounts created a year ago or more (as of today) but have no activity recorded at all.<br/>CAD0002 - v00.00.04",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "CAD0002 v00.00.04 Drop10"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375624/DP0",
+      "name": "Inactive Users",
+      "description": "OR - C-NOMIS Audit",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AUDITREF.STAFF_MEMBERS.LAST_NAME, AUDITREF.STAFF_MEMBERS.FIRST_NAME, AUDITDATA.REMOTE_USERS.USERNAME, COALESCE(AUDITREF.STAFF_USER_ACCOUNTS.STAFF_USER_TYPE, 'N/A') AS NOMIS_USER_ACCOUNT_TYPE, AUDITREF.STAFF_USER_ACCOUNTS.WORKING_CASELOAD_ID, AUDITDATA.REMOTE_USERS.ACCOUNT_STATUS, TRUNC(AUDITDATA.REMOTE_USERS.LOCK_DATE) AS RU_USER_LOCK_DATE_, TRUNC(AUDITDATA.REMOTE_USERS.EXPIRY_DATE) AS RU_USER_EXPIRY_DATE_, TRUNC(AUDITDATA.REMOTE_USERS.CREATED) AS RU_USER_CREATION_DATE_, MAX(AUDITDATA.REMOTE_AUDIT_TRAIL.TIMESTAMP) AS DATE_OF_LAST_ACTION_ FROM AUDITDATA.REMOTE_AUDIT_TRAIL, AUDITREF.STAFF_MEMBERS, AUDITREF.STAFF_USER_ACCOUNTS, AUDITDATA.REMOTE_USERS WHERE (AUDITREF.STAFF_USER_ACCOUNTS.STAFF_ID = AUDITREF.STAFF_MEMBERS.STAFF_ID) AND (AUDITDATA.REMOTE_AUDIT_TRAIL.USERNAME = AUDITREF.STAFF_USER_ACCOUNTS.USERNAME) AND (AUDITREF.STAFF_USER_ACCOUNTS.USERNAME (+) = AUDITDATA.REMOTE_USERS.USERNAME) AND (AUDITDATA.REMOTE_USERS.RECORD_EXISTS = 'Y') AND (NOT COALESCE(AUDITREF.STAFF_USER_ACCOUNTS.USERNAME, 'N/A') IN (SELECT DISTINCT COALESCE(AUDITDATA.REMOTE_AUDIT_TRAIL.USERNAME, 'N/A') FROM AUDITDATA.REMOTE_AUDIT_TRAIL, AUDITREF.STAFF_USER_ACCOUNTS, AUDITDATA.REMOTE_USERS WHERE (AUDITDATA.REMOTE_AUDIT_TRAIL.USERNAME = AUDITREF.STAFF_USER_ACCOUNTS.USERNAME) AND (AUDITREF.STAFF_USER_ACCOUNTS.USERNAME (+) = AUDITDATA.REMOTE_USERS.USERNAME) AND (AUDITDATA.REMOTE_USERS.RECORD_EXISTS = 'Y') AND (COALESCE(AUDITDATA.REMOTE_AUDIT_TRAIL.USERNAME, 'N/A') = AUDITDATA.REMOTE_USERS.USERNAME AND AUDITDATA.REMOTE_AUDIT_TRAIL.ACTION BETWEEN 100 AND 102 AND (AUDITDATA.REMOTE_AUDIT_TRAIL.TIMESTAMP >= TRUNC(CURRENT_TIMESTAMP - (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #Prompt('No. of days before Current Day','N',,,,Not_Persistent,{'14'},,) */)) AND AUDITDATA.REMOTE_AUDIT_TRAIL.TIMESTAMP < TRUNC(CURRENT_TIMESTAMP + 1)) AND AUDITDATA.REMOTE_AUDIT_TRAIL.RETURNCODE = 0)) AND AUDITDATA.REMOTE_AUDIT_TRAIL.REMOTE_DB = 'CNOMIS' AND AUDITDATA.REMOTE_AUDIT_TRAIL.ACTION BETWEEN 100 AND 102 AND (AUDITDATA.REMOTE_AUDIT_TRAIL.TIMESTAMP < TRUNC(CURRENT_TIMESTAMP - (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #Prompt('No. of days before Current Day','N',,,,Not_Persistent,{'14'},,) */) + 1)) AND (AUDITDATA.REMOTE_USERS.REMOTE_DB = 'CNOMIS')) GROUP BY AUDITREF.STAFF_MEMBERS.LAST_NAME, AUDITREF.STAFF_MEMBERS.FIRST_NAME, AUDITDATA.REMOTE_USERS.USERNAME, COALESCE(AUDITREF.STAFF_USER_ACCOUNTS.STAFF_USER_TYPE, 'N/A'), AUDITREF.STAFF_USER_ACCOUNTS.WORKING_CASELOAD_ID, AUDITDATA.REMOTE_USERS.ACCOUNT_STATUS, TRUNC(AUDITDATA.REMOTE_USERS.LOCK_DATE), TRUNC(AUDITDATA.REMOTE_USERS.EXPIRY_DATE), TRUNC(AUDITDATA.REMOTE_USERS.CREATED) UNION SELECT DISTINCT AUDITREF.STAFF_MEMBERS.LAST_NAME, AUDITREF.STAFF_MEMBERS.FIRST_NAME, AUDITDATA.REMOTE_USERS.USERNAME, COALESCE(AUDITREF.STAFF_USER_ACCOUNTS.STAFF_USER_TYPE, 'N/A') AS NOMIS_USER_ACCOUNT_TYPE, AUDITREF.STAFF_USER_ACCOUNTS.WORKING_CASELOAD_ID, AUDITDATA.REMOTE_USERS.ACCOUNT_STATUS, TRUNC(AUDITDATA.REMOTE_USERS.LOCK_DATE) AS RU_USER_LOCK_DATE_, TRUNC(AUDITDATA.REMOTE_USERS.EXPIRY_DATE) AS RU_USER_EXPIRY_DATE_, TRUNC(AUDITDATA.REMOTE_USERS.CREATED) AS RU_USER_CREATION_DATE_, TO_DATE('31/12/3900', 'dd/MM/YYYY') AS DATE_OF_LAST_ACTION_ FROM AUDITREF.STAFF_MEMBERS, AUDITREF.STAFF_USER_ACCOUNTS, AUDITDATA.REMOTE_USERS WHERE (AUDITREF.STAFF_USER_ACCOUNTS.STAFF_ID = AUDITREF.STAFF_MEMBERS.STAFF_ID) AND (AUDITREF.STAFF_USER_ACCOUNTS.USERNAME (+) = AUDITDATA.REMOTE_USERS.USERNAME) AND (AUDITDATA.REMOTE_USERS.RECORD_EXISTS = 'Y') AND (TRUNC(AUDITDATA.REMOTE_USERS.CREATED) >= TRUNC(CURRENT_TIMESTAMP) - 365 AND NOT COALESCE(AUDITREF.STAFF_USER_ACCOUNTS.USERNAME, 'N/A') IN (SELECT DISTINCT COALESCE(AUDITDATA.REMOTE_AUDIT_TRAIL.USERNAME, 'N/A') FROM AUDITDATA.REMOTE_AUDIT_TRAIL, AUDITREF.STAFF_USER_ACCOUNTS, AUDITDATA.REMOTE_USERS WHERE (AUDITDATA.REMOTE_AUDIT_TRAIL.USERNAME = AUDITREF.STAFF_USER_ACCOUNTS.USERNAME) AND (AUDITREF.STAFF_USER_ACCOUNTS.USERNAME (+) = AUDITDATA.REMOTE_USERS.USERNAME) AND (AUDITDATA.REMOTE_USERS.RECORD_EXISTS = 'Y') AND ((AUDITDATA.REMOTE_USERS.REMOTE_DB = 'CNOMIS') AND AUDITDATA.REMOTE_AUDIT_TRAIL.REMOTE_DB = 'CNOMIS')))), dataset_ AS (SELECT LAST_NAME, FIRST_NAME, USERNAME, NOMIS_USER_ACCOUNT_TYPE, WORKING_CASELOAD_ID, ACCOUNT_STATUS, RU_USER_LOCK_DATE_, RU_USER_EXPIRY_DATE_, RU_USER_CREATION_DATE_, DATE_OF_LAST_ACTION_, 'TBD' AS V_LAST_LOGON FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "unknown_parameter",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "No. of days before Current Day",
+          "description": "@Prompt('No. of days before Current Day','N',,,,Not_Persistent,{'14'},,)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "NOMIS User Last Name",
+            "legacyId": "DP0.DO130",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "NOMIS User First Name",
+            "legacyId": "DP0.DO132",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "USERNAME",
+            "type": "string",
+            "display": "RU - User User Name",
+            "legacyId": "DP0.DO142",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "NOMIS_USER_ACCOUNT_TYPE",
+            "type": "string",
+            "display": "NOMIS User Account Type",
+            "legacyId": "DP0.DO134",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "WORKING_CASELOAD_ID",
+            "type": "string",
+            "display": "NOMIS User Working Caseload",
+            "legacyId": "DP0.DO135",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ACCOUNT_STATUS",
+            "type": "string",
+            "display": "RU - User Account Status",
+            "legacyId": "DP0.DO13c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "RU_USER_LOCK_DATE_",
+            "type": "date",
+            "display": "RU - User Lock Date (DD/MM/YYYY)",
+            "legacyId": "DP0.DO13e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "RU_USER_EXPIRY_DATE_",
+            "type": "date",
+            "display": "RU - User Expiry Date (DD/MM/YYYY)",
+            "legacyId": "DP0.DO13f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "RU_USER_CREATION_DATE_",
+            "type": "date",
+            "display": "RU - User Creation Date (DD/MM/YYYY)",
+            "legacyId": "DP0.DO13d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "DATE_OF_LAST_ACTION_",
+            "type": "date",
+            "display": "Date of Last Action (DD/MM/YY HH24:MI:SS)",
+            "legacyId": "DP0.DO141",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "V_LAST_LOGON",
+            "type": "string",
+            "display": "V_LAST_LOGON",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "135715.RS",
+      "name": "NOMIS Inactive User Report",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375624/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "NOMIS User Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO130"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "NOMIS User First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO132"
+          },
+          {
+            "name": "$ref:USERNAME",
+            "display": "RU - User User Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO142"
+          },
+          {
+            "name": "$ref:NOMIS_USER_ACCOUNT_TYPE",
+            "display": "NOMIS User Account Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO134"
+          },
+          {
+            "name": "$ref:WORKING_CASELOAD_ID",
+            "display": "NOMIS User Working Caseload",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO135"
+          },
+          {
+            "name": "$ref:V_LAST_LOGON",
+            "display": "Last Logon",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Date of Last Action (DD/MM/YY HH24:MI:SS)]='31/12/3900';\"\";[Date of Last Action (DD/MM/YY HH24:MI:SS)])"
+          },
+          {
+            "name": "$ref:ACCOUNT_STATUS",
+            "display": "RU - User Account Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO13c"
+          },
+          {
+            "name": "$ref:RU_USER_CREATION_DATE_",
+            "display": "RU - User Creation Date (DD/MM/YYYY)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO13d"
+          },
+          {
+            "name": "$ref:RU_USER_LOCK_DATE_",
+            "display": "RU - User Lock Date (DD/MM/YYYY)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO13e"
+          },
+          {
+            "name": "$ref:RU_USER_EXPIRY_DATE_",
+            "display": "RU - User Expiry Date (DD/MM/YYYY)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO13f"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_LAST_LOGON :: Error: =If([Date of Last Action (DD/MM/YY HH24:MI:SS)]='31/12/3900';\"\";[Date of Last Action (DD/MM/YY HH24:MI:SS)]) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "okXi1joACVD1Q5AAIgGD8LAV8Ys",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_LAST_LOGON :: Error: =If([Date of Last Action (DD/MM/YY HH24:MI:SS)]='31/12/3900';\"\";[Date of Last Action (DD/MM/YY HH24:MI:SS)]) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "okXi1joACVD1Q5AAIgGD8LAV8Ys",
+      "entityType": "dpd"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00942: table or view does not exist\nHelp: https://docs.oracle.com/error-help/db/ora-00942/",
+      "entityId": "3375624/DP0",
+      "entityType": "dataset"
+    }
+  ]
+}

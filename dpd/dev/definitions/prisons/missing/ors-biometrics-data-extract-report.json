@@ -1,0 +1,186 @@
+{
+  "id": "klaL4JwAABaGHyQA.P8AISgXYiw",
+  "name": "ORS Biometrics Data Extract Report",
+  "description": "<br/>This report has the sole purpose of being utilised to populate data within the cssgplc Biometrics system. Report layout and format is specifically designed for this purpose.<br/>ACC0028 - v00.01.00 Last Modified: 27/01/16",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACC0028 - v00.01.00"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP3",
+      "name": "Biometrics Data Extract",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, DT_CURRENT_OFFENDER_IEP_LEVEL.IEP_LEVEL, AT_OFFENDER.BIRTH_DATE, AT_OFFENDER.FIRST_NAME FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, (SELECT offender_book_id, iep_date, iep_time, agy_loc_id, iep_level FROM (SELECT offender_book_id, iep_date, iep_time, agy_loc_id, iep_level, ROW_NUMBER() OVER (PARTITION BY offender_book_id ORDER BY iep_time DESC, iep_level_seq DESC) AS row_seq_filter FROM oms_owner.offender_iep_levels) WHERE row_seq_filter = 1) DT_CURRENT_OFFENDER_IEP_LEVEL, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (DT_CURRENT_OFFENDER_IEP_LEVEL.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ((SELECT establishment_code FROM prompt_)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, DESCRIPTION, IEP_LEVEL, BIRTH_DATE, FIRST_NAME FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP3.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP3.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Unit Description 4",
+            "legacyId": "DP3.DO42a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "Current IEP Band",
+            "legacyId": "DP3.DO49c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "BIRTH_DATE",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP3.DO75",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Given Name 1",
+            "legacyId": "DP3.DO1066",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "162991.RS",
+      "name": "Biometrics - Data Extract",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP3",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO44"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO45"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Unit Description 4",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO42a"
+          },
+          {
+            "name": "$ref:IEP_LEVEL",
+            "display": "Current IEP Band",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO49c"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO75"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO1066"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

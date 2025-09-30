@@ -1,0 +1,253 @@
+{
+  "id": "FuvxxlveqAMA8dYAAHDLtV8RACJIAAzC",
+  "name": "ORS Alpha List for PMMS",
+  "description": "<br/>This report is desgned to transfer prisoner demographics details to the PMMS (Prisoner Movements Management System).<br/><br/>ACC0063 - v00.00.01 Last Modified: 17/10/18",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACC0063"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP11",
+      "name": "PMMS",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, COALESCE(DT_IEP_BAND_LAST.DESCRIPTION, 'Missing') AS IEP_LEVEL, DT_IEP_BAND_LAST.IEP_DATE, AT_NATIONALITY.PROFILE_CODE, CASE WHEN AT_OFFENDER.RACE_CODE = 'W8' THEN 'W3' WHEN AT_OFFENDER.RACE_CODE = 'O1' THEN 'A4' ELSE AT_OFFENDER.RACE_CODE END AS ETHNIC_CODE, AT_HEADER_BLOCK.STATUS_2, AT_OFFENDER.BIRTH_DATE, AT_OFFENDER_RELIGION.PROFILE_CODE AS RELIGION, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, (SELECT iep_level, description, agy_loc_id, offender_book_id, iep_date FROM (SELECT iep.iep_level, rc.description, iep.agy_loc_id, iep.offender_book_id, iep.iep_date, ROW_NUMBER() OVER (PARTITION BY iep.offender_book_id ORDER BY iep.iep_time DESC, iep.iep_level_seq DESC) AS row_seq_filter FROM oms_owner.offender_iep_levels iep LEFT OUTER JOIN oms_owner.reference_codes rc ON iep.iep_level = rc.code AND rc.domain = 'IEP_LEVEL') WHERE row_seq_filter = 1) DT_IEP_BAND_LAST, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFFENDER_RELIGION, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFF_PROF_DET_NAT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OMS_OWNER.PROFILE_CODES AT_NATIONALITY, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDER_RELIGION.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_RELIGION.PROFILE_TYPE (+) = 'RELF') AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (DT_IEP_BAND_LAST.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFF_PROF_DET_NAT.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFF_PROF_DET_NAT.PROFILE_TYPE (+) = ('NAT')) AND (AT_NATIONALITY.PROFILE_TYPE (+) = AT_OFF_PROF_DET_NAT.PROFILE_TYPE AND AT_NATIONALITY.PROFILE_CODE (+) = AT_OFF_PROF_DET_NAT.PROFILE_CODE) AND (AT_NATIONALITY.PROFILE_TYPE (+) = ('NAT')) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, IEP_LEVEL, IEP_DATE, PROFILE_CODE, ETHNIC_CODE, STATUS_2, BIRTH_DATE, RELIGION, UNIT_DESCRIPTION_4_SHORT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP11.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP11.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP11.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "IEP Level",
+            "legacyId": "DP11.DO521",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "IEP_DATE",
+            "type": "date",
+            "display": "IEP Date",
+            "legacyId": "DP11.DOe41",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "PROFILE_CODE",
+            "type": "string",
+            "display": "Nationality Code",
+            "legacyId": "DP11.DO10d6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP11.DO88",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "STATUS_2",
+            "type": "string",
+            "display": "Security Category",
+            "legacyId": "DP11.DO265",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "BIRTH_DATE",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP11.DO75",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "RELIGION",
+            "type": "string",
+            "display": "Religion",
+            "legacyId": "DP11.DOb0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP11.DO427",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "166802.RS",
+      "name": "Report 1",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP11",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO427"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO44"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO45"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO46"
+          },
+          {
+            "name": "$ref:STATUS_2",
+            "display": "Security Category",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO265"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO75"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO88"
+          },
+          {
+            "name": "$ref:RELIGION",
+            "display": "Religion",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DOb0"
+          },
+          {
+            "name": "$ref:IEP_LEVEL",
+            "display": "IEP Level",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP11.DO521"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

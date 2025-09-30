@@ -1,0 +1,158 @@
+{
+  "id": "FkIpxl_Q9wAAeUABAHALll9fACJIAAzC",
+  "name": "ORS National Invalid Key Dates for Lifers",
+  "description": "This report returns the count by establishment of Lifer prisoners who only have one sentence calculation record created by user 'XTAG'. Lifers with bookings commencing up to 5 days ago are excluded.<br/>PND0013 v00.00.02 Last Modified: 23/09/15",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PND0013 v00.00.02 LSRIT039"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP3",
+      "name": "Lifers",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDERS_LOCATIONS.DESCRIPTION, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID, AT_OFFENDER.OFFENDER_ID_DISPLAY FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.IMPRISONMENT_STATUSES AT_IMPRISON_STATUSES, USER_ACCESSIBLE_CASELOADS, OMS_OWNER.OFFENDER_IMPRISON_STATUSES AT_OFFENDER_IMPRISON_STATUSES WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_IMPRISON_STATUSES.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_IMPRISON_STATUSES.LATEST_STATUS = 'Y' OR AT_OFFENDER_IMPRISON_STATUSES.LATEST_STATUS IS NULL) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_IMPRISON_STATUSES.IMPRISONMENT_STATUS (+) = AT_OFFENDER_IMPRISON_STATUSES.IMPRISONMENT_STATUS) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_BOOKING.IN_OUT_STATUS IN ('IN', 'OUT') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */)) AND (AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) AND AT_IMPRISON_STATUSES.IMPRISONMENT_STATUS IN ('LIFE', 'LR_IPP', 'LR_LIFE', 'HMPL', 'DLP', 'HMP', 'SEC53', 'SEC90', 'SEC90_03', 'IPP', 'MLP', 'DPP', 'ALP_LASPO', 'DFL', 'LR_ALP', 'LR_ALP_LASPO', 'LR_DLP', 'LR_DPP', 'LR_MLP', 'SEC93', 'SEC94', 'SEC93_03', 'ALP', 'ALP_CODE18', 'ALP_CODE21', 'LR_ALP_CDE18', 'LR_ALP_CDE21', 'SEC275', 'SEC272') AND AT_OFFENDER_SENT_CALCULATIONS.CREATE_USER_ID = 'XTAG' AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID <> 'ZZGHI' AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND AT_OFFENDER_BOOKING.BOOKING_BEGIN_DATE < TRUNC(CURRENT_TIMESTAMP - 5)) GROUP BY AT_OFFENDERS_LOCATIONS.DESCRIPTION, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID, AT_OFFENDER.OFFENDER_ID_DISPLAY HAVING COUNT(AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID) = 1), dataset_ AS (SELECT DESCRIPTION, AGY_LOC_ID, OFFENDER_ID_DISPLAY FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP3.DO33b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP3.DO43b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP3.DO44",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP5",
+      "name": "All Establishments",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDERS_LOCATIONS.DESCRIPTION, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID FROM OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID <> 'ZZGHI' AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3) */)))), dataset_ AS (SELECT DESCRIPTION, AGY_LOC_ID FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,,Not_Persistent,,User:3)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP5.DO33b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP5.DO43b",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "158584.RS",
+      "name": "National Invalid Key Dates for Lifers",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "instance.report[0] requires property \"dataset\"",
+      "entityId": "FkIpxl_Q9wAAeUABAHALll9fACJIAAzC",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 158584.RS does not have corresponding dataset undefined",
+      "entityId": "158584.RS",
+      "entityType": "variant"
+    }
+  ]
+}

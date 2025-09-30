@@ -1,0 +1,1462 @@
+{
+  "id": "FntNYVz3owIANr0BAHCLZl8GACJIAFe4",
+  "name": "MIS iBase Report for Excel",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0096 v00.00.01"
+    ]
+  },
+  "description": "PDD0096 - v00.00.01 Last Modified: 11/02/2019 This iBase report is used locally to gather prisoners details and should not be amended. Content: Personal Details, Offender Address and Telephone Number, Adjudications, Incidents, Location, Contact Addresses, Next of Kin Addresses.",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP4",
+      "name": "MIS Load Log",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP4.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DPb",
+      "name": "Personal Info",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.BOOKING_NUMBER, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, TO_CHAR(AT_OFFENDER_BOOKING.HEIGHT_IMPERIAL_FT) || ' Feet ' || TO_CHAR(AT_OFFENDER_BOOKING.HEIGHT_IMPERIAL_IN) || ' Inches' AS HEIGHT_IMPERIAL, TO_CHAR(AT_OFFENDER_BOOKING.WEIGHT_METRIC) || ' Kilos ' AS WEIGHT_METRIC, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, AT_OFFENDER_BOOKING.BUILD_DESCRIPTION, AT_OFFENDER_BOOKING.FACIAL_SHAPE_DESCRIPTION, AT_OFFENDER_BOOKING.FACIAL_HAIR_DESCRIPTION, AT_OFFENDER_BOOKING.HAIR_DESCRIPTION, AT_OFFENDER_BOOKING.LEFT_EYE_COLOUR_DESCRIPTION, AT_OFFENDER_BOOKING.RIGHT_EYE_COLOUR_DESCRIPTION, AT_OFFENDER_BOOKING.NATIONALITY_DESCRIPTION, AT_OFFENDER_BOOKING.MARITAL_STATUS_DESCRIPTION, COALESCE(AT_OFFENDER_BOOKING.RELIGION_DESCRIPTION, 'Not Specified') AS RELIGION_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, BOOKING_NUMBER, SURNAME, FIRST_NAME, DATE_OF_BIRTH, HEIGHT_IMPERIAL, WEIGHT_METRIC, ETHNIC_CODE, BUILD_DESCRIPTION, FACIAL_SHAPE_DESCRIPTION, FACIAL_HAIR_DESCRIPTION, HAIR_DESCRIPTION, LEFT_EYE_COLOUR_DESCRIPTION, RIGHT_EYE_COLOUR_DESCRIPTION, NATIONALITY_DESCRIPTION, MARITAL_STATUS_DESCRIPTION, RELIGION_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPb.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "BOOKING_NUMBER",
+            "type": "string",
+            "display": "Booking Number",
+            "legacyId": "DPb.DO77",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DPb.DO7b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DPb.DO80",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DPb.DO85",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "HEIGHT_IMPERIAL",
+            "type": "string",
+            "display": "Height Imperial",
+            "legacyId": "DPb.DO9a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "WEIGHT_METRIC",
+            "type": "string",
+            "display": "Weight Metric",
+            "legacyId": "DPb.DO9f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DPb.DO9b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "BUILD_DESCRIPTION",
+            "type": "string",
+            "display": "Build",
+            "legacyId": "DPb.DOa6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "FACIAL_SHAPE_DESCRIPTION",
+            "type": "string",
+            "display": "Facial Shape",
+            "legacyId": "DPb.DOa7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "FACIAL_HAIR_DESCRIPTION",
+            "type": "string",
+            "display": "Facial Hair",
+            "legacyId": "DPb.DOa5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "HAIR_DESCRIPTION",
+            "type": "string",
+            "display": "Hair Colour",
+            "legacyId": "DPb.DOaa",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "LEFT_EYE_COLOUR_DESCRIPTION",
+            "type": "string",
+            "display": "Left Eye Colour",
+            "legacyId": "DPb.DOab",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "RIGHT_EYE_COLOUR_DESCRIPTION",
+            "type": "string",
+            "display": "Right Eye Colour",
+            "legacyId": "DPb.DOac",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "NATIONALITY_DESCRIPTION",
+            "type": "string",
+            "display": "Nationality Description",
+            "legacyId": "DPb.DOb5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "MARITAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Marital Status Description",
+            "legacyId": "DPb.DOaf",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "RELIGION_DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DPb.DOb3",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DPc",
+      "name": "Offender Address",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, DT_OFFENDER_ADDRESSES.PREMISE, DT_OFFENDER_ADDRESSES.STREET, DT_OFFENDER_ADDRESSES.CITY_DESC, DT_OFFENDER_ADDRESSES.COUNTY_DESC, DT_OFFENDER_ADDRESSES.COUNTRY_DESC, DT_OFFENDER_ADDRESSES.POSTAL_CODE, DT_OFFENDER_ADDRESSES.HOME_TEL_NO FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, ( select ROW_NUMBER() OVER (PARTITION BY ss.OWNER_ID ORDER BY PRIMARY_FLAG desc, ss.address_active_flag desc, ss.USAGE_ACTIVE_FLAG desc, ss.usages_dttm DESC nulls last) row_seq_filter, ss.* from ( select * from ( select AT_DIM_ADDRESSES.OWNER_ID, AT_DIM_ADDRESS_USAGES.ADDRESS_ID_NK, AT_DIM_ADDRESS_USAGES.ADDRESS_USAGE, AT_DIM_ADDRESS_USAGES.ADDR_USAGE_DESCRIPTION, AT_DIM_ADDRESS_USAGES.ACTIVE_FLAG as USAGE_ACTIVE_FLAG, AT_DIM_ADDRESSES.flat, AT_DIM_ADDRESSES.premise, AT_DIM_ADDRESSES.Street, AT_DIM_ADDRESSES.locality, AT_DIM_ADDRESSES.city_code, AT_DIM_ADDRESSES.city_desc, AT_DIM_ADDRESSES.county_code, AT_DIM_ADDRESSES.county_desc, AT_DIM_ADDRESSES.postal_code, AT_DIM_ADDRESSES.COUNTRY_CODE, AT_DIM_ADDRESSES.country_desc, AT_DIM_ADDRESSES.HOME_TEL_NO, AT_DIM_ADDRESSES.HOME_EXT_NO, AT_DIM_ADDRESSES.NO_FIXED_ADDRESS_FLAG, AT_DIM_ADDRESSES.establishment_sk, AT_DIM_ADDRESSES.PRIMARY_FLAG, AT_DIM_ADDRESSES.active_flag as address_active_flag, AT_DIM_ADDRESS_USAGES.CREATE_DATETIME, AT_DIM_ADDRESS_USAGES.MODIFY_DATETIME, COALESCE(AT_DIM_ADDRESS_USAGES.modify_datetime, AT_DIM_ADDRESS_USAGES.create_datetime) as usages_dttm from BODIMIS.DIM_ADDRESS_USAGES AT_DIM_ADDRESS_USAGES inner join BODIMIS.dim_addresses AT_DIM_ADDRESSES on AT_DIM_ADDRESS_USAGES.address_id_nk = AT_DIM_ADDRESSES.address_id_nk and AT_DIM_ADDRESSES.owner_class='OFF'  ) Addr_usages --where Addr_usages.usages_dttm is not null ) ss ) DT_OFFENDER_ADDRESSES, BODISTAGING.REF_OFFENDERS AT_BODISTAG_REF_OFFENDERS WHERE ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username from context_) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.ESTABLISHMENT_SK=AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK ) AND ( AT_ESTABLISHMENT_TAP.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_ID=AT_BODISTAG_REF_OFFENDERS.OFFENDER_ID(+) ) AND ( AT_BODISTAG_REF_OFFENDERS.ROOT_OFFENDER_ID=DT_OFFENDER_ADDRESSES.OWNER_ID(+) ) AND ( ( AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y' ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND ( AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK =(SELECT establishment_code from prompt_) ) )), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3375377/DPd",
+      "name": "Adjudications",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_DIM_OIC_OFFENCE_CHARGE.OIC_OFFENCE_CODE, AT_DIM_OIC_OFFENCE_CHARGE.DESCRIPTION, DT_OFFENDER_ADJUDICATION.REPORT_DATE, AT_FACT_INCIDENT_CHARGE_RESULT.FINDING_CODE, AT_DIM_DATE_VERDICT.DAY_DATE FROM BODIMIS.FACT_INCIDENT_CHARGE_RESULT AT_FACT_INCIDENT_CHARGE_RESULT, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OIC_OFFENCE AT_DIM_OIC_OFFENCE_CHARGE, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT a.oic_incident_id, c.offender_booking_sk, c.agency_incident_id_nk, c.charge_seq_nk, c.oic_offence_sk, a.oic_hearing_id_nk, a.party_seq_nk, a.establishment_sk, c.report_date, a.oic_hearing_type, a.notification_charge_date_sk FROM bodimis.fact_incident_charge c LEFT OUTER JOIN bodimis.fact_offender_adjudication a ON c.agency_incident_id_nk = a.agency_incident_id_nk AND c.offender_booking_sk = a.offender_booking_sk) DT_OFFENDER_ADJUDICATION, BODIMIS.DIM_DATE AT_DIM_DATE_VERDICT WHERE (AT_DIM_DATE_VERDICT.DATE_SK (+) = AT_FACT_INCIDENT_CHARGE_RESULT.DELIVERY_DATE_SK) AND (AT_DIM_OIC_OFFENCE_CHARGE.OIC_OFFENCE_SK = DT_OFFENDER_ADJUDICATION.OIC_OFFENCE_SK) AND (DT_OFFENDER_ADJUDICATION.OFFENDER_BOOKING_SK = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (DT_OFFENDER_ADJUDICATION.AGENCY_INCIDENT_ID_NK = AT_FACT_INCIDENT_CHARGE_RESULT.AGENCY_INCIDENT_ID (+) AND DT_OFFENDER_ADJUDICATION.OIC_HEARING_ID_NK = AT_FACT_INCIDENT_CHARGE_RESULT.OIC_HEARING_ID_NK (+) AND DT_OFFENDER_ADJUDICATION.OFFENDER_BOOKING_SK = AT_FACT_INCIDENT_CHARGE_RESULT.OFFENDER_BOOKING_SK (+) AND DT_OFFENDER_ADJUDICATION.CHARGE_SEQ_NK = AT_FACT_INCIDENT_CHARGE_RESULT.CHARGE_SEQ (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, OIC_OFFENCE_CODE, DESCRIPTION, REPORT_DATE, FINDING_CODE, DAY_DATE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPd.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DPd.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "OIC_OFFENCE_CODE",
+            "type": "string",
+            "display": "Charge Code",
+            "legacyId": "DPd.DO282",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Charge Description",
+            "legacyId": "DPd.DO26d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "REPORT_DATE",
+            "type": "date",
+            "display": "Incident Reported Date",
+            "legacyId": "DPd.DO751",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "FINDING_CODE",
+            "type": "string",
+            "display": "Hearing Finding",
+            "legacyId": "DPd.DO26e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Verdict Date",
+            "legacyId": "DPd.DO281",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DPe",
+      "name": "Incidents",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_INCIDENT.INCIDENT_TITLE, INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC) AS INCIDENT_TYPE, AT_INCIDENT.INCIDENT_TEXT, AT_INCIDENT.INCIDENT_CASE_ID, AT_INCIDENT_DATE.DAY_DATE, AT_INCIDENT.LASTEDITEDFLAG, AT_INCIDENT_STATUS.INCIDENT_STATUS_DESCRIPTION FROM BODIMIS.FACT_INCIDENT AT_INCIDENT, BODIMIS.DIM_ESTABLISHMENT AT_INCIDENT_ESTABLISHMENT, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_INCIDENT_STATUS AT_INCIDENT_STATUS, BODIMIS.DIM_DATE AT_INCIDENT_DATE, BODIMIS.FACT_INCIDENT_PARTICIPATION AT_INCIDENT_PARTICIPATION, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_INCIDENT_TYPE AT_INCIDENT_TYPE WHERE (AT_INCIDENT.INCIDENT_STATUS_SK = AT_INCIDENT_STATUS.INCIDENT_STATUS_SK) AND (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_SK = AT_INCIDENT.ESTABLISHMENT_SK) AND (AT_INCIDENT_DATE.DATE_SK = AT_INCIDENT.INCIDENT_DATE_SK) AND (AT_INCIDENT.INCIDENT_CASE_ID = AT_INCIDENT_PARTICIPATION.INCIDENT_CASE_ID) AND (AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK IS NULL OR AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_INCIDENT_TYPE.INCIDENT_TYPE_SK = AT_INCIDENT.INCIDENT_TYPE_SK) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND ((AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND AT_INCIDENT.REPORT_DATE >= TO_DATE('29-01-2019 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, ESTABLISHMENT_CODE_NK, INCIDENT_TITLE, INCIDENT_TYPE, INCIDENT_TEXT, INCIDENT_CASE_ID, DAY_DATE, LASTEDITEDFLAG, INCIDENT_STATUS_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPe.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DPe.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Incident Establishment Code",
+            "legacyId": "DPe.DO283",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "INCIDENT_TITLE",
+            "type": "string",
+            "display": "Incident Title",
+            "legacyId": "DPe.DO69e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "INCIDENT_TYPE",
+            "type": "string",
+            "display": "Incident Type",
+            "legacyId": "DPe.DO9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "INCIDENT_TEXT",
+            "type": "string",
+            "display": "Incident Text",
+            "legacyId": "DPe.DO297",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "INCIDENT_CASE_ID",
+            "type": "double",
+            "display": "Incident Case Id",
+            "legacyId": "DPe.DO6ba",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Incident Date (Date Only)",
+            "legacyId": "DPe.DO1b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "LASTEDITEDFLAG",
+            "type": "string",
+            "display": "Was Incident Edited?",
+            "legacyId": "DPe.DO6ac",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "INCIDENT_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Status",
+            "legacyId": "DPe.DOa",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DPf",
+      "name": "Location",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.BOOKING_NUMBER, AT_OFFENDER_BOOKING.SURNAME, AT_CELL.UNIT_1_DESCRIPTION, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION FROM BODIMIS.DIM_CELL AT_DIM_LOCATION, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_CELL AT_CELL WHERE (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.LIVING_UNIT_SK = AT_DIM_LOCATION.UNIT_4_SK (+)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_))) UNION SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.BOOKING_NUMBER, AT_OFFENDER_BOOKING.SURNAME, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION, '-' FROM BODIMIS.DIM_CELL AT_DIM_LOCATION, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.LIVING_UNIT_SK = AT_DIM_LOCATION.UNIT_4_SK (+)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, BOOKING_NUMBER, SURNAME, UNIT_1_DESCRIPTION, UNIT_4_SHORT_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPf.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "BOOKING_NUMBER",
+            "type": "string",
+            "display": "Booking Number",
+            "legacyId": "DPf.DO77",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DPf.DO7b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "UNIT_1_DESCRIPTION",
+            "type": "string",
+            "display": "Unit Description 1",
+            "legacyId": "DPf.DO126",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "UNIT_4_SHORT_DESCRIPTION",
+            "type": "string",
+            "display": "Prisoner Location",
+            "legacyId": "DPf.DOa7c",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP10",
+      "name": "Contact Addresses",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, TRIM(CASE WHEN NOT DT_OFFENDER_CONTACT_ADDRESS.TITLE IS NULL THEN DT_OFFENDER_CONTACT_ADDRESS.TITLE || ' ' END || CASE WHEN NOT DT_OFFENDER_CONTACT_ADDRESS.FIRST_NAME IS NULL THEN DT_OFFENDER_CONTACT_ADDRESS.FIRST_NAME || ' ' END || CASE WHEN NOT DT_OFFENDER_CONTACT_ADDRESS.MIDDLE_NAME IS NULL THEN DT_OFFENDER_CONTACT_ADDRESS.MIDDLE_NAME || ' ' END || DT_OFFENDER_CONTACT_ADDRESS.LAST_NAME) AS CONTACT_NAME, DT_OFFENDER_CONTACT_ADDRESS.RELATIONSHIP, DT_OFFENDER_CONTACT_ADDRESS.PREMISE, DT_OFFENDER_CONTACT_ADDRESS.STREET, DT_OFFENDER_CONTACT_ADDRESS.CITY, DT_OFFENDER_CONTACT_ADDRESS.COUNTY, DT_OFFENDER_CONTACT_ADDRESS.COUNTRY, DT_OFFENDER_CONTACT_ADDRESS.POST_CODE, DT_OFFENDER_CONTACT_ADDRESS.TEL_NO, DT_OFFENDER_CONTACT_ADDRESS.LOCALITY, DT_OFFENDER_CONTACT_ADDRESS.NEXT_OF_KIN_FLAG FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT ROW_NUMBER() OVER (PARTITION BY dooc.offender_booking_sk, dooc.relationship ORDER BY dooc.active_flag DESC, dooc.address_flag DESC, dooc.mis_load_id DESC) AS row_seq_filter, dooc.*, CASE WHEN dooc.next_of_kin_flag = 'Y' THEN 'NEXTOFKIN' ELSE 'CONTACT' END AS Con_Addr_Type, CASE WHEN dooc.next_of_kin_flag = 'Y' THEN 'Next of Kin' ELSE 'Contact' END AS ConAddrTypeDesc FROM bodimis.dim_offender_other_contacts dooc) DT_OFFENDER_CONTACT_ADDRESS WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK (+)) AND (DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK IS NULL OR DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, FIRST_NAME, CONTACT_NAME, RELATIONSHIP, PREMISE, STREET, CITY, COUNTY, COUNTRY, POST_CODE, TEL_NO, LOCALITY, NEXT_OF_KIN_FLAG FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP10.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP10.DO7b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP10.DO80",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "CONTACT_NAME",
+            "type": "string",
+            "display": "Contact Name",
+            "legacyId": "DP10.DO747",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "RELATIONSHIP",
+            "type": "string",
+            "display": "Contact Relationship",
+            "legacyId": "DP10.DO748",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "PREMISE",
+            "type": "string",
+            "display": "Contact Address Premise",
+            "legacyId": "DP10.DO74a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "STREET",
+            "type": "string",
+            "display": "Contact Address Street",
+            "legacyId": "DP10.DO74b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "CITY",
+            "type": "string",
+            "display": "Contact Address City",
+            "legacyId": "DP10.DO74d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "COUNTY",
+            "type": "string",
+            "display": "Contact Address County",
+            "legacyId": "DP10.DO74e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "COUNTRY",
+            "type": "string",
+            "display": "Contact Address Country",
+            "legacyId": "DP10.DO74f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "POST_CODE",
+            "type": "string",
+            "display": "Contact Address Post Code",
+            "legacyId": "DP10.DO750",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "TEL_NO",
+            "type": "string",
+            "display": "Contact Address Telephone Number",
+            "legacyId": "DP10.DO753",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "LOCALITY",
+            "type": "string",
+            "display": "Contact Address Locality",
+            "legacyId": "DP10.DO74c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "NEXT_OF_KIN_FLAG",
+            "type": "string",
+            "display": "Other Contact Next Of Kin Flag",
+            "legacyId": "DP10.DOa85",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "82602.RS",
+      "name": "Personal Information",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DPb",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:BOOKING_NUMBER",
+            "display": "Booking Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPb.DO77"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPb.DO76"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPb.DO7b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPb.DO80"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DO85"
+          },
+          {
+            "name": "$ref:HEIGHT_IMPERIAL",
+            "display": "Height Imperial",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DO9a"
+          },
+          {
+            "name": "$ref:WEIGHT_METRIC",
+            "display": "Weight Metric",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DO9f"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DO9b"
+          },
+          {
+            "name": "$ref:BUILD_DESCRIPTION",
+            "display": "Build",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DOa6"
+          },
+          {
+            "name": "$ref:FACIAL_SHAPE_DESCRIPTION",
+            "display": "Facial Shape",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DOa7"
+          },
+          {
+            "name": "$ref:FACIAL_HAIR_DESCRIPTION",
+            "display": "Facial Hair",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DOa5"
+          },
+          {
+            "name": "$ref:HAIR_DESCRIPTION",
+            "display": "Hair Colour",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DOaa"
+          },
+          {
+            "name": "$ref:LEFT_EYE_COLOUR_DESCRIPTION",
+            "display": "Left Eye Colour",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DOab"
+          },
+          {
+            "name": "$ref:RIGHT_EYE_COLOUR_DESCRIPTION",
+            "display": "Right Eye Colour",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DOac"
+          },
+          {
+            "name": "$ref:NATIONALITY_DESCRIPTION",
+            "display": "Nationality Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DOb5"
+          },
+          {
+            "name": "$ref:RELIGION_DESCRIPTION",
+            "display": "Religion Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DOb3"
+          },
+          {
+            "name": "$ref:MARITAL_STATUS_DESCRIPTION",
+            "display": "Marital Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DOaf"
+          }
+        ]
+      }
+    },
+    {
+      "id": "82983.RS",
+      "name": "Off Add and Tel No",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DPb",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPb.DO76"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPb.DO7b"
+          },
+          {
+            "name": "$ref:DPC_DO948",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DPC_DO949",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DPC_DO94B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DPC_DO94C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DPC_DO94D",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DPC_DO94E",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DPC_DO94F",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "83115.RS",
+      "name": "Adjudications",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DPd",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPd.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPd.DO1007b"
+          },
+          {
+            "name": "$ref:OIC_OFFENCE_CODE",
+            "display": "Charge Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPd.DO282"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Charge Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPd.DO26d"
+          },
+          {
+            "name": "$ref:REPORT_DATE",
+            "display": "Incident Reported Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPd.DO751"
+          },
+          {
+            "name": "$ref:FINDING_CODE",
+            "display": "Hearing Finding",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPd.DO26e"
+          },
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Verdict Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPd.DO281"
+          }
+        ]
+      }
+    },
+    {
+      "id": "83235.RS",
+      "name": "Incidents",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DPe",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Incident Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO283"
+          },
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Incident Date (Date Only)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO1b"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPe.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPe.DO1007b"
+          },
+          {
+            "name": "$ref:INCIDENT_TITLE",
+            "display": "Incident Title",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO69e"
+          },
+          {
+            "name": "$ref:INCIDENT_TYPE",
+            "display": "Incident Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO9"
+          },
+          {
+            "name": "$ref:INCIDENT_CASE_ID",
+            "display": "Incident Case Id",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO6ba"
+          },
+          {
+            "name": "$ref:INCIDENT_TEXT",
+            "display": "Incident Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO297"
+          },
+          {
+            "name": "$ref:INCIDENT_STATUS_DESCRIPTION",
+            "display": "Incident Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DOa"
+          },
+          {
+            "name": "$ref:LASTEDITEDFLAG",
+            "display": "Was Incident Edited?",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO6ac"
+          }
+        ]
+      }
+    },
+    {
+      "id": "83363.RS",
+      "name": "Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DPf",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE PRISONER_LOCATION <> '-')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:BOOKING_NUMBER",
+            "display": "Booking Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPf.DO77"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPf.DO76"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPf.DO7b"
+          },
+          {
+            "name": "$ref:UNIT_1_DESCRIPTION",
+            "display": "Unit Description 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPf.DO126"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Prisoner Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPf.DOa7c"
+          }
+        ]
+      }
+    },
+    {
+      "id": "83503.RS",
+      "name": "Contact Addresses",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP10",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE PRISONER_LOCATION <> '-')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP10.DO76"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP10.DO7b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP10.DO80"
+          },
+          {
+            "name": "$ref:CONTACT_NAME",
+            "display": "Contact Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO747"
+          },
+          {
+            "name": "$ref:RELATIONSHIP",
+            "display": "Contact Relationship",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO748"
+          },
+          {
+            "name": "$ref:PREMISE",
+            "display": "Contact Address Premise",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO74a"
+          },
+          {
+            "name": "$ref:STREET",
+            "display": "Contact Address Street",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO74b"
+          },
+          {
+            "name": "$ref:LOCALITY",
+            "display": "Contact Address Locality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO74c"
+          },
+          {
+            "name": "$ref:CITY",
+            "display": "Contact Address City",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO74d"
+          },
+          {
+            "name": "$ref:COUNTY",
+            "display": "Contact Address County",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO74e"
+          },
+          {
+            "name": "$ref:COUNTRY",
+            "display": "Contact Address Country",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO74f"
+          },
+          {
+            "name": "$ref:POST_CODE",
+            "display": "Contact Address Post Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO750"
+          },
+          {
+            "name": "$ref:TEL_NO",
+            "display": "Contact Address Telephone Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO753"
+          }
+        ]
+      }
+    },
+    {
+      "id": "83690.RS",
+      "name": "Next of Kin",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP10",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (PRISONER_LOCATION <> '-' AND OTHER_CONTACT_NEXT_OF_KIN_FLAG = 'Y'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:CONTACT_NAME",
+            "display": "Contact Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO747"
+          },
+          {
+            "name": "$ref:RELATIONSHIP",
+            "display": "Contact Relationship",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO748"
+          },
+          {
+            "name": "$ref:PREMISE",
+            "display": "Contact Address Premise",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO74a"
+          },
+          {
+            "name": "$ref:STREET",
+            "display": "Contact Address Street",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO74b"
+          },
+          {
+            "name": "$ref:LOCALITY",
+            "display": "Contact Address Locality",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO74c"
+          },
+          {
+            "name": "$ref:CITY",
+            "display": "Contact Address City",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO74d"
+          },
+          {
+            "name": "$ref:COUNTY",
+            "display": "Contact Address County",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO74e"
+          },
+          {
+            "name": "$ref:POST_CODE",
+            "display": "Contact Address Post Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO750"
+          },
+          {
+            "name": "$ref:COUNTRY",
+            "display": "Contact Address Country",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO74f"
+          },
+          {
+            "name": "$ref:TEL_NO",
+            "display": "Contact Address Telephone Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO753"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Expecting ). Line 1, Col: 1774.\n  ESS_USAGES.address_id_nk = AT_DIM_ADDRESSES.address_id_nk and AT_DIM_ADDRESSES.owner_class='OFF'  ) \u001b[4mAddr_usages\u001b[0m --where Addr_usages.usages_dttm is not null ) ss ) DT_OFFENDER_ADDRESSES, BODISTAGING.REF_OFFENDERS]",
+      "entityId": "FntNYVz3owIANr0BAHCLZl8GACJIAFe4",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields (comments -- in query)",
+      "entityId": "3376639/DPc",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DPC_DO948 does not have corresponding dataset schema field",
+      "entityId": "82983.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DPC_DO949 does not have corresponding dataset schema field",
+      "entityId": "82983.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DPC_DO94B does not have corresponding dataset schema field",
+      "entityId": "82983.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DPC_DO94C does not have corresponding dataset schema field",
+      "entityId": "82983.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DPC_DO94D does not have corresponding dataset schema field",
+      "entityId": "82983.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DPC_DO94E does not have corresponding dataset schema field",
+      "entityId": "82983.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DPC_DO94F does not have corresponding dataset schema field",
+      "entityId": "82983.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3376639/DPc",
+      "entityType": "dataset"
+    }
+  ]
+}

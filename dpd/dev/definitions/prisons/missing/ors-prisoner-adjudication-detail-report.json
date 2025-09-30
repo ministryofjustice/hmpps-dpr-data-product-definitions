@@ -1,0 +1,1417 @@
+{
+  "id": "klihxQ0ABo_vZAkBRf8AISgXYiw",
+  "name": "ORS Prisoner Adjudication Detail Report",
+  "description": "This report display all Hearing details for current Prisoners and for the Adjudications created at the Establishment, regardless of the Prisoners current location.  The report displays multiple hearings, adjournments and comments to see if an adjudication has been remanded and for what reason. An optional Hearing Date Prompt is available.<br/>ADJ0011- v00.00.01 Last Modified: 13/02/17",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ADJ0011  v00.00.01"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375850/DP4",
+      "name": "Adjudications",
+      "description": "OR - Incidents",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, SUBSTR(AT_OFFENDER.FIRST_NAME, 1, 1) || '.' || CASE WHEN AT_OFFENDER.MIDDLE_NAME IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME, 1, 1) || '.' || CASE WHEN AT_OFFENDER.MIDDLE_NAME_2 IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME_2, 1, 1) || '.' END END AS INITIALS, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.LAST_NAME, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_AGENCY_INCIDENTS.AGENCY_INCIDENT_ID, AT_AGENCY_INCIDENTS.REPORT_DATE, OMS_OWNER_OIC_HEARINGS3.COMMENT_TEXT, AT_OIC_HEARING_RESULTS2.FINDING_CODE, OMS_OWNER_OIC_HEARINGS3.OIC_INCIDENT_ID, OMS_OWNER_OIC_HEARINGS3.HEARING_DATE, OMS_OWNER_OIC_HEARINGS3.OIC_HEARING_ID, OMS_OWNER_OIC_HEARINGS3.OIC_HEARING_TYPE, AT_OIC_HEARING_RESULTS2.PLEA_FINDING_CODE, MAX(OMS_OWNER_OIC_HEARINGS3.OIC_HEARING_ID) AS MAX_HEARING_ID_, AT_AGENCY_INCIDENT_CHARGES.OIC_CHARGE_ID, AT_AGENCY_INCIDENT_CHARGES.CHARGED_OIC_OFFENCE_ID, AT_OIC_OFFENCES.DESCRIPTION, AT_AGENCY_INCIDENTS.AGY_LOC_ID, AT_AGENCY_INCIDENTS.INCIDENT_DETAILS FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, OMS_OWNER.AGENCY_INCIDENTS AT_AGENCY_INCIDENTS, OMS_OWNER.OIC_HEARINGS OMS_OWNER_OIC_HEARINGS3, OMS_OWNER.OIC_HEARING_RESULTS AT_OIC_HEARING_RESULTS2, OMS_OWNER.AGENCY_INCIDENT_CHARGES AT_AGENCY_INCIDENT_CHARGES, OMS_OWNER.OIC_OFFENCES AT_OIC_OFFENCES, OMS_OWNER.AGENCY_INCIDENT_PARTIES AT_AGENCY_INCIDENT_PARTIES WHERE (AT_AGENCY_INCIDENT_PARTIES.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_AGENCY_INCIDENTS.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID) AND (AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_PARTIES.PARTY_SEQ = AT_AGENCY_INCIDENT_CHARGES.PARTY_SEQ) AND (AT_AGENCY_INCIDENT_CHARGES.CHARGED_OIC_OFFENCE_ID = AT_OIC_OFFENCES.OIC_OFFENCE_ID) AND (SUBSTR(AT_AGENCY_INCIDENT_CHARGES.OIC_CHARGE_ID, 1, (INSTR(AT_AGENCY_INCIDENT_CHARGES.oic_charge_id, '/') - 1)) = OMS_OWNER_OIC_HEARINGS3.OIC_INCIDENT_ID) AND (OMS_OWNER_OIC_HEARINGS3.OIC_HEARING_ID = AT_OIC_HEARING_RESULTS2.OIC_HEARING_ID (+)) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (WING_CASELOAD_SECURITY.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) AND AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' AND OMS_OWNER_OIC_HEARINGS3.HEARING_DATE BETWEEN (SELECT START_DATE FROM prompt_ /* = #prompt('Enter Hearing Date (Start):','D',,Mono,Free,Not_Persistent,,User:0,optional) */) AND (SELECT END_DATE FROM prompt_ /* = #prompt('Enter Hearing Date (End):','D',,Mono,Free,Not_Persistent,,User:1,optional) */)) GROUP BY AT_OFFENDER.OFFENDER_ID_DISPLAY, SUBSTR(AT_OFFENDER.FIRST_NAME, 1, 1) || '.' || CASE WHEN AT_OFFENDER.MIDDLE_NAME IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME, 1, 1) || '.' || CASE WHEN AT_OFFENDER.MIDDLE_NAME_2 IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME_2, 1, 1) || '.' END END, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.LAST_NAME, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)), AT_AGENCY_INCIDENTS.AGENCY_INCIDENT_ID, AT_AGENCY_INCIDENTS.REPORT_DATE, OMS_OWNER_OIC_HEARINGS3.COMMENT_TEXT, AT_OIC_HEARING_RESULTS2.FINDING_CODE, OMS_OWNER_OIC_HEARINGS3.OIC_INCIDENT_ID, OMS_OWNER_OIC_HEARINGS3.HEARING_DATE, OMS_OWNER_OIC_HEARINGS3.OIC_HEARING_ID, OMS_OWNER_OIC_HEARINGS3.OIC_HEARING_TYPE, AT_OIC_HEARING_RESULTS2.PLEA_FINDING_CODE, AT_AGENCY_INCIDENT_CHARGES.OIC_CHARGE_ID, AT_AGENCY_INCIDENT_CHARGES.CHARGED_OIC_OFFENCE_ID, AT_OIC_OFFENCES.DESCRIPTION, AT_AGENCY_INCIDENTS.AGY_LOC_ID, AT_AGENCY_INCIDENTS.INCIDENT_DETAILS), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, INITIALS, FIRST_NAME, LAST_NAME, UNIT_DESCRIPTION_4_SHORT, AGENCY_INCIDENT_ID, REPORT_DATE, COMMENT_TEXT, FINDING_CODE, OIC_INCIDENT_ID, HEARING_DATE, OIC_HEARING_ID, OIC_HEARING_TYPE, PLEA_FINDING_CODE, MAX_HEARING_ID_, OIC_CHARGE_ID, CHARGED_OIC_OFFENCE_ID, DESCRIPTION, AGY_LOC_ID, INCIDENT_DETAILS, CASE WHEN ADJUDICATIONS.FINDING_CODE = 'D' THEN 'DISMISS' ELSE CASE WHEN ADJUDICATIONS.FINDING_CODE = 'S' THEN 'SUSP' ELSE CASE WHEN ADJUDICATIONS.FINDING_CODE = 'DISMISSED' THEN 'DISCH' ELSE CASE WHEN ADJUDICATIONS.FINDING_CODE = 'APPEAL' THEN 'QUASH APP' ELSE CASE WHEN ADJUDICATIONS.FINDING_CODE = 'NOT_PROCEED' THEN 'NOT PROC' ELSE CASE WHEN ADJUDICATIONS.FINDING_CODE IS NULL THEN '-' ELSE ADJUDICATIONS.FINDING_CODE END END END END END END AS V_FINDING_ADJ, CASE WHEN AWARDS_ADJ.OIC_SANCTION_CODE IS NULL THEN '-' ELSE AWARDS_ADJ.OIC_SANCTION_CODE END AS V_SANCTION_ADJ, CASE WHEN V_RESULT_STATUS IS NULL THEN '-' ELSE V_RESULT_STATUS END AS V_STATUS_ADJ, CASE WHEN AWARDS_ADJ.SANCTION_DAYS IS NULL THEN '-' ELSE AWARDS_ADJ.SANCTION_DAYS END AS V_DAYS_ADJ, AWARDS_ADJ.COMPENSATION_AMOUNT AS V_AMOUNT_ADJ, CASE WHEN AWARDS_ADJ.COMMENT_TEXT IS NULL THEN '-' ELSE AWARDS_ADJ.COMMENT_TEXT END AS V_COMMENT_TEXT_ADJ FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Hearing Date (Start):",
+          "description": "@prompt('Enter Hearing Date (Start):','D',,Mono,Free,Not_Persistent,,User:0,optional)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Hearing Date (End):",
+          "description": "@prompt('Enter Hearing Date (End):','D',,Mono,Free,Not_Persistent,,User:1,optional)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP4.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "INITIALS",
+            "type": "string",
+            "display": "Initials",
+            "legacyId": "DP4.DO10071",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Given Name 1",
+            "legacyId": "DP4.DO11066",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP4.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP4.DO10427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "AGENCY_INCIDENT_ID",
+            "type": "double",
+            "display": "Report Number",
+            "legacyId": "DP4.DO617",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "REPORT_DATE",
+            "type": "date",
+            "display": "Report Date",
+            "legacyId": "DP4.DO618",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "Hearing Comment Text (all hearings)",
+            "legacyId": "DP4.DO652",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "FINDING_CODE",
+            "type": "string",
+            "display": "Finding (all hearings)",
+            "legacyId": "DP4.DO65a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "OIC_INCIDENT_ID",
+            "type": "double",
+            "display": "Adjudication Number (all hearings)",
+            "legacyId": "DP4.DO657",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "HEARING_DATE",
+            "type": "date",
+            "display": "Hearing Date (all hearings)",
+            "legacyId": "DP4.DO655",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "OIC_HEARING_ID",
+            "type": "double",
+            "display": "Hearing ID (all hearings)",
+            "legacyId": "DP4.DO658",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "OIC_HEARING_TYPE",
+            "type": "string",
+            "display": "Hearing Type (all hearings)",
+            "legacyId": "DP4.DO656",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "PLEA_FINDING_CODE",
+            "type": "string",
+            "display": "Plea (all hearings)",
+            "legacyId": "DP4.DO659",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "MAX_HEARING_ID_",
+            "type": "double",
+            "display": "Max Hearing ID (all hearings)",
+            "legacyId": "DP4.DO65b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "OIC_CHARGE_ID",
+            "type": "string",
+            "display": "Offences ID",
+            "legacyId": "DP4.DO61f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "CHARGED_OIC_OFFENCE_ID",
+            "type": "double",
+            "display": "Charged Offence ID",
+            "legacyId": "DP4.DO647",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Charge Description",
+            "legacyId": "DP4.DO620",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 18,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Report Establishment",
+            "legacyId": "DP4.DO619",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 19,
+            "name": "INCIDENT_DETAILS",
+            "type": "string",
+            "display": "Report Details",
+            "legacyId": "DP4.DO61b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 20,
+            "name": "V_FINDING_ADJ",
+            "type": "string",
+            "display": "V_FINDING_ADJ",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 21,
+            "name": "V_SANCTION_ADJ",
+            "type": "string",
+            "display": "V_SANCTION_ADJ",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 22,
+            "name": "V_STATUS_ADJ",
+            "type": "string",
+            "display": "V_STATUS_ADJ",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 23,
+            "name": "V_DAYS_ADJ",
+            "type": "string",
+            "display": "V_DAYS_ADJ",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 24,
+            "name": "V_AMOUNT_ADJ",
+            "type": "string",
+            "display": "V_AMOUNT_ADJ",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 25,
+            "name": "V_COMMENT_TEXT_ADJ",
+            "type": "string",
+            "display": "V_COMMENT_TEXT_ADJ",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375850/DP8",
+      "name": "Awards Adj.",
+      "description": "OR - Incidents",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OIC_HEARINGS2.oic_hearing_id, AT_OFFENDER_OIC_SANCTIONS.OIC_SANCTION_CODE, AT_OFFENDER_OIC_SANCTIONS.COMPENSATION_AMOUNT, AT_OFFENDER_OIC_SANCTIONS.SANCTION_DAYS, AT_OFFENDER_OIC_SANCTIONS.COMMENT_TEXT, AT_OFFENDER_OIC_SANCTIONS.STATUS FROM OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OIC_HEARINGS AT_OIC_HEARINGS2, OMS_OWNER.OFFENDER_OIC_SANCTIONS AT_OFFENDER_OIC_SANCTIONS, OMS_OWNER.OIC_HEARINGS OMS_OWNER_OIC_HEARINGS3, OMS_OWNER.OIC_HEARING_RESULTS AT_OIC_HEARING_RESULTS, OMS_OWNER.AGENCY_INCIDENT_PARTIES AT_AGENCY_INCIDENT_PARTIES, OMS_OWNER.AGENCY_INCIDENT_CHARGES AT_AGENCY_INCIDENT_CHARGES WHERE (AT_AGENCY_INCIDENT_PARTIES.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_PARTIES.PARTY_SEQ = AT_AGENCY_INCIDENT_CHARGES.PARTY_SEQ) AND (AT_OFFENDER_OIC_SANCTIONS.OIC_HEARING_ID (+) = AT_OIC_HEARING_RESULTS.OIC_HEARING_ID AND AT_OFFENDER_OIC_SANCTIONS.RESULT_SEQ (+) = AT_OIC_HEARING_RESULTS.RESULT_SEQ) AND (AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID = AT_OIC_HEARING_RESULTS.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_CHARGES.CHARGE_SEQ = AT_OIC_HEARING_RESULTS.CHARGE_SEQ) AND (AT_OIC_HEARING_RESULTS.OIC_HEARING_ID = AT_OIC_HEARINGS2.OIC_HEARING_ID) AND (SUBSTR(AT_AGENCY_INCIDENT_CHARGES.OIC_CHARGE_ID, 1, (INSTR(AT_AGENCY_INCIDENT_CHARGES.oic_charge_id, '/') - 1)) = OMS_OWNER_OIC_HEARINGS3.OIC_INCIDENT_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) AND AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' AND OMS_OWNER_OIC_HEARINGS3.HEARING_DATE BETWEEN (SELECT START_DATE FROM prompt_ /* = #prompt('Enter Hearing Date (Start):','D',,Mono,Free,Not_Persistent,,User:0,optional) */) AND (SELECT END_DATE FROM prompt_ /* = #prompt('Enter Hearing Date (End):','D',,Mono,Free,Not_Persistent,,User:1,optional) */))), dataset_ AS (SELECT OIC_HEARING_ID, OIC_SANCTION_CODE, COMPENSATION_AMOUNT, SANCTION_DAYS, COMMENT_TEXT, STATUS FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Hearing Date (Start):",
+          "description": "@prompt('Enter Hearing Date (Start):','D',,Mono,Free,Not_Persistent,,User:0,optional)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Hearing Date (End):",
+          "description": "@prompt('Enter Hearing Date (End):','D',,Mono,Free,Not_Persistent,,User:1,optional)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OIC_HEARING_ID",
+            "type": "double",
+            "display": "Hearing ID (results only)",
+            "legacyId": "DP8.DO64a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OIC_SANCTION_CODE",
+            "type": "string",
+            "display": "Type",
+            "legacyId": "DP8.DO629",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "COMPENSATION_AMOUNT",
+            "type": "double",
+            "display": "Level",
+            "legacyId": "DP8.DO62c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "SANCTION_DAYS",
+            "type": "double",
+            "display": "Days",
+            "legacyId": "DP8.DO62a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "Comment Text",
+            "legacyId": "DP8.DO62d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "STATUS",
+            "type": "string",
+            "display": "Status",
+            "legacyId": "DP8.DO62e",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375850/DP7",
+      "name": "Estab Adjudications",
+      "description": "OR - Incidents",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, SUBSTR(AT_OFFENDER.FIRST_NAME, 1, 1) || '.' || CASE WHEN AT_OFFENDER.MIDDLE_NAME IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME, 1, 1) || '.' || CASE WHEN AT_OFFENDER.MIDDLE_NAME_2 IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME_2, 1, 1) || '.' END END AS INITIALS, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.LAST_NAME, AT_AGENCY_INCIDENTS.AGENCY_INCIDENT_ID, AT_AGENCY_INCIDENTS.REPORT_DATE, OMS_OWNER_OIC_HEARINGS3.COMMENT_TEXT, AT_OIC_HEARING_RESULTS2.FINDING_CODE, OMS_OWNER_OIC_HEARINGS3.OIC_INCIDENT_ID, OMS_OWNER_OIC_HEARINGS3.HEARING_DATE, OMS_OWNER_OIC_HEARINGS3.OIC_HEARING_ID, OMS_OWNER_OIC_HEARINGS3.OIC_HEARING_TYPE, AT_OIC_HEARING_RESULTS2.PLEA_FINDING_CODE, MAX(OMS_OWNER_OIC_HEARINGS3.OIC_HEARING_ID) AS MAX_HEARING_ID_, AT_AGENCY_INCIDENT_CHARGES.OIC_CHARGE_ID, AT_AGENCY_INCIDENT_CHARGES.CHARGED_OIC_OFFENCE_ID, AT_OIC_OFFENCES.DESCRIPTION, AT_AGENCY_INCIDENTS.AGY_LOC_ID, AT_OFFENDER_BOOKING.IN_OUT_STATUS FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_INCIDENTS AT_AGENCY_INCIDENTS, OMS_OWNER.OIC_HEARINGS OMS_OWNER_OIC_HEARINGS3, OMS_OWNER.OIC_HEARING_RESULTS AT_OIC_HEARING_RESULTS2, OMS_OWNER.AGENCY_INCIDENT_CHARGES AT_AGENCY_INCIDENT_CHARGES, OMS_OWNER.OIC_OFFENCES AT_OIC_OFFENCES, OMS_OWNER.AGENCY_INCIDENT_PARTIES AT_AGENCY_INCIDENT_PARTIES WHERE (AT_AGENCY_INCIDENT_PARTIES.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_AGENCY_INCIDENTS.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID) AND (AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_PARTIES.PARTY_SEQ = AT_AGENCY_INCIDENT_CHARGES.PARTY_SEQ) AND (AT_AGENCY_INCIDENT_CHARGES.CHARGED_OIC_OFFENCE_ID = AT_OIC_OFFENCES.OIC_OFFENCE_ID) AND (SUBSTR(AT_AGENCY_INCIDENT_CHARGES.OIC_CHARGE_ID, 1, (INSTR(AT_AGENCY_INCIDENT_CHARGES.oic_charge_id, '/') - 1)) = OMS_OWNER_OIC_HEARINGS3.OIC_INCIDENT_ID) AND (OMS_OWNER_OIC_HEARINGS3.OIC_HEARING_ID = AT_OIC_HEARING_RESULTS2.OIC_HEARING_ID (+)) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_AGENCY_INCIDENTS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #prompt('Establishment Code','A','Occurence\\Report Establishment',Mono,Free,Persistent,,User:0) */) AND OMS_OWNER_OIC_HEARINGS3.HEARING_DATE BETWEEN (SELECT START_DATE FROM prompt_ /* = #prompt('Enter Hearing Date (Start):','D',,Mono,Free,Not_Persistent,,User:1,optional) */) AND (SELECT END_DATE FROM prompt_ /* = #prompt('Enter Hearing Date (End):','D',,Mono,Free,Not_Persistent,,User:2,optional) */)) GROUP BY AT_OFFENDER.OFFENDER_ID_DISPLAY, SUBSTR(AT_OFFENDER.FIRST_NAME, 1, 1) || '.' || CASE WHEN AT_OFFENDER.MIDDLE_NAME IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME, 1, 1) || '.' || CASE WHEN AT_OFFENDER.MIDDLE_NAME_2 IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME_2, 1, 1) || '.' END END, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.LAST_NAME, AT_AGENCY_INCIDENTS.AGENCY_INCIDENT_ID, AT_AGENCY_INCIDENTS.REPORT_DATE, OMS_OWNER_OIC_HEARINGS3.COMMENT_TEXT, AT_OIC_HEARING_RESULTS2.FINDING_CODE, OMS_OWNER_OIC_HEARINGS3.OIC_INCIDENT_ID, OMS_OWNER_OIC_HEARINGS3.HEARING_DATE, OMS_OWNER_OIC_HEARINGS3.OIC_HEARING_ID, OMS_OWNER_OIC_HEARINGS3.OIC_HEARING_TYPE, AT_OIC_HEARING_RESULTS2.PLEA_FINDING_CODE, AT_AGENCY_INCIDENT_CHARGES.OIC_CHARGE_ID, AT_AGENCY_INCIDENT_CHARGES.CHARGED_OIC_OFFENCE_ID, AT_OIC_OFFENCES.DESCRIPTION, AT_AGENCY_INCIDENTS.AGY_LOC_ID, AT_OFFENDER_BOOKING.IN_OUT_STATUS), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, INITIALS, FIRST_NAME, LAST_NAME, AGENCY_INCIDENT_ID, REPORT_DATE, COMMENT_TEXT, FINDING_CODE, OIC_INCIDENT_ID, HEARING_DATE, OIC_HEARING_ID, OIC_HEARING_TYPE, PLEA_FINDING_CODE, MAX_HEARING_ID_, OIC_CHARGE_ID, CHARGED_OIC_OFFENCE_ID, DESCRIPTION, AGY_LOC_ID, IN_OUT_STATUS, CASE WHEN ESTAB_ADJUDICATIONS.FINDING_CODE = 'D' THEN 'DISMISS' ELSE CASE WHEN ESTAB_ADJUDICATIONS.FINDING_CODE = 'S' THEN 'SUSP' ELSE CASE WHEN ESTAB_ADJUDICATIONS.FINDING_CODE = 'DISMISSED' THEN 'DISCH' ELSE CASE WHEN ESTAB_ADJUDICATIONS.FINDING_CODE = 'APPEAL' THEN 'QUASH APP' ELSE CASE WHEN ESTAB_ADJUDICATIONS.FINDING_CODE = 'NOT_PROCEED' THEN 'NOT PROC' ELSE CASE WHEN ESTAB_ADJUDICATIONS.FINDING_CODE IS NULL THEN '-' ELSE ESTAB_ADJUDICATIONS.FINDING_CODE END END END END END END AS V_FINDING, CASE WHEN AWARDS_ESTAB_ADJ.OIC_SANCTION_CODE IS NULL THEN '-' ELSE AWARDS_ESTAB_ADJ.OIC_SANCTION_CODE END AS V_SANCTION_ESTAB_ADJ, CASE WHEN V_RESULT_STATUS_ESTAB IS NULL THEN '-' ELSE V_RESULT_STATUS_ESTAB END AS V_STATUS_ESTAB_ADJ, CASE WHEN AWARDS_ESTAB_ADJ.SANCTION_DAYS IS NULL THEN '-' ELSE AWARDS_ESTAB_ADJ.SANCTION_DAYS END AS V_DAYS_ESTAB_ADJ, AWARDS_ESTAB_ADJ.COMPENSATION_AMOUNT AS V_AMOUNT_ESTAB_ADJ, CASE WHEN AWARDS_ESTAB_ADJ.COMMENT_TEXT IS NULL THEN '-' ELSE AWARDS_ESTAB_ADJ.COMMENT_TEXT END AS V_COMMENT_TEXT_ESTAB_ADJ FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@prompt('Establishment Code','A','Occurence\\Report Establishment',Mono,Free,Persistent,,User:0)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Hearing Date (Start):",
+          "description": "@prompt('Enter Hearing Date (Start):','D',,Mono,Free,Not_Persistent,,User:1,optional)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Hearing Date (End):",
+          "description": "@prompt('Enter Hearing Date (End):','D',,Mono,Free,Not_Persistent,,User:2,optional)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP7.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "INITIALS",
+            "type": "string",
+            "display": "Initials",
+            "legacyId": "DP7.DO10071",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Given Name 1",
+            "legacyId": "DP7.DO11066",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP7.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "AGENCY_INCIDENT_ID",
+            "type": "double",
+            "display": "Report Number",
+            "legacyId": "DP7.DO617",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "REPORT_DATE",
+            "type": "date",
+            "display": "Report Date",
+            "legacyId": "DP7.DO618",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "Hearing Comment Text (all hearings)",
+            "legacyId": "DP7.DO652",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "FINDING_CODE",
+            "type": "string",
+            "display": "Finding (all hearings)",
+            "legacyId": "DP7.DO65a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "OIC_INCIDENT_ID",
+            "type": "double",
+            "display": "Adjudication Number (all hearings)",
+            "legacyId": "DP7.DO657",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "HEARING_DATE",
+            "type": "date",
+            "display": "Hearing Date (all hearings)",
+            "legacyId": "DP7.DO655",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "OIC_HEARING_ID",
+            "type": "double",
+            "display": "Hearing ID (all hearings)",
+            "legacyId": "DP7.DO658",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "OIC_HEARING_TYPE",
+            "type": "string",
+            "display": "Hearing Type (all hearings)",
+            "legacyId": "DP7.DO656",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "PLEA_FINDING_CODE",
+            "type": "string",
+            "display": "Plea (all hearings)",
+            "legacyId": "DP7.DO659",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "MAX_HEARING_ID_",
+            "type": "double",
+            "display": "Max Hearing ID (all hearings)",
+            "legacyId": "DP7.DO65b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "OIC_CHARGE_ID",
+            "type": "string",
+            "display": "Offences ID",
+            "legacyId": "DP7.DO61f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "CHARGED_OIC_OFFENCE_ID",
+            "type": "double",
+            "display": "Charged Offence ID",
+            "legacyId": "DP7.DO647",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Charge Description",
+            "legacyId": "DP7.DO620",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Report Establishment",
+            "legacyId": "DP7.DO619",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 18,
+            "name": "IN_OUT_STATUS",
+            "type": "string",
+            "display": "In Out Status",
+            "legacyId": "DP7.DO10cde",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 19,
+            "name": "V_FINDING",
+            "type": "string",
+            "display": "V_FINDING",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 20,
+            "name": "V_SANCTION_ESTAB_ADJ",
+            "type": "string",
+            "display": "V_SANCTION_ESTAB_ADJ",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 21,
+            "name": "V_STATUS_ESTAB_ADJ",
+            "type": "string",
+            "display": "V_STATUS_ESTAB_ADJ",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 22,
+            "name": "V_DAYS_ESTAB_ADJ",
+            "type": "string",
+            "display": "V_DAYS_ESTAB_ADJ",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 23,
+            "name": "V_AMOUNT_ESTAB_ADJ",
+            "type": "string",
+            "display": "V_AMOUNT_ESTAB_ADJ",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 24,
+            "name": "V_COMMENT_TEXT_ESTAB_ADJ",
+            "type": "string",
+            "display": "V_COMMENT_TEXT_ESTAB_ADJ",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375850/DP6",
+      "name": "Awards Estab Adj.",
+      "description": "OR - Incidents",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OIC_HEARINGS2.oic_hearing_id, AT_OFFENDER_OIC_SANCTIONS.OIC_SANCTION_CODE, AT_OFFENDER_OIC_SANCTIONS.COMPENSATION_AMOUNT, AT_OFFENDER_OIC_SANCTIONS.SANCTION_DAYS, AT_OFFENDER_OIC_SANCTIONS.COMMENT_TEXT, AT_OFFENDER_OIC_SANCTIONS.STATUS FROM OMS_OWNER.OIC_HEARINGS AT_OIC_HEARINGS2, OMS_OWNER.OFFENDER_OIC_SANCTIONS AT_OFFENDER_OIC_SANCTIONS, OMS_OWNER.AGENCY_INCIDENTS AT_AGENCY_INCIDENTS, OMS_OWNER.OIC_HEARINGS OMS_OWNER_OIC_HEARINGS3, OMS_OWNER.OIC_HEARING_RESULTS AT_OIC_HEARING_RESULTS, OMS_OWNER.AGENCY_INCIDENT_PARTIES AT_AGENCY_INCIDENT_PARTIES, OMS_OWNER.AGENCY_INCIDENT_CHARGES AT_AGENCY_INCIDENT_CHARGES WHERE (AT_AGENCY_INCIDENTS.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID) AND (AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_PARTIES.PARTY_SEQ = AT_AGENCY_INCIDENT_CHARGES.PARTY_SEQ) AND (AT_OFFENDER_OIC_SANCTIONS.OIC_HEARING_ID (+) = AT_OIC_HEARING_RESULTS.OIC_HEARING_ID AND AT_OFFENDER_OIC_SANCTIONS.RESULT_SEQ (+) = AT_OIC_HEARING_RESULTS.RESULT_SEQ) AND (AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID = AT_OIC_HEARING_RESULTS.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_CHARGES.CHARGE_SEQ = AT_OIC_HEARING_RESULTS.CHARGE_SEQ) AND (AT_OIC_HEARING_RESULTS.OIC_HEARING_ID = AT_OIC_HEARINGS2.OIC_HEARING_ID) AND (SUBSTR(AT_AGENCY_INCIDENT_CHARGES.OIC_CHARGE_ID, 1, (INSTR(AT_AGENCY_INCIDENT_CHARGES.oic_charge_id, '/') - 1)) = OMS_OWNER_OIC_HEARINGS3.OIC_INCIDENT_ID) AND (AT_AGENCY_INCIDENTS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #prompt('Establishment Code','A','Occurence\\Report Establishment',Mono,Free,Persistent,,User:0) */) AND OMS_OWNER_OIC_HEARINGS3.HEARING_DATE BETWEEN (SELECT START_DATE FROM prompt_ /* = #prompt('Enter Hearing Date (Start):','D',,Mono,Free,Not_Persistent,,User:1,optional) */) AND (SELECT END_DATE FROM prompt_ /* = #prompt('Enter Hearing Date (End):','D',,Mono,Free,Not_Persistent,,User:2,optional) */))), dataset_ AS (SELECT OIC_HEARING_ID, OIC_SANCTION_CODE, COMPENSATION_AMOUNT, SANCTION_DAYS, COMMENT_TEXT, STATUS FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@prompt('Establishment Code','A','Occurence\\Report Establishment',Mono,Free,Persistent,,User:0)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Hearing Date (Start):",
+          "description": "@prompt('Enter Hearing Date (Start):','D',,Mono,Free,Not_Persistent,,User:1,optional)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Hearing Date (End):",
+          "description": "@prompt('Enter Hearing Date (End):','D',,Mono,Free,Not_Persistent,,User:2,optional)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OIC_HEARING_ID",
+            "type": "double",
+            "display": "Hearing ID (results only)",
+            "legacyId": "DP6.DO64a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OIC_SANCTION_CODE",
+            "type": "string",
+            "display": "Type",
+            "legacyId": "DP6.DO629",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "COMPENSATION_AMOUNT",
+            "type": "double",
+            "display": "Level",
+            "legacyId": "DP6.DO62c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "SANCTION_DAYS",
+            "type": "double",
+            "display": "Days",
+            "legacyId": "DP6.DO62a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "Comment Text",
+            "legacyId": "DP6.DO62d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "STATUS",
+            "type": "string",
+            "display": "Status",
+            "legacyId": "DP6.DO62e",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "163812.RS",
+      "name": "Current Prisoners",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375850/DP4",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10045"
+          },
+          {
+            "name": "$ref:INITIALS",
+            "display": "Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10071"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10427"
+          },
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Report Establishment",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO619"
+          },
+          {
+            "name": "$ref:AGENCY_INCIDENT_ID",
+            "display": "Report Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO617"
+          },
+          {
+            "name": "$ref:REPORT_DATE",
+            "display": "Report Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO618"
+          },
+          {
+            "name": "$ref:OIC_CHARGE_ID",
+            "display": "Offences ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO61f"
+          },
+          {
+            "name": "$ref:HEARING_DATE",
+            "display": "Hearing Date (all hearings)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO655"
+          },
+          {
+            "name": "$ref:OIC_HEARING_TYPE",
+            "display": "Hearing Type (all hearings)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO656"
+          },
+          {
+            "name": "$ref:COMMENT_TEXT",
+            "display": "Hearing Comment Text (all hearings)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO652"
+          },
+          {
+            "name": "$ref:V_FINDING_ADJ",
+            "display": "Finding",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Adjudications].[Finding (all hearings)] = \"D\"; \"DISMISS\"; If([Adjudications].[Finding (all hearings)] = \"S\"; \"SUSP\";If([Adjudications].[Finding (all hearings)] = \"DISMISSED\"; \"DISCH\"; If([Adjudications].[Finding (all hearings)] = \"APPEAL\"; \"QUASH APP\";If([Adjudications].[Finding (all hearings)]=\"NOT_PROCEED\"; \"NOT PROC\";If(IsNull([Adjudications].[Finding (all hearings)]);\"-\";[Adjudications].[Finding (all hearings)]))))))"
+          },
+          {
+            "name": "$ref:V_SANCTION_ADJ",
+            "display": "Sanction",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Awards Adj.].[Type]); \"-\";[Awards Adj.].[Type])"
+          },
+          {
+            "name": "$ref:V_STATUS_ADJ",
+            "display": "Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([v_result_status]); \"-\";[v_result_status])"
+          },
+          {
+            "name": "$ref:V_DAYS_ADJ",
+            "display": "Days",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Awards Adj.].[Days]); \"-\";[Awards Adj.].[Days])"
+          },
+          {
+            "name": "$ref:V_AMOUNT_ADJ",
+            "display": "Amnt",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Awards Adj.].[Level]"
+          },
+          {
+            "name": "$ref:V_COMMENT_TEXT_ADJ",
+            "display": "Award Comment Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Awards Adj.].[Comment Text]);\"-\";[Awards Adj.].[Comment Text])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "165927.RS",
+      "name": "Estab. Adjudications",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375850/DP7",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO10045"
+          },
+          {
+            "name": "$ref:INITIALS",
+            "display": "Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO10071"
+          },
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Report Establishment",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO619"
+          },
+          {
+            "name": "$ref:IN_OUT_STATUS",
+            "display": "In Out Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO10cde"
+          },
+          {
+            "name": "$ref:AGENCY_INCIDENT_ID",
+            "display": "Report Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO617"
+          },
+          {
+            "name": "$ref:REPORT_DATE",
+            "display": "Report Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO618"
+          },
+          {
+            "name": "$ref:OIC_CHARGE_ID",
+            "display": "Offences ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO61f"
+          },
+          {
+            "name": "$ref:HEARING_DATE",
+            "display": "Hearing Date (all hearings)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO655"
+          },
+          {
+            "name": "$ref:OIC_HEARING_TYPE",
+            "display": "Hearing Type (all hearings)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO656"
+          },
+          {
+            "name": "$ref:COMMENT_TEXT",
+            "display": "Hearing Comment Text (all hearings)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO652"
+          },
+          {
+            "name": "$ref:V_FINDING",
+            "display": "Finding",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Estab Adjudications].[Finding (all hearings)] = \"D\"; \"DISMISS\"; If([Estab Adjudications].[Finding (all hearings)] = \"S\"; \"SUSP\";If([Estab Adjudications].[Finding (all hearings)] = \"DISMISSED\"; \"DISCH\"; If([Estab Adjudications].[Finding (all hearings)] = \"APPEAL\"; \"QUASH APP\";If([Estab Adjudications].[Finding (all hearings)]=\"NOT_PROCEED\"; \"NOT PROC\";If(IsNull([Estab Adjudications].[Finding (all hearings)]);\"-\";[Estab Adjudications].[Finding (all hearings)]))))))"
+          },
+          {
+            "name": "$ref:V_SANCTION_ESTAB_ADJ",
+            "display": "Sanction",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull( [Awards Estab Adj.].[Type]);\"-\";[Awards Estab Adj.].[Type])"
+          },
+          {
+            "name": "$ref:V_STATUS_ESTAB_ADJ",
+            "display": "Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([v_result_status_estab]); \"-\";[v_result_status_estab])"
+          },
+          {
+            "name": "$ref:V_DAYS_ESTAB_ADJ",
+            "display": "Days",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Awards Estab Adj.].[Days]);\"-\";[Awards Estab Adj.].[Days])"
+          },
+          {
+            "name": "$ref:V_AMOUNT_ESTAB_ADJ",
+            "display": "Amnt",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Awards Estab Adj.].[Level]"
+          },
+          {
+            "name": "$ref:V_COMMENT_TEXT_ESTAB_ADJ",
+            "display": "Award Comment Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Awards Estab Adj.].[Comment Text]);\"-\";[Awards Estab Adj.].[Comment Text])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "167239.RS",
+      "name": "Current with Report Detail",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375850/DP4",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10045"
+          },
+          {
+            "name": "$ref:INITIALS",
+            "display": "Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10071"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10427"
+          },
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Report Establishment",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO619"
+          },
+          {
+            "name": "$ref:AGENCY_INCIDENT_ID",
+            "display": "Report Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO617"
+          },
+          {
+            "name": "$ref:REPORT_DATE",
+            "display": "Report Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO618"
+          },
+          {
+            "name": "$ref:INCIDENT_DETAILS",
+            "display": "Report Details",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO61b"
+          },
+          {
+            "name": "$ref:OIC_CHARGE_ID",
+            "display": "Offences ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO61f"
+          },
+          {
+            "name": "$ref:HEARING_DATE",
+            "display": "Hearing Date (all hearings)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO655"
+          },
+          {
+            "name": "$ref:OIC_HEARING_TYPE",
+            "display": "Hearing Type (all hearings)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO656"
+          },
+          {
+            "name": "$ref:COMMENT_TEXT",
+            "display": "Hearing Comment Text (all hearings)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO652"
+          },
+          {
+            "name": "$ref:V_FINDING_ADJ",
+            "display": "Finding",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Adjudications].[Finding (all hearings)] = \"D\"; \"DISMISS\"; If([Adjudications].[Finding (all hearings)] = \"S\"; \"SUSP\";If([Adjudications].[Finding (all hearings)] = \"DISMISSED\"; \"DISCH\"; If([Adjudications].[Finding (all hearings)] = \"APPEAL\"; \"QUASH APP\";If([Adjudications].[Finding (all hearings)]=\"NOT_PROCEED\"; \"NOT PROC\";If(IsNull([Adjudications].[Finding (all hearings)]);\"-\";[Adjudications].[Finding (all hearings)]))))))"
+          },
+          {
+            "name": "$ref:V_SANCTION_ADJ",
+            "display": "Sanction",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Awards Adj.].[Type]); \"-\";[Awards Adj.].[Type])"
+          },
+          {
+            "name": "$ref:V_STATUS_ADJ",
+            "display": "Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([v_result_status]); \"-\";[v_result_status])"
+          },
+          {
+            "name": "$ref:V_DAYS_ADJ",
+            "display": "Days",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Awards Adj.].[Days]); \"-\";[Awards Adj.].[Days])"
+          },
+          {
+            "name": "$ref:V_AMOUNT_ADJ",
+            "display": "Amnt",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Awards Adj.].[Level]"
+          },
+          {
+            "name": "$ref:V_COMMENT_TEXT_ADJ",
+            "display": "Award Comment Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Awards Adj.].[Comment Text]);\"-\";[Awards Adj.].[Comment Text])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "165671.RS",
+      "name": "Charge Descriptions (Current)",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375850/DP4",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO11066"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10427"
+          },
+          {
+            "name": "$ref:AGENCY_INCIDENT_ID",
+            "display": "Report Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO617"
+          },
+          {
+            "name": "$ref:REPORT_DATE",
+            "display": "Report Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO618"
+          },
+          {
+            "name": "$ref:OIC_CHARGE_ID",
+            "display": "Offences ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO61f"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Charge Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO620"
+          }
+        ]
+      }
+    },
+    {
+      "id": "166919.RS",
+      "name": "Charge Descriptions (Estab)",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375850/DP7",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO11066"
+          },
+          {
+            "name": "$ref:AGENCY_INCIDENT_ID",
+            "display": "Report Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO617"
+          },
+          {
+            "name": "$ref:REPORT_DATE",
+            "display": "Report Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO618"
+          },
+          {
+            "name": "$ref:OIC_CHARGE_ID",
+            "display": "Offences ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO61f"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Charge Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO620"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00904: \"AWARDS_ADJ\".\"COMMENT_TEXT\": invalid identifier\nHelp: https://docs.oracle.com/error-help/db/ora-00904/",
+      "entityId": "3375850/DP4",
+      "entityType": "dataset"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00904: \"AWARDS_ESTAB_ADJ\".\"COMMENT_TEXT\": invalid identifier\nHelp: https://docs.oracle.com/error-help/db/ora-00904/",
+      "entityId": "3375850/DP7",
+      "entityType": "dataset"
+    }
+  ]
+}

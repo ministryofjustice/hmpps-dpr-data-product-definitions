@@ -1,0 +1,422 @@
+{
+  "id": "Fi.8hl8VVwgABDQBAHBrHV8WACJIAFJ8",
+  "name": "MIS Financial Exemption Alerts Report (National)",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "FIN0091 v2.0"
+    ]
+  },
+  "description": "Produces a list of prisoners with Financial Exemption alert on their record.<br/>This is a National Report that includes all prisoners (active and released)<br/>FIN0091 v2.0 Last Modified: 10/11/2020",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DPe",
+      "name": "Alerts",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_ALERT.ALERT_DESCRIPTION, CASE WHEN AT_ALERT.ALERT_ACTIVE_FLAG = 'Y' THEN AT_ALERT.ALERT_TYPE_DESCRIPTION END AS ALERT_CATEGORY_DESCRIPTION, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_ALERT.ALERT_STATUS, CASE WHEN AT_ALERT_EFFECT_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EFFECT_DATE.DAY_DATE ELSE NULL END AS ALERT_EFFECTIVE_DATE, CASE WHEN AT_ALERT_EXPIRY_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EXPIRY_DATE.DAY_DATE ELSE NULL END AS ALERT_EXPIRY_DATE, COALESCE(AT_OFFENDER_BOOKING.RELIGION_DESCRIPTION, 'Not Specified') AS RELIGION_DESCRIPTION, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION END AS ETHNIC_DESCRIPTION, AT_OFFENDER_BOOKING.GENDER_CODE, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, AT_OFFENDER_BOOKING.SEX_ORIENTATION_DESCRIPTION, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_DESCRIPTION, AT_OFFENDER_ALERT.COMMENT_TEXT FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_ALERT AT_ALERT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT, BODIMIS.DIM_DATE AT_ALERT_EFFECT_DATE, BODIMIS.DIM_DATE AT_ALERT_EXPIRY_DATE, BODIMIS.DIM_DATE AT_DOB WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK (+)) AND (AT_ALERT.ALERT_SK (+) = AT_OFFENDER_ALERT.ALERT_SK) AND (AT_OFFENDER_ALERT.ALERT_DATE_SK = AT_ALERT_EFFECT_DATE.DATE_SK (+)) AND (AT_OFFENDER_ALERT.ALERT_EXPIRY_DATE_SK = AT_ALERT_EXPIRY_DATE.DATE_SK (+)) AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (CASE WHEN AT_ALERT.ALERT_ACTIVE_FLAG = 'Y' THEN AT_ALERT.ALERT_TYPE_DESCRIPTION END = 'Financial Exemption' AND CASE WHEN AT_ALERT_EFFECT_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EFFECT_DATE.DAY_DATE ELSE NULL END BETWEEN (SELECT START_DATE FROM prompt_ /* = #prompt('Enter Alert Effective Date From:','D',,Mono,Free,Not_Persistent,,User:0) */) AND (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter Alert Effective Date To:','D',,Mono,Free,Not_Persistent,,User:1) */))), dataset_ AS (SELECT ALERT_DESCRIPTION, ALERT_CATEGORY_DESCRIPTION, OFFENDER_ID_DISPLAY, ALERT_STATUS, ALERT_EFFECTIVE_DATE, ALERT_EXPIRY_DATE, RELIGION_DESCRIPTION, ETHNIC_DESCRIPTION, GENDER_CODE, OFFENDER_AGE, SEX_ORIENTATION_DESCRIPTION, ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION, COMMENT_TEXT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Alert Effective Date From:",
+          "description": "@prompt('Enter Alert Effective Date From:','D',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "unknown_parameter",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter Alert Effective Date To:",
+          "description": "@prompt('Enter Alert Effective Date To:','D',,Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ALERT_DESCRIPTION",
+            "type": "string",
+            "display": "Alert Description",
+            "legacyId": "DPe.DO90",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ALERT_CATEGORY_DESCRIPTION",
+            "type": "string",
+            "display": "Alert Category Description",
+            "legacyId": "DPe.DO93",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPe.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ALERT_STATUS",
+            "type": "string",
+            "display": "Alert Status",
+            "legacyId": "DPe.DO94",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ALERT_EFFECTIVE_DATE",
+            "type": "date",
+            "display": "Alert Effective Date",
+            "legacyId": "DPe.DO95",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ALERT_EXPIRY_DATE",
+            "type": "date",
+            "display": "Alert Expiry Date",
+            "legacyId": "DPe.DO96",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "RELIGION_DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DPe.DOb3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "ETHNIC_DESCRIPTION",
+            "type": "string",
+            "display": "Ethnic Description",
+            "legacyId": "DPe.DO9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "GENDER_CODE",
+            "type": "string",
+            "display": "Gender Code",
+            "legacyId": "DPe.DOa8",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DPe.DO82",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "SEX_ORIENTATION_DESCRIPTION",
+            "type": "string",
+            "display": "Sexual Orientation Description",
+            "legacyId": "DPe.DO970",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Associated Establishment Code",
+            "legacyId": "DPe.DO7b2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Associated Establishment Name",
+            "legacyId": "DPe.DO7b1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "Alert Comment Text",
+            "legacyId": "DPe.DO7ba",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DPa",
+      "name": "MIS Load Date",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DPa.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "119708.RS",
+      "name": "Alerts",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DPe",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Associated Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO7b1"
+          },
+          {
+            "name": "$ref:ALERT_CATEGORY_DESCRIPTION",
+            "display": "Alert Category Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO93"
+          },
+          {
+            "name": "$ref:ALERT_DESCRIPTION",
+            "display": "Alert Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO90"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO76"
+          },
+          {
+            "name": "$ref:ALERT_EFFECTIVE_DATE",
+            "display": "Alert Effective Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO95"
+          },
+          {
+            "name": "$ref:ALERT_EXPIRY_DATE",
+            "display": "Alert Expiry Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO96"
+          },
+          {
+            "name": "$ref:ALERT_STATUS",
+            "display": "Alert Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO94"
+          },
+          {
+            "name": "$ref:COMMENT_TEXT",
+            "display": "Alert Comment Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO7ba"
+          }
+        ]
+      }
+    },
+    {
+      "id": "230394.RS",
+      "name": "Alerts with Prot Chars",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DPe",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Associated Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO7b1"
+          },
+          {
+            "name": "$ref:ALERT_CATEGORY_DESCRIPTION",
+            "display": "Alert Category Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO93"
+          },
+          {
+            "name": "$ref:ALERT_DESCRIPTION",
+            "display": "Alert Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO90"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO76"
+          },
+          {
+            "name": "$ref:ALERT_EFFECTIVE_DATE",
+            "display": "Alert Effective Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO95"
+          },
+          {
+            "name": "$ref:ALERT_EXPIRY_DATE",
+            "display": "Alert Expiry Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO96"
+          },
+          {
+            "name": "$ref:ALERT_STATUS",
+            "display": "Alert Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO94"
+          },
+          {
+            "name": "$ref:GENDER_CODE",
+            "display": "Gender Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DOa8"
+          },
+          {
+            "name": "$ref:OFFENDER_AGE",
+            "display": "Offender Age",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO82"
+          },
+          {
+            "name": "$ref:RELIGION_DESCRIPTION",
+            "display": "Religion Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DOb3"
+          },
+          {
+            "name": "$ref:ETHNIC_DESCRIPTION",
+            "display": "Ethnic Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO9d"
+          },
+          {
+            "name": "$ref:SEX_ORIENTATION_DESCRIPTION",
+            "display": "Sexual Orientation Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO970"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

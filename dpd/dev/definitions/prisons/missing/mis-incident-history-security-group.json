@@ -1,0 +1,239 @@
+{
+  "id": "klLrv98AA2QDB.oA4.8AFE.rcVQ",
+  "name": "MIS Incident History Security Group",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": []
+  },
+  "description": "<br/>v1.0 Report outputs incidents history to a date range",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375377/DP2",
+      "name": "Incident",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT * AS INCIDENT_ESTABLISHMENT_CODE FROM (SELECT AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC), AT_INCIDENT.INCIDENT_CASE_ID, TO_DATE(TO_CHAR(AT_INCIDENT_DATE.DAY_DATE, 'DD/MM/YYYY'), 'DD/MM/YYYY'), AT_INCIDENT.REPORT_DATE, AT_INCIDENT_STATUS.INCIDENT_STATUS_DESCRIPTION, AT_INCIDENT.INCIDENT_TITLE, AT_INCIDENT.INCIDENT_TEXT, AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, COUNT(DISTINCT (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY)) FROM BODIMIS.FACT_INCIDENT AT_INCIDENT, BODIMIS.DIM_ESTABLISHMENT AT_INCIDENT_ESTABLISHMENT, BODIMIS.DIM_INCIDENT_STATUS AT_INCIDENT_STATUS, BODIMIS.DIM_DATE AT_INCIDENT_DATE, BODIMIS.FACT_INCIDENT_PARTICIPATION AT_INCIDENT_PARTICIPATION, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_INCIDENT_TYPE AT_INCIDENT_TYPE WHERE (AT_INCIDENT.INCIDENT_STATUS_SK = AT_INCIDENT_STATUS.INCIDENT_STATUS_SK) AND (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_SK = AT_INCIDENT.ESTABLISHMENT_SK) AND (AT_INCIDENT_DATE.DATE_SK = AT_INCIDENT.INCIDENT_DATE_SK) AND (AT_INCIDENT.INCIDENT_CASE_ID = AT_INCIDENT_PARTICIPATION.INCIDENT_CASE_ID) AND (AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK IS NULL OR AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_INCIDENT_TYPE.INCIDENT_TYPE_SK = AT_INCIDENT.INCIDENT_TYPE_SK) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND ((AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Incident Establishment Code (All for all)','A','Incidents\\Incident Establishment Code',multi,free,Not_Persistent,User:252) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Incident Establishment Code (All for all)','A','Incidents\\Incident Establishment Code',multi,free,Not_Persistent,User:252) */)) AND TO_DATE(TO_CHAR(AT_INCIDENT_DATE.DAY_DATE, 'DD/MM/YYYY'), 'DD/MM/YYYY') >= (SELECT START_DATE FROM prompt_ /* = #prompt('Enter Incident Start Date','D',,Mono,Free,Not_Persistent,,User:0) */) AND TO_DATE(TO_CHAR(AT_INCIDENT_DATE.DAY_DATE, 'DD/MM/YYYY'), 'DD/MM/YYYY') <= (SELECT END_DATE FROM prompt_ /* = #prompt('Enter Incident End Date','D',,Mono,Free,Not_Persistent,,User:1) */) AND AT_INCIDENT_STATUS.INCIDENT_STATUS_DESCRIPTION IN (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter value(s) for Incident Status:','A','Incidents\\Incident Status',Multi,Free,Not_Persistent,,User:2) */) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP')) GROUP BY AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC), AT_INCIDENT.INCIDENT_CASE_ID, TO_DATE(TO_CHAR(AT_INCIDENT_DATE.DAY_DATE, 'DD/MM/YYYY'), 'DD/MM/YYYY'), AT_INCIDENT.REPORT_DATE, AT_INCIDENT_STATUS.INCIDENT_STATUS_DESCRIPTION, AT_INCIDENT.INCIDENT_TITLE, AT_INCIDENT.INCIDENT_TEXT, AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION) _query0 FULL OUTER JOIN (SELECT AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC), AT_INCIDENT.INCIDENT_CASE_ID, TO_DATE(TO_CHAR(AT_INCIDENT_DATE.DAY_DATE, 'DD/MM/YYYY'), 'DD/MM/YYYY'), AT_INCIDENT.REPORT_DATE, AT_INCIDENT_STATUS.INCIDENT_STATUS_DESCRIPTION, AT_INCIDENT.INCIDENT_TITLE, AT_INCIDENT.INCIDENT_TEXT, AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, COUNT(DISTINCT (AT_INCIDENT.INCIDENT_CASE_ID)) FROM BODIMIS.FACT_INCIDENT AT_INCIDENT, BODIMIS.DIM_ESTABLISHMENT AT_INCIDENT_ESTABLISHMENT, BODIMIS.DIM_INCIDENT_STATUS AT_INCIDENT_STATUS, BODIMIS.DIM_DATE AT_INCIDENT_DATE, BODIMIS.DIM_INCIDENT_TYPE AT_INCIDENT_TYPE WHERE (AT_INCIDENT.INCIDENT_STATUS_SK = AT_INCIDENT_STATUS.INCIDENT_STATUS_SK) AND (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_SK = AT_INCIDENT.ESTABLISHMENT_SK) AND (AT_INCIDENT_DATE.DATE_SK = AT_INCIDENT.INCIDENT_DATE_SK) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_TYPE.INCIDENT_TYPE_SK = AT_INCIDENT.INCIDENT_TYPE_SK) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND ((AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Incident Establishment Code (All for all)','A','Incidents\\Incident Establishment Code',multi,free,Not_Persistent,User:252) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Incident Establishment Code (All for all)','A','Incidents\\Incident Establishment Code',multi,free,Not_Persistent,User:252) */)) AND TO_DATE(TO_CHAR(AT_INCIDENT_DATE.DAY_DATE, 'DD/MM/YYYY'), 'DD/MM/YYYY') >= (SELECT START_DATE FROM prompt_ /* = #prompt('Enter Incident Start Date','D',,Mono,Free,Not_Persistent,,User:0) */) AND TO_DATE(TO_CHAR(AT_INCIDENT_DATE.DAY_DATE, 'DD/MM/YYYY'), 'DD/MM/YYYY') <= (SELECT END_DATE FROM prompt_ /* = #prompt('Enter Incident End Date','D',,Mono,Free,Not_Persistent,,User:1) */) AND AT_INCIDENT_STATUS.INCIDENT_STATUS_DESCRIPTION IN (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter value(s) for Incident Status:','A','Incidents\\Incident Status',Multi,Free,Not_Persistent,,User:2) */) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP')) GROUP BY AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC), AT_INCIDENT.INCIDENT_CASE_ID, TO_DATE(TO_CHAR(AT_INCIDENT_DATE.DAY_DATE, 'DD/MM/YYYY'), 'DD/MM/YYYY'), AT_INCIDENT.REPORT_DATE, AT_INCIDENT_STATUS.INCIDENT_STATUS_DESCRIPTION, AT_INCIDENT.INCIDENT_TITLE, AT_INCIDENT.INCIDENT_TEXT, AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION) _query1 ON _query0.OFFENDER_ID_DISPLAY = _query1.OFFENDER_ID_DISPLAY), dataset_ AS (SELECT INCIDENT_ESTABLISHMENT_CODE, COUNT(INCIDENT_NUMBER) AS V_GRAND_TOTAL FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Incident Establishment Code (All for all)','A','Incidents\\Incident Establishment Code',multi,free,Not_Persistent,User:252)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Incident Start Date",
+          "description": "@prompt('Enter Incident Start Date','D',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Incident End Date",
+          "description": "@prompt('Enter Incident End Date','D',,Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        },
+        {
+          "index": 3,
+          "name": "unknown_parameter",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter value(s) for Incident Status:",
+          "description": "@prompt('Enter value(s) for Incident Status:','A','Incidents\\Incident Status',Multi,Free,Not_Persistent,,User:2)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "INCIDENT_ESTABLISHMENT_CODE",
+            "type": "string",
+            "display": "Incident Establishment Code",
+            "legacyId": "DP2.DO283",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "V_GRAND_TOTAL",
+            "type": "string",
+            "display": "Incident Type",
+            "legacyId": "DP2.DO9",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DP4",
+      "name": "MIS Load",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DP4.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "161300.RS",
+      "name": "Incident Details",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DP2_DOA",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DOB",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO1B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "164106.RS",
+      "name": "Summary",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP2_DO20",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_GRAND_TOTAL",
+            "display": "Total Incidents",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Incident Number])"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "Report field DP2_DOA does not have corresponding dataset schema field",
+      "entityId": "161300.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DOB does not have corresponding dataset schema field",
+      "entityId": "161300.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO1B does not have corresponding dataset schema field",
+      "entityId": "161300.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO20 does not have corresponding dataset schema field",
+      "entityId": "164106.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375377/DP2",
+      "entityType": "dataset"
+    }
+  ]
+}

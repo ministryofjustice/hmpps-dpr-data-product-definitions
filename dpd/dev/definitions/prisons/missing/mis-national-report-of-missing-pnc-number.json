@@ -1,0 +1,210 @@
+{
+  "id": "olBAkP0ACNJATugAMf_D8K7BqGg",
+  "name": "MIS National Report of Missing PNC Number",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PND0007 v00.00.01"
+    ]
+  },
+  "description": "This summary report returns counts by  establishment of the prison population and how many of those do not have a PNC Number entry in Prison-NOMIS. Prisoners admitted in the last 5 days are excluded.<br/>PND0007 - v00.00.01 Last Modified: 11/09/13",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP1",
+      "name": "Population",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK, DT_PND_CURRENT_EST.ESTABLISHMENT_DESCRIPTION, COUNT(DISTINCT AT_PND_PRISONER_BOOKING.OFFENDER_ID_DISPLAY) AS PRISON_POPULATION FROM BODIMIS.DIM_ESTABLISHMENT DT_PND_CURRENT_EST, BODIMIS.DIM_OFFENDER_BOOKING AT_PND_PRISONER_BOOKING, (SELECT ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk, fme.from_location_type, MAX(fme.MOVEMENT_SEQ) AS MOVEMENT_SEQ, MAX(d.day_date) AS MOVEMENT_DATE, TRUNC(ETL.LOAD_END_DATETIME) AS LOAD_DATE FROM BODIMIS.FACT_MOVEMENT_EXTERNAL fme, BODIMIS.DIM_OFFENDER_BOOKING ob, BODIMIS.DIM_ESTABLISHMENT est, BODIMIS.ETL_LOAD_LOG ETL, BODIMIS.DIM_DATE d WHERE ob.ESTABLISHMENT_SK = est.ESTABLISHMENT_SK AND d.date_sk = fme.date_sk AND fme.offender_booking_sk = ob.offender_booking_sk AND ob.active_status IN ('Active In', 'Active Out') AND ob.MIS_CURRENT_RECORD_IND = 'Y' AND ob.ACTIVE_FLAG = 'Y' AND ETL.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL) AND ob.ESTABLISHMENT_SK = fme.to_location_sk AND fme.movement_seq = (SELECT MAX(fme2.movement_seq) FROM BODIMIS.FACT_MOVEMENT_EXTERNAL fme2 WHERE fme.offender_booking_sk = fme2.offender_booking_sk AND fme2.direction_code = 'IN' AND fme2.TYPE = 'Admission' AND fme2.To_location_type = 'Establishment' AND fme2.reason_code <> 'R') GROUP BY ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk, fme.from_location_type, ETL.LOAD_END_DATETIME) DT_PND_ADMISSION_DATE WHERE (AT_PND_PRISONER_BOOKING.ESTABLISHMENT_SK = DT_PND_CURRENT_EST.ESTABLISHMENT_SK) AND (DT_PND_CURRENT_EST.ACTIVE_FLAG = 'Y') AND (AT_PND_PRISONER_BOOKING.OFFENDER_BOOKING_SK = DT_PND_ADMISSION_DATE.OFFENDER_BOOKING_SK) AND (AT_PND_PRISONER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK IN (SELECT SAC.CASELOAD_ID FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC WHERE SAC.USERNAME = UPPER('DPRWS'))) AND (AT_PND_PRISONER_BOOKING.ACTIVE_STATUS IN ('Active In', 'Active Out')) AND (AT_PND_PRISONER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_PND_PRISONER_BOOKING.BOOKING_STATUS = 'O') AND (DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK <> 'ZZGHI') AND (DT_PND_ADMISSION_DATE.MOVEMENT_DATE <= CURRENT_TIMESTAMP - 6) GROUP BY DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK, DT_PND_CURRENT_EST.ESTABLISHMENT_DESCRIPTION), dataset_ AS (SELECT ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION, PRISON_POPULATION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Prison Code",
+            "legacyId": "DP1.DO110",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Prison Name",
+            "legacyId": "DP1.DO111",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "PRISON_POPULATION",
+            "type": "double",
+            "display": "Prison Population",
+            "legacyId": "DP1.DOfe",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP3",
+      "name": "Last ETL Refresh",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DP3.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP5",
+      "name": "All Establishments",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT WHERE (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK IN (SELECT SAC.CASELOAD_ID FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC WHERE SAC.USERNAME = UPPER('DPRWS')))), dataset_ AS (SELECT ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP5.DO139",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP5.DO129",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP6",
+      "name": "PNC Missing",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK, DT_PND_CURRENT_EST.ESTABLISHMENT_DESCRIPTION, DT_PNC_MISSING.PNC_MISSING FROM BODIMIS.DIM_ESTABLISHMENT DT_PND_CURRENT_EST, (SELECT AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK, COUNT(DISTINCT (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY)) AS PNC_MISSING FROM (SELECT ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk, fme.from_location_type, MAX(fme.MOVEMENT_SEQ) AS MOVEMENT_SEQ, MAX(d.day_date) AS MOVEMENT_TIME, TRUNC(ETL.LOAD_END_DATETIME) AS LOAD_DATE FROM BODIMIS.FACT_MOVEMENT_EXTERNAL fme, BODIMIS.DIM_OFFENDER_BOOKING ob, BODIMIS.DIM_ESTABLISHMENT est, BODIMIS.ETL_LOAD_LOG ETL, BODIMIS.DIM_DATE d WHERE ob.ESTABLISHMENT_SK = est.ESTABLISHMENT_SK AND d.date_sk = fme.date_sk AND fme.offender_booking_sk = ob.offender_booking_sk AND ob.active_status IN ('Active In', 'Active Out') AND ob.MIS_CURRENT_RECORD_IND = 'Y' AND ob.ACTIVE_FLAG = 'Y' AND ETL.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL) AND ob.ESTABLISHMENT_SK = fme.to_location_sk AND fme.movement_seq = (SELECT MAX(fme2.movement_seq) FROM BODIMIS.FACT_MOVEMENT_EXTERNAL fme2 WHERE fme.offender_booking_sk = fme2.offender_booking_sk AND fme2.direction_code = 'IN' AND fme2.TYPE = 'Admission' AND fme2.To_location_type = 'Establishment' AND fme2.reason_code <> 'R') GROUP BY ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk, fme.from_location_type, ETL.LOAD_END_DATETIME) DT_ADMISSION, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING WHERE (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_ADMISSION.OFFENDER_BOOKING_SK) AND AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O' AND AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y' AND TRUNC(DT_ADMISSION.MOVEMENT_TIME) <= CURRENT_TIMESTAMP - 6 AND AT_OFFENDER_BOOKING.PNC_ID IS NULL GROUP BY AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK) DT_PNC_MISSING WHERE (DT_PND_CURRENT_EST.ACTIVE_FLAG = 'Y') AND (DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK IN (SELECT SAC.CASELOAD_ID FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC WHERE SAC.USERNAME = UPPER('DPRWS'))) AND (DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK <> 'ZZGHI') AND (DT_PNC_MISSING.ESTABLISHMENT_CODE_NK = DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK)), dataset_ AS (SELECT ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION, PNC_MISSING FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Prison Code",
+            "legacyId": "DP6.DO110",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Prison Name",
+            "legacyId": "DP6.DO111",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "PNC_MISSING",
+            "type": "double",
+            "display": "PNC ID Missing",
+            "legacyId": "DP6.DOa33",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "199198.RS",
+      "name": "National Report of PNC Number Missing",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP1",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ESTABLISHMENT_CODE <> 'ZZGHI')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:PRISON_POPULATION",
+            "display": "Prison Population",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP1.DOfe"
+          },
+          {
+            "name": "$ref:PNC_MISSING",
+            "display": "PNC ID Missing",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP6.DOa33"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "Report field PNC_MISSING does not have corresponding dataset schema field",
+      "entityId": "199198.RS",
+      "entityType": "variant"
+    }
+  ]
+}

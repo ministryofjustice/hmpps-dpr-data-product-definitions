@@ -1,0 +1,220 @@
+{
+  "id": "Fp8IpF9I2QkAdOEAAHBrzF4KACJIAFe4",
+  "name": "MIS Hold Balances Test EN",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "FIN0053 v00.00.00"
+    ]
+  },
+  "description": "FIN0053 v1.0                   This report displays prisoners with Hold Balances for a specified Caseload Id and Account Date.",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376115/DP0",
+      "name": "Hold Balances",
+      "description": "MIS - Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.ACTIVE_STATUS, AT_OFFENDER_BOOKING.IN_OUT, AT_CASELOADS_OFF_HIST_BAL.ESTABLISHMENT_CODE_NK, sum(coalesce(case when AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE_SK is not null then AT_FACT_OFF_ACC_HIST_BALANCE.HOLD_BALANCE end, 0)) FROM BODIMIS.FACT_OFF_ACC_HIST_BALANCE AT_FACT_OFF_ACC_HIST_BALANCE, BODIMIS.DIM_ESTABLISHMENT AT_CASELOADS_OFF_HIST_BAL, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_ACCOUNT_CODE AT_DIM_ACCOUNT_CODE_ACCOUNTS, BODIMIS.DIM_DATE AT_HIST_BALANCE_DATES WHERE ( AT_HIST_BALANCE_DATES.DATE_SK=AT_FACT_OFF_ACC_HIST_BALANCE.BALANCE_DATE_SK ) AND ( AT_FACT_OFF_ACC_HIST_BALANCE.ACCOUNT_CODE_SK=AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE_SK ) AND ( AT_OFFENDER_BOOKING.ALIAS_OFFENDER_SK=AT_FACT_OFF_ACC_HIST_BALANCE.ALIAS_OFFENDER_SK and AT_OFFENDER_BOOKING.BOOKING_SEQ=1 ) AND ( AT_CASELOADS_OFF_HIST_BAL.ESTABLISHMENT_SK=AT_FACT_OFF_ACC_HIST_BALANCE.ESTABLISHMENT_SK ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( ( AT_HIST_BALANCE_DATES.DAY_DATE = to_date((SELECT UNKNOWN_PARAMETER FROM prompt_ /*= #Prompt('Enter Account Date (dd/mm/yyyy):','D',,mono,free,Not_Persistent) */ )) ) AND AT_CASELOADS_OFF_HIST_BAL.ESTABLISHMENT_CODE_NK = (SELECT CASELOAD_ID FROM prompt_ /*= #prompt('Enter Account Caseload ID:','A','Offender Account History\\Account Caseload ID',Mono,Free,Not_Persistent,,User:0) */ ) ) GROUP BY AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.ACTIVE_STATUS, AT_OFFENDER_BOOKING.IN_OUT, AT_CASELOADS_OFF_HIST_BAL.ESTABLISHMENT_CODE_NK HAVING sum(coalesce(case when AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE_SK is not null then AT_FACT_OFF_ACC_HIST_BALANCE.HOLD_BALANCE end, 0)) > 0), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "unknown_parameter",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter Account Date (dd/mm/yyyy):",
+          "description": "@Prompt('Enter Account Date (dd/mm/yyyy):','D',,mono,free,Not_Persistent)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "caseload_id",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter Account Caseload ID:",
+          "description": "@prompt('Enter Account Caseload ID:','A','Offender Account History\\Account Caseload ID',Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3376115/DP1",
+      "name": "MIS End Load",
+      "description": "MIS - Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP1.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "201709.RS",
+      "name": "Hold Balances",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376115/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP0_DO10076",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP0_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP0_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP0_DO104D4",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP0_DO104D5",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP0_DO6A",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Required keyword: 'format' missing for <class 'sqlglot.expressions.StrToDate'>. Line 1, Col: 1548.\n  ETER FROM prompt_ /*= #Prompt('Enter Account Date (dd/mm/yyyy):','D',,mono,free,Not_Persistent) */ )\u001b[4m)\u001b[0m ) AND AT_CASELOADS_OFF_HIST_BAL.ESTABLISHMENT_CODE_NK = (SELECT CASELOAD_ID FROM prompt_ /*= #promp]",
+      "entityId": "Fp8IpF9I2QkAdOEAAHBrzF4KACJIAFe4",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields",
+      "entityId": "3376115/DP0",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP0_DO10076 does not have corresponding dataset schema field",
+      "entityId": "201709.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP0_DO10080 does not have corresponding dataset schema field",
+      "entityId": "201709.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP0_DO1007B does not have corresponding dataset schema field",
+      "entityId": "201709.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP0_DO104D4 does not have corresponding dataset schema field",
+      "entityId": "201709.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP0_DO104D5 does not have corresponding dataset schema field",
+      "entityId": "201709.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP0_DO6A does not have corresponding dataset schema field",
+      "entityId": "201709.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3376115/DP0",
+      "entityType": "dataset"
+    }
+  ]
+}

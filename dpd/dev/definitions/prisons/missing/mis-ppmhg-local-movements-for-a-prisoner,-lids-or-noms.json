@@ -1,0 +1,219 @@
+{
+  "id": "ok2cbNsACcXBI.YAr._E63FUYnM",
+  "name": "MIS PPMHG LOCAL Movements for a prisoner, LIDS or NOMS ",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "STI0024"
+    ]
+  },
+  "description": "Prisoner movements, search by LIDS number or NOMS number. Gives movement description, type and where to.<br/>STI0024",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP0",
+      "name": "Query 1",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.BOOKING_NUMBER, AT_OFFENDER_BOOKING.ACTIVE_STATUS, LTRIM(AT_OFFENDER_BOOKING.TITLE || ' ' || AT_OFFENDER_BOOKING.FIRST_NAME || ' ' || AT_OFFENDER_BOOKING.SURNAME) AS OFFENDER_FULL_NAME, AT_DIM_DATE_EXT_MOV.DAY_DATE, AT_FACT_MOV_EXT.REASON, AT_FACT_MOV_EXT.TYPE, DT_EXT_MOVE_TO.TYPE_DESCRIPTION_TO FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, (SELECT BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_SK AS SK_ID_TO, BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION AS TYPE_DESCRIPTION_TO, 'Establishment' AS Location_Type_To FROM BODIMIS.DIM_ESTABLISHMENT UNION ALL SELECT BODIMIS.DIM_PROBATION_OFFICE.PROBATION_OFFICE_SK, BODIMIS.DIM_PROBATION_OFFICE.PROB_OFFICE_DESCRIPTION, 'Probation Office' AS Location_Type_To FROM BODIMIS.DIM_PROBATION_OFFICE UNION ALL SELECT BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_SK, BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_DESCRIPTION, 'Outside Location' AS Location_Type_To FROM BODIMIS.DIM_OUTSIDE_LOCATION UNION ALL SELECT BODIMIS.DIM_CITY.CITY_SK, BODIMIS.DIM_CITY.DESCRIPTION, 'City' AS Location_Type_To FROM BODIMIS.DIM_CITY UNION ALL SELECT BODIMIS.DIM_COURT.COURT_SK, BODIMIS.DIM_COURT.COURT_DESCRIPTION, 'Court' AS Location_Type_To FROM BODIMIS.DIM_COURT UNION ALL SELECT address_id_nk, TRIM(CASE WHEN no_fixed_address_flag = 'Y' THEN 'No fixed address' ELSE CASE WHEN NOT flat IS NULL THEN flat || '  ' END || CASE WHEN NOT premise IS NULL THEN premise || '  ' END || CASE WHEN NOT street IS NULL THEN street || '  ' END || CASE WHEN NOT locality IS NULL THEN locality || '  ' END || CASE WHEN NOT city_desc IS NULL THEN city_desc || '  ' END || CASE WHEN NOT county_desc IS NULL THEN county_desc || '  ' END || CASE WHEN NOT postal_code IS NULL THEN postal_code || '  ' END || CASE WHEN NOT country_desc IS NULL THEN country_desc END END), 'Home Leave Address' FROM bodimis.dim_addresses) DT_EXT_MOVE_TO WHERE (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_FACT_MOV_EXT.TO_LOCATION_SK = DT_EXT_MOVE_TO.SK_ID_TO (+) AND AT_FACT_MOV_EXT.TO_LOCATION_TYPE = DT_EXT_MOVE_TO.LOCATION_TYPE_TO (+)) AND (AT_OFFENDER_BOOKING.BOOKING_NUMBER = (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('Enter LIDS Number or N/A if searching via NOMS number:','A',,Mono,Free,Not_Persistent,{'N/A'},User:1) */) OR AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('Enter  NOMS Number or N/A if searching via LIDS number:','A',,Mono,Free,Not_Persistent,{'N/A'},User:0) */))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, BOOKING_NUMBER, ACTIVE_STATUS, OFFENDER_FULL_NAME, DAY_DATE, REASON, TYPE, TYPE_DESCRIPTION_TO FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter LIDS Number or N/A if searching via NOMS number:",
+          "description": "@prompt('Enter LIDS Number or N/A if searching via NOMS number:','A',,Mono,Free,Not_Persistent,{'N/A'},User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "BOOKING_NUMBER",
+            "type": "string",
+            "display": "Booking Number",
+            "legacyId": "DP0.DO77",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ACTIVE_STATUS",
+            "type": "string",
+            "display": "Active Status",
+            "legacyId": "DP0.DO4d5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "OFFENDER_FULL_NAME",
+            "type": "string",
+            "display": "Offender Full Name",
+            "legacyId": "DP0.DO7a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Movement Date",
+            "legacyId": "DP0.DO781",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "REASON",
+            "type": "string",
+            "display": "Movement Description (External)",
+            "legacyId": "DP0.DO15b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "TYPE",
+            "type": "string",
+            "display": "Movement Type (External)",
+            "legacyId": "DP0.DO3ec",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "TYPE_DESCRIPTION_TO",
+            "type": "string",
+            "display": "Movement Description (To)",
+            "legacyId": "DP0.DO6ff",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "2.RS",
+      "name": "Report 1",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO76"
+          },
+          {
+            "name": "$ref:BOOKING_NUMBER",
+            "display": "Booking Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO77"
+          },
+          {
+            "name": "$ref:OFFENDER_FULL_NAME",
+            "display": "Offender Full Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO7a"
+          },
+          {
+            "name": "$ref:ACTIVE_STATUS",
+            "display": "Active Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4d5"
+          },
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Movement Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO781"
+          },
+          {
+            "name": "$ref:REASON",
+            "display": "Movement Description (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO15b"
+          },
+          {
+            "name": "$ref:TYPE",
+            "display": "Movement Type (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO3ec"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_TO",
+            "display": "Movement Description (To)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO6ff"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

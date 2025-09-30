@@ -1,0 +1,2317 @@
+{
+  "id": "FvYLDWH47gsAwegAAHBrTl8LACJIAFe4",
+  "name": "MIS Transfers In for a Date Range",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "MOV0012 v1.8"
+    ]
+  },
+  "description": "Outputs a list of receptions and discharges into and out of a prison for a specified date range in the past. Further tabs added to list movements in Surname order, Cell Location order, Main Offence and Security Category.<br/>MOV0012 v1.8 Last Modified: 25/07/2019",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP2",
+      "name": "Receptions and Discharges",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.INITIALS, AT_OFFENDER_BOOKING.FIRST_NAME, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, AT_OFFENDER_BOOKING.NATIONALITY_DESCRIPTION, AT_OFFENDER_BOOKING.BIRTH_COUNTRY, AT_FACT_MOV_EXT.MOVEMENT_TIME, AT_FACT_MOV_EXT.REASON_CODE, AT_FACT_MOV_EXT.TYPE, AT_FACT_MOV_EXT.DIRECTION_CODE, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' ELSE FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH END AS EFFECTIVE_SENTENCE_LENGTH, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE, COALESCE(AT_OFFENDER_BOOKING.RELIGION_CODE, 'Not Specified') AS RELIGION_CODE, DT_EXT_MOVE_TO.TYPE_DESCRIPTION_TO, DT_EXT_MOVE_FROM.TYPE_DESCRIPTION_FROM, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION, AT_DIM_OFFENCE.OFFENCE_NAME, AT_DIM_SENTENCE_TYPE.SENTENCE_CODE_NK, CASE WHEN AT_SENT_START_DATE.DAY_DATE < '31/12/9000' THEN AT_SENT_START_DATE.DAY_DATE END AS SENTENCE_START_DATE, FACT_CURR_KEY_DATES_SENT.SED FROM BODIMIS.DIM_DATE AT_SENT_START_DATE, BODIMIS.DIM_OFFENCE AT_DIM_OFFENCE, BODIMIS.DIM_CELL AT_DIM_LOCATION, BODIMIS.FACT_COURT_CHARGE AT_FACT_COURT_CHARGE, BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.DIM_SENTENCE_TYPE AT_DIM_SENTENCE_TYPE, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, (SELECT DISTINCT BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK = dss.sentence_status_sk) AND dss.sentence_status = 'Active' AND (BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK = BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK) AND (BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK) AND BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG = 'Y') DT_LIFEFLAG, FACT_CURR_KEY_DATES_SENT, (SELECT BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_SK AS SK_ID_TO, BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION AS TYPE_DESCRIPTION_TO, 'Establishment' AS Location_Type_To FROM BODIMIS.DIM_ESTABLISHMENT UNION ALL SELECT BODIMIS.DIM_PROBATION_OFFICE.PROBATION_OFFICE_SK, BODIMIS.DIM_PROBATION_OFFICE.PROB_OFFICE_DESCRIPTION, 'Probation Office' AS Location_Type_To FROM BODIMIS.DIM_PROBATION_OFFICE UNION ALL SELECT BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_SK, BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_DESCRIPTION, 'Outside Location' AS Location_Type_To FROM BODIMIS.DIM_OUTSIDE_LOCATION UNION ALL SELECT BODIMIS.DIM_CITY.CITY_SK, BODIMIS.DIM_CITY.DESCRIPTION, 'City' AS Location_Type_To FROM BODIMIS.DIM_CITY UNION ALL SELECT BODIMIS.DIM_COURT.COURT_SK, BODIMIS.DIM_COURT.COURT_DESCRIPTION, 'Court' AS Location_Type_To FROM BODIMIS.DIM_COURT UNION ALL SELECT address_id_nk, TRIM(CASE WHEN no_fixed_address_flag = 'Y' THEN 'No fixed address' ELSE CASE WHEN NOT flat IS NULL THEN flat || '  ' END || CASE WHEN NOT premise IS NULL THEN premise || '  ' END || CASE WHEN NOT street IS NULL THEN street || '  ' END || CASE WHEN NOT locality IS NULL THEN locality || '  ' END || CASE WHEN NOT city_desc IS NULL THEN city_desc || '  ' END || CASE WHEN NOT county_desc IS NULL THEN county_desc || '  ' END || CASE WHEN NOT postal_code IS NULL THEN postal_code || '  ' END || CASE WHEN NOT country_desc IS NULL THEN country_desc END END), 'Home Leave Address' FROM bodimis.dim_addresses) DT_EXT_MOVE_TO, (SELECT BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_SK AS SK_ID_FROM, BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION AS TYPE_DESCRIPTION_FROM, 'Establishment' AS Location_Type_FROM FROM BODIMIS.DIM_ESTABLISHMENT UNION ALL SELECT BODIMIS.DIM_PROBATION_OFFICE.PROBATION_OFFICE_SK, BODIMIS.DIM_PROBATION_OFFICE.PROB_OFFICE_DESCRIPTION, 'Probation Office' AS Location_Type_From FROM BODIMIS.DIM_PROBATION_OFFICE UNION ALL SELECT BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_SK, BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_DESCRIPTION, 'Outside Location' AS Location_Type_From FROM BODIMIS.DIM_OUTSIDE_LOCATION UNION ALL SELECT BODIMIS.DIM_CITY.CITY_SK, BODIMIS.DIM_CITY.DESCRIPTION, 'City' AS Location_Type_From FROM BODIMIS.DIM_CITY UNION ALL SELECT BODIMIS.DIM_COURT.COURT_SK, BODIMIS.DIM_COURT.COURT_DESCRIPTION, 'Court' AS Location_Type_From FROM BODIMIS.DIM_COURT UNION ALL SELECT address_id_nk, TRIM(CASE WHEN no_fixed_address_flag = 'Y' THEN 'No fixed address' ELSE CASE WHEN NOT flat IS NULL THEN flat || '  ' END || CASE WHEN NOT premise IS NULL THEN premise || '  ' END || CASE WHEN NOT street IS NULL THEN street || '  ' END || CASE WHEN NOT locality IS NULL THEN locality || '  ' END || CASE WHEN NOT city_desc IS NULL THEN city_desc || '  ' END || CASE WHEN NOT county_desc IS NULL THEN county_desc || '  ' END || CASE WHEN NOT postal_code IS NULL THEN postal_code || '  ' END || CASE WHEN NOT country_desc IS NULL THEN country_desc END END), 'Home Leave Address' FROM bodimis.dim_addresses) DT_EXT_MOVE_FROM, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_TO, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.DIM_COURT_CASE AT_COURT_CASE WHERE (AT_FACT_COURT_CHARGE.OFFENCE_SK = AT_DIM_OFFENCE.OFFENCE_SK (+)) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_COURT_CHARGE.COURT_CASE_SK (+)) AND (AT_FACT_SENTENCE.SENTENCE_START_DATE_SK = AT_SENT_START_DATE.DATE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_LIFEFLAG.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_COURT_CASE.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (CASE WHEN AT_FACT_MOV_EXT.TO_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.TO_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_SK (+)) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_SENTENCE.COURT_CASE_SK (+)) AND (AT_FACT_SENTENCE.SENTENCE_TYPE_SK = AT_DIM_SENTENCE_TYPE.SENTENCE_TYPE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_FACT_MOV_EXT.TO_LOCATION_SK = DT_EXT_MOVE_TO.SK_ID_TO (+) AND AT_FACT_MOV_EXT.TO_LOCATION_TYPE = DT_EXT_MOVE_TO.LOCATION_TYPE_TO (+)) AND (AT_FACT_MOV_EXT.FROM_LOCATION_SK = DT_EXT_MOVE_FROM.SK_ID_FROM (+) AND AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = DT_EXT_MOVE_FROM.LOCATION_TYPE_FROM (+)) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_SK = AT_DIM_LOCATION.UNIT_4_SK (+)) AND (AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_) AND AT_DIM_DATE_EXT_MOV.DAY_DATE <= TO_DATE('07-06-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_DIM_DATE_EXT_MOV.DAY_DATE >= TO_DATE('07-06-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'IN') UNION SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.INITIALS, AT_OFFENDER_BOOKING.FIRST_NAME, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, AT_OFFENDER_BOOKING.NATIONALITY_DESCRIPTION, AT_OFFENDER_BOOKING.BIRTH_COUNTRY, AT_FACT_MOV_EXT.MOVEMENT_TIME, AT_FACT_MOV_EXT.REASON_CODE, AT_FACT_MOV_EXT.TYPE, AT_FACT_MOV_EXT.DIRECTION_CODE, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' ELSE FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH END AS EFFECTIVE_SENTENCE_LENGTH, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE, COALESCE(AT_OFFENDER_BOOKING.RELIGION_CODE, 'Not Specified') AS RELIGION_CODE, DT_EXT_MOVE_TO.TYPE_DESCRIPTION_TO, DT_EXT_MOVE_FROM.TYPE_DESCRIPTION_FROM, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION, AT_DIM_OFFENCE.OFFENCE_NAME, AT_DIM_SENTENCE_TYPE.SENTENCE_CODE_NK, CASE WHEN AT_SENT_START_DATE.DAY_DATE < '31/12/9000' THEN AT_SENT_START_DATE.DAY_DATE END AS SENTENCE_START_DATE, FACT_CURR_KEY_DATES_SENT.SED FROM BODIMIS.DIM_DATE AT_SENT_START_DATE, BODIMIS.DIM_OFFENCE AT_DIM_OFFENCE, BODIMIS.DIM_CELL AT_DIM_LOCATION, BODIMIS.FACT_COURT_CHARGE AT_FACT_COURT_CHARGE, BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.DIM_SENTENCE_TYPE AT_DIM_SENTENCE_TYPE, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, (SELECT DISTINCT BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK = dss.sentence_status_sk) AND dss.sentence_status = 'Active' AND (BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK = BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK) AND (BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK) AND BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG = 'Y') DT_LIFEFLAG, FACT_CURR_KEY_DATES_SENT, (SELECT BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_SK AS SK_ID_TO, BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION AS TYPE_DESCRIPTION_TO, 'Establishment' AS Location_Type_To FROM BODIMIS.DIM_ESTABLISHMENT UNION ALL SELECT BODIMIS.DIM_PROBATION_OFFICE.PROBATION_OFFICE_SK, BODIMIS.DIM_PROBATION_OFFICE.PROB_OFFICE_DESCRIPTION, 'Probation Office' AS Location_Type_To FROM BODIMIS.DIM_PROBATION_OFFICE UNION ALL SELECT BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_SK, BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_DESCRIPTION, 'Outside Location' AS Location_Type_To FROM BODIMIS.DIM_OUTSIDE_LOCATION UNION ALL SELECT BODIMIS.DIM_CITY.CITY_SK, BODIMIS.DIM_CITY.DESCRIPTION, 'City' AS Location_Type_To FROM BODIMIS.DIM_CITY UNION ALL SELECT BODIMIS.DIM_COURT.COURT_SK, BODIMIS.DIM_COURT.COURT_DESCRIPTION, 'Court' AS Location_Type_To FROM BODIMIS.DIM_COURT UNION ALL SELECT address_id_nk, TRIM(CASE WHEN no_fixed_address_flag = 'Y' THEN 'No fixed address' ELSE CASE WHEN NOT flat IS NULL THEN flat || '  ' END || CASE WHEN NOT premise IS NULL THEN premise || '  ' END || CASE WHEN NOT street IS NULL THEN street || '  ' END || CASE WHEN NOT locality IS NULL THEN locality || '  ' END || CASE WHEN NOT city_desc IS NULL THEN city_desc || '  ' END || CASE WHEN NOT county_desc IS NULL THEN county_desc || '  ' END || CASE WHEN NOT postal_code IS NULL THEN postal_code || '  ' END || CASE WHEN NOT country_desc IS NULL THEN country_desc END END), 'Home Leave Address' FROM bodimis.dim_addresses) DT_EXT_MOVE_TO, (SELECT BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_SK AS SK_ID_FROM, BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION AS TYPE_DESCRIPTION_FROM, 'Establishment' AS Location_Type_FROM FROM BODIMIS.DIM_ESTABLISHMENT UNION ALL SELECT BODIMIS.DIM_PROBATION_OFFICE.PROBATION_OFFICE_SK, BODIMIS.DIM_PROBATION_OFFICE.PROB_OFFICE_DESCRIPTION, 'Probation Office' AS Location_Type_From FROM BODIMIS.DIM_PROBATION_OFFICE UNION ALL SELECT BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_SK, BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_DESCRIPTION, 'Outside Location' AS Location_Type_From FROM BODIMIS.DIM_OUTSIDE_LOCATION UNION ALL SELECT BODIMIS.DIM_CITY.CITY_SK, BODIMIS.DIM_CITY.DESCRIPTION, 'City' AS Location_Type_From FROM BODIMIS.DIM_CITY UNION ALL SELECT BODIMIS.DIM_COURT.COURT_SK, BODIMIS.DIM_COURT.COURT_DESCRIPTION, 'Court' AS Location_Type_From FROM BODIMIS.DIM_COURT UNION ALL SELECT address_id_nk, TRIM(CASE WHEN no_fixed_address_flag = 'Y' THEN 'No fixed address' ELSE CASE WHEN NOT flat IS NULL THEN flat || '  ' END || CASE WHEN NOT premise IS NULL THEN premise || '  ' END || CASE WHEN NOT street IS NULL THEN street || '  ' END || CASE WHEN NOT locality IS NULL THEN locality || '  ' END || CASE WHEN NOT city_desc IS NULL THEN city_desc || '  ' END || CASE WHEN NOT county_desc IS NULL THEN county_desc || '  ' END || CASE WHEN NOT postal_code IS NULL THEN postal_code || '  ' END || CASE WHEN NOT country_desc IS NULL THEN country_desc END END), 'Home Leave Address' FROM bodimis.dim_addresses) DT_EXT_MOVE_FROM, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_FROM, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.DIM_COURT_CASE AT_COURT_CASE WHERE (AT_FACT_COURT_CHARGE.OFFENCE_SK = AT_DIM_OFFENCE.OFFENCE_SK (+)) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_COURT_CHARGE.COURT_CASE_SK (+)) AND (AT_FACT_SENTENCE.SENTENCE_START_DATE_SK = AT_SENT_START_DATE.DATE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_LIFEFLAG.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_COURT_CASE.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (CASE WHEN AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.FROM_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_SK (+)) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_SENTENCE.COURT_CASE_SK (+)) AND (AT_FACT_SENTENCE.SENTENCE_TYPE_SK = AT_DIM_SENTENCE_TYPE.SENTENCE_TYPE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_FACT_MOV_EXT.TO_LOCATION_SK = DT_EXT_MOVE_TO.SK_ID_TO (+) AND AT_FACT_MOV_EXT.TO_LOCATION_TYPE = DT_EXT_MOVE_TO.LOCATION_TYPE_TO (+)) AND (AT_FACT_MOV_EXT.FROM_LOCATION_SK = DT_EXT_MOVE_FROM.SK_ID_FROM (+) AND AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = DT_EXT_MOVE_FROM.LOCATION_TYPE_FROM (+)) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_SK = AT_DIM_LOCATION.UNIT_4_SK (+)) AND (AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_) AND AT_DIM_DATE_EXT_MOV.DAY_DATE >= TO_DATE('07-06-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_DIM_DATE_EXT_MOV.DAY_DATE <= TO_DATE('07-06-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'OUT')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, INITIALS, FIRST_NAME, DATE_OF_BIRTH, NATIONALITY_DESCRIPTION, BIRTH_COUNTRY, MOVEMENT_TIME, REASON_CODE, TYPE, DIRECTION_CODE, OFFENDER_AGE, EFFECTIVE_SENTENCE_LENGTH, MAIN_LEGAL_STATUS_CODE, RELIGION_CODE, TYPE_DESCRIPTION_TO, TYPE_DESCRIPTION_FROM, UNIT_4_SHORT_DESCRIPTION, OFFENCE_NAME, SENTENCE_CODE_NK, SENTENCE_START_DATE, SED, CASE WHEN ALERT_CODE = 'OPPO' THEN 'Y' END AS V_PPO, CASE WHEN ALERT_CODE = 'OIOM' THEN 'Y' END AS V_OIOM, OFFENCE_NAME AS V_MAIN_OFFENCE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP2.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "INITIALS",
+            "type": "string",
+            "display": "Offender Initials",
+            "legacyId": "DP2.DO1012d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP2.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP2.DO10085",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "NATIONALITY_DESCRIPTION",
+            "type": "string",
+            "display": "Nationality Description",
+            "legacyId": "DP2.DO100b5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "BIRTH_COUNTRY",
+            "type": "string",
+            "display": "Birth Country",
+            "legacyId": "DP2.DO10088",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "MOVEMENT_TIME",
+            "type": "date",
+            "display": "Movement Date and Time (External)",
+            "legacyId": "DP2.DO103eb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "REASON_CODE",
+            "type": "string",
+            "display": "Movement Reason Code (External)",
+            "legacyId": "DP2.DO103fc",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "TYPE",
+            "type": "string",
+            "display": "Movement Type (External)",
+            "legacyId": "DP2.DO103ec",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "DIRECTION_CODE",
+            "type": "string",
+            "display": "Movement Direction Code (External)",
+            "legacyId": "DP2.DO103fd",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DP2.DO10082",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "EFFECTIVE_SENTENCE_LENGTH",
+            "type": "string",
+            "display": "Effective Sentence Length",
+            "legacyId": "DP2.DO2d0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "MAIN_LEGAL_STATUS_CODE",
+            "type": "string",
+            "display": "Main Legal Status Code",
+            "legacyId": "DP2.DO100de",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "RELIGION_CODE",
+            "type": "string",
+            "display": "Religion Code",
+            "legacyId": "DP2.DO100b2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "TYPE_DESCRIPTION_TO",
+            "type": "string",
+            "display": "Movement Description (To)",
+            "legacyId": "DP2.DO106ff",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "TYPE_DESCRIPTION_FROM",
+            "type": "string",
+            "display": "Movement Description (From)",
+            "legacyId": "DP2.DO10700",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "UNIT_4_SHORT_DESCRIPTION",
+            "type": "string",
+            "display": "Prisoner Location",
+            "legacyId": "DP2.DO10a7c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 18,
+            "name": "OFFENCE_NAME",
+            "type": "string",
+            "display": "Offence Name",
+            "legacyId": "DP2.DO4b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 19,
+            "name": "SENTENCE_CODE_NK",
+            "type": "string",
+            "display": "Sentence Type",
+            "legacyId": "DP2.DO3e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 20,
+            "name": "SENTENCE_START_DATE",
+            "type": "date",
+            "display": "Sentence Start Date",
+            "legacyId": "DP2.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 21,
+            "name": "SED",
+            "type": "date",
+            "display": "SED (Sentence End Date)",
+            "legacyId": "DP2.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 22,
+            "name": "V_PPO",
+            "type": "string",
+            "display": "V_PPO",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 23,
+            "name": "V_OIOM",
+            "type": "string",
+            "display": "V_OIOM",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 24,
+            "name": "V_MAIN_OFFENCE",
+            "type": "string",
+            "display": "V_MAIN_OFFENCE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP3",
+      "name": "Load End Date",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP3.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP7",
+      "name": "Main Offences",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_DIM_OFFENCE.OFFENCE_NAME, AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG FROM BODIMIS.DIM_OFFENCE AT_DIM_OFFENCE, BODIMIS.FACT_COURT_CHARGE AT_FACT_COURT_CHARGE, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_TO, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_COURT_CASE AT_COURT_CASE WHERE (AT_FACT_COURT_CHARGE.OFFENCE_SK = AT_DIM_OFFENCE.OFFENCE_SK (+)) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_COURT_CHARGE.COURT_CASE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_COURT_CASE.OFFENDER_BOOKING_SK (+)) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (CASE WHEN AT_FACT_MOV_EXT.TO_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.TO_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_) AND AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG IN ('Y') AND AT_DIM_DATE_EXT_MOV.DAY_DATE <= TO_DATE('07-06-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_DIM_DATE_EXT_MOV.DAY_DATE >= TO_DATE('07-06-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'IN') UNION SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_DIM_OFFENCE.OFFENCE_NAME, AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG FROM BODIMIS.DIM_OFFENCE AT_DIM_OFFENCE, BODIMIS.FACT_COURT_CHARGE AT_FACT_COURT_CHARGE, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_FROM, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_COURT_CASE AT_COURT_CASE WHERE (AT_FACT_COURT_CHARGE.OFFENCE_SK = AT_DIM_OFFENCE.OFFENCE_SK (+)) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_COURT_CHARGE.COURT_CASE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_COURT_CASE.OFFENDER_BOOKING_SK (+)) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (CASE WHEN AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.FROM_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_) AND AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG IN ('Y') AND AT_DIM_DATE_EXT_MOV.DAY_DATE >= TO_DATE('07-06-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_DIM_DATE_EXT_MOV.DAY_DATE <= TO_DATE('07-06-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'OUT')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, OFFENCE_NAME, MOST_SERIOUS_FLAG FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP7.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENCE_NAME",
+            "type": "string",
+            "display": "Offence Name",
+            "legacyId": "DP7.DO4b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "MOST_SERIOUS_FLAG",
+            "type": "string",
+            "display": "Main Offence Flag",
+            "legacyId": "DP7.DO4f",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "137598.RS",
+      "name": "Receptions",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE RECEPTIONS_AND_DISCHARGES_MO50 = 'IN')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:INITIALS",
+            "display": "Offender Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1012d"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10085"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Prisoner Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10a7c"
+          },
+          {
+            "name": "$ref:NATIONALITY_DESCRIPTION",
+            "display": "Nationality Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b5"
+          },
+          {
+            "name": "$ref:BIRTH_COUNTRY",
+            "display": "Birth Country",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10088"
+          },
+          {
+            "name": "$ref:EFFECTIVE_SENTENCE_LENGTH",
+            "display": "Effective Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO2d0"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_CODE",
+            "display": "Main Legal Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100de"
+          },
+          {
+            "name": "$ref:RELIGION_CODE",
+            "display": "Religion Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b2"
+          },
+          {
+            "name": "$ref:TYPE",
+            "display": "Movement Type (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103ec"
+          },
+          {
+            "name": "$ref:REASON_CODE",
+            "display": "Movement Reason Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103fc"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_FROM",
+            "display": "Movement Description (From)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10700"
+          },
+          {
+            "name": "$ref:MOVEMENT_TIME",
+            "display": "Movement Date and Time (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103eb"
+          },
+          {
+            "name": "$ref:V_PPO",
+            "display": "PPO",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Alert Code] = \"OPPO\"; \"Y\")"
+          },
+          {
+            "name": "$ref:V_OIOM",
+            "display": "OIOM",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Alert Code] = \"OIOM\"; \"Y\")"
+          }
+        ]
+      }
+    },
+    {
+      "id": "137327.RS",
+      "name": "Discharges",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE RECEPTIONS_AND_DISCHARGES_MO50 = 'OUT')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:INITIALS",
+            "display": "Offender Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1012d"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10085"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Prisoner Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10a7c"
+          },
+          {
+            "name": "$ref:NATIONALITY_DESCRIPTION",
+            "display": "Nationality Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b5"
+          },
+          {
+            "name": "$ref:BIRTH_COUNTRY",
+            "display": "Birth Country",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10088"
+          },
+          {
+            "name": "$ref:EFFECTIVE_SENTENCE_LENGTH",
+            "display": "Effective Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO2d0"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_CODE",
+            "display": "Main Legal Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100de"
+          },
+          {
+            "name": "$ref:RELIGION_CODE",
+            "display": "Religion Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b2"
+          },
+          {
+            "name": "$ref:TYPE",
+            "display": "Movement Type (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103ec"
+          },
+          {
+            "name": "$ref:REASON_CODE",
+            "display": "Movement Reason Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103fc"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_TO",
+            "display": "Movement Description (To)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO106ff"
+          },
+          {
+            "name": "$ref:MOVEMENT_TIME",
+            "display": "Movement Date and Time (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103eb"
+          },
+          {
+            "name": "$ref:V_PPO",
+            "display": "PPO",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Alert Code] = \"OPPO\"; \"Y\")"
+          },
+          {
+            "name": "$ref:V_OIOM",
+            "display": "OIOM",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Alert Code] = \"OIOM\"; \"Y\")"
+          }
+        ]
+      }
+    },
+    {
+      "id": "137268.RS",
+      "name": "All Movements",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DIRECTION_CODE",
+            "display": "Movement Direction Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103fd"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:INITIALS",
+            "display": "Offender Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1012d"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10085"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Prisoner Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10a7c"
+          },
+          {
+            "name": "$ref:NATIONALITY_DESCRIPTION",
+            "display": "Nationality Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b5"
+          },
+          {
+            "name": "$ref:BIRTH_COUNTRY",
+            "display": "Birth Country",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10088"
+          },
+          {
+            "name": "$ref:EFFECTIVE_SENTENCE_LENGTH",
+            "display": "Effective Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO2d0"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_CODE",
+            "display": "Main Legal Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100de"
+          },
+          {
+            "name": "$ref:RELIGION_CODE",
+            "display": "Religion Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b2"
+          },
+          {
+            "name": "$ref:TYPE",
+            "display": "Movement Type (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103ec"
+          },
+          {
+            "name": "$ref:REASON_CODE",
+            "display": "Movement Reason Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103fc"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_FROM",
+            "display": "Movement Description (From)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10700"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_TO",
+            "display": "Movement Description (To)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO106ff"
+          },
+          {
+            "name": "$ref:MOVEMENT_TIME",
+            "display": "Movement Date and Time (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103eb"
+          }
+        ]
+      }
+    },
+    {
+      "id": "137660.RS",
+      "name": "Receptions by Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE RECEPTIONS_AND_DISCHARGES_MO50 = 'IN')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10080"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10085"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Prisoner Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10a7c"
+          },
+          {
+            "name": "$ref:NATIONALITY_DESCRIPTION",
+            "display": "Nationality Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b5"
+          },
+          {
+            "name": "$ref:BIRTH_COUNTRY",
+            "display": "Birth Country",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10088"
+          },
+          {
+            "name": "$ref:EFFECTIVE_SENTENCE_LENGTH",
+            "display": "Effective Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO2d0"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_CODE",
+            "display": "Main Legal Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100de"
+          },
+          {
+            "name": "$ref:RELIGION_CODE",
+            "display": "Religion Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b2"
+          },
+          {
+            "name": "$ref:TYPE",
+            "display": "Movement Type (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103ec"
+          },
+          {
+            "name": "$ref:REASON_CODE",
+            "display": "Movement Reason Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103fc"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_FROM",
+            "display": "Movement Description (From)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10700"
+          },
+          {
+            "name": "$ref:MOVEMENT_TIME",
+            "display": "Movement Date and Time (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103eb"
+          },
+          {
+            "name": "$ref:V_PPO",
+            "display": "PPO",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Alert Code] = \"OPPO\"; \"Y\")"
+          },
+          {
+            "name": "$ref:V_OIOM",
+            "display": "OIOM",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Alert Code] = \"OIOM\"; \"Y\")"
+          }
+        ]
+      }
+    },
+    {
+      "id": "139067.RS",
+      "name": "Receptions All Offences",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE RECEPTIONS_AND_DISCHARGES_MO50 IN ('IN'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DIRECTION_CODE",
+            "display": "Movement Direction Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103fd"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10080"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10085"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Prisoner Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10a7c"
+          },
+          {
+            "name": "$ref:EFFECTIVE_SENTENCE_LENGTH",
+            "display": "Effective Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO2d0"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_CODE",
+            "display": "Main Legal Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100de"
+          },
+          {
+            "name": "$ref:OFFENCE_NAME",
+            "display": "Offence Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO4b"
+          },
+          {
+            "name": "$ref:RELIGION_CODE",
+            "display": "Religion Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b2"
+          },
+          {
+            "name": "$ref:TYPE",
+            "display": "Movement Type (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103ec"
+          },
+          {
+            "name": "$ref:REASON_CODE",
+            "display": "Movement Reason Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103fc"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_FROM",
+            "display": "Movement Description (From)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10700"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_TO",
+            "display": "Movement Description (To)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO106ff"
+          },
+          {
+            "name": "$ref:MOVEMENT_TIME",
+            "display": "Movement Date and Time (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103eb"
+          }
+        ]
+      }
+    },
+    {
+      "id": "137722.RS",
+      "name": "Discharges by Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE RECEPTIONS_AND_DISCHARGES_MO50 = 'OUT')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10080"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10085"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Prisoner Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10a7c"
+          },
+          {
+            "name": "$ref:NATIONALITY_DESCRIPTION",
+            "display": "Nationality Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b5"
+          },
+          {
+            "name": "$ref:BIRTH_COUNTRY",
+            "display": "Birth Country",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10088"
+          },
+          {
+            "name": "$ref:EFFECTIVE_SENTENCE_LENGTH",
+            "display": "Effective Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO2d0"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_CODE",
+            "display": "Main Legal Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100de"
+          },
+          {
+            "name": "$ref:RELIGION_CODE",
+            "display": "Religion Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b2"
+          },
+          {
+            "name": "$ref:TYPE",
+            "display": "Movement Type (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103ec"
+          },
+          {
+            "name": "$ref:REASON_CODE",
+            "display": "Movement Reason Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103fc"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_TO",
+            "display": "Movement Description (To)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO106ff"
+          },
+          {
+            "name": "$ref:MOVEMENT_TIME",
+            "display": "Movement Date and Time (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103eb"
+          },
+          {
+            "name": "$ref:V_PPO",
+            "display": "PPO",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Alert Code] = \"OPPO\"; \"Y\")"
+          },
+          {
+            "name": "$ref:V_OIOM",
+            "display": "OIOM",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Alert Code] = \"OIOM\"; \"Y\")"
+          }
+        ]
+      }
+    },
+    {
+      "id": "137784.RS",
+      "name": "All Movements by Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DIRECTION_CODE",
+            "display": "Movement Direction Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103fd"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10080"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10085"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Prisoner Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10a7c"
+          },
+          {
+            "name": "$ref:NATIONALITY_DESCRIPTION",
+            "display": "Nationality Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b5"
+          },
+          {
+            "name": "$ref:BIRTH_COUNTRY",
+            "display": "Birth Country",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10088"
+          },
+          {
+            "name": "$ref:EFFECTIVE_SENTENCE_LENGTH",
+            "display": "Effective Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO2d0"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_CODE",
+            "display": "Main Legal Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100de"
+          },
+          {
+            "name": "$ref:RELIGION_CODE",
+            "display": "Religion Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b2"
+          },
+          {
+            "name": "$ref:TYPE",
+            "display": "Movement Type (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103ec"
+          },
+          {
+            "name": "$ref:REASON_CODE",
+            "display": "Movement Reason Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103fc"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_FROM",
+            "display": "Movement Description (From)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10700"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_TO",
+            "display": "Movement Description (To)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO106ff"
+          },
+          {
+            "name": "$ref:MOVEMENT_TIME",
+            "display": "Movement Date and Time (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103eb"
+          }
+        ]
+      }
+    },
+    {
+      "id": "138719.RS",
+      "name": "All Movements by Cell Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DIRECTION_CODE",
+            "display": "Movement Direction Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103fd"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10080"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10085"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Prisoner Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10a7c"
+          },
+          {
+            "name": "$ref:NATIONALITY_DESCRIPTION",
+            "display": "Nationality Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b5"
+          },
+          {
+            "name": "$ref:BIRTH_COUNTRY",
+            "display": "Birth Country",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10088"
+          },
+          {
+            "name": "$ref:EFFECTIVE_SENTENCE_LENGTH",
+            "display": "Effective Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO2d0"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_CODE",
+            "display": "Main Legal Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100de"
+          },
+          {
+            "name": "$ref:RELIGION_CODE",
+            "display": "Religion Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b2"
+          },
+          {
+            "name": "$ref:TYPE",
+            "display": "Movement Type (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103ec"
+          },
+          {
+            "name": "$ref:REASON_CODE",
+            "display": "Movement Reason Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103fc"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_FROM",
+            "display": "Movement Description (From)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10700"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_TO",
+            "display": "Movement Description (To)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO106ff"
+          },
+          {
+            "name": "$ref:MOVEMENT_TIME",
+            "display": "Movement Date and Time (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103eb"
+          }
+        ]
+      }
+    },
+    {
+      "id": "138802.RS",
+      "name": "All Movements with Main Offence",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE MAIN_OFFENCE_FLAG IN ('Y'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DIRECTION_CODE",
+            "display": "Movement Direction Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103fd"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10080"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10085"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Prisoner Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10a7c"
+          },
+          {
+            "name": "$ref:EFFECTIVE_SENTENCE_LENGTH",
+            "display": "Effective Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO2d0"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_CODE",
+            "display": "Main Legal Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100de"
+          },
+          {
+            "name": "$ref:RELIGION_CODE",
+            "display": "Religion Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b2"
+          },
+          {
+            "name": "$ref:V_MAIN_OFFENCE",
+            "display": "Main Offence",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Offence Name]"
+          },
+          {
+            "name": "$ref:TYPE",
+            "display": "Movement Type (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103ec"
+          },
+          {
+            "name": "$ref:REASON_CODE",
+            "display": "Movement Reason Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103fc"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_FROM",
+            "display": "Movement Description (From)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10700"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_TO",
+            "display": "Movement Description (To)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO106ff"
+          },
+          {
+            "name": "$ref:MOVEMENT_TIME",
+            "display": "Movement Date and Time (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103eb"
+          }
+        ]
+      }
+    },
+    {
+      "id": "139227.RS",
+      "name": "Receptions with Sentence",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE RECEPTIONS_AND_DISCHARGES_MO50 = 'IN')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:INITIALS",
+            "display": "Offender Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1012d"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10085"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Prisoner Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10a7c"
+          },
+          {
+            "name": "$ref:NATIONALITY_DESCRIPTION",
+            "display": "Nationality Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b5"
+          },
+          {
+            "name": "$ref:SENTENCE_CODE_NK",
+            "display": "Sentence Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO3e"
+          },
+          {
+            "name": "$ref:EFFECTIVE_SENTENCE_LENGTH",
+            "display": "Effective Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO2d0"
+          },
+          {
+            "name": "$ref:SENTENCE_START_DATE",
+            "display": "Sentence Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO45"
+          },
+          {
+            "name": "$ref:SED",
+            "display": "SED (Sentence End Date)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO46"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_CODE",
+            "display": "Main Legal Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100de"
+          },
+          {
+            "name": "$ref:TYPE",
+            "display": "Movement Type (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103ec"
+          },
+          {
+            "name": "$ref:REASON_CODE",
+            "display": "Movement Reason Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103fc"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_FROM",
+            "display": "Movement Description (From)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10700"
+          },
+          {
+            "name": "$ref:MOVEMENT_TIME",
+            "display": "Movement Date and Time (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103eb"
+          }
+        ]
+      }
+    },
+    {
+      "id": "139386.RS",
+      "name": "Discharges with Sentence",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE RECEPTIONS_AND_DISCHARGES_MO50 = 'OUT')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:INITIALS",
+            "display": "Offender Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1012d"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10085"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Prisoner Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10a7c"
+          },
+          {
+            "name": "$ref:NATIONALITY_DESCRIPTION",
+            "display": "Nationality Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b5"
+          },
+          {
+            "name": "$ref:SENTENCE_CODE_NK",
+            "display": "Sentence Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO3e"
+          },
+          {
+            "name": "$ref:EFFECTIVE_SENTENCE_LENGTH",
+            "display": "Effective Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO2d0"
+          },
+          {
+            "name": "$ref:SENTENCE_START_DATE",
+            "display": "Sentence Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO45"
+          },
+          {
+            "name": "$ref:SED",
+            "display": "SED (Sentence End Date)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO46"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_CODE",
+            "display": "Main Legal Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100de"
+          },
+          {
+            "name": "$ref:TYPE",
+            "display": "Movement Type (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103ec"
+          },
+          {
+            "name": "$ref:REASON_CODE",
+            "display": "Movement Reason Code (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103fc"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_TO",
+            "display": "Movement Description (To)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO106ff"
+          },
+          {
+            "name": "$ref:MOVEMENT_TIME",
+            "display": "Movement Date and Time (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103eb"
+          }
+        ]
+      }
+    },
+    {
+      "id": "140167.RS",
+      "name": "Transfers Out with Category",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (SECURITY_CATEGORY_MOVEMENT_D42 = 'OUT' AND SECURITY_CATEGORY_MOVEMENT_T32 = 'Transfers'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP9_DO10076",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10085",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10A7C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO2D0",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO100DE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO100B2",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_MAX_ASSESSMENT_DATE",
+            "display": "Assessment Date prior to transfer",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Max([Assessment Date]) In ([Security Category].[NOMS Number])"
+          },
+          {
+            "name": "$ref:V_APPROVED_ASSESSMENT_DISPLAY",
+            "display": "Approved Result at Date of Transfer",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Max(If ([Assessment Date] = [v_Max_Assessment_Date]) Then ([v_Cat_Approved_Result(s)]))"
+          },
+          {
+            "name": "$ref:V_CAT_CURRENT_LEVEL",
+            "display": "Current Category",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Security Category - Current Level]"
+          },
+          {
+            "name": "$ref:DP9_DO103EC",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10700",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO106FF",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO103EB",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_PPO :: ReferenceError: error is not defined",
+      "entityId": "FvYLDWH47gsAwegAAHBrTl8LACJIAFe4",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_OIOM :: ReferenceError: error is not defined",
+      "entityId": "FvYLDWH47gsAwegAAHBrTl8LACJIAFe4",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_PPO :: ReferenceError: error is not defined",
+      "entityId": "FvYLDWH47gsAwegAAHBrTl8LACJIAFe4",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_OIOM :: ReferenceError: error is not defined",
+      "entityId": "FvYLDWH47gsAwegAAHBrTl8LACJIAFe4",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "missing query plan statement",
+      "entityId": "3375368/DP5",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "missing query plan statement",
+      "entityId": "3375368/DP9",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 140167.RS does not have corresponding dataset 3375368/DP9",
+      "entityId": "140167.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DP2",
+      "entityType": "dataset"
+    }
+  ]
+}

@@ -1,0 +1,477 @@
+{
+  "id": "FmDWOl1y_goAcyMBAHAbWF8oACJIAAzC",
+  "name": "ORS Balances Report",
+  "description": "Balances Report displays offender balances in Current, Spends, Savings and Hold accounts in establishment specified at runtime.<br/>FIN0082 - v00.00.03 Last Modified: 24/09/2020",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "FIN0082 v00.00.03"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376816/DP12",
+      "name": "Balances",
+      "description": "Finance",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT * AS NOMS_NO_ FROM (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, SUBSTR(AT_OFFENDER.FIRST_NAME, 1, 1) || CASE WHEN AT_OFFENDER.MIDDLE_NAME IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME, 1, 1) || CASE WHEN AT_OFFENDER.MIDDLE_NAME_2 IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME_2, 1, 1) END END, TO_CHAR(CURRENT_TIMESTAMP, 'dd/mm/yyyy'), SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)), SUM(CASE WHEN (AT_ACCOUNT_CODES.ACCOUNT_CODE) = 2101 THEN AT_OFFENDER_SUB_ACCOUNTS.BALANCE ELSE 0 END), SUM(CASE WHEN (AT_ACCOUNT_CODES.ACCOUNT_CODE) = 2103 THEN AT_OFFENDER_SUB_ACCOUNTS.BALANCE ELSE 0 END), SUM(CASE WHEN (AT_ACCOUNT_CODES.ACCOUNT_CODE) = 2102 THEN AT_OFFENDER_SUB_ACCOUNTS.BALANCE ELSE 0 END) FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, OMS_OWNER.OFFENDER_SUB_ACCOUNTS AT_OFFENDER_SUB_ACCOUNTS, OMS_OWNER.ACCOUNT_CODES AT_ACCOUNT_CODES, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS WHERE (AT_OFFENDER_SUB_ACCOUNTS.OFFENDER_ID (+) = AT_OFFENDER_BOOKING.ROOT_OFFENDER_ID) AND (AT_ACCOUNT_CODES.ACCOUNT_CODE = AT_OFFENDER_SUB_ACCOUNTS.TRUST_ACCOUNT_CODE) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND ((AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_SUB_ACCOUNTS.CASELOAD_ID = (SELECT establishment_code FROM prompt_) AND AT_OFFENDER_SUB_ACCOUNTS.TRUST_ACCOUNT_CODE IN (2101, 2102, 2103)) GROUP BY AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, SUBSTR(AT_OFFENDER.FIRST_NAME, 1, 1) || CASE WHEN AT_OFFENDER.MIDDLE_NAME IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME, 1, 1) || CASE WHEN AT_OFFENDER.MIDDLE_NAME_2 IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME_2, 1, 1) END END, TO_CHAR(CURRENT_TIMESTAMP, 'dd/mm/yyyy'), SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION))) _query0 FULL OUTER JOIN (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, SUBSTR(AT_OFFENDER.FIRST_NAME, 1, 1) || CASE WHEN AT_OFFENDER.MIDDLE_NAME IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME, 1, 1) || CASE WHEN AT_OFFENDER.MIDDLE_NAME_2 IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME_2, 1, 1) END END, TO_CHAR(CURRENT_TIMESTAMP, 'dd/mm/yyyy'), SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)), SUM(AT_OFFENDER_SUB_ACCOUNTS.HOLD_BALANCE) FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, OMS_OWNER.OFFENDER_SUB_ACCOUNTS AT_OFFENDER_SUB_ACCOUNTS, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS WHERE (AT_OFFENDER_SUB_ACCOUNTS.OFFENDER_ID (+) = AT_OFFENDER_BOOKING.ROOT_OFFENDER_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND ((AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_SUB_ACCOUNTS.CASELOAD_ID = (SELECT establishment_code FROM prompt_) AND AT_OFFENDER_SUB_ACCOUNTS.TRUST_ACCOUNT_CODE IN (2101, 2102, 2103)) GROUP BY AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, SUBSTR(AT_OFFENDER.FIRST_NAME, 1, 1) || CASE WHEN AT_OFFENDER.MIDDLE_NAME IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME, 1, 1) || CASE WHEN AT_OFFENDER.MIDDLE_NAME_2 IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME_2, 1, 1) END END, TO_CHAR(CURRENT_TIMESTAMP, 'dd/mm/yyyy'), SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION))) _query1 ON _query0.OFFENDER_ID_DISPLAY = _query1.OFFENDER_ID_DISPLAY), dataset_ AS (SELECT NOMS_NO_ FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "NOMS_NO_",
+            "type": "string",
+            "display": "NOMS No.",
+            "legacyId": "DP12.DO10520",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "38240.RS",
+      "name": "Balances",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376816/DP12",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:NOMS_NO_",
+            "display": "NOMS No.",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP12.DO10520"
+          },
+          {
+            "name": "$ref:DP12_DO10045",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP12_DO10614",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP12_DO10427",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP12_DO64",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP12_DO45B7",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP12_DO45B8",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP12_DO475E",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "38963.RS",
+      "name": "By Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376816/DP12",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:NOMS_NO_",
+            "display": "NOMS No.",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP12.DO10520"
+          },
+          {
+            "name": "$ref:DP12_DO10045",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP12_DO10614",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP12_DO10427",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP12_DO64",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP12_DO45B7",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP12_DO45B8",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP12_DO475E",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "39013.RS",
+      "name": "By Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376816/DP12",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:NOMS_NO_",
+            "display": "NOMS No.",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP12.DO10520"
+          },
+          {
+            "name": "$ref:DP12_DO10045",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP12_DO10614",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP12_DO10427",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP12_DO64",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP12_DO45B7",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP12_DO45B8",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP12_DO475E",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO10045 does not have corresponding dataset schema field",
+      "entityId": "38240.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO10614 does not have corresponding dataset schema field",
+      "entityId": "38240.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO10427 does not have corresponding dataset schema field",
+      "entityId": "38240.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO64 does not have corresponding dataset schema field",
+      "entityId": "38240.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO45B7 does not have corresponding dataset schema field",
+      "entityId": "38240.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO45B8 does not have corresponding dataset schema field",
+      "entityId": "38240.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO475E does not have corresponding dataset schema field",
+      "entityId": "38240.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO10045 does not have corresponding dataset schema field",
+      "entityId": "38963.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO10614 does not have corresponding dataset schema field",
+      "entityId": "38963.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO10427 does not have corresponding dataset schema field",
+      "entityId": "38963.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO64 does not have corresponding dataset schema field",
+      "entityId": "38963.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO45B7 does not have corresponding dataset schema field",
+      "entityId": "38963.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO45B8 does not have corresponding dataset schema field",
+      "entityId": "38963.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO475E does not have corresponding dataset schema field",
+      "entityId": "38963.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO10045 does not have corresponding dataset schema field",
+      "entityId": "39013.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO10614 does not have corresponding dataset schema field",
+      "entityId": "39013.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO10427 does not have corresponding dataset schema field",
+      "entityId": "39013.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO64 does not have corresponding dataset schema field",
+      "entityId": "39013.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO45B7 does not have corresponding dataset schema field",
+      "entityId": "39013.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO45B8 does not have corresponding dataset schema field",
+      "entityId": "39013.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP12_DO475E does not have corresponding dataset schema field",
+      "entityId": "39013.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00923: FROM keyword not found where expected\nHelp: https://docs.oracle.com/error-help/db/ora-00923/",
+      "entityId": "3376816/DP12",
+      "entityType": "dataset"
+    }
+  ]
+}

@@ -1,0 +1,275 @@
+{
+  "id": "Fr.l.2AvkAMA1rYAAHBbOl8LACJIAFe4",
+  "name": "MIS Bail Information Service Report NSR2371",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "SEN0027 v00.00.04"
+    ]
+  },
+  "description": "Returns a list of Sentenced Prisoners, their date of Sentence, Main offence details, Offence Date, Length of Sentence, Cell Location and Release date. Input Controls can be used to filter the report by Release Date, Sentence Start Dates and Effective Sentence Length.<br/>SEN0027 - v00.00.04 Last Modified: 21/05/2019 ",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP2",
+      "name": "Sentence",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, CASE WHEN AT_RELEASE_DATE.DAY_DATE < '31/12/9000' THEN AT_RELEASE_DATE.DAY_DATE END AS RELEASE_DATE, CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' ELSE FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH END AS EFFECTIVE_SENTENCE_LENGTH, CASE WHEN AT_SENT_START_DATE.DAY_DATE < '31/12/9000' THEN AT_SENT_START_DATE.DAY_DATE END AS SENTENCE_START_DATE, AT_ST_DT.DAY_DATE, AT_DIM_SENTENCE_TYPE.SENTENCE_DESCRIPTION, AT_OFFENDER_BOOKING.FIRST_NAME, FACT_CURR_KEY_DATES_SENT.SSD FROM BODIMIS.DIM_DATE AT_RELEASE_DATE, BODIMIS.DIM_DATE AT_SENT_START_DATE, BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_SENTENCE_TYPE AT_DIM_SENTENCE_TYPE, BODIMIS.DIM_COURT_CASE_STATUS AT_DIM_COURT_CASE_STATUS, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT DISTINCT BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK = dss.sentence_status_sk) AND dss.sentence_status = 'Active' AND (BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK = BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK) AND (BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK) AND BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG = 'Y') DT_LIFEFLAG, FACT_CURR_KEY_DATES_SENT, BODIMIS.DIM_DATE AT_ST_DT, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_COURT_CASE AT_COURT_CASE, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING_BAH, BODIMIS.FACT_BED_ASSIGNMENT_HISTORY AT_BED_ASSIGNMENT_HISTORY WHERE (AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK = AT_RELEASE_DATE.DATE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK (+)) AND (AT_FACT_SENTENCE.SENTENCE_START_DATE_SK = AT_SENT_START_DATE.DATE_SK (+)) AND (AT_COURT_CASE.COURT_CASE_STATUS_SK = AT_DIM_COURT_CASE_STATUS.COURT_CASE_STATUS_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_LIFEFLAG.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_COURT_CASE.OFFENDER_BOOKING_SK (+)) AND (AT_BED_ASSIGNMENT_HISTORY.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_SENTENCE.COURT_CASE_SK (+)) AND (AT_FACT_SENTENCE.SENTENCE_TYPE_SK = AT_DIM_SENTENCE_TYPE.SENTENCE_TYPE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING_BAH.OFFENDER_BOOKING_SK = AT_BED_ASSIGNMENT_HISTORY.OFFENDER_BOOKING_SK) AND (AT_ST_DT.DATE_SK = AT_OFFENDER_BOOKING_BAH.BOOKING_BEGIN_DATE_SK) AND ((AT_DIM_COURT_CASE_STATUS.COURT_CASE_STATUS = 'Active') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK IN ((SELECT establishment_code FROM prompt_)) OR 'All' IN ((SELECT establishment_code FROM prompt_))) AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG = 'Y') AND CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Sentenced' WHEN FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH = '00/00/00' THEN 'Unsentenced' WHEN FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH IS NULL THEN 'Unsentenced' ELSE 'Sentenced' END = 'Sentenced')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, RELEASE_DATE, EFFECTIVE_SENTENCE_LENGTH, SENTENCE_START_DATE, DAY_DATE, SENTENCE_DESCRIPTION, FIRST_NAME, SSD, MIN(SENTENCE_START_DATE) AS V_MIN_SENT_START_DATE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP2.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "RELEASE_DATE",
+            "type": "date",
+            "display": "Release Date",
+            "legacyId": "DP2.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "EFFECTIVE_SENTENCE_LENGTH",
+            "type": "string",
+            "display": "Effective Sentence Length",
+            "legacyId": "DP2.DO2d0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "SENTENCE_START_DATE",
+            "type": "date",
+            "display": "Sentence Start Date",
+            "legacyId": "DP2.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Booking Start Date",
+            "legacyId": "DP2.DO10b0b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "SENTENCE_DESCRIPTION",
+            "type": "string",
+            "display": "Sentence Name",
+            "legacyId": "DP2.DO3d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP2.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "SSD",
+            "type": "date",
+            "display": "Current Sentence Start Date",
+            "legacyId": "DP2.DO32d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "V_MIN_SENT_START_DATE",
+            "type": "string",
+            "display": "V_MIN_SENT_START_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP4",
+      "name": "MIS Load Log",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP4.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "82602.RS",
+      "name": "Date of Sentencing Report",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10080"
+          },
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Booking Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10b0b"
+          },
+          {
+            "name": "$ref:V_MIN_SENT_START_DATE",
+            "display": "Earliest Sentence Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Min([Sentence Start Date])"
+          },
+          {
+            "name": "$ref:EFFECTIVE_SENTENCE_LENGTH",
+            "display": "Effective Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO2d0"
+          },
+          {
+            "name": "$ref:RELEASE_DATE",
+            "display": "Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO44"
+          },
+          {
+            "name": "$ref:V_FINE_",
+            "display": "Fine Y/N",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(([Sentence Name])InList(\"CPOrder for Fine Defaulters\";\"Imprisoned in Default of a fine\";\"Imprisonment in Default of Fine\"))Then \"Y\" Else \"N\""
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_FINE_ :: Error: argument 'sql': 'NoneType' object cannot be converted to 'PyString'",
+      "entityId": "Fr.l.2AvkAMA1rYAAHBbOl8LACJIAFe4",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_FINE_ does not have corresponding dataset schema field",
+      "entityId": "82602.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DP2",
+      "entityType": "dataset"
+    }
+  ]
+}

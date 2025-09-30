@@ -1,0 +1,354 @@
+{
+  "id": "FiwNeGEiXwUADY8BAHALlFodACJIAFJ8",
+  "name": "MIS OMU Demographics Report en for bail",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0113"
+    ]
+  },
+  "description": "<br/>The report contains: Booking Number, NOMS Number, Surname, First Name, Unit Description 1 - short, Current Release Date, Current security Category, Ethnic Code, Religion Code, IEP BAnd, Date of Birth and Age.<br/>PDD0113 v1.0 Last Modified: 20/08/2019",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP2",
+      "name": "OMU Prisoners",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.BOOKING_NUMBER, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, CASE WHEN AT_CURRENT_SECURITY_CATEGORY.CURRENT_SEC_CAT_LEVEL IS NULL THEN 'Unclassified' ELSE AT_CURRENT_SECURITY_CATEGORY.CURRENT_SEC_CAT_LEVEL END, FACT_CURR_KEY_DATES_SENT.SED, FACT_CURR_KEY_DATES_SENT.CURR_CRD_DATE, DT_CURRENT_RELEASE_DATE.CURR_RELEASE_DATE, case when AT_DIM_OFFENCE.OFFENCE_SK > 0 THEN ( AT_DIM_OFFENCE.OFFENCE_CODE_NK ) ELSE '-' end, AT_DIM_OFFENCE.OFFENCE_NAME, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION FROM BODIMIS.DIM_OFFENCE AT_DIM_OFFENCE, BODIMIS.FACT_COURT_CHARGE AT_FACT_COURT_CHARGE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_OFFENDER_ASSESSMENT AT_CURRENT_SECURITY_CATEGORY, FACT_CURR_KEY_DATES_SENT, (   Select AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK as OFFENDER_BOOKING_SK, case when AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE From --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_DATE AT_RELEASE_DATE where --AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK=AT_FACT_SENTENCE.OFFENDER_BOOKING_SK(+) AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK=AT_RELEASE_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' --and AT_RELEASE_DATE.DAY_DATE !='31/12/9000' ) DT_CURRENT_RELEASE_DATE, BODIMIS.DIM_COURT_CASE AT_COURT_CASE WHERE ( AT_FACT_COURT_CHARGE.OFFENCE_SK=AT_DIM_OFFENCE.OFFENCE_SK(+) ) AND ( AT_COURT_CASE.COURT_CASE_SK=AT_FACT_COURT_CHARGE.COURT_CASE_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_CURRENT_RELEASE_DATE.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=AT_COURT_CASE.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username from context_) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username from context_) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.ESTABLISHMENT_SK=AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK ) AND ( AT_ESTABLISHMENT_TAP.ACTIVE_FLAG='Y' ) AND ( AT_CURRENT_SECURITY_CATEGORY.CURRENT_SEC_CAT_FLAG(+)='Y' ) AND ( AT_CURRENT_SECURITY_CATEGORY.OFFENDER_BOOKING_SK(+)=AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK ) AND ( ( AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK =(SELECT establishment_code from prompt_) ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) )), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3375368/DP3",
+      "name": "MIS Load Date",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP3.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "214316.RS",
+      "name": "By Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE MAIN_LEGAL_STATUS_DESCRIPTION NOT(IN ('Adult Discretionary','Adult Imprisonment Without Option','Adult Imprisonment Without Option CJA03','Adult Mandatory','Automatic','Detention In Young Offender Institution','EDS LASPO Automatic Release','EDS LASPO Discretionary Release','EDS Sec 279 2020 (21+)','Immigration Detainee','Indeterminate Sent for Public Protection','Licence recall from IPP Sentence','LR - EDS LASPO Discretionary Release','ORA 14 Day Fixed Term Recall','ORA 2020 Standard Determinate Sentence','ORA 28 Day Fixed Term Recall','ORA CJA03 Standard Determinate Sentence','ORA Detention and Training Order','ORA Licence Recall','ORA Serious Offence -18 CJA03 POCCA 2000','ORA Young Offender Institution','Recalled to Prison from Parole (Non HDC)','Recall from Automatic Life','Recall from YOI','Recall Serious Off -18 CJA03 POCCA 2000','Section 236A SOPC CJA03','Serious Offence -18 CJA03 POCCA 2000','Unknown Custodial Undisposed','Unknown Sentenced')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP2_DO10077",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10076",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO565",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO4B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO49",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO100DF",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "218992.RS",
+      "name": "By Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP2_DO10077",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10076",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO100E1",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO565",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Expected table name but got None. Line 1, Col: 1047.\n  hen AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE \u001b[4mFrom\u001b[0m --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENT]",
+      "entityId": "FiwNeGEiXwUADY8BAHALlFodACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields (comments -- in query)",
+      "entityId": "3375368/DP2",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10077 does not have corresponding dataset schema field",
+      "entityId": "214316.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10076 does not have corresponding dataset schema field",
+      "entityId": "214316.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO1007B does not have corresponding dataset schema field",
+      "entityId": "214316.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10080 does not have corresponding dataset schema field",
+      "entityId": "214316.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO565 does not have corresponding dataset schema field",
+      "entityId": "214316.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO4B does not have corresponding dataset schema field",
+      "entityId": "214316.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO49 does not have corresponding dataset schema field",
+      "entityId": "214316.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO100DF does not have corresponding dataset schema field",
+      "entityId": "214316.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10077 does not have corresponding dataset schema field",
+      "entityId": "218992.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10076 does not have corresponding dataset schema field",
+      "entityId": "218992.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO1007B does not have corresponding dataset schema field",
+      "entityId": "218992.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO10080 does not have corresponding dataset schema field",
+      "entityId": "218992.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO100E1 does not have corresponding dataset schema field",
+      "entityId": "218992.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO565 does not have corresponding dataset schema field",
+      "entityId": "218992.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3375368/DP2",
+      "entityType": "dataset"
+    }
+  ]
+}

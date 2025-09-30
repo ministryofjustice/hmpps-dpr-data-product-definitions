@@ -1,0 +1,652 @@
+{
+  "id": "kljL4VMADCZ6VUkA7f8AFE.rcVQ",
+  "name": "MIS All Transfer Balances Report",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "FIN0075 v00.00.01"
+    ]
+  },
+  "description": "Is an alternative to FIN0027 Report of Transfer Balances and shows all account transactions and advances transferred between establishments, not just those connected to a Prisoners transfer date. Transaction dates prompt at run time. <br/>FIN0075 - v00.00.01 Last Modified 17/03/2017",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376115/DPd",
+      "name": "Transfer In",
+      "description": "MIS - Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.INITIALS, AT_OFFENDER_BOOKING.SURNAME, CASE WHEN (AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE) = '2102' THEN (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT) ELSE 0 END AS SPENDS_TRANSACTION_AMOUNT, CASE WHEN (AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE) = '2103' THEN (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT) ELSE 0 END AS SAVINGS_TRANSACTION_AMOUNT, CASE WHEN (AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE) = '2101' THEN (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT) ELSE 0 END AS PRIVATE_CASH_TRANSACTION, AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE, AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT, AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE, AT_DIM_DATE_TRANSACTIONS.DAY_DATE, BODIMIS.DIM_TRANSACTION_ENTRY_DESC.TRANSACTION_ENTRY_DESC, AT_FACT_OFFENDER_TRANSACTION.TXN_ID FROM BODIMIS.FACT_OFFENDER_TRANSACTION AT_FACT_OFFENDER_TRANSACTION, BODIMIS.DIM_ESTABLISHMENT AT_CASELOADS, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_ACCOUNT_CODE AT_DIM_ACCOUNT_CODE_TXN, BODIMIS.DIM_TRANSACTION_TYPE AT_DIM_TRANSACTION_TYPE, BODIMIS.DIM_DATE AT_DIM_DATE_TRANSACTIONS, BODIMIS.DIM_TRANSACTION_ENTRY_DESC, BODIMIS.DIM_DATE AT_BUSINESS_DATE WHERE (AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_TYPE_SK) AND (AT_DIM_DATE_TRANSACTIONS.DATE_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_DATE_SK) AND (AT_FACT_OFFENDER_TRANSACTION.ACCOUNT_CODE_SK = AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE_SK) AND (AT_OFFENDER_BOOKING.ALIAS_OFFENDER_SK = AT_FACT_OFFENDER_TRANSACTION.ALIAS_OFFENDER_SK AND AT_OFFENDER_BOOKING.BOOKING_SEQ = 1) AND (AT_CASELOADS.ESTABLISHMENT_SK = AT_FACT_OFFENDER_TRANSACTION.ESTABLISHMENT_SK) AND (AT_BUSINESS_DATE.DATE_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_BUSINESS_DATE_SK) AND (BODIMIS.DIM_TRANSACTION_ENTRY_DESC.TRANSACTION_ENTRY_DESC_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_DESC_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_CASELOADS.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_) AND (AT_DIM_DATE_TRANSACTIONS.DAY_DATE BETWEEN TO_DATE('08-11-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('09-11-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_BUSINESS_DATE.DAY_DATE BETWEEN TO_DATE(TO_DATE('08-11-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS'), 'DD-MM-YYYY HH24:MI:SS') - 1 AND TO_DATE('09-11-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS')) AND AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE = 'TIR')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, INITIALS, SURNAME, SPENDS_TRANSACTION_AMOUNT, SAVINGS_TRANSACTION_AMOUNT, PRIVATE_CASH_TRANSACTION, TRANSACTION_TYPE, TRANSACTION_ENTRY_AMOUNT, ACCOUNT_CODE, DAY_DATE, TRANSACTION_ENTRY_DESC, TXN_ID, 'TBD' AS V_CASELOAD_OUT, SUM(CASE WHEN TRANSFER_OUT.TRANSACTION_TYPE = 'TOR' AND TRANSFER_OUT.ACCOUNT_CODE = 2102 THEN TRANSFER_OUT.TRANSACTION_ENTRY_AMOUNT ELSE 0 END) AS V_TRANSFERRED_OUT_SPENDS_AMO31, SUM(CASE WHEN TRANSFER_OUT.TRANSACTION_TYPE = 'TOR' AND TRANSFER_OUT.ACCOUNT_CODE = 2101 THEN TRANSFER_OUT.TRANSACTION_ENTRY_AMOUNT ELSE 0 END) AS V_TRANSFERRED_OUT_PRIVATE_AM32, SUM(CASE WHEN TRANSFER_OUT.TRANSACTION_TYPE = 'TOR' AND TRANSFER_OUT.ACCOUNT_CODE = 2103 THEN TRANSFER_OUT.TRANSACTION_ENTRY_AMOUNT ELSE 0 END) AS V_TRANSFERRED_OUT_SAVINGS_AM32, V_TRANSFERRED_OUT_PRIVATE_AMOUNT || V_TRANSFERRED_OUT_SAVINGS_AMOUNT || V_TRANSFERRED_OUT_SPENDS_AMOUNT AS V_ACCOUNT_TOTALS_OUT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPd.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "INITIALS",
+            "type": "string",
+            "display": "Offender Initials",
+            "legacyId": "DPd.DO1012d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DPd.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "SPENDS_TRANSACTION_AMOUNT",
+            "type": "double",
+            "display": "Spends Transaction Amount",
+            "legacyId": "DPd.DO27",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "SAVINGS_TRANSACTION_AMOUNT",
+            "type": "double",
+            "display": "Savings Transaction Amount",
+            "legacyId": "DPd.DO29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "PRIVATE_CASH_TRANSACTION",
+            "type": "double",
+            "display": "Private Cash Transaction",
+            "legacyId": "DPd.DO2a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "TRANSACTION_TYPE",
+            "type": "string",
+            "display": "Transaction Type Code",
+            "legacyId": "DPd.DO6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "TRANSACTION_ENTRY_AMOUNT",
+            "type": "double",
+            "display": "Transaction Entry Amount",
+            "legacyId": "DPd.DO28",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "ACCOUNT_CODE",
+            "type": "double",
+            "display": "Transaction Account Code",
+            "legacyId": "DPd.DO3c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Transaction Date (Date Only)",
+            "legacyId": "DPd.DO39",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "TRANSACTION_ENTRY_DESC",
+            "type": "string",
+            "display": "Transaction Entry Description",
+            "legacyId": "DPd.DO654",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "TXN_ID",
+            "type": "double",
+            "display": "Txn Id",
+            "legacyId": "DPd.DO5af",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "V_CASELOAD_OUT",
+            "type": "string",
+            "display": "V_CASELOAD_OUT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 13,
+            "name": "V_TRANSFERRED_OUT_SPENDS_AMO31",
+            "type": "string",
+            "display": "V_TRANSFERRED_OUT_SPENDS_AMO31",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 14,
+            "name": "V_TRANSFERRED_OUT_PRIVATE_AM32",
+            "type": "string",
+            "display": "V_TRANSFERRED_OUT_PRIVATE_AM32",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 15,
+            "name": "V_TRANSFERRED_OUT_SAVINGS_AM32",
+            "type": "string",
+            "display": "V_TRANSFERRED_OUT_SAVINGS_AM32",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 16,
+            "name": "V_ACCOUNT_TOTALS_OUT",
+            "type": "string",
+            "display": "V_ACCOUNT_TOTALS_OUT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376115/DPe",
+      "name": "Transfer Out",
+      "description": "MIS - Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.INITIALS, AT_OFFENDER_BOOKING.SURNAME, CASE WHEN (AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE) = '2102' THEN (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT) ELSE 0 END AS SPENDS_TRANSACTION_AMOUNT, CASE WHEN (AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE) = '2103' THEN (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT) ELSE 0 END AS SAVINGS_TRANSACTION_AMOUNT, CASE WHEN (AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE) = '2101' THEN (AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT) ELSE 0 END AS PRIVATE_CASH_TRANSACTION, AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE, AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT, AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE, AT_DIM_DATE_TRANSACTIONS.DAY_DATE, BODIMIS.DIM_TRANSACTION_ENTRY_DESC.TRANSACTION_ENTRY_DESC, AT_FACT_OFFENDER_TRANSACTION.TXN_ID FROM BODIMIS.FACT_OFFENDER_TRANSACTION AT_FACT_OFFENDER_TRANSACTION, BODIMIS.DIM_ESTABLISHMENT AT_CASELOADS, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_ACCOUNT_CODE AT_DIM_ACCOUNT_CODE_TXN, BODIMIS.DIM_TRANSACTION_TYPE AT_DIM_TRANSACTION_TYPE, BODIMIS.DIM_DATE AT_DIM_DATE_TRANSACTIONS, BODIMIS.DIM_TRANSACTION_ENTRY_DESC, BODIMIS.DIM_DATE AT_BUSINESS_DATE WHERE (AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_TYPE_SK) AND (AT_DIM_DATE_TRANSACTIONS.DATE_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_DATE_SK) AND (AT_FACT_OFFENDER_TRANSACTION.ACCOUNT_CODE_SK = AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE_SK) AND (AT_OFFENDER_BOOKING.ALIAS_OFFENDER_SK = AT_FACT_OFFENDER_TRANSACTION.ALIAS_OFFENDER_SK AND AT_OFFENDER_BOOKING.BOOKING_SEQ = 1) AND (AT_CASELOADS.ESTABLISHMENT_SK = AT_FACT_OFFENDER_TRANSACTION.ESTABLISHMENT_SK) AND (AT_BUSINESS_DATE.DATE_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_BUSINESS_DATE_SK) AND (BODIMIS.DIM_TRANSACTION_ENTRY_DESC.TRANSACTION_ENTRY_DESC_SK = AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_DESC_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_CASELOADS.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_) AND (AT_DIM_DATE_TRANSACTIONS.DAY_DATE BETWEEN TO_DATE('08-11-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('09-11-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_BUSINESS_DATE.DAY_DATE BETWEEN TO_DATE(TO_DATE('08-11-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS'), 'DD-MM-YYYY HH24:MI:SS') - 1 AND TO_DATE('09-11-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS')) AND AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE = 'TOR')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, INITIALS, SURNAME, SPENDS_TRANSACTION_AMOUNT, SAVINGS_TRANSACTION_AMOUNT, PRIVATE_CASH_TRANSACTION, TRANSACTION_TYPE, TRANSACTION_ENTRY_AMOUNT, ACCOUNT_CODE, DAY_DATE, TRANSACTION_ENTRY_DESC, TXN_ID, 'TBD' AS V_CASELOAD_OUT, SUM(CASE WHEN TRANSFER_OUT.TRANSACTION_TYPE = 'TOR' AND TRANSFER_OUT.ACCOUNT_CODE = 2102 THEN TRANSFER_OUT.TRANSACTION_ENTRY_AMOUNT ELSE 0 END) AS V_TRANSFERRED_OUT_SPENDS_AMO31, SUM(CASE WHEN TRANSFER_OUT.TRANSACTION_TYPE = 'TOR' AND TRANSFER_OUT.ACCOUNT_CODE = 2101 THEN TRANSFER_OUT.TRANSACTION_ENTRY_AMOUNT ELSE 0 END) AS V_TRANSFERRED_OUT_PRIVATE_AM32, SUM(CASE WHEN TRANSFER_OUT.TRANSACTION_TYPE = 'TOR' AND TRANSFER_OUT.ACCOUNT_CODE = 2103 THEN TRANSFER_OUT.TRANSACTION_ENTRY_AMOUNT ELSE 0 END) AS V_TRANSFERRED_OUT_SAVINGS_AM32, V_TRANSFERRED_OUT_PRIVATE_AMOUNT || V_TRANSFERRED_OUT_SAVINGS_AMOUNT || V_TRANSFERRED_OUT_SPENDS_AMOUNT AS V_ACCOUNT_TOTALS_OUT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPe.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "INITIALS",
+            "type": "string",
+            "display": "Offender Initials",
+            "legacyId": "DPe.DO1012d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DPe.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "SPENDS_TRANSACTION_AMOUNT",
+            "type": "double",
+            "display": "Spends Transaction Amount",
+            "legacyId": "DPe.DO27",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "SAVINGS_TRANSACTION_AMOUNT",
+            "type": "double",
+            "display": "Savings Transaction Amount",
+            "legacyId": "DPe.DO29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "PRIVATE_CASH_TRANSACTION",
+            "type": "double",
+            "display": "Private Cash Transaction",
+            "legacyId": "DPe.DO2a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "TRANSACTION_TYPE",
+            "type": "string",
+            "display": "Transaction Type Code",
+            "legacyId": "DPe.DO6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "TRANSACTION_ENTRY_AMOUNT",
+            "type": "double",
+            "display": "Transaction Entry Amount",
+            "legacyId": "DPe.DO28",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "ACCOUNT_CODE",
+            "type": "double",
+            "display": "Transaction Account Code",
+            "legacyId": "DPe.DO3c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Transaction Date (Date Only)",
+            "legacyId": "DPe.DO39",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "TRANSACTION_ENTRY_DESC",
+            "type": "string",
+            "display": "Transaction Entry Description",
+            "legacyId": "DPe.DO654",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "TXN_ID",
+            "type": "double",
+            "display": "Txn Id",
+            "legacyId": "DPe.DO5af",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "V_CASELOAD_OUT",
+            "type": "string",
+            "display": "V_CASELOAD_OUT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 13,
+            "name": "V_TRANSFERRED_OUT_SPENDS_AMO31",
+            "type": "string",
+            "display": "V_TRANSFERRED_OUT_SPENDS_AMO31",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 14,
+            "name": "V_TRANSFERRED_OUT_PRIVATE_AM32",
+            "type": "string",
+            "display": "V_TRANSFERRED_OUT_PRIVATE_AM32",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 15,
+            "name": "V_TRANSFERRED_OUT_SAVINGS_AM32",
+            "type": "string",
+            "display": "V_TRANSFERRED_OUT_SAVINGS_AM32",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 16,
+            "name": "V_ACCOUNT_TOTALS_OUT",
+            "type": "string",
+            "display": "V_ACCOUNT_TOTALS_OUT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376115/DP8",
+      "name": "MIS Load",
+      "description": "MIS - Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP8.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "66287.RS",
+      "name": "Transfer Balances by Txn Date",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376115/DPd",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:TRANSACTION_ENTRY_DESC",
+            "display": "Transaction Entry Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO654"
+          },
+          {
+            "name": "$ref:V_CASELOAD_OUT",
+            "display": "To",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Right([Transfer Out].[Transaction Entry Description];3)"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO10076"
+          },
+          {
+            "name": "$ref:INITIALS",
+            "display": "Offender Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO1012d"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO1007b"
+          },
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Transaction Date (Date Only)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO39"
+          },
+          {
+            "name": "$ref:TXN_ID",
+            "display": "Txn Id",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO5af"
+          },
+          {
+            "name": "$ref:V_TRANSFERRED_OUT_SPENDS_AMO31",
+            "display": "Spends",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum(If([Transfer Out].[Transaction Type Code] = \"TOR\" And [Transfer Out].[Transaction Account Code] = 2102;[Transfer Out].[Transaction Entry Amount];0))"
+          },
+          {
+            "name": "$ref:V_TRANSFERRED_OUT_PRIVATE_AM32",
+            "display": "Private",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum(If([Transfer Out].[Transaction Type Code] = \"TOR\" And [Transfer Out].[Transaction Account Code] = 2101;[Transfer Out].[Transaction Entry Amount];0))"
+          },
+          {
+            "name": "$ref:V_TRANSFERRED_OUT_SAVINGS_AM32",
+            "display": "Savings",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum(If([Transfer Out].[Transaction Type Code] = \"TOR\" And [Transfer Out].[Transaction Account Code] = 2103;[Transfer Out].[Transaction Entry Amount];0))"
+          },
+          {
+            "name": "$ref:V_ACCOUNT_TOTALS_OUT",
+            "display": "Account Totals",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Transferred OUT Private Amount]+[v_Transferred OUT Savings Amount]+[v_Transferred OUT Spends Amount]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "68191.RS",
+      "name": "Transfer Balances by Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376115/DPd",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:TRANSACTION_ENTRY_DESC",
+            "display": "Transaction Entry Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO654"
+          },
+          {
+            "name": "$ref:V_CASELOAD_OUT",
+            "display": "To",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Right([Transfer Out].[Transaction Entry Description];3)"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO10076"
+          },
+          {
+            "name": "$ref:INITIALS",
+            "display": "Offender Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO1012d"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO1007b"
+          },
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Transaction Date (Date Only)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO39"
+          },
+          {
+            "name": "$ref:TXN_ID",
+            "display": "Txn Id",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO5af"
+          },
+          {
+            "name": "$ref:V_TRANSFERRED_OUT_SPENDS_AMO31",
+            "display": "Spends",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum(If([Transfer Out].[Transaction Type Code] = \"TOR\" And [Transfer Out].[Transaction Account Code] = 2102;[Transfer Out].[Transaction Entry Amount];0))"
+          },
+          {
+            "name": "$ref:V_TRANSFERRED_OUT_PRIVATE_AM32",
+            "display": "Private",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum(If([Transfer Out].[Transaction Type Code] = \"TOR\" And [Transfer Out].[Transaction Account Code] = 2101;[Transfer Out].[Transaction Entry Amount];0))"
+          },
+          {
+            "name": "$ref:V_TRANSFERRED_OUT_SAVINGS_AM32",
+            "display": "Savings",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum(If([Transfer Out].[Transaction Type Code] = \"TOR\" And [Transfer Out].[Transaction Account Code] = 2103;[Transfer Out].[Transaction Entry Amount];0))"
+          },
+          {
+            "name": "$ref:V_ACCOUNT_TOTALS_OUT",
+            "display": "Account Totals",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Transferred OUT Private Amount]+[v_Transferred OUT Savings Amount]+[v_Transferred OUT Spends Amount]"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_CASELOAD_OUT :: Error: =Right([Transfer Out].[Transaction Entry Description];3) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "kljL4VMADCZ6VUkA7f8AFE.rcVQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_CASELOAD_OUT :: Error: =Right([Transfer Out].[Transaction Entry Description];3) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "kljL4VMADCZ6VUkA7f8AFE.rcVQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_CASELOAD_OUT :: Error: =Right([Transfer Out].[Transaction Entry Description];3) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "kljL4VMADCZ6VUkA7f8AFE.rcVQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_CASELOAD_OUT :: Error: =Right([Transfer Out].[Transaction Entry Description];3) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "kljL4VMADCZ6VUkA7f8AFE.rcVQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3376115/DPd",
+      "entityType": "dataset"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3376115/DPe",
+      "entityType": "dataset"
+    }
+  ]
+}

@@ -1,0 +1,579 @@
+{
+  "id": "FkVYAAAIbgEAmwkAAADn7yMAAA06huQI",
+  "name": "MISONR BCS Section 03 Accommodation DERIVED TABLE",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "OAS0017 v0.1"
+    ]
+  },
+  "description": "OAS0017 v1.0 Report to show BCS Section 3 answers for the selected establishment.",
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP1",
+      "name": "MIS Sentence",
+      "description": "MIS - Sentence",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.INITIALS, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION FROM BODIMIS.DIM_CELL AT_DIM_LOCATION, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.LIVING_UNIT_SK = AT_DIM_LOCATION.UNIT_4_SK (+)) AND ((AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, INITIALS, UNIT_4_SHORT_DESCRIPTION, SURNAME || ', ' || INITIALS AS V_OFFENDER_SURNAME, CASE WHEN S3_ACCOMMODATION.SUPPORTED_HOUSING = 0 THEN 'No' ELSE CASE WHEN S3_ACCOMMODATION.SUPPORTED_HOUSING = 1 THEN 'Yes' ELSE CASE WHEN S3_ACCOMMODATION.SUPPORTED_HOUSING = 2 THEN 'Not Applicable' ELSE 'Not Answered' END END END AS SUPPORTED_HOUSING, CASE WHEN S3_ACCOMMODATION.TENANCY_ISSUES = 0 THEN 'No' ELSE CASE WHEN S3_ACCOMMODATION.TENANCY_ISSUES = 1 THEN 'Yes' ELSE CASE WHEN S3_ACCOMMODATION.TENANCY_ISSUES = 2 THEN 'Not Applicable' ELSE 'Not Answered' END END END AS TENANCY_ISSUES, CASE WHEN S3_ISSUE_TO_BE_ADDRESSED = 1 THEN 'Yes' ELSE 'No' END AS ISSUE_TO_BE_ADDRESSED_ FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP1.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP1.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "INITIALS",
+            "type": "string",
+            "display": "Offender Initials",
+            "legacyId": "DP1.DO1012d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "UNIT_4_SHORT_DESCRIPTION",
+            "type": "string",
+            "display": "Prisoner Location",
+            "legacyId": "DP1.DO10a7c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "V_OFFENDER_SURNAME",
+            "type": "string",
+            "display": "V_OFFENDER_SURNAME",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 5,
+            "name": "SUPPORTED_HOUSING",
+            "type": "string",
+            "display": "SUPPORTED_HOUSING",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 6,
+            "name": "TENANCY_ISSUES",
+            "type": "string",
+            "display": "TENANCY_ISSUES",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 7,
+            "name": "ISSUE_TO_BE_ADDRESSED_",
+            "type": "string",
+            "display": "ISSUE_TO_BE_ADDRESSED_",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "4975321/DP0",
+      "name": "S3 Accommodation",
+      "description": "DEV - ONR - Ad-hoc Reports - DEV use only",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT BCS_ACC_STATUS.DESCRIPTION, LOCAL_AUTHORITY.LOCAL_AUTH_DESC, BCS_HOUSING_TYPE.DESCRIPTION AS HOUSING_TYPE, ASSESSMENT_BCS_SECTION3.SUPPORTED_HOUSING, ASSESSMENT_BCS_SECTION3.HOUSING_BENEFIT, ASSESSMENT_BCS_SECTION3.SOMEWHERE_TO_LIVE, ASSESSMENT_BCS_SECTION3.SAME_ADDRESS, ASSESSMENT_BCS_SECTION3.TENANCY_ISSUES, DISCHARGE_LOCAL_AUTHORITY.LOCAL_AUTH_DESC AS DISCHARGE_LOCAL_AUTHORITY, ASSESSMENT_BCS_SECTION3.S3_ISSUE_TO_BE_ADDRESSED, ASSESSMENT.ASSESSMENT_ID, OFFENDER.OFFENDER_ID_DISPLAY, ASSESSMENT_BCS_CASEID.BCS_PART1_COMP_DATE FROM ASSESSMENT, BCS_ACC_STATUS, LOCAL_AUTHORITY, BCS_HOUSING_TYPE, ASSESSMENT_BCS_SECTION3, LOCAL_AUTHORITY DISCHARGE_LOCAL_AUTHORITY, OFFENDER, ASSESSMENT_BCS_CASEID, REP_OFFENDER_HISTORY, BCS_PART_STATUS, PURPOSE_OF_BCSREASON WHERE (OFFENDER.OFFENDER_ID = ASSESSMENT.OFFENDER_ID (+)) AND (OFFENDER.OFFENDER_ID = REP_OFFENDER_HISTORY.OFFENDER_ID (+)) AND (ASSESSMENT.ASSESSMENT_ID = ASSESSMENT_BCS_CASEID.ASSESSMENT_ID AND ASSESSMENT.ASSESSMENT_TYPE_ELM = 'TR_BCS') AND (PURPOSE_OF_BCSREASON.PURPOSE_OF_BCSREASON_CODE (+) = ASSESSMENT_BCS_CASEID.BCS_PURPOSE) AND (ASSESSMENT_BCS_CASEID.ASSESSMENT_ID = ASSESSMENT_BCS_SECTION3.ASSESSMENT_ID) AND (ASSESSMENT_BCS_SECTION3.BCS_ACC_STATUS_OPOL_ID = BCS_ACC_STATUS.BCS_ACC_STATUS_OPOL_ID (+)) AND (ASSESSMENT_BCS_SECTION3.HOUSING_TYPE = BCS_HOUSING_TYPE.BCS_HOUSING_TYPE_CODE (+)) AND (BCS_PART_STATUS.BCS_PART_STATUS_CODE (+) = ASSESSMENT_BCS_CASEID.BCS_PART1_STATUS) AND (ASSESSMENT_BCS_SECTION3.CURRENT_LOCAL_AUTHORITY = LOCAL_AUTHORITY.LOCAL_AUTH_CODE (+)) AND (ASSESSMENT_BCS_SECTION3.DISCHARGE_LOCAL_AUTHORITY = DISCHARGE_LOCAL_AUTHORITY.LOCAL_AUTH_CODE (+)) AND (OFFENDER.LIMIT_ACCESS_OFFENDER_INDICAT = 0) AND ((REP_OFFENDER_HISTORY.LATEST_OWNERSHIP_RANK = 1) AND BCS_PART_STATUS.DESCRIPTION = 'Complete' AND PURPOSE_OF_BCSREASON.DESCRIPTION IN ('Basic Custody Screening - Start') AND REP_OFFENDER_HISTORY.PHYSICAL_LOCATION IN ('Brixton (HMP)'))), dataset_ AS (SELECT DESCRIPTION, LOCAL_AUTH_DESC, HOUSING_TYPE, SUPPORTED_HOUSING, HOUSING_BENEFIT, SOMEWHERE_TO_LIVE, SAME_ADDRESS, TENANCY_ISSUES, DISCHARGE_LOCAL_AUTHORITY, S3_ISSUE_TO_BE_ADDRESSED, ASSESSMENT_ID, OFFENDER_ID_DISPLAY, BCS_PART1_COMP_DATE, COUNTDISTINCT(MIS_SENTENCE.OFFENDER_ID_DISPLAY) OVER (PARTITION BY ASSESSMENT_ID = V_MAX_ASSESSMENT_ID) AS V_S3_NOMS_NUMBER, SURNAME || ', ' || INITIALS AS V_OFFENDER_SURNAME, CASE WHEN S3_ACCOMMODATION.SUPPORTED_HOUSING = 0 THEN 'No' ELSE CASE WHEN S3_ACCOMMODATION.SUPPORTED_HOUSING = 1 THEN 'Yes' ELSE CASE WHEN S3_ACCOMMODATION.SUPPORTED_HOUSING = 2 THEN 'Not Applicable' ELSE 'Not Answered' END END END AS SUPPORTED_HOUSING, CASE WHEN S3_ACCOMMODATION.TENANCY_ISSUES = 0 THEN 'No' ELSE CASE WHEN S3_ACCOMMODATION.TENANCY_ISSUES = 1 THEN 'Yes' ELSE CASE WHEN S3_ACCOMMODATION.TENANCY_ISSUES = 2 THEN 'Not Applicable' ELSE 'Not Answered' END END END AS TENANCY_ISSUES, CASE WHEN S3_ISSUE_TO_BE_ADDRESSED = 1 THEN 'Yes' ELSE 'No' END AS ISSUE_TO_BE_ADDRESSED_ FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "BCS Accommodation Status",
+            "legacyId": "DP0.DO12e6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LOCAL_AUTH_DESC",
+            "type": "string",
+            "display": "Current Local Authority",
+            "legacyId": "DP0.DO1382",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "HOUSING_TYPE",
+            "type": "string",
+            "display": "Housing Type",
+            "legacyId": "DP0.DO12f0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "SUPPORTED_HOUSING",
+            "type": "double",
+            "display": "Supported Housing",
+            "legacyId": "DP0.DO12f1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "HOUSING_BENEFIT",
+            "type": "double",
+            "display": "Housing Benefit",
+            "legacyId": "DP0.DO12f2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "SOMEWHERE_TO_LIVE",
+            "type": "double",
+            "display": "Somewhere To Live",
+            "legacyId": "DP0.DO12f3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "SAME_ADDRESS",
+            "type": "double",
+            "display": "Same Address",
+            "legacyId": "DP0.DO12f4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "TENANCY_ISSUES",
+            "type": "double",
+            "display": "Tenancy Issues",
+            "legacyId": "DP0.DO12f5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "DISCHARGE_LOCAL_AUTHORITY",
+            "type": "string",
+            "display": "Discharge Local Authority",
+            "legacyId": "DP0.DO1383",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "S3_ISSUE_TO_BE_ADDRESSED",
+            "type": "double",
+            "display": "S3 Issue To Be Addressed",
+            "legacyId": "DP0.DO12fe",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ASSESSMENT_ID",
+            "type": "double",
+            "display": "Assessment ID",
+            "legacyId": "DP0.DO5d5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO264",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "BCS_PART1_COMP_DATE",
+            "type": "date",
+            "display": "BCS Part1 Completion Date",
+            "legacyId": "DP0.DO1251",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "V_S3_NOMS_NUMBER",
+            "type": "string",
+            "display": "V_S3_NOMS_NUMBER",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 14,
+            "name": "V_OFFENDER_SURNAME",
+            "type": "string",
+            "display": "V_OFFENDER_SURNAME",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 15,
+            "name": "SUPPORTED_HOUSING",
+            "type": "string",
+            "display": "SUPPORTED_HOUSING",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 16,
+            "name": "TENANCY_ISSUES",
+            "type": "string",
+            "display": "TENANCY_ISSUES",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 17,
+            "name": "ISSUE_TO_BE_ADDRESSED_",
+            "type": "string",
+            "display": "ISSUE_TO_BE_ADDRESSED_",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "44.RS",
+      "name": "Sec 3 Summary",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "4975321/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:DISCHARGE_LOCAL_AUTHORITY",
+            "display": "Discharge Local Authority",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1383"
+          },
+          {
+            "name": "$ref:V_S3_NOMS_NUMBER",
+            "display": "B3.11 Which local authority will you be living in when you are released?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([MIS Sentence].[NOMS Number];Distinct) Where ([Assessment ID] = [v_Max Assessment ID])"
+          },
+          {
+            "name": "$ref:V_S3_NOMS_NUMBER",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([MIS Sentence].[NOMS Number];Distinct) Where ([Assessment ID] = [v_Max Assessment ID])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "876.RS",
+      "name": "Offender Detail",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP1",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_MAX_ASSESSMENT_ID_FOR_FILTER IN (1))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP1.DO10076"
+          },
+          {
+            "name": "$ref:ASSESSMENT_ID",
+            "display": "Assessment ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO5d5"
+          },
+          {
+            "name": "$ref:V_OFFENDER_SURNAME",
+            "display": "B3.1 What was your accommodation status before prison",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Offender Surname]+\", \"+[Offender Initials]"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "BCS Accommodation Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO12e6"
+          },
+          {
+            "name": "$ref:HOUSING_TYPE",
+            "display": "Housing Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO12f0"
+          },
+          {
+            "name": "$ref:SUPPORTED_HOUSING",
+            "display": "B3.6 Are you claiming Housing Benefit? - This question will only be available if the answer to BCS3.1 is not \"NFA\"",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([S3 Accommodation].[Supported Housing]=0;\"No\";(If([S3 Accommodation].[Supported Housing]=1;\"Yes\";(If([S3 Accommodation].[Supported Housing]=2;\"Not Applicable\";\"Not Answered\")))))"
+          },
+          {
+            "name": "$ref:HOUSING_BENEFIT",
+            "display": "B3.7 Have you got somewhere to live when you leave prison?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([S3 Accommodation].[Housing Benefit]=0;\"No\";(If([S3 Accommodation].[Housing Benefit]=1;\"Yes\";(If([S3 Accommodation].[Housing Benefit]=2;\"Don't Know\";\"Not Answered\")))))"
+          },
+          {
+            "name": "$ref:SOMEWHERE_TO_LIVE",
+            "display": "B3.8 Is it the same address as the one you were living at before you came into prison (B3.2 above)? -  This question will only be available if the answer to BCS3.7 is Yes",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([S3 Accommodation].[Somewhere To Live]=0;\"No\";(If([S3 Accommodation].[Somewhere To Live]=1;\"Yes\";\"Don't Know\")))"
+          },
+          {
+            "name": "$ref:SAME_ADDRESS",
+            "display": "B3.9 Are there any tenancy or rental issues with this address because you are in prison?                                                      ",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([S3 Accommodation].[Same Address]=0;\"No\";(If([S3 Accommodation].[Same Address]=1;\"Yes\";(If([S3 Accommodation].[Same Address]=2;\"Don't Know\";\"Not Answered\")))))"
+          },
+          {
+            "name": "$ref:TENANCY_ISSUES",
+            "display": "B3.3 What local authority did you live in before you came into prison?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([S3 Accommodation].[Tenancy Issues]=0;\"No\";(If([S3 Accommodation].[Tenancy Issues]=1;\"Yes\";(If([S3 Accommodation].[Tenancy Issues]=2;\"Not Applicable\";\"Not Answered\")))))"
+          },
+          {
+            "name": "$ref:LOCAL_AUTH_DESC",
+            "display": "Current Local Authority",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1382"
+          },
+          {
+            "name": "$ref:DISCHARGE_LOCAL_AUTHORITY",
+            "display": "Discharge Local Authority",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1383"
+          },
+          {
+            "name": "$ref:ISSUE_TO_BE_ADDRESSED_",
+            "display": "=Count([NOMS Number])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([S3 Issue To Be Addressed]=1;\"Yes\";\"No\")"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:ISSUE_TO_BE_ADDRESSED_ :: ReferenceError: error is not defined",
+      "entityId": "FkVYAAAIbgEAmwkAAADn7yMAAA06huQI",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : HOUSING_BENEFIT :: Error: Error tokenizing ' THEN 'Don't Know' ELSE 'Not Answered' END END EN': Missing ' from 1:221",
+      "entityId": "FkVYAAAIbgEAmwkAAADn7yMAAA06huQI",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : SOMEWHERE_TO_LIVE :: Error: Error tokenizing 'E_TO_LIVE = 1 THEN 'Yes' ELSE 'Don't Know' END EN': Missing ' from 1:149",
+      "entityId": "FkVYAAAIbgEAmwkAAADn7yMAAA06huQI",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : SAME_ADDRESS :: Error: Error tokenizing ' THEN 'Don't Know' ELSE 'Not Answered' END END EN': Missing ' from 1:212",
+      "entityId": "FkVYAAAIbgEAmwkAAADn7yMAAA06huQI",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:ISSUE_TO_BE_ADDRESSED_ :: ReferenceError: error is not defined",
+      "entityId": "FkVYAAAIbgEAmwkAAADn7yMAAA06huQI",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : HOUSING_BENEFIT :: Error: Error tokenizing ' THEN 'Don't Know' ELSE 'Not Answered' END END EN': Missing ' from 1:221",
+      "entityId": "FkVYAAAIbgEAmwkAAADn7yMAAA06huQI",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : SOMEWHERE_TO_LIVE :: Error: Error tokenizing 'E_TO_LIVE = 1 THEN 'Yes' ELSE 'Don't Know' END EN': Missing ' from 1:149",
+      "entityId": "FkVYAAAIbgEAmwkAAADn7yMAAA06huQI",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : SAME_ADDRESS :: Error: Error tokenizing ' THEN 'Don't Know' ELSE 'Not Answered' END END EN': Missing ' from 1:212",
+      "entityId": "FkVYAAAIbgEAmwkAAADn7yMAAA06huQI",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report field ASSESSMENT_ID does not have corresponding dataset schema field",
+      "entityId": "876.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DESCRIPTION does not have corresponding dataset schema field",
+      "entityId": "876.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field HOUSING_TYPE does not have corresponding dataset schema field",
+      "entityId": "876.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field HOUSING_BENEFIT does not have corresponding dataset schema field",
+      "entityId": "876.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field SOMEWHERE_TO_LIVE does not have corresponding dataset schema field",
+      "entityId": "876.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field SAME_ADDRESS does not have corresponding dataset schema field",
+      "entityId": "876.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field LOCAL_AUTH_DESC does not have corresponding dataset schema field",
+      "entityId": "876.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DISCHARGE_LOCAL_AUTHORITY does not have corresponding dataset schema field",
+      "entityId": "876.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DP1",
+      "entityType": "dataset"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "4975321/DP0",
+      "entityType": "dataset"
+    }
+  ]
+}

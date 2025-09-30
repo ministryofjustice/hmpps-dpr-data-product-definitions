@@ -1,0 +1,252 @@
+{
+  "id": "olJEWjwAAuwbaqsAWAGD8K.FoJY",
+  "name": "MIS HDC Attendance Report",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACT0019 v00.00.01 LSRT0043"
+    ]
+  },
+  "description": "Provides the activities allocations and attendance history for a specified prisoner as part of the Home Detention Curfew evaluation criteria. The prompts for a NOMS Number and one or more Activity Services to exclude (such as Association, PE for Recreation (Gym) - you can choose to exclude inappropriate activity services at runtime. The report will only return data on or after 1st November 2013. <br/>ACT0019 v00.00.01 Last Modified: 27/09/13",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP5",
+      "name": "MIS Load Log",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DP5.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP6",
+      "name": "Prisoner Information",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.MIDDLE_NAME_1, AT_OFFENDER_BOOKING.GENDER_DESCRIPTION, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE <> '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, CASE WHEN AT_DOB.DAY_DATE <> '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' ELSE DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH END AS CURRENT_EFFECTIVE_SENTENCE_L33 FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, (SELECT BODIMIS.FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK, BODIMIS.FACT_OFFENDER_SENTENCE.EFFECTIVE_SENTENCE_LENGTH FROM BODIMIS.FACT_OFFENDER_SENTENCE WHERE (BODIMIS.FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG = 'Y')) DT_CURREFFSENLEN, (SELECT DISTINCT BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK = dss.sentence_status_sk) AND dss.sentence_status = 'Active' AND (BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK = BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK) AND (BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK) AND BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG = 'Y') DT_LIFEFLAG WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_CURREFFSENLEN.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_LIFEFLAG.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND ((AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O') AND AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY = 'X08116XX')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, FIRST_NAME, MIDDLE_NAME_1, GENDER_DESCRIPTION, OFFENDER_AGE, DATE_OF_BIRTH, CURRENT_EFFECTIVE_SENTENCE_L33 FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP6.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP6.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP6.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "MIDDLE_NAME_1",
+            "type": "string",
+            "display": "Offender Given Name 2",
+            "legacyId": "DP6.DO10081",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "GENDER_DESCRIPTION",
+            "type": "string",
+            "display": "Gender Description",
+            "legacyId": "DP6.DO100a9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DP6.DO10082",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP6.DO10085",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "CURRENT_EFFECTIVE_SENTENCE_L33",
+            "type": "string",
+            "display": "Current Effective Sentence Length",
+            "legacyId": "DP6.DO2ef",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP8",
+      "name": "All Activity Statusses",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_DIM_ACTIVITY_STATUS.CODE, AT_DIM_ACTIVITY_STATUS.DESCRIPTION FROM BODIMIS.DIM_REFERENCE_CODES AT_DIM_ACTIVITY_STATUS WHERE (AT_DIM_ACTIVITY_STATUS.CODE_DOMAIN = 'PS_PA_OC') AND AT_DIM_ACTIVITY_STATUS.Active_flag = 'Y'), dataset_ AS (SELECT CODE, DESCRIPTION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "CODE",
+            "type": "string",
+            "display": "Activity Session Status Code",
+            "legacyId": "DP8.DO1064f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Activity Session Status Description",
+            "legacyId": "DP8.DO10817",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "119600.RS",
+      "name": "HDC Attendance Report",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP6",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:DP4_DO106B2",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO1064C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO109D7",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO10817",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "missing query plan statement",
+      "entityId": "3375368/DP4",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO106B2 does not have corresponding dataset schema field",
+      "entityId": "119600.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO1064C does not have corresponding dataset schema field",
+      "entityId": "119600.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO109D7 does not have corresponding dataset schema field",
+      "entityId": "119600.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO10817 does not have corresponding dataset schema field",
+      "entityId": "119600.RS",
+      "entityType": "variant"
+    }
+  ]
+}

@@ -1,0 +1,276 @@
+{
+  "id": "FmXj92B87wgAr2EAAHD7Yl8dACJIAFJ8",
+  "name": "MIS Draft NSR2353 Receptions and Discharges for a Date Range Vahini EN",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "MOV0012 v1.8"
+    ]
+  },
+  "description": "Outputs a list of receptions and discharges into and out of a prison for a specified date range in the past. Further tabs added to list movements in Surname order, Cell Location order, Main Offence and Security Category.<br/>MOV0012 v1.8 Last Modified: 25/07/2019",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP2",
+      "name": "Receptions and Discharges",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.INITIALS, AT_OFFENDER_BOOKING.FIRST_NAME, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, AT_OFFENDER_BOOKING.NATIONALITY_DESCRIPTION, AT_OFFENDER_BOOKING.BIRTH_COUNTRY, AT_FACT_MOV_EXT.MOVEMENT_TIME, AT_FACT_MOV_EXT.REASON_CODE, AT_FACT_MOV_EXT.TYPE, AT_FACT_MOV_EXT.DIRECTION_CODE, DT_EXT_MOVE_TO.TYPE_DESCRIPTION_TO, DT_EXT_MOVE_FROM.TYPE_DESCRIPTION_FROM, SUBSTR(AT_FACT_MOV_EXT.MOVEMENT_TIME, 11, 6) AS MOVEMENT_TIME FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, (SELECT BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_SK AS SK_ID_TO, BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION AS TYPE_DESCRIPTION_TO, 'Establishment' AS Location_Type_To FROM BODIMIS.DIM_ESTABLISHMENT UNION ALL SELECT BODIMIS.DIM_PROBATION_OFFICE.PROBATION_OFFICE_SK, BODIMIS.DIM_PROBATION_OFFICE.PROB_OFFICE_DESCRIPTION, 'Probation Office' AS Location_Type_To FROM BODIMIS.DIM_PROBATION_OFFICE UNION ALL SELECT BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_SK, BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_DESCRIPTION, 'Outside Location' AS Location_Type_To FROM BODIMIS.DIM_OUTSIDE_LOCATION UNION ALL SELECT BODIMIS.DIM_CITY.CITY_SK, BODIMIS.DIM_CITY.DESCRIPTION, 'City' AS Location_Type_To FROM BODIMIS.DIM_CITY UNION ALL SELECT BODIMIS.DIM_COURT.COURT_SK, BODIMIS.DIM_COURT.COURT_DESCRIPTION, 'Court' AS Location_Type_To FROM BODIMIS.DIM_COURT UNION ALL SELECT address_id_nk, TRIM(CASE WHEN no_fixed_address_flag = 'Y' THEN 'No fixed address' ELSE CASE WHEN NOT flat IS NULL THEN flat || '  ' END || CASE WHEN NOT premise IS NULL THEN premise || '  ' END || CASE WHEN NOT street IS NULL THEN street || '  ' END || CASE WHEN NOT locality IS NULL THEN locality || '  ' END || CASE WHEN NOT city_desc IS NULL THEN city_desc || '  ' END || CASE WHEN NOT county_desc IS NULL THEN county_desc || '  ' END || CASE WHEN NOT postal_code IS NULL THEN postal_code || '  ' END || CASE WHEN NOT country_desc IS NULL THEN country_desc END END), 'Home Leave Address' FROM bodimis.dim_addresses) DT_EXT_MOVE_TO, (SELECT BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_SK AS SK_ID_FROM, BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION AS TYPE_DESCRIPTION_FROM, 'Establishment' AS Location_Type_FROM FROM BODIMIS.DIM_ESTABLISHMENT UNION ALL SELECT BODIMIS.DIM_PROBATION_OFFICE.PROBATION_OFFICE_SK, BODIMIS.DIM_PROBATION_OFFICE.PROB_OFFICE_DESCRIPTION, 'Probation Office' AS Location_Type_From FROM BODIMIS.DIM_PROBATION_OFFICE UNION ALL SELECT BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_SK, BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_DESCRIPTION, 'Outside Location' AS Location_Type_From FROM BODIMIS.DIM_OUTSIDE_LOCATION UNION ALL SELECT BODIMIS.DIM_CITY.CITY_SK, BODIMIS.DIM_CITY.DESCRIPTION, 'City' AS Location_Type_From FROM BODIMIS.DIM_CITY UNION ALL SELECT BODIMIS.DIM_COURT.COURT_SK, BODIMIS.DIM_COURT.COURT_DESCRIPTION, 'Court' AS Location_Type_From FROM BODIMIS.DIM_COURT UNION ALL SELECT address_id_nk, TRIM(CASE WHEN no_fixed_address_flag = 'Y' THEN 'No fixed address' ELSE CASE WHEN NOT flat IS NULL THEN flat || '  ' END || CASE WHEN NOT premise IS NULL THEN premise || '  ' END || CASE WHEN NOT street IS NULL THEN street || '  ' END || CASE WHEN NOT locality IS NULL THEN locality || '  ' END || CASE WHEN NOT city_desc IS NULL THEN city_desc || '  ' END || CASE WHEN NOT county_desc IS NULL THEN county_desc || '  ' END || CASE WHEN NOT postal_code IS NULL THEN postal_code || '  ' END || CASE WHEN NOT country_desc IS NULL THEN country_desc END END), 'Home Leave Address' FROM bodimis.dim_addresses) DT_EXT_MOVE_FROM, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_TO, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (CASE WHEN AT_FACT_MOV_EXT.TO_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.TO_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_FACT_MOV_EXT.TO_LOCATION_SK = DT_EXT_MOVE_TO.SK_ID_TO (+) AND AT_FACT_MOV_EXT.TO_LOCATION_TYPE = DT_EXT_MOVE_TO.LOCATION_TYPE_TO (+)) AND (AT_FACT_MOV_EXT.FROM_LOCATION_SK = DT_EXT_MOVE_FROM.SK_ID_FROM (+) AND AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = DT_EXT_MOVE_FROM.LOCATION_TYPE_FROM (+)) AND (AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_CODE_NK IN ((SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), 'TRN', (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_)) AND AT_DIM_DATE_EXT_MOV.DAY_DATE <= TO_DATE('30-06-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_DIM_DATE_EXT_MOV.DAY_DATE >= TO_DATE('01-06-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'IN' AND AT_FACT_MOV_EXT.TYPE IN ('Transfers', 'Admission') AND SUBSTR(AT_FACT_MOV_EXT.MOVEMENT_TIME, 11, 6) <= '07:30') UNION SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.INITIALS, AT_OFFENDER_BOOKING.FIRST_NAME, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, AT_OFFENDER_BOOKING.NATIONALITY_DESCRIPTION, AT_OFFENDER_BOOKING.BIRTH_COUNTRY, AT_FACT_MOV_EXT.MOVEMENT_TIME, AT_FACT_MOV_EXT.REASON_CODE, AT_FACT_MOV_EXT.TYPE, AT_FACT_MOV_EXT.DIRECTION_CODE, DT_EXT_MOVE_TO.TYPE_DESCRIPTION_TO, DT_EXT_MOVE_FROM.TYPE_DESCRIPTION_FROM, SUBSTR(AT_FACT_MOV_EXT.MOVEMENT_TIME, 11, 6) AS MOVEMENT_TIME FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, (SELECT BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_SK AS SK_ID_TO, BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION AS TYPE_DESCRIPTION_TO, 'Establishment' AS Location_Type_To FROM BODIMIS.DIM_ESTABLISHMENT UNION ALL SELECT BODIMIS.DIM_PROBATION_OFFICE.PROBATION_OFFICE_SK, BODIMIS.DIM_PROBATION_OFFICE.PROB_OFFICE_DESCRIPTION, 'Probation Office' AS Location_Type_To FROM BODIMIS.DIM_PROBATION_OFFICE UNION ALL SELECT BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_SK, BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_DESCRIPTION, 'Outside Location' AS Location_Type_To FROM BODIMIS.DIM_OUTSIDE_LOCATION UNION ALL SELECT BODIMIS.DIM_CITY.CITY_SK, BODIMIS.DIM_CITY.DESCRIPTION, 'City' AS Location_Type_To FROM BODIMIS.DIM_CITY UNION ALL SELECT BODIMIS.DIM_COURT.COURT_SK, BODIMIS.DIM_COURT.COURT_DESCRIPTION, 'Court' AS Location_Type_To FROM BODIMIS.DIM_COURT UNION ALL SELECT address_id_nk, TRIM(CASE WHEN no_fixed_address_flag = 'Y' THEN 'No fixed address' ELSE CASE WHEN NOT flat IS NULL THEN flat || '  ' END || CASE WHEN NOT premise IS NULL THEN premise || '  ' END || CASE WHEN NOT street IS NULL THEN street || '  ' END || CASE WHEN NOT locality IS NULL THEN locality || '  ' END || CASE WHEN NOT city_desc IS NULL THEN city_desc || '  ' END || CASE WHEN NOT county_desc IS NULL THEN county_desc || '  ' END || CASE WHEN NOT postal_code IS NULL THEN postal_code || '  ' END || CASE WHEN NOT country_desc IS NULL THEN country_desc END END), 'Home Leave Address' FROM bodimis.dim_addresses) DT_EXT_MOVE_TO, (SELECT BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_SK AS SK_ID_FROM, BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION AS TYPE_DESCRIPTION_FROM, 'Establishment' AS Location_Type_FROM FROM BODIMIS.DIM_ESTABLISHMENT UNION ALL SELECT BODIMIS.DIM_PROBATION_OFFICE.PROBATION_OFFICE_SK, BODIMIS.DIM_PROBATION_OFFICE.PROB_OFFICE_DESCRIPTION, 'Probation Office' AS Location_Type_From FROM BODIMIS.DIM_PROBATION_OFFICE UNION ALL SELECT BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_SK, BODIMIS.DIM_OUTSIDE_LOCATION.OUTSIDE_LOCATION_DESCRIPTION, 'Outside Location' AS Location_Type_From FROM BODIMIS.DIM_OUTSIDE_LOCATION UNION ALL SELECT BODIMIS.DIM_CITY.CITY_SK, BODIMIS.DIM_CITY.DESCRIPTION, 'City' AS Location_Type_From FROM BODIMIS.DIM_CITY UNION ALL SELECT BODIMIS.DIM_COURT.COURT_SK, BODIMIS.DIM_COURT.COURT_DESCRIPTION, 'Court' AS Location_Type_From FROM BODIMIS.DIM_COURT UNION ALL SELECT address_id_nk, TRIM(CASE WHEN no_fixed_address_flag = 'Y' THEN 'No fixed address' ELSE CASE WHEN NOT flat IS NULL THEN flat || '  ' END || CASE WHEN NOT premise IS NULL THEN premise || '  ' END || CASE WHEN NOT street IS NULL THEN street || '  ' END || CASE WHEN NOT locality IS NULL THEN locality || '  ' END || CASE WHEN NOT city_desc IS NULL THEN city_desc || '  ' END || CASE WHEN NOT county_desc IS NULL THEN county_desc || '  ' END || CASE WHEN NOT postal_code IS NULL THEN postal_code || '  ' END || CASE WHEN NOT country_desc IS NULL THEN country_desc END END), 'Home Leave Address' FROM bodimis.dim_addresses) DT_EXT_MOVE_FROM, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_FROM, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (CASE WHEN AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.FROM_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_FACT_MOV_EXT.TO_LOCATION_SK = DT_EXT_MOVE_TO.SK_ID_TO (+) AND AT_FACT_MOV_EXT.TO_LOCATION_TYPE = DT_EXT_MOVE_TO.LOCATION_TYPE_TO (+)) AND (AT_FACT_MOV_EXT.FROM_LOCATION_SK = DT_EXT_MOVE_FROM.SK_ID_FROM (+) AND AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = DT_EXT_MOVE_FROM.LOCATION_TYPE_FROM (+)) AND (AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK IN ((SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), 'TRN', (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_), (SELECT establishment_code FROM prompt_)) AND AT_DIM_DATE_EXT_MOV.DAY_DATE <= TO_DATE('30-06-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_DIM_DATE_EXT_MOV.DAY_DATE >= TO_DATE('01-06-2021 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'IN' AND AT_FACT_MOV_EXT.TYPE IN ('Transfers', 'Admission') AND SUBSTR(AT_FACT_MOV_EXT.MOVEMENT_TIME, 11, 6) >= '19:30')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, INITIALS, FIRST_NAME, DATE_OF_BIRTH, NATIONALITY_DESCRIPTION, BIRTH_COUNTRY, MOVEMENT_TIME, REASON_CODE, TYPE, DIRECTION_CODE, TYPE_DESCRIPTION_TO, TYPE_DESCRIPTION_FROM, MOVEMENT_TIME, COUNT(OFFENDER_ID_DISPLAY) AS V_COUNT_NOMS FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP2.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "INITIALS",
+            "type": "string",
+            "display": "Offender Initials",
+            "legacyId": "DP2.DO1012d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP2.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP2.DO10085",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "NATIONALITY_DESCRIPTION",
+            "type": "string",
+            "display": "Nationality Description",
+            "legacyId": "DP2.DO100b5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "BIRTH_COUNTRY",
+            "type": "string",
+            "display": "Birth Country",
+            "legacyId": "DP2.DO10088",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "MOVEMENT_TIME",
+            "type": "date",
+            "display": "Movement Date and Time (External)",
+            "legacyId": "DP2.DO103eb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "REASON_CODE",
+            "type": "string",
+            "display": "Movement Reason Code (External)",
+            "legacyId": "DP2.DO103fc",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "TYPE",
+            "type": "string",
+            "display": "Movement Type (External)",
+            "legacyId": "DP2.DO103ec",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "DIRECTION_CODE",
+            "type": "string",
+            "display": "Movement Direction Code (External)",
+            "legacyId": "DP2.DO103fd",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "TYPE_DESCRIPTION_TO",
+            "type": "string",
+            "display": "Movement Description (To)",
+            "legacyId": "DP2.DO106ff",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "TYPE_DESCRIPTION_FROM",
+            "type": "string",
+            "display": "Movement Description (From)",
+            "legacyId": "DP2.DO10700",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "MOVEMENT_TIME",
+            "type": "string",
+            "display": "Movement Time",
+            "legacyId": "DP2.DO10782",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "V_COUNT_NOMS",
+            "type": "string",
+            "display": "V_COUNT_NOMS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP3",
+      "name": "Load End Date",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP3.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "137784.RS",
+      "name": "All Movements by Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:TYPE",
+            "display": "Movement Type (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103ec"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION_TO",
+            "display": "Movement Description (To)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO106ff"
+          },
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "Total Prisoners",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:MOVEMENT_TIME",
+            "display": "Movement Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10782"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DP2",
+      "entityType": "dataset"
+    }
+  ]
+}

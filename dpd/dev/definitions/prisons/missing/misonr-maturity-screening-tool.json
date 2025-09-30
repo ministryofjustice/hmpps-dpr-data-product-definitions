@@ -1,0 +1,810 @@
+{
+  "id": "Fn0QeAFLRwkApmYkAACXCXnMACJIAGE1",
+  "name": "MISONR Maturity Screening Tool",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "OAS0033 - v1.5"
+    ]
+  },
+  "description": "Latest Update: 14/02/2022 - report now also shows unsentenced prisoners.<br/>OAS0033",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP4",
+      "name": "Prisoners",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' WHEN SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) = '99' THEN 'Life' WHEN FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH = '00/00/00' THEN 'No sentence' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) = '00' AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 4, 2)) < 6 THEN 'Less than 6 Months' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) = '00' AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 4, 2)) < 12 THEN '6 Months to less than 1 Year' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) <> '00' AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) < 2 THEN '1 Year to less than 2 Years' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND NOT SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) IN ('00', '01') AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) < 3 THEN '2 Years to less than 3 Years' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND NOT SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) IN ('00', '01', '02') AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) < 4 THEN '3 Years to less than 4 Years' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND NOT SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) IN ('00', '01', '02', '03') AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) < 10 THEN '4 Years to less than 10 Years' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) >= 10 THEN '10 Years or more and Less than Life' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH IS NULL THEN 'No sentence' ELSE 'Not Categorised' END AS CURRENT_SENTENCE_LENGTH_BAND, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE, CASE WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) <= 17 THEN 'Juvenile' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) BETWEEN 18 AND 20 THEN 'Young Person' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) >= 21 THEN 'Adult' END AS ADULT_YOUNG_PERSON_INDICATOR, COUNT(CASE WHEN AT_FACT_MOV_EXT.REASON_CODE IN ('ELR', 'B', 'L') AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'IN' THEN AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY END) AS COUNT_OF_LICENSE_RECALLS, AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG, CASE WHEN AT_SENT_START_DATE.DAY_DATE < '31/12/9000' THEN AT_SENT_START_DATE.DAY_DATE END AS SENTENCE_START_DATE, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.INITIALS, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, FACT_CURR_KEY_DATES_SENT.CURR_CRD_DATE, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Sentenced' WHEN FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH = '00/00/00' THEN 'Unsentenced' WHEN FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH IS NULL THEN 'Unsentenced' ELSE 'Sentenced' END AS SENTENCED_, CASE WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('14FTR_ORA', '14FTRHDC_ORA', 'CUR_ORA', 'FTR/08', 'FTR_HDC', 'FTR_HDC_ORA', 'FTR_ORA', 'FTR_SCH15', 'FTRSCH15_ORA', 'HDR_ORA', 'LR', 'LR_ALP', 'LR_ALP_LASPO', 'LR_DLP', 'LR_DPP', 'LR_EPP', 'LR_ES', 'LR_HDC', 'LR_IPP', 'LR_LASPO_AR', 'LR_LASPO_DR', 'LR_LIFE', 'LR_MLP', 'LR_ORA', 'LR_SEC236A', 'LR_SEC91_ORA', 'LR_YOI', 'LR_YOI_ORA', 'FTRSCH18_ORA', 'FTRSCH18', 'LR_EDS18', 'LR_EDS21', 'LR_SOPC18', 'LR_SOPC21', 'LRSEC250_ORA', 'LR_ALP_CDE18', 'LR_ALP_CDE21', 'LR_EDSU18') THEN 'Recall' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '0' THEN 'Dead' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '1' THEN 'Indeterminate Sentence' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('2', '3') THEN 'Sentenced' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('4', '5', '6', '7') THEN 'Convicted Unsentenced' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('9', '10') OR AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'CIV_RMD' THEN 'Civil Prisoner' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('8', '11') THEN 'Immigration Detainee' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('12', '13', '14') THEN 'Remand' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'UNKNOWN' THEN 'Unknown' ELSE 'Other' END AS LEGAL_STATUS_GROUPING, AT_OFFENDER_BOOKING.LIVING_UNIT_SK FROM BODIMIS.DIM_DATE AT_SENT_START_DATE, BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_COURT_CASE_STATUS AT_DIM_COURT_CASE_STATUS, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT DISTINCT BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK = dss.sentence_status_sk) AND dss.sentence_status = 'Active' AND (BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK = BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK) AND (BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK) AND BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG = 'Y') DT_LIFEFLAG, FACT_CURR_KEY_DATES_SENT, BODIMIS.DIM_DATE AT_DOB, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_COURT_CASE AT_COURT_CASE WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK (+)) AND (AT_FACT_SENTENCE.SENTENCE_START_DATE_SK = AT_SENT_START_DATE.DATE_SK (+)) AND (AT_COURT_CASE.COURT_CASE_STATUS_SK = AT_DIM_COURT_CASE_STATUS.COURT_CASE_STATUS_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_LIFEFLAG.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_COURT_CASE.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_SENTENCE.COURT_CASE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK IN ((SELECT establishment_code FROM prompt_)) OR 'All' IN ((SELECT establishment_code FROM prompt_))) AND (AT_DIM_COURT_CASE_STATUS.COURT_CASE_STATUS = 'Active') AND FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) IN (18, 19, 20, 21, 22, 23, 24, 25) AND AT_OFFENDER_BOOKING.GENDER_CODE IN ('M')) GROUP BY AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' WHEN SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) = '99' THEN 'Life' WHEN FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH = '00/00/00' THEN 'No sentence' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) = '00' AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 4, 2)) < 6 THEN 'Less than 6 Months' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) = '00' AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 4, 2)) < 12 THEN '6 Months to less than 1 Year' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) <> '00' AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) < 2 THEN '1 Year to less than 2 Years' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND NOT SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) IN ('00', '01') AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) < 3 THEN '2 Years to less than 3 Years' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND NOT SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) IN ('00', '01', '02') AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) < 4 THEN '3 Years to less than 4 Years' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND NOT SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) IN ('00', '01', '02', '03') AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) < 10 THEN '4 Years to less than 10 Years' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) >= 10 THEN '10 Years or more and Less than Life' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH IS NULL THEN 'No sentence' ELSE 'Not Categorised' END, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE, CASE WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) <= 17 THEN 'Juvenile' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) BETWEEN 18 AND 20 THEN 'Young Person' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) >= 21 THEN 'Adult' END, AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG, CASE WHEN AT_SENT_START_DATE.DAY_DATE < '31/12/9000' THEN AT_SENT_START_DATE.DAY_DATE END, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.INITIALS, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END, FACT_CURR_KEY_DATES_SENT.CURR_CRD_DATE, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12), CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Sentenced' WHEN FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH = '00/00/00' THEN 'Unsentenced' WHEN FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH IS NULL THEN 'Unsentenced' ELSE 'Sentenced' END, CASE WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('14FTR_ORA', '14FTRHDC_ORA', 'CUR_ORA', 'FTR/08', 'FTR_HDC', 'FTR_HDC_ORA', 'FTR_ORA', 'FTR_SCH15', 'FTRSCH15_ORA', 'HDR_ORA', 'LR', 'LR_ALP', 'LR_ALP_LASPO', 'LR_DLP', 'LR_DPP', 'LR_EPP', 'LR_ES', 'LR_HDC', 'LR_IPP', 'LR_LASPO_AR', 'LR_LASPO_DR', 'LR_LIFE', 'LR_MLP', 'LR_ORA', 'LR_SEC236A', 'LR_SEC91_ORA', 'LR_YOI', 'LR_YOI_ORA', 'FTRSCH18_ORA', 'FTRSCH18', 'LR_EDS18', 'LR_EDS21', 'LR_SOPC18', 'LR_SOPC21', 'LRSEC250_ORA', 'LR_ALP_CDE18', 'LR_ALP_CDE21', 'LR_EDSU18') THEN 'Recall' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '0' THEN 'Dead' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '1' THEN 'Indeterminate Sentence' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('2', '3') THEN 'Sentenced' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('4', '5', '6', '7') THEN 'Convicted Unsentenced' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('9', '10') OR AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'CIV_RMD' THEN 'Civil Prisoner' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('8', '11') THEN 'Immigration Detainee' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('12', '13', '14') THEN 'Remand' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'UNKNOWN' THEN 'Unknown' ELSE 'Other' END, AT_OFFENDER_BOOKING.LIVING_UNIT_SK), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, CURRENT_SENTENCE_LENGTH_BAND, MAIN_LEGAL_STATUS_CODE, ADULT_YOUNG_PERSON_INDICATOR, COUNT_OF_LICENSE_RECALLS, SENTENCE_CURRENT_FLAG, SENTENCE_START_DATE, SURNAME, INITIALS, DATE_OF_BIRTH, CURR_CRD_DATE, OFFENDER_AGE, SENTENCED_, LEGAL_STATUS_GROUPING, LIVING_UNIT_SK, DATE_COMPLETED AS V_DATE_COMPLETED, CASE WHEN PEER_GROUP_INFLUENCE_ = 'Yes' THEN '1 - Yes' ELSE CASE WHEN PEER_GROUP_INFLUENCE_ = 'No' THEN '0 - No' ELSE '' END END AS V_TEXT_PEER_GROUP, CASE WHEN S7Q3_EASILY_INFLUENCED = 2 THEN '2 - Significant problems' ELSE CASE WHEN S7Q3_EASILY_INFLUENCED = 1 THEN '1 - Some problems' ELSE CASE WHEN S7Q3_EASILY_INFLUENCED = 0 THEN '0 - No problems' ELSE '' END END END AS V_TEXT_EASILY_INFLUENCED, CASE WHEN S7Q5_RECKLESS_BEHAVIOUR = 2 THEN '2 - Significant problems' ELSE CASE WHEN S7Q5_RECKLESS_BEHAVIOUR = 1 THEN '1 - Some problems' ELSE CASE WHEN S7Q5_RECKLESS_BEHAVIOUR = 0 THEN '0 - No problems' ELSE '' END END END AS V_TEXT_RECKLESSNESS, CASE WHEN S10Q1_DIFFICULTIES_COPING = 2 THEN '2 - Significant problems' ELSE CASE WHEN S10Q1_DIFFICULTIES_COPING = 1 THEN '1 - Some problems' ELSE CASE WHEN S10Q1_DIFFICULTIES_COPING = 0 THEN '0 - No problems' ELSE '' END END END AS V_TEXT_DIFFICULTIES_COPING, 'TBD' AS V_TEXT_OFFENDERS_ATTITUDE, CASE WHEN S11Q2_IMPULSIVITY = 2 THEN '2 - Significant problems' ELSE CASE WHEN S11Q2_IMPULSIVITY = 1 THEN '1 - Some problems' ELSE CASE WHEN S11Q2_IMPULSIVITY = 0 THEN '0 - No problems' ELSE '' END END END AS V_TEXT_IMPULSIVITY, CASE WHEN S11Q4_TEMPER_CONTROL = 2 THEN '2 - Significant problems' ELSE CASE WHEN S11Q4_TEMPER_CONTROL = 1 THEN '1 - Some problems' ELSE CASE WHEN S11Q4_TEMPER_CONTROL = 0 THEN '0 - No problems' ELSE '' END END END AS V_TEXT_TEMPER_CONTROL, CASE WHEN S11Q6_PROBLEM_SOLVING_SKILLS = 2 THEN '2 - Significant problems' ELSE CASE WHEN S11Q6_PROBLEM_SOLVING_SKILLS = 1 THEN '1 - Some problems' ELSE CASE WHEN S11Q6_PROBLEM_SOLVING_SKILLS = 0 THEN '0 - No problems' ELSE '' END END END AS V_TEXT_PROBLEM_SOLVING, CASE WHEN S11Q7_CONSEQUENCES_AWARENESS = 2 THEN '2 - Significant problems' ELSE CASE WHEN S11Q7_CONSEQUENCES_AWARENESS = 1 THEN '1 - Some problems' ELSE CASE WHEN S11Q7_CONSEQUENCES_AWARENESS = 0 THEN '0 - No problems' ELSE '' END END END AS V_TEXT_AWARENESS_OF_CONSEQUE32, 'TBD' AS V_TEXT_UNDERSTANDS_OTHERS, CASE WHEN V_9OF10_CHECK_TOTAL >= 9 THEN V_PEER_GROUP || V_EASILY_INFLUENCED || V_RECKLESS_BEHAVIOUR || V_DIFFICULTIES_COPING || V_OFFENDERS_ATTITUDE_TO_THEMSELVES || V_IMPULSIVITY || V_TEMPER_CONTROL || V_PROBLEM_SOLVING_SKILLS || V_AWARENESS_OF_CONSEQUENCES || V_UNDERSTANDS_OTHER_PEOPLES_VIEWS ELSE 'No Score Possible' END AS TOTAL_SCORE_9OF10 FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP4.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "CURRENT_SENTENCE_LENGTH_BAND",
+            "type": "string",
+            "display": "Current Sentence Length Band",
+            "legacyId": "DP4.DO1ef",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "MAIN_LEGAL_STATUS_CODE",
+            "type": "string",
+            "display": "Main Legal Status Code",
+            "legacyId": "DP4.DO100de",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ADULT_YOUNG_PERSON_INDICATOR",
+            "type": "string",
+            "display": "Adult/Young Person Indicator",
+            "legacyId": "DP4.DO10083",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "COUNT_OF_LICENSE_RECALLS",
+            "type": "double",
+            "display": "Count of License Recalls",
+            "legacyId": "DP4.DO10810",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "SENTENCE_CURRENT_FLAG",
+            "type": "string",
+            "display": "Sentence Dates Current Flag",
+            "legacyId": "DP4.DO2c9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "SENTENCE_START_DATE",
+            "type": "date",
+            "display": "Sentence Start Date",
+            "legacyId": "DP4.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP4.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "INITIALS",
+            "type": "string",
+            "display": "Offender Initials",
+            "legacyId": "DP4.DO1012d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP4.DO10085",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "CURR_CRD_DATE",
+            "type": "date",
+            "display": "CRD (Conditional Release Date)",
+            "legacyId": "DP4.DO48",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DP4.DO10082",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "SENTENCED_",
+            "type": "string",
+            "display": "Sentenced?",
+            "legacyId": "DP4.DO5d6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "LEGAL_STATUS_GROUPING",
+            "type": "string",
+            "display": "Legal Status Grouping",
+            "legacyId": "DP4.DO107cb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "LIVING_UNIT_SK",
+            "type": "double",
+            "display": "Living Unit Sk",
+            "legacyId": "DP4.DO107b3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "V_DATE_COMPLETED",
+            "type": "string",
+            "display": "V_DATE_COMPLETED",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 16,
+            "name": "V_TEXT_PEER_GROUP",
+            "type": "string",
+            "display": "V_TEXT_PEER_GROUP",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 17,
+            "name": "V_TEXT_EASILY_INFLUENCED",
+            "type": "string",
+            "display": "V_TEXT_EASILY_INFLUENCED",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 18,
+            "name": "V_TEXT_RECKLESSNESS",
+            "type": "string",
+            "display": "V_TEXT_RECKLESSNESS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 19,
+            "name": "V_TEXT_DIFFICULTIES_COPING",
+            "type": "string",
+            "display": "V_TEXT_DIFFICULTIES_COPING",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 20,
+            "name": "V_TEXT_OFFENDERS_ATTITUDE",
+            "type": "string",
+            "display": "V_TEXT_OFFENDERS_ATTITUDE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 21,
+            "name": "V_TEXT_IMPULSIVITY",
+            "type": "string",
+            "display": "V_TEXT_IMPULSIVITY",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 22,
+            "name": "V_TEXT_TEMPER_CONTROL",
+            "type": "string",
+            "display": "V_TEXT_TEMPER_CONTROL",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 23,
+            "name": "V_TEXT_PROBLEM_SOLVING",
+            "type": "string",
+            "display": "V_TEXT_PROBLEM_SOLVING",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 24,
+            "name": "V_TEXT_AWARENESS_OF_CONSEQUE32",
+            "type": "string",
+            "display": "V_TEXT_AWARENESS_OF_CONSEQUE32",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 25,
+            "name": "V_TEXT_UNDERSTANDS_OTHERS",
+            "type": "string",
+            "display": "V_TEXT_UNDERSTANDS_OTHERS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 26,
+            "name": "TOTAL_SCORE_9OF10",
+            "type": "string",
+            "display": "TOTAL_SCORE_9OF10",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375896/DP22",
+      "name": "OASys",
+      "description": "ONR - Ad-hoc Reports",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT ASSESSMENT.DATE_COMPLETED, COUNT(DISTINCT OFFENDER.OFFENDER_ID) AS COUNT_OF_OFFENDERS, OFFENDER.OFFENDER_ID_DISPLAY, REP_OFFENDER_HISTORY.CONTROLLING_OWNER, SUBSTR(ASSESSMENT.CALC_HIGHEST_RISK, 4) AS RISK_LEVEL_, CASE WHEN OFFENDER.PROLIFIC_OFFENDER = '1' THEN 'Yes' WHEN OFFENDER.PROLIFIC_OFFENDER = '0' THEN 'No' END AS PROLIFIC_OFFENDER, COALESCE(PURPOSE_OF_ASSESSMENT.DESCRIPTION, 'Not Specified') AS PURPOSE_OF_ASSESSMENT, CASE WHEN OFFENDER.VIEW_RISK_LEVEL = 0 THEN 'RoH Full Analysis Not Done - Not Required' WHEN OFFENDER.VIEW_RISK_LEVEL = 1 THEN 'RoH Full Analysis Not Done - Exemption' WHEN OFFENDER.VIEW_RISK_LEVEL = 2 THEN 'RoH Full Analysis In Progress' WHEN OFFENDER.VIEW_RISK_LEVEL = 3 THEN 'Low' WHEN OFFENDER.VIEW_RISK_LEVEL = 4 THEN 'Medium' WHEN OFFENDER.VIEW_RISK_LEVEL = 5 THEN 'High' WHEN OFFENDER.VIEW_RISK_LEVEL = 6 THEN 'Very High' ELSE 'No Completed Assessments' END AS RISK_LEVEL, CASE WHEN OFFENDER.LATEST_ROH_SUMMARY_RISK_LEVEL = 1 THEN 'Very High or High Risk' WHEN OFFENDER.LATEST_ROH_SUMMARY_RISK_LEVEL = 0 THEN 'Medium Risk or Lower' END AS HIGH_RISK_FLAG, COALESCE(TO_CHAR(OFFENDER.TIER_LEVEL), 'Not Specified') AS TIER_LEVEL_, ASSESSMENT_SECTION3.S3Q3_NO_FIXED_ABODE, ASSESSMENT_SECTION4.S4Q4_WORK_SKILLS, CASE WHEN ASSESSMENT_SECTION4.S4Q7_READING = '0' THEN 'No' WHEN ASSESSMENT_SECTION4.S4Q7_READING = '1' THEN 'Yes' END AS PROBLEMS_WITH_READING_, ASSESSMENT_SECTION4.S4Q8_LEARNING_DIFFICULTIES, ASSESSMENT_SECTION4.S4Q9_QUALIFICATIONS, CASE WHEN ASSESSMENT_SECTION4.S4Q7_WRITING = '0' THEN 'No' WHEN ASSESSMENT_SECTION4.S4Q7_WRITING = '1' THEN 'Yes' END AS PROBLEMS_WITH_WRITING_, CASE WHEN ASSESSMENT_SECTION4.S4Q7_NUMERACY = '0' THEN 'No' WHEN ASSESSMENT_SECTION4.S4Q7_NUMERACY = '1' THEN 'Yes' END AS PROBLEMS_WITH_NUMERACY_, ASSESSMENT_SECTION4.S4Q7_PROBLEMS, CASE WHEN ASSESSMENT_SECTION2.S2Q7_PEER_GROUP_INFLUENCE = '0' THEN 'No' WHEN ASSESSMENT_SECTION2.S2Q7_PEER_GROUP_INFLUENCE = '1' THEN 'Yes' END AS PEER_GROUP_INFLUENCE_, ASSESSMENT_SECTION7.S7Q3_EASILY_INFLUENCED, ASSESSMENT_SECTION7.S7Q5_RECKLESS_BEHAVIOUR, ASSESSMENT_SECTION10.S10Q1_DIFFICULTIES_COPING, ASSESSMENT_SECTION10.S10Q4_ATTITUDE_TO_THEMSELVES, ASSESSMENT_SECTION11.S11Q2_IMPULSIVITY, ASSESSMENT_SECTION11.S11Q4_TEMPER_CONTROL, ASSESSMENT_SECTION11.S11Q6_PROBLEM_SOLVING_SKILLS, ASSESSMENT_SECTION11.S11Q7_CONSEQUENCES_AWARENESS, ASSESSMENT_SECTION11.S11Q9_UNDERSTANDS_PEOPLE_VIEWS FROM ASSESSMENT, OFFENDER, REP_OFFENDER_HISTORY, PURPOSE_OF_ASSESSMENT, ASSESSMENT_SECTION3, ASSESSMENT_SECTION4, ASSESSMENT_SECTION2, ASSESSMENT_SECTION7, ASSESSMENT_SECTION10, ASSESSMENT_SECTION11 WHERE (PURPOSE_OF_ASSESSMENT.PURPOSE_OF_ASSESSMENT_CODE (+) = ASSESSMENT.PURPOSE_OF_ASSESSMENT_CODE) AND (ASSESSMENT.ASSESSMENT_ID = ASSESSMENT_SECTION2.ASSESSMENT_ID) AND (ASSESSMENT.ASSESSMENT_ID = ASSESSMENT_SECTION3.ASSESSMENT_ID) AND (ASSESSMENT.ASSESSMENT_ID = ASSESSMENT_SECTION4.ASSESSMENT_ID) AND (ASSESSMENT.ASSESSMENT_ID = ASSESSMENT_SECTION7.ASSESSMENT_ID) AND (ASSESSMENT.ASSESSMENT_ID = ASSESSMENT_SECTION10.ASSESSMENT_ID) AND (ASSESSMENT.ASSESSMENT_ID = ASSESSMENT_SECTION11.ASSESSMENT_ID) AND (OFFENDER.OFFENDER_ID = ASSESSMENT.OFFENDER_ID (+)) AND (OFFENDER.OFFENDER_ID = REP_OFFENDER_HISTORY.OFFENDER_ID (+)) AND (SUBSTR(OFFENDER.OFFENDER_ID_DISPLAY, 1, 10) = TAGMIS_CASELOAD_SECURITY('VQL10O', OFFENDER.OFFENDER_ID_DISPLAY)) AND (ASSESSMENT.ASSESSMENT_ID IN (SELECT LAST_VALUE(ASSESSMENT.assessment_id) OVER (PARTITION BY ASSESSMENT.offender_id ORDER BY ASSESSMENT.date_completed rows BETWEEN CURRENT ROW AND UNBOUNDED following) AS last_ass_for_offender FROM ASSESSMENT, OFFENDER, REP_OFFENDER_HISTORY WHERE (OFFENDER.OFFENDER_ID = ASSESSMENT.OFFENDER_ID (+)) AND (OFFENDER.OFFENDER_ID = REP_OFFENDER_HISTORY.OFFENDER_ID (+)) AND (ASSESSMENT.single_date_completed = 'Y' AND completed_assessment <> 'Abandoned' AND NOT OFFENDER.Offender_id IS NULL) AND (SUBSTR(OFFENDER.OFFENDER_ID_DISPLAY, 1, 10) = TAGMIS_CASELOAD_SECURITY('VQL10O', OFFENDER.OFFENDER_ID_DISPLAY)) AND (COALESCE(ASSESSMENT.COMPLETED_ASSESSMENT, 'Not Specified') IN ('True') AND (REP_OFFENDER_HISTORY.LATEST_OWNERSHIP_RANK = 1) AND REP_OFFENDER_HISTORY.PHYSICAL_LOCATION IN ('Wymott (HMP)'))) AND (REP_OFFENDER_HISTORY.LATEST_OWNERSHIP_RANK = 1)) GROUP BY ASSESSMENT.DATE_COMPLETED, OFFENDER.OFFENDER_ID_DISPLAY, REP_OFFENDER_HISTORY.CONTROLLING_OWNER, SUBSTR(ASSESSMENT.CALC_HIGHEST_RISK, 4), CASE WHEN OFFENDER.PROLIFIC_OFFENDER = '1' THEN 'Yes' WHEN OFFENDER.PROLIFIC_OFFENDER = '0' THEN 'No' END, COALESCE(PURPOSE_OF_ASSESSMENT.DESCRIPTION, 'Not Specified'), CASE WHEN OFFENDER.VIEW_RISK_LEVEL = 0 THEN 'RoH Full Analysis Not Done - Not Required' WHEN OFFENDER.VIEW_RISK_LEVEL = 1 THEN 'RoH Full Analysis Not Done - Exemption' WHEN OFFENDER.VIEW_RISK_LEVEL = 2 THEN 'RoH Full Analysis In Progress' WHEN OFFENDER.VIEW_RISK_LEVEL = 3 THEN 'Low' WHEN OFFENDER.VIEW_RISK_LEVEL = 4 THEN 'Medium' WHEN OFFENDER.VIEW_RISK_LEVEL = 5 THEN 'High' WHEN OFFENDER.VIEW_RISK_LEVEL = 6 THEN 'Very High' ELSE 'No Completed Assessments' END, CASE WHEN OFFENDER.LATEST_ROH_SUMMARY_RISK_LEVEL = 1 THEN 'Very High or High Risk' WHEN OFFENDER.LATEST_ROH_SUMMARY_RISK_LEVEL = 0 THEN 'Medium Risk or Lower' END, COALESCE(TO_CHAR(OFFENDER.TIER_LEVEL), 'Not Specified'), ASSESSMENT_SECTION3.S3Q3_NO_FIXED_ABODE, ASSESSMENT_SECTION4.S4Q4_WORK_SKILLS, CASE WHEN ASSESSMENT_SECTION4.S4Q7_READING = '0' THEN 'No' WHEN ASSESSMENT_SECTION4.S4Q7_READING = '1' THEN 'Yes' END, ASSESSMENT_SECTION4.S4Q8_LEARNING_DIFFICULTIES, ASSESSMENT_SECTION4.S4Q9_QUALIFICATIONS, CASE WHEN ASSESSMENT_SECTION4.S4Q7_WRITING = '0' THEN 'No' WHEN ASSESSMENT_SECTION4.S4Q7_WRITING = '1' THEN 'Yes' END, CASE WHEN ASSESSMENT_SECTION4.S4Q7_NUMERACY = '0' THEN 'No' WHEN ASSESSMENT_SECTION4.S4Q7_NUMERACY = '1' THEN 'Yes' END, ASSESSMENT_SECTION4.S4Q7_PROBLEMS, CASE WHEN ASSESSMENT_SECTION2.S2Q7_PEER_GROUP_INFLUENCE = '0' THEN 'No' WHEN ASSESSMENT_SECTION2.S2Q7_PEER_GROUP_INFLUENCE = '1' THEN 'Yes' END, ASSESSMENT_SECTION7.S7Q3_EASILY_INFLUENCED, ASSESSMENT_SECTION7.S7Q5_RECKLESS_BEHAVIOUR, ASSESSMENT_SECTION10.S10Q1_DIFFICULTIES_COPING, ASSESSMENT_SECTION10.S10Q4_ATTITUDE_TO_THEMSELVES, ASSESSMENT_SECTION11.S11Q2_IMPULSIVITY, ASSESSMENT_SECTION11.S11Q4_TEMPER_CONTROL, ASSESSMENT_SECTION11.S11Q6_PROBLEM_SOLVING_SKILLS, ASSESSMENT_SECTION11.S11Q7_CONSEQUENCES_AWARENESS, ASSESSMENT_SECTION11.S11Q9_UNDERSTANDS_PEOPLE_VIEWS), dataset_ AS (SELECT DATE_COMPLETED, COUNT_OF_OFFENDERS, OFFENDER_ID_DISPLAY, CONTROLLING_OWNER, RISK_LEVEL_, PROLIFIC_OFFENDER, PURPOSE_OF_ASSESSMENT, RISK_LEVEL, HIGH_RISK_FLAG, TIER_LEVEL_, S3Q3_NO_FIXED_ABODE, S4Q4_WORK_SKILLS, PROBLEMS_WITH_READING_, S4Q8_LEARNING_DIFFICULTIES, S4Q9_QUALIFICATIONS, PROBLEMS_WITH_WRITING_, PROBLEMS_WITH_NUMERACY_, S4Q7_PROBLEMS, PEER_GROUP_INFLUENCE_, S7Q3_EASILY_INFLUENCED, S7Q5_RECKLESS_BEHAVIOUR, S10Q1_DIFFICULTIES_COPING, S10Q4_ATTITUDE_TO_THEMSELVES, S11Q2_IMPULSIVITY, S11Q4_TEMPER_CONTROL, S11Q6_PROBLEM_SOLVING_SKILLS, S11Q7_CONSEQUENCES_AWARENESS, S11Q9_UNDERSTANDS_PEOPLE_VIEWS FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DATE_COMPLETED",
+            "type": "date",
+            "display": "Date Completed",
+            "legacyId": "DP22.DO5e5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "COUNT_OF_OFFENDERS",
+            "type": "double",
+            "display": "Count of Offenders",
+            "legacyId": "DP22.DOcbd",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP22.DO264",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "CONTROLLING_OWNER",
+            "type": "string",
+            "display": "Controlling Owner",
+            "legacyId": "DP22.DO114b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "RISK_LEVEL_",
+            "type": "string",
+            "display": "Risk Level (10 6)",
+            "legacyId": "DP22.DOf2f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "PROLIFIC_OFFENDER",
+            "type": "string",
+            "display": "Prolific Offender",
+            "legacyId": "DP22.DOaab",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "PURPOSE_OF_ASSESSMENT",
+            "type": "string",
+            "display": "Purpose Of Assessment",
+            "legacyId": "DP22.DOa0d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "RISK_LEVEL",
+            "type": "string",
+            "display": "Risk Level",
+            "legacyId": "DP22.DOab1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "HIGH_RISK_FLAG",
+            "type": "string",
+            "display": "High Risk Flag",
+            "legacyId": "DP22.DOaaa",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "TIER_LEVEL_",
+            "type": "string",
+            "display": "Tier Level (Offender)",
+            "legacyId": "DP22.DO102d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "S3Q3_NO_FIXED_ABODE",
+            "type": "double",
+            "display": "No Fixed Abode (3)",
+            "legacyId": "DP22.DOafc",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "S4Q4_WORK_SKILLS",
+            "type": "double",
+            "display": "Work Related Skills (4)",
+            "legacyId": "DP22.DOb13",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "PROBLEMS_WITH_READING_",
+            "type": "string",
+            "display": "Problems with Reading (7)",
+            "legacyId": "DP22.DOb1a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "S4Q8_LEARNING_DIFFICULTIES",
+            "type": "double",
+            "display": "Learning Difficulties (8)",
+            "legacyId": "DP22.DOb1e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "S4Q9_QUALIFICATIONS",
+            "type": "double",
+            "display": "Educational/Professional Qualifications (9)",
+            "legacyId": "DP22.DOb20",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "PROBLEMS_WITH_WRITING_",
+            "type": "string",
+            "display": "Problems with Writing (7)",
+            "legacyId": "DP22.DOb1b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "PROBLEMS_WITH_NUMERACY_",
+            "type": "string",
+            "display": "Problems with Numeracy (7)",
+            "legacyId": "DP22.DOb1c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "S4Q7_PROBLEMS",
+            "type": "double",
+            "display": "Read/Write/Numeracy Problems Score (7)",
+            "legacyId": "DP22.DOb19",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 18,
+            "name": "PEER_GROUP_INFLUENCE_",
+            "type": "string",
+            "display": "Peer Group Influence (7)",
+            "legacyId": "DP22.DOad4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 19,
+            "name": "S7Q3_EASILY_INFLUENCED",
+            "type": "double",
+            "display": "Easily Influenced by Criminal Associates (3)",
+            "legacyId": "DP22.DOb57",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 20,
+            "name": "S7Q5_RECKLESS_BEHAVIOUR",
+            "type": "double",
+            "display": "Recklessness and Risk-taking Behaviour (5)",
+            "legacyId": "DP22.DOb5b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 21,
+            "name": "S10Q1_DIFFICULTIES_COPING",
+            "type": "double",
+            "display": "Difficulties Coping (1)",
+            "legacyId": "DP22.DObcf",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 22,
+            "name": "S10Q4_ATTITUDE_TO_THEMSELVES",
+            "type": "double",
+            "display": "Offender's Attitude To Themselves (4)",
+            "legacyId": "DP22.DObd5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 23,
+            "name": "S11Q2_IMPULSIVITY",
+            "type": "double",
+            "display": "Impulsivity (2)",
+            "legacyId": "DP22.DObea",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 24,
+            "name": "S11Q4_TEMPER_CONTROL",
+            "type": "double",
+            "display": "Temper Control (4)",
+            "legacyId": "DP22.DObee",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 25,
+            "name": "S11Q6_PROBLEM_SOLVING_SKILLS",
+            "type": "double",
+            "display": "Problem Solving Skills (6)",
+            "legacyId": "DP22.DObf2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 26,
+            "name": "S11Q7_CONSEQUENCES_AWARENESS",
+            "type": "double",
+            "display": "Awareness of Consequences (7)",
+            "legacyId": "DP22.DObf4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 27,
+            "name": "S11Q9_UNDERSTANDS_PEOPLE_VIEWS",
+            "type": "double",
+            "display": "Understands Other People's Views (9)",
+            "legacyId": "DP22.DObf8",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP24",
+      "name": "MIS Load",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP24.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "214514.RS",
+      "name": "Guidance",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    },
+    {
+      "id": "135202.RS",
+      "name": "Maturity Screening Tool",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP4",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO1007b"
+          },
+          {
+            "name": "$ref:INITIALS",
+            "display": "Offender Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO1012d"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10085"
+          },
+          {
+            "name": "$ref:OFFENDER_AGE",
+            "display": "Offender Age",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10082"
+          },
+          {
+            "name": "$ref:LEGAL_STATUS_GROUPING",
+            "display": "Legal Status Grouping",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO107cb"
+          },
+          {
+            "name": "$ref:SENTENCED_",
+            "display": "Sentenced?",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO5d6"
+          },
+          {
+            "name": "$ref:V_DATE_COMPLETED",
+            "display": "Latest OASys",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Date Completed]"
+          },
+          {
+            "name": "$ref:V_TEXT_PEER_GROUP",
+            "display": "Peer Group (2.7)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Peer Group Influence (7)] = \"Yes\";\"1 - Yes\";\n(If([Peer Group Influence (7)] = \"No\";\"0 - No\";\"\")))"
+          },
+          {
+            "name": "$ref:V_TEXT_EASILY_INFLUENCED",
+            "display": "Easily Influenced (7.3)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Easily Influenced by Criminal Associates (3)] = 2;\"2 - Significant problems\";\n(If([Easily Influenced by Criminal Associates (3)] = 1;\"1 - Some problems\";\n(If([Easily Influenced by Criminal Associates (3)] = 0;\"0 - No problems\";\"\")))))"
+          },
+          {
+            "name": "$ref:V_TEXT_RECKLESSNESS",
+            "display": "Reckless Behaviour (7.5)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Recklessness and Risk-taking Behaviour (5)] = 2;\"2 - Significant problems\";\n(If([Recklessness and Risk-taking Behaviour (5)] = 1;\"1 - Some problems\";\n(If([Recklessness and Risk-taking Behaviour (5)] = 0;\"0 - No problems\";\"\")))))"
+          },
+          {
+            "name": "$ref:V_TEXT_DIFFICULTIES_COPING",
+            "display": "Difficulties Coping (10.1)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Difficulties Coping (1)] = 2;\"2 - Significant problems\";\n(If([Difficulties Coping (1)] = 1;\"1 - Some problems\";\n(If([Difficulties Coping (1)] = 0;\"0 - No problems\";\"\")))))"
+          },
+          {
+            "name": "$ref:V_TEXT_OFFENDERS_ATTITUDE",
+            "display": "Attitude to Themselves (10.4)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Offender's Attitude To Themselves (4)] = 2;\"2 - Significant problems\";\n(If([Offender's Attitude To Themselves (4)] = 1;\"1 - Some problems\";\n(If([Offender's Attitude To Themselves (4)] = 0;\"0 - No problems\";\"\")))))"
+          },
+          {
+            "name": "$ref:V_TEXT_IMPULSIVITY",
+            "display": "Impulsivity (11.2)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Impulsivity (2)] = 2;\"2 - Significant problems\";\n(If([Impulsivity (2)] = 1;\"1 - Some problems\";\n(If([Impulsivity (2)] = 0;\"0 - No problems\";\"\")))))"
+          },
+          {
+            "name": "$ref:V_TEXT_TEMPER_CONTROL",
+            "display": "Temper Control (11.4)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Temper Control (4)] = 2;\"2 - Significant problems\";\n(If([Temper Control (4)] = 1;\"1 - Some problems\";\n(If([Temper Control (4)] = 0;\"0 - No problems\";\"\")))))"
+          },
+          {
+            "name": "$ref:V_TEXT_PROBLEM_SOLVING",
+            "display": "Problem Solving Skills (11.6)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Problem Solving Skills (6)] = 2;\"2 - Significant problems\";\n(If([Problem Solving Skills (6)] = 1;\"1 - Some problems\";\n(If([Problem Solving Skills (6)] = 0;\"0 - No problems\";\"\")))))"
+          },
+          {
+            "name": "$ref:V_TEXT_AWARENESS_OF_CONSEQUE32",
+            "display": "Awareness of Consequences (11.7)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Awareness of Consequences (7)] = 2;\"2 - Significant problems\";\n(If([Awareness of Consequences (7)] = 1;\"1 - Some problems\";\n(If([Awareness of Consequences (7)] = 0;\"0 - No problems\";\"\")))))"
+          },
+          {
+            "name": "$ref:V_TEXT_UNDERSTANDS_OTHERS",
+            "display": "Understands Other People's Views (11.9)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Understands Other People's Views (9)] = 2;\"2 - Significant problems\";\n(If([Understands Other People's Views (9)] = 1;\"1 - Some problems\";\n(If([Understands Other People's Views (9)] = 0;\"0 - No problems\";\"\")))))"
+          },
+          {
+            "name": "$ref:TOTAL_SCORE_9OF10",
+            "display": "Total Score",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_9of10_check_total] >= 9;[v_Peer_Group]+[v_Easily_Influenced]+[v_Reckless_Behaviour]+[v_Difficulties_Coping]+[v_Offenders_Attitude_to_Themselves]+[v_Impulsivity]+[v_Temper_Control]+[v_Problem_Solving_Skills]+[v_Awareness_of_Consequences]+[v_Understands_Other_Peoples_Views];\"No Score Possible\")"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_DATE_COMPLETED :: ReferenceError: error is not defined",
+      "entityId": "Fn0QeAFLRwkApmYkAACXCXnMACJIAGE1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_TEXT_OFFENDERS_ATTITUDE :: Error: =If([Offender's Attitude To Themselves (4)] = 2;\"2 - Significant problems\";\n(If([Offender's Attitude To Themselves (4)] = 1;\"1 - Some problems\";\n(If([Offender's Attitude To Themselves (4)] = 0;\"0 - No problems\";\"\"))))) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "Fn0QeAFLRwkApmYkAACXCXnMACJIAGE1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_TEXT_UNDERSTANDS_OTHERS :: Error: =If([Understands Other People's Views (9)] = 2;\"2 - Significant problems\";\n(If([Understands Other People's Views (9)] = 1;\"1 - Some problems\";\n(If([Understands Other People's Views (9)] = 0;\"0 - No problems\";\"\"))))) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "Fn0QeAFLRwkApmYkAACXCXnMACJIAGE1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_DATE_COMPLETED :: ReferenceError: error is not defined",
+      "entityId": "Fn0QeAFLRwkApmYkAACXCXnMACJIAGE1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_TEXT_PEER_GROUP :: ReferenceError: error is not defined",
+      "entityId": "Fn0QeAFLRwkApmYkAACXCXnMACJIAGE1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_TEXT_OFFENDERS_ATTITUDE :: Error: =If([Offender's Attitude To Themselves (4)] = 2;\"2 - Significant problems\";\n(If([Offender's Attitude To Themselves (4)] = 1;\"1 - Some problems\";\n(If([Offender's Attitude To Themselves (4)] = 0;\"0 - No problems\";\"\"))))) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "Fn0QeAFLRwkApmYkAACXCXnMACJIAGE1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_TEXT_UNDERSTANDS_OTHERS :: Error: =If([Understands Other People's Views (9)] = 2;\"2 - Significant problems\";\n(If([Understands Other People's Views (9)] = 1;\"1 - Some problems\";\n(If([Understands Other People's Views (9)] = 0;\"0 - No problems\";\"\"))))) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "Fn0QeAFLRwkApmYkAACXCXnMACJIAGE1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[0] requires property \"dataset\"",
+      "entityId": "Fn0QeAFLRwkApmYkAACXCXnMACJIAGE1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 214514.RS does not have corresponding dataset undefined",
+      "entityId": "214514.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DP4",
+      "entityType": "dataset"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375896/DP22",
+      "entityType": "dataset"
+    }
+  ]
+}

@@ -1,0 +1,304 @@
+{
+  "id": "klY3UWIADcfScGIA4UkAISgV_bQ",
+  "name": "MIS National IEP Entry Level Monitoring",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0051 v00.00.03 LSRIT0043"
+    ]
+  },
+  "description": "PDD0051 v00.00.03 Last Modified: 02/11/15 This report shows by establishment the number adult prisoners admitted in a specified date range, the number of those who were awarded Entry level IEP, the number of those who progressed to Standard or Enhanced IEP after  2 weeks.",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP1",
+      "name": "MIS Load",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DP1.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP3",
+      "name": "Adult Admissions",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN AT_DOB.DAY_DATE <> '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_DESCRIPTION, AT_DIM_DATE_EXT_MOV.DAY_DATE FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_TO, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_SK (+) = AT_FACT_MOV_EXT.TO_LOCATION_SK) AND (AT_DIM_DATE_EXT_MOV.DAY_DATE >= TO_DATE('01-12-2013 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_DIM_DATE_EXT_MOV.DAY_DATE <= TO_DATE('14-12-2013 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_FACT_MOV_EXT.TYPE = 'Admission' AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'IN' AND NOT AT_FACT_MOV_EXT.REASON_CODE IN ('R', 'TRN', 'INT', 'TRNCRT', 'TRNTAP', 'T', 'M') AND NOT AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_CODE_NK IN ('ZZGHI,TRN'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, DATE_OF_BIRTH, ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION, DAY_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP3.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP3.DO85",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Movement Location To Code (External)",
+            "legacyId": "DP3.DO400",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Location To Description (External)",
+            "legacyId": "DP3.DO15e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Movement Date Only (External)",
+            "legacyId": "DP3.DO15c",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP4",
+      "name": "All Establishments",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT WHERE (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (NOT AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK IN ('ZZGHI', 'TRN') AND AT_ESTABLISHMENT.AREA_DESCRIPTION <> 'Not Available')), dataset_ AS (SELECT ESTABLISHMENT_DESCRIPTION, ESTABLISHMENT_CODE_NK FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP4.DO129",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP4.DO139",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP6",
+      "name": "Entry Assigned",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN AT_DOB.DAY_DATE <> '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, AT_DIM_DATE_EXT_MOV.DAY_DATE, AT_IEP_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_IEP_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_DIM_OFFENDER_IEP_LEVEL.IEP_DATE_TIME FROM BODIMIS.DIM_ESTABLISHMENT AT_IEP_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.DIM_OFFENDER_IEP_LEVEL AT_DIM_OFFENDER_IEP_LEVEL, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_TO WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_SK (+) = AT_FACT_MOV_EXT.TO_LOCATION_SK) AND (AT_DIM_OFFENDER_IEP_LEVEL.OFFENDER_BOOK_ID_NK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_ID_NK) AND (AT_IEP_ESTABLISHMENT.ESTABLISHMENT_SK = AT_DIM_OFFENDER_IEP_LEVEL.ESTABLISHMENT_SK) AND (AT_DIM_OFFENDER_IEP_LEVEL.IEP_LEVEL = 'ENT' AND NOT AT_IEP_ESTABLISHMENT.ESTABLISHMENT_CODE_NK IN ('TRN', 'ZZGHI') AND AT_DIM_OFFENDER_IEP_LEVEL.IEP_DATE_TIME >= TO_DATE('01-12-2013 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_DIM_OFFENDER_IEP_LEVEL.IEP_DATE_TIME <= TO_DATE('14-12-2013 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_DIM_OFFENDER_IEP_LEVEL.IEP_LEVEL_SEQ = 1 AND AT_DIM_DATE_EXT_MOV.DAY_DATE >= TO_DATE('01-12-2013 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_DIM_DATE_EXT_MOV.DAY_DATE <= TO_DATE('14-12-2013 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'IN' AND AT_FACT_MOV_EXT.TYPE = 'Admission' AND NOT AT_FACT_MOV_EXT.REASON_CODE IN ('TRN', 'INT', 'TRNCRT', 'TRNTAP', 'T', 'M', 'R') AND AT_IEP_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_CODE_NK)), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, DATE_OF_BIRTH, DAY_DATE, ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION, IEP_DATE_TIME FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP6.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP6.DO85",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Movement Date Only (External)",
+            "legacyId": "DP6.DO15c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "IEP Establishment Code",
+            "legacyId": "DP6.DOa28",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "IEP Establishment Name",
+            "legacyId": "DP6.DOa29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "IEP_DATE_TIME",
+            "type": "date",
+            "display": "IEP Change Date Time",
+            "legacyId": "DP6.DOa25",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP7",
+      "name": "IEP Progression",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_IEP_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_IEP_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_DIM_OFFENDER_IEP_LEVEL.IEP_DATE_TIME, AT_DIM_DATE_EXT_MOV.DAY_DATE, CASE WHEN AT_DOB.DAY_DATE <> '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY FROM BODIMIS.DIM_ESTABLISHMENT AT_IEP_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_IEP_LEVEL AT_DIM_OFFENDER_IEP_LEVEL, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (AT_DIM_OFFENDER_IEP_LEVEL.OFFENDER_BOOK_ID_NK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_ID_NK) AND (AT_IEP_ESTABLISHMENT.ESTABLISHMENT_SK = AT_DIM_OFFENDER_IEP_LEVEL.ESTABLISHMENT_SK) AND (AT_DIM_OFFENDER_IEP_LEVEL.IEP_LEVEL IN ('BAS', 'ENH', 'STD') AND NOT AT_IEP_ESTABLISHMENT.ESTABLISHMENT_CODE_NK IN ('TRN', 'ZZGHI') AND AT_DIM_OFFENDER_IEP_LEVEL.IEP_LEVEL_SEQ >= 2 AND AT_DIM_OFFENDER_IEP_LEVEL.IEP_DATE_TIME >= TO_DATE('01-12-2013 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_DIM_DATE_EXT_MOV.DAY_DATE >= TO_DATE('01-12-2013 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_DIM_DATE_EXT_MOV.DAY_DATE <= TO_DATE('14-12-2013 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_FACT_MOV_EXT.TYPE = 'Admission' AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'IN' AND NOT AT_FACT_MOV_EXT.REASON_CODE IN ('R', 'TRN', 'INT', 'TRNCRT', 'TRNTAP', 'T', 'M') AND AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY IN (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_OFFENDER_IEP_LEVEL AT_DIM_OFFENDER_IEP_LEVEL WHERE (AT_DIM_OFFENDER_IEP_LEVEL.OFFENDER_BOOK_ID_NK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_ID_NK) AND (AT_DIM_OFFENDER_IEP_LEVEL.IEP_LEVEL = 'ENT' AND AT_DIM_OFFENDER_IEP_LEVEL.IEP_LEVEL_SEQ = 1)))), dataset_ AS (SELECT ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION, IEP_DATE_TIME, DAY_DATE, DATE_OF_BIRTH, OFFENDER_ID_DISPLAY FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "IEP Establishment Code",
+            "legacyId": "DP7.DOa28",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "IEP Establishment Name",
+            "legacyId": "DP7.DOa29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "IEP_DATE_TIME",
+            "type": "date",
+            "display": "IEP Change Date Time",
+            "legacyId": "DP7.DOa25",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Movement Date Only (External)",
+            "legacyId": "DP7.DO15c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP7.DO85",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP7.DO76",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "63243.RS",
+      "name": "National IEP Entry Level Monitoring",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "instance.report[0] requires property \"dataset\"",
+      "entityId": "klY3UWIADcfScGIA4UkAISgV_bQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 63243.RS does not have corresponding dataset undefined",
+      "entityId": "63243.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Encountered an exception[java.lang.RuntimeException] from your LambdaFunction[arn:aws:lambda:eu-west-2:203591025782:function:dpr-athena-federated-query-oracle-function] executed in context[S3SpillLocation{bucket='dpr-working-test', key='athena-spill/258b8344-4aec-4cd3-89ed-44a880d84179/4847ea49-7aea-40f2-b0e7-55386dd30723', directory=true}] with message[java.sql.SQLDataException: ORA-01843: not a valid month\n\nhttps://docs.oracle.com/error-help/db/ora-01843/]",
+      "entityId": "3376639/DP3",
+      "entityType": "dataset"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Encountered an exception[java.lang.RuntimeException] from your LambdaFunction[arn:aws:lambda:eu-west-2:203591025782:function:dpr-athena-federated-query-oracle-function] executed in context[S3SpillLocation{bucket='dpr-working-test', key='athena-spill/031bdd91-51d5-43d8-9795-bf96262627d2/6574ddfd-6784-4ece-b3bf-455122f2e090', directory=true}] with message[java.sql.SQLDataException: ORA-01843: not a valid month\n\nhttps://docs.oracle.com/error-help/db/ora-01843/]",
+      "entityId": "3376639/DP6",
+      "entityType": "dataset"
+    }
+  ]
+}

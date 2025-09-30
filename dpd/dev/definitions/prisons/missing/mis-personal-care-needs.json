@@ -1,0 +1,665 @@
+{
+  "id": "olE_BzkAClp0CMIAQf_D8K7BP1A",
+  "name": "MIS Personal Care Needs",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0046 v00.00.00 LSRT0044"
+    ]
+  },
+  "description": "Provides detailed data regarding prisoner personal care needs. The report prompts for a single establishment and for one, multiple or all care types i.e. Maternity, Disability, Psychological, Physical. To select all care types, enter All at the prompt. Note that prisoners recorded as having no disability are excluded when searching on the Disability Care Type.<br/>PDD0046 v00.00.00",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP0",
+      "name": "Care Needs",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.SURNAME, AT_CELL.UNIT_4_SHORT_DESCRIPTION, CASE WHEN AT_ALERT.ALERT_ACTIVE_FLAG = 'Y' THEN (CASE WHEN AT_ALERT.ALERT_TYPE_NK = 'H' AND AT_ALERT.ALERT_CODE_NK = 'HA' AND AT_OFFENDER_ALERT.ALERT_STATUS = 'ACTIVE' THEN 'Y' END) END AS ACCT, CASE WHEN AT_ALERT.ALERT_ACTIVE_FLAG = 'Y' THEN (CASE WHEN AT_ALERT.ALERT_TYPE_NK = 'M' AND AT_ALERT.ALERT_CODE_NK IN ('MAS', 'MEP', 'MFL', 'MHT', (SELECT establishment_code FROM prompt_), 'MSP') AND AT_OFFENDER_ALERT.ALERT_STATUS = 'ACTIVE' THEN 'Y' END) END AS MEDICAL, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.START_DATE, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.END_DATE, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE_DESCRIPTION, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE_DESCRIPTION, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS_DESCRIPTION, BODIMIS.DIM_OFFENDER_PERSONAL_CARE_ADJ.START_DATE AS TREATMENT_START_DATE, BODIMIS.DIM_OFFENDER_PERSONAL_CARE_ADJ.COMMENT_TEXT, AT_ESTABLISHMENT_CARE.ESTABLISHMENT_DESCRIPTION, BODIMIS.DIM_OFFENDER_PERSONAL_CARE_ADJ.CODE_DESCRIPTION AS TREATMENT_CODE_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_CARE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_CELL AT_CELL, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT, BODIMIS.DIM_ALERT AT_ALERT, BODIMIS.DIM_OFFENDER_PERSONAL_CARE, BODIMIS.DIM_OFFENDER_PERSONAL_CARE_ADJ WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK (+)) AND (AT_ALERT.ALERT_SK (+) = AT_OFFENDER_ALERT.ALERT_SK) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('rrussell') AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.DIM_OFFENDER_PERSONAL_CARE.OFFENDER_BOOKING_SK (+)) AND (BODIMIS.DIM_OFFENDER_PERSONAL_CARE.OFFENDER_PERSONAL_CARE_SK = BODIMIS.DIM_OFFENDER_PERSONAL_CARE_ADJ.OFFENDER_PERSONAL_CARE_SK (+)) AND (BODIMIS.DIM_OFFENDER_PERSONAL_CARE_ADJ.ESTABLISHMENT_SK = AT_ESTABLISHMENT_CARE.ESTABLISHMENT_SK (+)) AND ((AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O') AND AT_OFFENDER_BOOKING.LIVING_UNIT_SK >= 1 AND (AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND CASE WHEN NOT BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'NR', 'PRD', 'RD') THEN 'Y' ELSE 'N' END = 'Y' AND (BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'ON') AND ((BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE) IN ('All') OR 'All' IN ('All'))) UNION SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.SURNAME, '-', CASE WHEN AT_ALERT.ALERT_ACTIVE_FLAG = 'Y' THEN (CASE WHEN AT_ALERT.ALERT_TYPE_NK = 'H' AND AT_ALERT.ALERT_CODE_NK = 'HA' AND AT_OFFENDER_ALERT.ALERT_STATUS = 'ACTIVE' THEN 'Y' END) END AS ACCT, CASE WHEN AT_ALERT.ALERT_ACTIVE_FLAG = 'Y' THEN (CASE WHEN AT_ALERT.ALERT_TYPE_NK = 'M' AND AT_ALERT.ALERT_CODE_NK IN ('MAS', 'MEP', 'MFL', 'MHT', (SELECT establishment_code FROM prompt_), 'MSP') AND AT_OFFENDER_ALERT.ALERT_STATUS = 'ACTIVE' THEN 'Y' END) END AS MEDICAL, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.START_DATE, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.END_DATE, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE_DESCRIPTION, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE_DESCRIPTION, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS_DESCRIPTION, BODIMIS.DIM_OFFENDER_PERSONAL_CARE_ADJ.START_DATE AS TREATMENT_START_DATE, BODIMIS.DIM_OFFENDER_PERSONAL_CARE_ADJ.COMMENT_TEXT, AT_ESTABLISHMENT_CARE.ESTABLISHMENT_DESCRIPTION, BODIMIS.DIM_OFFENDER_PERSONAL_CARE_ADJ.CODE_DESCRIPTION AS TREATMENT_CODE_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_CARE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT, BODIMIS.DIM_ALERT AT_ALERT, BODIMIS.DIM_OFFENDER_PERSONAL_CARE, BODIMIS.DIM_OFFENDER_PERSONAL_CARE_ADJ WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK (+)) AND (AT_ALERT.ALERT_SK (+) = AT_OFFENDER_ALERT.ALERT_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('rrussell') AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.DIM_OFFENDER_PERSONAL_CARE.OFFENDER_BOOKING_SK (+)) AND (BODIMIS.DIM_OFFENDER_PERSONAL_CARE.OFFENDER_PERSONAL_CARE_SK = BODIMIS.DIM_OFFENDER_PERSONAL_CARE_ADJ.OFFENDER_PERSONAL_CARE_SK (+)) AND (BODIMIS.DIM_OFFENDER_PERSONAL_CARE_ADJ.ESTABLISHMENT_SK = AT_ESTABLISHMENT_CARE.ESTABLISHMENT_SK (+)) AND ((AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O') AND AT_OFFENDER_BOOKING.LIVING_UNIT_SK < 1 AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND CASE WHEN NOT BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'NR', 'PRD', 'RD') THEN 'Y' ELSE 'N' END = 'Y' AND (BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'ON') AND ((BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE) IN ('All') OR 'All' IN ('All')))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FIRST_NAME, SURNAME, UNIT_4_SHORT_DESCRIPTION, ACCT, MEDICAL, START_DATE, END_DATE, TYPE_DESCRIPTION, CODE_DESCRIPTION, STATUS_DESCRIPTION, TREATMENT_START_DATE, COMMENT_TEXT, ESTABLISHMENT_DESCRIPTION, TREATMENT_CODE_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP0.DO80",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP0.DO7b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "UNIT_4_SHORT_DESCRIPTION",
+            "type": "string",
+            "display": "Unit Description 4 - Short",
+            "legacyId": "DP0.DO4c2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ACCT",
+            "type": "string",
+            "display": "ACCT",
+            "legacyId": "DP0.DOae1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "MEDICAL",
+            "type": "string",
+            "display": "Medical",
+            "legacyId": "DP0.DOae2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "START_DATE",
+            "type": "date",
+            "display": "Care Start Date",
+            "legacyId": "DP0.DO978",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "END_DATE",
+            "type": "date",
+            "display": "Care End Date",
+            "legacyId": "DP0.DO979",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "TYPE_DESCRIPTION",
+            "type": "string",
+            "display": "Care Type Description",
+            "legacyId": "DP0.DO97b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "CODE_DESCRIPTION",
+            "type": "string",
+            "display": "Care Code Description",
+            "legacyId": "DP0.DO97d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Care Status Description",
+            "legacyId": "DP0.DO97f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "TREATMENT_START_DATE",
+            "type": "date",
+            "display": "Treatment Start Date",
+            "legacyId": "DP0.DO986",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "Treatment Comment Text",
+            "legacyId": "DP0.DO98d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Treatment Establishment Name",
+            "legacyId": "DP0.DO995",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "TREATMENT_CODE_DESCRIPTION",
+            "type": "string",
+            "display": "Treatment Code Description",
+            "legacyId": "DP0.DO989",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP1",
+      "name": "MIS Load Log",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DP1.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "7876.RS",
+      "name": "By Cell",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO76"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO7b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO80"
+          },
+          {
+            "name": "$ref:ACCT",
+            "display": "ACCT",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOae1"
+          },
+          {
+            "name": "$ref:MEDICAL",
+            "display": "Medical",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOae2"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Unit Description 4 - Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4c2"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION",
+            "display": "Care Type Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO97b"
+          },
+          {
+            "name": "$ref:CODE_DESCRIPTION",
+            "display": "Care Code Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO97d"
+          },
+          {
+            "name": "$ref:START_DATE",
+            "display": "Care Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO978"
+          },
+          {
+            "name": "$ref:END_DATE",
+            "display": "Care End Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO979"
+          },
+          {
+            "name": "$ref:TREATMENT_CODE_DESCRIPTION",
+            "display": "Treatment Code Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO989"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Treatment Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO995"
+          },
+          {
+            "name": "$ref:TREATMENT_START_DATE",
+            "display": "Treatment Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO986"
+          },
+          {
+            "name": "$ref:COMMENT_TEXT",
+            "display": "Treatment Comment Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO98d"
+          }
+        ]
+      }
+    },
+    {
+      "id": "7442.RS",
+      "name": "By NOMS Number",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO76"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO7b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO80"
+          },
+          {
+            "name": "$ref:ACCT",
+            "display": "ACCT",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOae1"
+          },
+          {
+            "name": "$ref:MEDICAL",
+            "display": "Medical",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOae2"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Unit Description 4 - Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4c2"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION",
+            "display": "Care Type Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO97b"
+          },
+          {
+            "name": "$ref:CODE_DESCRIPTION",
+            "display": "Care Code Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO97d"
+          },
+          {
+            "name": "$ref:START_DATE",
+            "display": "Care Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO978"
+          },
+          {
+            "name": "$ref:END_DATE",
+            "display": "Care End Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO979"
+          },
+          {
+            "name": "$ref:TREATMENT_CODE_DESCRIPTION",
+            "display": "Treatment Code Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO989"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Treatment Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO995"
+          },
+          {
+            "name": "$ref:TREATMENT_START_DATE",
+            "display": "Treatment Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO986"
+          },
+          {
+            "name": "$ref:COMMENT_TEXT",
+            "display": "Treatment Comment Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO98d"
+          }
+        ]
+      }
+    },
+    {
+      "id": "7973.RS",
+      "name": "By Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO76"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO7b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO80"
+          },
+          {
+            "name": "$ref:ACCT",
+            "display": "ACCT",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOae1"
+          },
+          {
+            "name": "$ref:MEDICAL",
+            "display": "Medical",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOae2"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Unit Description 4 - Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4c2"
+          },
+          {
+            "name": "$ref:TYPE_DESCRIPTION",
+            "display": "Care Type Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO97b"
+          },
+          {
+            "name": "$ref:CODE_DESCRIPTION",
+            "display": "Care Code Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO97d"
+          },
+          {
+            "name": "$ref:START_DATE",
+            "display": "Care Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO978"
+          },
+          {
+            "name": "$ref:END_DATE",
+            "display": "Care End Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO979"
+          },
+          {
+            "name": "$ref:TREATMENT_CODE_DESCRIPTION",
+            "display": "Treatment Code Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO989"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Treatment Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO995"
+          },
+          {
+            "name": "$ref:TREATMENT_START_DATE",
+            "display": "Treatment Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO986"
+          },
+          {
+            "name": "$ref:COMMENT_TEXT",
+            "display": "Treatment Comment Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO98d"
+          }
+        ]
+      }
+    },
+    {
+      "id": "8184.RS",
+      "name": "By Care Type",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:TYPE_DESCRIPTION",
+            "display": "Care Type Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO97b"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

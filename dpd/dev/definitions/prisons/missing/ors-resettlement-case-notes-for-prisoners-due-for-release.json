@@ -1,0 +1,355 @@
+{
+  "id": "FnG8XWE7_QsAfwgAAHC7kV9TACJIABRd",
+  "name": "ORS Resettlement Case Notes for Prisoners due for release",
+  "description": "The report returns Resettlement case notes for Prisoners due for Release in the time frame specified.  There is also a tab displaying those Prisoners who have not had a Resttlement Case Note entered in the same time frame.  Please note:  This report should only be run for a maximum date range of two weeks for each date parameter.  This is to ensure there are no partial results due to the amount of data the report needs to return.<br/>PDD0224- v00.00.01 Last Modified: 06/10/2021",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0224  v00.00.01"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP5",
+      "name": "All Prisoners",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "DP2_ AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER_CASE_NOTES.CONTACT_DATE, AT_OFFENDER_CASE_NOTES.CONTACT_TIME, AT_OFFENDER_CASE_NOTES.CASE_NOTE_TEXT, AT_CASE_NOTE_AGENCY_LOC.AGY_LOC_ID FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_CASE_NOTE_AGENCY_LOC, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDER_CASE_NOTES AT_OFFENDER_CASE_NOTES, OMS_OWNER.OFFENDER_RELEASE_DETAILS AT_OFFENDER_RELEASE_DETAILS, (SELECT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID, CASE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE ELSE NULL END AS Last_Rel_Date, EFFECTIVE_SENTENCE_LENGTH FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) DT_LAST_RELEASE_DATE WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_RELEASE_DETAILS.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_LAST_RELEASE_DATE.OFFENDER_BOOK_ID (+)) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_CASE_NOTES.OFFENDER_BOOK_ID) AND (AT_OFFENDER_CASE_NOTES.AGY_LOC_ID = AT_CASE_NOTE_AGENCY_LOC.AGY_LOC_ID (+)) AND (AT_CASE_NOTE_AGENCY_LOC.AGENCY_LOCATION_TYPE (+) = 'INST') AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) AND AT_OFFENDER_CASE_NOTES.CASE_NOTE_SUB_TYPE = 'RESET' AND AT_OFFENDER_CASE_NOTES.CONTACT_DATE >= (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter Contact Date (Max 14 day period) Start:','D',,Mono,Free,Not_Persistent,,User:2) */) AND AT_OFFENDER_CASE_NOTES.CONTACT_DATE <= (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter Contact Date (Max 14 day period) End:','D',,Mono,Free,Not_Persistent,,User:3) */) AND CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END >= (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter Current Release Date (Max 14 day period) Start:','D',,Mono,Free,Not_Persistent,,User:0) */) AND CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END <= (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter Current Release Date (Max 14 day period) End:','D',,Mono,Free,Not_Persistent,,User:1) */))), dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.LAST_NAME, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID, CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END AS CURRENT_RELEASE_DATE, DP2_.CONTACT_TIME, DP2_.CASE_NOTE_TEXT FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS, OMS_OWNER.OFFENDER_RELEASE_DETAILS AT_OFFENDER_RELEASE_DETAILS, (SELECT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID, CASE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE ELSE NULL END AS Last_Rel_Date, EFFECTIVE_SENTENCE_LENGTH FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) DT_LAST_RELEASE_DATE, DP2_ WHERE ((AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_RELEASE_DETAILS.OFFENDER_BOOK_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_LAST_RELEASE_DATE.OFFENDER_BOOK_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */))) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) AND CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END >= (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter Current Release Date (Max 14 day period) Start:','D',,Mono,Free,Not_Persistent,,User:0) */) AND CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END <= (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter Current Release Date (Max 14 day period) End:','D',,Mono,Free,Not_Persistent,,User:1) */))) AND (DP2_.OFFENDER_ID_DISPLAY = AT_OFFENDER.OFFENDER_ID_DISPLAY)), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FIRST_NAME, LAST_NAME, AGY_LOC_ID, CURRENT_RELEASE_DATE, CONTACT_TIME AS V_CONTACT_TIME, CASE_NOTE_TEXT AS V_CASE_NOTE_TEXT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "unknown_parameter",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter Current Release Date (Max 14 day period) Start:",
+          "description": "@prompt('Enter Current Release Date (Max 14 day period) Start:','D',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP5.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Given Name 1",
+            "legacyId": "DP5.DO1066",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP5.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP5.DO43b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "CURRENT_RELEASE_DATE",
+            "type": "date",
+            "display": "Current Release Date",
+            "legacyId": "DP5.DOb29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "V_CONTACT_TIME",
+            "type": "string",
+            "display": "V_CONTACT_TIME",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 6,
+            "name": "V_CASE_NOTE_TEXT",
+            "type": "string",
+            "display": "V_CASE_NOTE_TEXT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DP2",
+      "name": "Case Notes",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER_CASE_NOTES.CONTACT_DATE, AT_OFFENDER_CASE_NOTES.CONTACT_TIME, AT_OFFENDER_CASE_NOTES.CASE_NOTE_TEXT, AT_CASE_NOTE_AGENCY_LOC.AGY_LOC_ID FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_CASE_NOTE_AGENCY_LOC, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDER_CASE_NOTES AT_OFFENDER_CASE_NOTES, OMS_OWNER.OFFENDER_RELEASE_DETAILS AT_OFFENDER_RELEASE_DETAILS, (SELECT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID, CASE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE ELSE NULL END AS Last_Rel_Date, EFFECTIVE_SENTENCE_LENGTH FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) DT_LAST_RELEASE_DATE WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_RELEASE_DETAILS.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_LAST_RELEASE_DATE.OFFENDER_BOOK_ID (+)) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_CASE_NOTES.OFFENDER_BOOK_ID) AND (AT_OFFENDER_CASE_NOTES.AGY_LOC_ID = AT_CASE_NOTE_AGENCY_LOC.AGY_LOC_ID (+)) AND (AT_CASE_NOTE_AGENCY_LOC.AGENCY_LOCATION_TYPE (+) = 'INST') AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3) */)) AND AT_OFFENDER_CASE_NOTES.CASE_NOTE_SUB_TYPE = 'RESET' AND AT_OFFENDER_CASE_NOTES.CONTACT_DATE >= (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter Contact Date (Max 14 day period) Start:','D',,Mono,Free,Not_Persistent,,User:2) */) AND AT_OFFENDER_CASE_NOTES.CONTACT_DATE <= (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter Contact Date (Max 14 day period) End:','D',,Mono,Free,Not_Persistent,,User:3) */) AND CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END >= (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter Current Release Date (Max 14 day period) Start:','D',,Mono,Free,Not_Persistent,,User:0) */) AND CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END <= (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #prompt('Enter Current Release Date (Max 14 day period) End:','D',,Mono,Free,Not_Persistent,,User:1) */))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, CONTACT_DATE, CONTACT_TIME, CASE_NOTE_TEXT, AGY_LOC_ID FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "unknown_parameter",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter Contact Date (Max 14 day period) Start:",
+          "description": "@prompt('Enter Contact Date (Max 14 day period) Start:','D',,Mono,Free,Not_Persistent,,User:2)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "CONTACT_DATE",
+            "type": "date",
+            "display": "Contact Date",
+            "legacyId": "DP2.DOc94",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "CONTACT_TIME",
+            "type": "date",
+            "display": "Contact Time",
+            "legacyId": "DP2.DOcb3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "CASE_NOTE_TEXT",
+            "type": "string",
+            "display": "Case Note Text",
+            "legacyId": "DP2.DOcb8",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Case Note Establishment Code",
+            "legacyId": "DP2.DO111d",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "164386.RS",
+      "name": "Resettlement Case Notes",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP5",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_CONTACT_DATE IS NOT NULL)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO43b"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO45"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO1066"
+          },
+          {
+            "name": "$ref:CURRENT_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DOb29"
+          },
+          {
+            "name": "$ref:V_CONTACT_TIME",
+            "display": "Contact Date and Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Contact Time]"
+          },
+          {
+            "name": "$ref:V_CASE_NOTE_TEXT",
+            "display": "Case Note",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Case Note Text]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "165472.RS",
+      "name": "No Case note within dates",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP5",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_CONTACT_DATE IS NULL)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO43b"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO45"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO1066"
+          },
+          {
+            "name": "$ref:CURRENT_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DOb29"
+          },
+          {
+            "name": "$ref:V_CONTACT_TIME",
+            "display": "Contact Date and Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Contact Time]"
+          },
+          {
+            "name": "$ref:V_CASE_NOTE_TEXT",
+            "display": "Case Note",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Case Note Text]"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

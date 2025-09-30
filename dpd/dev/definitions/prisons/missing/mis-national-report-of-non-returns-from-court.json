@@ -1,0 +1,210 @@
+{
+  "id": "olAotW8AC9tPdDQAPf_D8K7BYYw",
+  "name": "MIS National Report of Non Returns from Court",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PND0003 v00.00.02"
+    ]
+  },
+  "description": "This summary report shows the number of prisoners by establishment who have not returned from court yet are still on each prison roll. Added two day Grace Period.              <br/>PND0003 - v00.00.02 Last Modified: 26/04/16",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP1",
+      "name": "Non Returns",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK, DT_PND_CURRENT_EST.ESTABLISHMENT_DESCRIPTION, DT_NON_RETURNS_COURT.NONRETURNS FROM BODIMIS.DIM_ESTABLISHMENT DT_PND_CURRENT_EST, (SELECT AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK, COUNT(DISTINCT (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY)) AS NONRETURNS FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_FROM WHERE (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_SK = AT_FACT_MOV_EXT.FROM_LOCATION_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O') AND (AT_OFFENDER_BOOKING.IN_OUT = 'OUT') AND AT_FACT_MOV_EXT.TYPE = 'Court' AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'OUT' AND AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK AND (AT_FACT_MOV_EXT.MOVEMENT_TIME = (SELECT MAX(BODIMIS.FACT_MOVEMENT_EXTERNAL.MOVEMENT_TIME) FROM BODIMIS.FACT_MOVEMENT_EXTERNAL WHERE BODIMIS.FACT_MOVEMENT_EXTERNAL.OFFENDER_BOOKING_SK = AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK))) GROUP BY AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK) DT_NON_RETURNS_COURT WHERE (DT_PND_CURRENT_EST.ACTIVE_FLAG = 'Y') AND (DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK = DT_NON_RETURNS_COURT.ESTABLISHMENT_CODE_NK) AND (DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK IN (SELECT SAC.CASELOAD_ID FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC WHERE SAC.USERNAME = UPPER('DPRWS'))) AND (DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK <> 'ZZGHI')), dataset_ AS (SELECT ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION, NONRETURNS FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Prison Code",
+            "legacyId": "DP1.DO110",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Prison Name",
+            "legacyId": "DP1.DO111",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "NONRETURNS",
+            "type": "double",
+            "display": "Non Returns From Court",
+            "legacyId": "DP1.DOa32",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP3",
+      "name": "Last ETL Refresh",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DP3.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP6",
+      "name": "Population",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK, DT_PND_CURRENT_EST.ESTABLISHMENT_DESCRIPTION, COUNT(DISTINCT AT_PND_PRISONER_BOOKING.OFFENDER_ID_DISPLAY) AS PRISON_POPULATION FROM BODIMIS.DIM_ESTABLISHMENT DT_PND_CURRENT_EST, BODIMIS.DIM_OFFENDER_BOOKING AT_PND_PRISONER_BOOKING WHERE (AT_PND_PRISONER_BOOKING.ESTABLISHMENT_SK = DT_PND_CURRENT_EST.ESTABLISHMENT_SK) AND (DT_PND_CURRENT_EST.ACTIVE_FLAG = 'Y') AND (AT_PND_PRISONER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK IN (SELECT SAC.CASELOAD_ID FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC WHERE SAC.USERNAME = UPPER('DPRWS'))) AND (AT_PND_PRISONER_BOOKING.ACTIVE_STATUS IN ('Active In', 'Active Out')) AND (AT_PND_PRISONER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_PND_PRISONER_BOOKING.BOOKING_STATUS = 'O') AND (DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK <> 'ZZGHI') GROUP BY DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK, DT_PND_CURRENT_EST.ESTABLISHMENT_DESCRIPTION), dataset_ AS (SELECT ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION, PRISON_POPULATION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Prison Code",
+            "legacyId": "DP6.DO110",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Prison Name",
+            "legacyId": "DP6.DO111",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "PRISON_POPULATION",
+            "type": "double",
+            "display": "Prison Population",
+            "legacyId": "DP6.DOfe",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP7",
+      "name": "All Establishments",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK, DT_PND_CURRENT_EST.ESTABLISHMENT_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT DT_PND_CURRENT_EST WHERE (DT_PND_CURRENT_EST.ACTIVE_FLAG = 'Y') AND (DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK IN (SELECT SAC.CASELOAD_ID FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC WHERE SAC.USERNAME = UPPER('DPRWS'))) AND (DT_PND_CURRENT_EST.ESTABLISHMENT_CODE_NK <> 'ZZGHI')), dataset_ AS (SELECT ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Prison Code",
+            "legacyId": "DP7.DO110",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Prison Name",
+            "legacyId": "DP7.DO111",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "198987.RS",
+      "name": "National Report of Non Returns from Court",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP6",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ESTABLISHMENT_CODE <> 'ZZGHI')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:PRISON_POPULATION",
+            "display": "Prison Population",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP6.DOfe"
+          },
+          {
+            "name": "$ref:NONRETURNS",
+            "display": "Non Returns From Court",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP1.DOa32"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "Report field NONRETURNS does not have corresponding dataset schema field",
+      "entityId": "198987.RS",
+      "entityType": "variant"
+    }
+  ]
+}

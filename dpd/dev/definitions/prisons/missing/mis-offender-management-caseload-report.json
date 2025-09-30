@@ -1,0 +1,1352 @@
+{
+  "id": "klZXFRgAABCQHAUA00kAISgV_bQ",
+  "name": "MIS Offender Management Caseload Report",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "SEN0024 v00.00.03"
+    ]
+  },
+  "description": "Report is split over 7 tabs - Prisoners allocated to an Offender Supervisor (OS), allocated to a Prison Offender Manager (POM), Prisoners allocated to a Case Administrator (CA), Prisoners not allocated an OS, not allocated to a POM and Prisoners not allocated to a CA.  A seventh tab displays Nationality Codes, Legal Status Codes and their Descriptions for reference.<br/>SEN0024 - v00.00.03 Last Modified: 05/12/19",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP2c",
+      "name": "OS,CA, POM",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, DT_OFFENDER_CONTACT_ADDRESS.RELATIONSHIP, DT_OFFENDER_CONTACT_ADDRESS.FIRST_NAME, DT_OFFENDER_CONTACT_ADDRESS.LAST_NAME FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT ROW_NUMBER() OVER (PARTITION BY dooc.offender_booking_sk, dooc.relationship ORDER BY dooc.active_flag DESC, dooc.address_flag DESC, dooc.mis_load_id DESC) AS row_seq_filter, dooc.*, CASE WHEN dooc.next_of_kin_flag = 'Y' THEN 'NEXTOFKIN' ELSE 'CONTACT' END AS Con_Addr_Type, CASE WHEN dooc.next_of_kin_flag = 'Y' THEN 'Next of Kin' ELSE 'Contact' END AS ConAddrTypeDesc FROM bodimis.dim_offender_other_contacts dooc) DT_OFFENDER_CONTACT_ADDRESS WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK (+)) AND (DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK IS NULL OR DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (DT_OFFENDER_CONTACT_ADDRESS.ROW_SEQ_FILTER (+) = 1) AND DT_OFFENDER_CONTACT_ADDRESS.ACTIVE_FLAG = 'Y' AND DT_OFFENDER_CONTACT_ADDRESS.RELATIONSHIP IN ('Offender Supervisor', 'Case Administrator', 'Prison Offender Manager') AND DT_OFFENDER_CONTACT_ADDRESS.CONTACT_DESCRIPTION = 'Official')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, RELATIONSHIP, FIRST_NAME, LAST_NAME FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2c.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "RELATIONSHIP",
+            "type": "string",
+            "display": "Contact Relationship",
+            "legacyId": "DP2c.DO748",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Contact First Name",
+            "legacyId": "DP2c.DOada",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Contact Last Name",
+            "legacyId": "DP2c.DOadc",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP23",
+      "name": "All",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION, DT_CURRENT_RELEASE_DATE.CURR_RELEASE_DATE, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION, FACT_CURR_KEY_DATES_SENT.CURR_PED_DATE, FACT_CURR_KEY_DATES_SENT.CURR_LED_DATE, FACT_CURR_KEY_DATES_SENT.TUSED_DATE, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE, AT_ALERT.ALERT_CODE_NK, AT_ALERT.ALERT_DESCRIPTION, FACT_CURR_KEY_DATES_SENT.CURR_HDCED_DATE, CASE WHEN AT_ALERT.ALERT_ACTIVE_FLAG='Y' THEN AT_ALERT.ALERT_TYPE_NK END, AT_OFFENDER_BOOKING.NATIONALITY_CODE, AT_OFFENDER_BOOKING.NATIONALITY_DESCRIPTION, CASE WHEN AT_ALERT_EXPIRY_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EXPIRY_DATE.DAY_DATE ELSE NULL END FROM BODIMIS.DIM_CELL AT_DIM_LOCATION, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (   Select AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK as OFFENDER_BOOKING_SK, case when AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE From --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_DATE AT_RELEASE_DATE where --AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK=AT_FACT_SENTENCE.OFFENDER_BOOKING_SK(+) AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK=AT_RELEASE_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' --and AT_RELEASE_DATE.DAY_DATE !='31/12/9000' ) DT_CURRENT_RELEASE_DATE, FACT_CURR_KEY_DATES_SENT, BODIMIS.DIM_ALERT AT_ALERT, BODIMIS.DIM_DATE AT_ALERT_EXPIRY_DATE, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT WHERE ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_CURRENT_RELEASE_DATE.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK(+) ) AND ( AT_ALERT.ALERT_SK(+)=AT_OFFENDER_ALERT.ALERT_SK ) AND ( AT_OFFENDER_ALERT.ALERT_EXPIRY_DATE_SK=AT_ALERT_EXPIRY_DATE.DATE_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username from context_) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.ESTABLISHMENT_SK=AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK ) AND ( AT_ESTABLISHMENT_TAP.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.LIVING_UNIT_SK=AT_DIM_LOCATION.UNIT_4_SK(+) ) AND ( ( AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK =(SELECT establishment_code from prompt_) ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) )), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3376639/DP28",
+      "name": "Nat & Legal",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.NATIONALITY_CODE, AT_OFFENDER_BOOKING.NATIONALITY_DESCRIPTION, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6))), dataset_ AS (SELECT NATIONALITY_CODE, NATIONALITY_DESCRIPTION, MAIN_LEGAL_STATUS_CODE, MAIN_LEGAL_STATUS_DESCRIPTION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "NATIONALITY_CODE",
+            "type": "string",
+            "display": "Nationality Code",
+            "legacyId": "DP28.DOb4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "NATIONALITY_DESCRIPTION",
+            "type": "string",
+            "display": "Nationality Description",
+            "legacyId": "DP28.DOb5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "MAIN_LEGAL_STATUS_CODE",
+            "type": "string",
+            "display": "Main Legal Status Code",
+            "legacyId": "DP28.DOde",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "MAIN_LEGAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Main Legal Status Description",
+            "legacyId": "DP28.DOdf",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP1c",
+      "name": "MIS Load",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP1c.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "133852.RS",
+      "name": "OS",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP23",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_MAPPP_DISPLAY_CHECK <> 1)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DP23_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO10A7C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO100B4",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO100DE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_MAPPP_ALERT_DETAILS",
+            "display": "Alert SOR",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If((IsNull([Alert Expiry Date])=1 Or [Alert Expiry Date] > CurrentDate()) And ([Alert Code]<>\"PEEP\" And Left([Alert Code];1)=\"P\");\nIf([Alert Code] = \"P0\";\"MAPPA Nominal\";\nIf([Alert Code] = \"P1\";\"MAPPA Lvl 1 Case\";\nIf([Alert Code] = \"P2\";\"MAPPA Lvl 2 Case\";\nIf([Alert Code] = \"P3\";\"MAPPA Lvl 3 Case\";[Alert Description])))))"
+          },
+          {
+            "name": "$ref:DP23_DO70",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO87",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO6A",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO615",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO565",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "236049.RS",
+      "name": "POM",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP23",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_MAPPP_DISPLAY_CHECK <> 1)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DP23_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO10A7C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO100B4",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO100DE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_MAPPP_ALERT_DETAILS",
+            "display": "Alert SOR",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If((IsNull([Alert Expiry Date])=1 Or [Alert Expiry Date] > CurrentDate()) And ([Alert Code]<>\"PEEP\" And Left([Alert Code];1)=\"P\");\nIf([Alert Code] = \"P0\";\"MAPPA Nominal\";\nIf([Alert Code] = \"P1\";\"MAPPA Lvl 1 Case\";\nIf([Alert Code] = \"P2\";\"MAPPA Lvl 2 Case\";\nIf([Alert Code] = \"P3\";\"MAPPA Lvl 3 Case\";[Alert Description])))))"
+          },
+          {
+            "name": "$ref:DP23_DO70",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO87",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO6A",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO615",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO565",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "235790.RS",
+      "name": "CA",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP23",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_MAPPP_DISPLAY_CHECK <> 1)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DP23_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO10A7C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO100B4",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO100DE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_MAPPP_ALERT_DETAILS",
+            "display": "Alert SOR",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If((IsNull([Alert Expiry Date])=1 Or [Alert Expiry Date] > CurrentDate()) And ([Alert Code]<>\"PEEP\" And Left([Alert Code];1)=\"P\");\nIf([Alert Code] = \"P0\";\"MAPPA Nominal\";\nIf([Alert Code] = \"P1\";\"MAPPA Lvl 1 Case\";\nIf([Alert Code] = \"P2\";\"MAPPA Lvl 2 Case\";\nIf([Alert Code] = \"P3\";\"MAPPA Lvl 3 Case\";[Alert Description])))))"
+          },
+          {
+            "name": "$ref:DP23_DO70",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO87",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO6A",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO615",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO565",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "235880.RS",
+      "name": "No OS",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP23",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (V_MAPPP_DISPLAY_CHECK <> 1 AND V_OS_NAME IS NULL))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP23_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO10A7C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO100B4",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO100DE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_MAPPP_ALERT_DETAILS",
+            "display": "Alert SOR",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If((IsNull([Alert Expiry Date])=1 Or [Alert Expiry Date] > CurrentDate()) And ([Alert Code]<>\"PEEP\" And Left([Alert Code];1)=\"P\");\nIf([Alert Code] = \"P0\";\"MAPPA Nominal\";\nIf([Alert Code] = \"P1\";\"MAPPA Lvl 1 Case\";\nIf([Alert Code] = \"P2\";\"MAPPA Lvl 2 Case\";\nIf([Alert Code] = \"P3\";\"MAPPA Lvl 3 Case\";[Alert Description])))))"
+          },
+          {
+            "name": "$ref:DP23_DO70",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO87",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO6A",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO615",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO565",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "236145.RS",
+      "name": "No POM",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP23",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (V_MAPPP_DISPLAY_CHECK <> 1 AND V_POM_NAME IS NULL))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP23_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO10A7C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO100B4",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO100DE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_MAPPP_ALERT_DETAILS",
+            "display": "Alert SOR",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If((IsNull([Alert Expiry Date])=1 Or [Alert Expiry Date] > CurrentDate()) And ([Alert Code]<>\"PEEP\" And Left([Alert Code];1)=\"P\");\nIf([Alert Code] = \"P0\";\"MAPPA Nominal\";\nIf([Alert Code] = \"P1\";\"MAPPA Lvl 1 Case\";\nIf([Alert Code] = \"P2\";\"MAPPA Lvl 2 Case\";\nIf([Alert Code] = \"P3\";\"MAPPA Lvl 3 Case\";[Alert Description])))))"
+          },
+          {
+            "name": "$ref:DP23_DO70",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO87",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO6A",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO615",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO565",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "235973.RS",
+      "name": "No CA",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP23",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (V_MAPPP_DISPLAY_CHECK <> 1 AND V_CA_NAME IS NULL))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP23_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO10A7C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO100B4",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO100DE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_MAPPP_ALERT_DETAILS",
+            "display": "Alert SOR",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If((IsNull([Alert Expiry Date])=1 Or [Alert Expiry Date] > CurrentDate()) And ([Alert Code]<>\"PEEP\" And Left([Alert Code];1)=\"P\");\nIf([Alert Code] = \"P0\";\"MAPPA Nominal\";\nIf([Alert Code] = \"P1\";\"MAPPA Lvl 1 Case\";\nIf([Alert Code] = \"P2\";\"MAPPA Lvl 2 Case\";\nIf([Alert Code] = \"P3\";\"MAPPA Lvl 3 Case\";[Alert Description])))))"
+          },
+          {
+            "name": "$ref:DP23_DO70",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO87",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO6A",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO615",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP23_DO565",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "231207.RS",
+      "name": "Nat & Legal",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP28",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_CODE",
+            "display": "Main Legal Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP28.DOde"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Expected table name but got None. Line 1, Col: 1089.\n  hen AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE \u001b[4mFrom\u001b[0m --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENT]",
+      "entityId": "klZXFRgAABCQHAUA00kAISgV_bQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields (comments -- in query)",
+      "entityId": "3375368/DP23",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO1007B does not have corresponding dataset schema field",
+      "entityId": "133852.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO10080 does not have corresponding dataset schema field",
+      "entityId": "133852.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO10A7C does not have corresponding dataset schema field",
+      "entityId": "133852.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO100B4 does not have corresponding dataset schema field",
+      "entityId": "133852.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO100DE does not have corresponding dataset schema field",
+      "entityId": "133852.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MAPPP_ALERT_DETAILS does not have corresponding dataset schema field",
+      "entityId": "133852.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO70 does not have corresponding dataset schema field",
+      "entityId": "133852.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO87 does not have corresponding dataset schema field",
+      "entityId": "133852.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO6A does not have corresponding dataset schema field",
+      "entityId": "133852.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO615 does not have corresponding dataset schema field",
+      "entityId": "133852.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO565 does not have corresponding dataset schema field",
+      "entityId": "133852.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO1007B does not have corresponding dataset schema field",
+      "entityId": "236049.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO10080 does not have corresponding dataset schema field",
+      "entityId": "236049.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO10A7C does not have corresponding dataset schema field",
+      "entityId": "236049.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO100B4 does not have corresponding dataset schema field",
+      "entityId": "236049.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO100DE does not have corresponding dataset schema field",
+      "entityId": "236049.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MAPPP_ALERT_DETAILS does not have corresponding dataset schema field",
+      "entityId": "236049.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO70 does not have corresponding dataset schema field",
+      "entityId": "236049.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO87 does not have corresponding dataset schema field",
+      "entityId": "236049.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO6A does not have corresponding dataset schema field",
+      "entityId": "236049.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO615 does not have corresponding dataset schema field",
+      "entityId": "236049.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO565 does not have corresponding dataset schema field",
+      "entityId": "236049.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO1007B does not have corresponding dataset schema field",
+      "entityId": "235790.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO10080 does not have corresponding dataset schema field",
+      "entityId": "235790.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO10A7C does not have corresponding dataset schema field",
+      "entityId": "235790.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO100B4 does not have corresponding dataset schema field",
+      "entityId": "235790.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO100DE does not have corresponding dataset schema field",
+      "entityId": "235790.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MAPPP_ALERT_DETAILS does not have corresponding dataset schema field",
+      "entityId": "235790.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO70 does not have corresponding dataset schema field",
+      "entityId": "235790.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO87 does not have corresponding dataset schema field",
+      "entityId": "235790.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO6A does not have corresponding dataset schema field",
+      "entityId": "235790.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO615 does not have corresponding dataset schema field",
+      "entityId": "235790.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO565 does not have corresponding dataset schema field",
+      "entityId": "235790.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO1007B does not have corresponding dataset schema field",
+      "entityId": "235880.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO10080 does not have corresponding dataset schema field",
+      "entityId": "235880.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO10A7C does not have corresponding dataset schema field",
+      "entityId": "235880.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO100B4 does not have corresponding dataset schema field",
+      "entityId": "235880.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO100DE does not have corresponding dataset schema field",
+      "entityId": "235880.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MAPPP_ALERT_DETAILS does not have corresponding dataset schema field",
+      "entityId": "235880.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO70 does not have corresponding dataset schema field",
+      "entityId": "235880.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO87 does not have corresponding dataset schema field",
+      "entityId": "235880.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO6A does not have corresponding dataset schema field",
+      "entityId": "235880.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO615 does not have corresponding dataset schema field",
+      "entityId": "235880.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO565 does not have corresponding dataset schema field",
+      "entityId": "235880.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO1007B does not have corresponding dataset schema field",
+      "entityId": "236145.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO10080 does not have corresponding dataset schema field",
+      "entityId": "236145.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO10A7C does not have corresponding dataset schema field",
+      "entityId": "236145.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO100B4 does not have corresponding dataset schema field",
+      "entityId": "236145.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO100DE does not have corresponding dataset schema field",
+      "entityId": "236145.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MAPPP_ALERT_DETAILS does not have corresponding dataset schema field",
+      "entityId": "236145.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO70 does not have corresponding dataset schema field",
+      "entityId": "236145.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO87 does not have corresponding dataset schema field",
+      "entityId": "236145.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO6A does not have corresponding dataset schema field",
+      "entityId": "236145.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO615 does not have corresponding dataset schema field",
+      "entityId": "236145.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO565 does not have corresponding dataset schema field",
+      "entityId": "236145.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO1007B does not have corresponding dataset schema field",
+      "entityId": "235973.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO10080 does not have corresponding dataset schema field",
+      "entityId": "235973.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO10A7C does not have corresponding dataset schema field",
+      "entityId": "235973.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO100B4 does not have corresponding dataset schema field",
+      "entityId": "235973.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO100DE does not have corresponding dataset schema field",
+      "entityId": "235973.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MAPPP_ALERT_DETAILS does not have corresponding dataset schema field",
+      "entityId": "235973.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO70 does not have corresponding dataset schema field",
+      "entityId": "235973.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO87 does not have corresponding dataset schema field",
+      "entityId": "235973.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO6A does not have corresponding dataset schema field",
+      "entityId": "235973.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO615 does not have corresponding dataset schema field",
+      "entityId": "235973.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP23_DO565 does not have corresponding dataset schema field",
+      "entityId": "235973.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3375368/DP23",
+      "entityType": "dataset"
+    }
+  ]
+}

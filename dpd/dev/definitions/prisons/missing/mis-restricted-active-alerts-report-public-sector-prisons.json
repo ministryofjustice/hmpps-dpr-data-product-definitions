@@ -1,0 +1,219 @@
+{
+  "id": "okxX_y8AClnMF3oArP_FFfm0f78",
+  "name": "MIS RESTRICTED Active Alerts Report Public Sector Prisons",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "alerts, uk, hmp"
+    ]
+  },
+  "description": "v1.0 Displays a report of currently Active Alerts for the Public Sector Prison Service. Report categorises Alert Description (such as 'Bully', 'Escape List') and shows as a percentage of population. Report includes a tab for an Area Breakdown as well as National figures.",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP0",
+      "name": "Query 1",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_ESTABLISHMENT.AREA_DESCRIPTION, COUNT(DISTINCT (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY)) AS COUNT_OF_OFFENDERS FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_CELL AT_CELL WHERE (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_ESTABLISHMENT.AREA_DESCRIPTION IN ('East Midlands', 'Eastern', 'Kent and Sussex', 'London', 'North East', 'North West', 'South Central', 'South West', 'Wales', 'West Midlands', 'Yorkshire & Humberside') AND (AT_OFFENDER_BOOKING.ACTIVE_STATUS IN ('Active Out', 'Active In', 'Active In Transit', 'Active UAL'))) GROUP BY AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_ESTABLISHMENT.AREA_DESCRIPTION), dataset_ AS (SELECT ESTABLISHMENT_DESCRIPTION, AREA_DESCRIPTION, COUNT_OF_OFFENDERS FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP0.DO10129",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "AREA_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Area",
+            "legacyId": "DP0.DO100c7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "COUNT_OF_OFFENDERS",
+            "type": "double",
+            "display": "Count of Offenders",
+            "legacyId": "DP0.DO10655",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP1",
+      "name": "Query 2",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_ESTABLISHMENT.AREA_DESCRIPTION, COUNT(DISTINCT (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY)) AS COUNT_OF_OFFENDERS, CASE WHEN AT_ALERT.ALERT_ACTIVE_FLAG = 'Y' THEN AT_ALERT.ALERT_TYPE_DESCRIPTION END AS ALERT_CATEGORY_DESCRIPTION, CASE WHEN AT_ALERT.ALERT_ACTIVE_FLAG = 'Y' THEN AT_ALERT.ALERT_DESCRIPTION END AS ALERT_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_ALERT AT_ALERT, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT, BODIMIS.DIM_CELL AT_CELL WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK (+)) AND (AT_ALERT.ALERT_SK (+) = AT_OFFENDER_ALERT.ALERT_SK) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_ESTABLISHMENT.AREA_DESCRIPTION IN ('East Midlands', 'Eastern', 'Kent and Sussex', 'London', 'North East', 'North West', 'South Central', 'South West', 'Wales', 'West Midlands', 'Yorkshire & Humberside') AND (AT_OFFENDER_BOOKING.ACTIVE_STATUS IN ('Active Out', 'Active In', 'Active In Transit', 'Active UAL')) AND (AT_OFFENDER_ALERT.ALERT_STATUS = 'ACTIVE')) GROUP BY AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_ESTABLISHMENT.AREA_DESCRIPTION, CASE WHEN AT_ALERT.ALERT_ACTIVE_FLAG = 'Y' THEN AT_ALERT.ALERT_TYPE_DESCRIPTION END, CASE WHEN AT_ALERT.ALERT_ACTIVE_FLAG = 'Y' THEN AT_ALERT.ALERT_DESCRIPTION END), dataset_ AS (SELECT ESTABLISHMENT_DESCRIPTION, AREA_DESCRIPTION, COUNT_OF_OFFENDERS, ALERT_CATEGORY_DESCRIPTION, ALERT_DESCRIPTION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP1.DO10129",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "AREA_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Area",
+            "legacyId": "DP1.DO100c7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "COUNT_OF_OFFENDERS",
+            "type": "double",
+            "display": "Count of Offenders",
+            "legacyId": "DP1.DO10655",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ALERT_CATEGORY_DESCRIPTION",
+            "type": "string",
+            "display": "Alert Category Description",
+            "legacyId": "DP1.DO10093",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ALERT_DESCRIPTION",
+            "type": "string",
+            "display": "Alert Description",
+            "legacyId": "DP1.DO10090",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "217180.RS",
+      "name": "Active Alerts UK (Public Sector)",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP1",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ALERT_DESCRIPTION",
+            "display": "Alert Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO10090"
+          },
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP1.DO10655"
+          }
+        ]
+      }
+    },
+    {
+      "id": "217028.RS",
+      "name": "Active Alerts By Area",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:AREA_DESCRIPTION",
+            "display": "Establishment Area",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO100c7"
+          },
+          {
+            "name": "$ref:ALERT_DESCRIPTION",
+            "display": "Alert Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO10090"
+          },
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP1.DO10655"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "Report field ALERT_DESCRIPTION does not have corresponding dataset schema field",
+      "entityId": "217028.RS",
+      "entityType": "variant"
+    }
+  ]
+}

@@ -1,0 +1,274 @@
+{
+  "id": "kllt7qoABFogX1ABQP8AISgWcQA",
+  "name": "ORS Prisoner Contacts",
+  "description": "This report returns a list of contacts for an individual prisoner entered at runtime. The list includes information such as Next of Kin, Emergency contact and any restriction details. Both Active and Inactive visitors are shown.<br/>PDD0082 v00.00.01",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0082"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP2",
+      "name": "Address Details",
+      "description": "Demographic",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.LAST_NAME, AT_OFFENDERS_LOCATIONS.DESCRIPTION, AT_PEOPLE.FIRST_NAME AS CP_FIRST_NAME, AT_PEOPLE.LAST_NAME AS CP_LAST_NAME, AT_CONTACTS.EMERGENCY_CONTACT_FLAG, AT_PEOPLE.BIRTHDATE, AT_PEOPLE.SEX, AT_CONTACTS.RELATIONSHIP_TYPE, AT_CONTACTS.NEXT_OF_KIN_FLAG, AT_CONTACTS.ACTIVE_FLAG, DT_OFF_CON_ADD.FULL_ADDRESS, AT_CONTACTS.APPROVED_VISITOR_FLAG, DT_CONTACT_REST.VISTR_RSTRCN FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS, OMS_OWNER.PERSONS AT_PEOPLE, OMS_OWNER.OFFENDER_CONTACT_PERSONS AT_CONTACTS, (SELECT ADDRESS_TYPE AS ADDRESS_TYPE, CASE WHEN NO_FIXED_ADDRESS_FLAG = 'Y' THEN 'No fixed address' ELSE SUBSTR(CASE WHEN FLAT IS NULL THEN NULL ELSE FLAT || '  ' END || CASE WHEN PREMISE IS NULL THEN NULL ELSE PREMISE || '  ' END || CASE WHEN STREET IS NULL THEN NULL ELSE STREET || '  ' END || CASE WHEN LOCALITY IS NULL THEN NULL ELSE LOCALITY || '  ' END || CASE WHEN city_name IS NULL THEN OMS_MISCELLANEOUS.GETDESCCODE('CITY', CITY_CODE) ELSE city_name END || '  ' || CASE WHEN COUNTY_CODE IS NULL THEN NULL ELSE OMS_MISCELLANEOUS.GETDESCCODE('COUNTY', COUNTY_CODE) || '  ' END, 1, 200) || CASE WHEN POSTAL_CODE IS NULL THEN NULL ELSE POSTAL_CODE || '  ' END || SUBSTR(CASE WHEN COUNTRY_CODE IS NULL THEN NULL ELSE OMS_MISCELLANEOUS.GETDESCCODE('COUNTRY', COUNTRY_CODE) END, 1, 40) END AS FULL_ADDRESS, OWNER_ID, start_date AS AddressStartDate, TRUNC(ADD_MONTHS(LAST_DAY(end_date), -1) - 1) AS AddressEndDate FROM oms_owner.addresses WHERE OWNER_CLASS = 'PER' AND start_date <= CURRENT_TIMESTAMP AND end_date IS NULL OR end_date >= CURRENT_TIMESTAMP) DT_OFF_CON_ADD, (SELECT vt_rst.person_id, WM_CONCAT(ref_code.description) AS VISTR_RSTRCN FROM oms_owner.visitor_restrictions vt_rst, oms_owner.reference_codes ref_code WHERE vt_rst.visit_restriction_type = ref_code.code AND ref_code.domain = 'VST_RST_TYPE' AND (vt_rst.expiry_date IS NULL OR vt_rst.expiry_date >= CURRENT_TIMESTAMP) GROUP BY person_id UNION ALL SELECT OCP.person_id, WM_CONCAT(ref_code.description) FROM oms_owner.offender_person_restricts offpr, oms_owner.reference_codes ref_code, OMS_OWNER.OFFENDER_CONTACT_PERSONS OCP WHERE OCP.OFFENDER_CONTACT_PERSON_ID = offpr.offender_contact_person_id AND offpr.restriction_type = ref_code.code AND ref_code.domain = 'VST_RST_TYPE' AND (offpr.restriction_expiry_date IS NULL OR offpr.restriction_expiry_date >= CURRENT_TIMESTAMP) GROUP BY person_id) DT_CONTACT_REST WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_CONTACTS.OFFENDER_BOOK_ID (+)) AND (AT_PEOPLE.PERSON_ID (+) = AT_CONTACTS.PERSON_ID) AND (AT_PEOPLE.PERSON_ID = DT_CONTACT_REST.PERSON_ID (+)) AND (AT_PEOPLE.PERSON_ID = DT_OFF_CON_ADD.OWNER_ID (+)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND AT_OFFENDER.OFFENDER_ID_DISPLAY = 'A6224DQ'), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FIRST_NAME, LAST_NAME, DESCRIPTION, CP_FIRST_NAME, CP_LAST_NAME, EMERGENCY_CONTACT_FLAG, BIRTHDATE, SEX, RELATIONSHIP_TYPE, NEXT_OF_KIN_FLAG, ACTIVE_FLAG, FULL_ADDRESS, APPROVED_VISITOR_FLAG, VISTR_RSTRCN FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP2.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP2.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP2.DO33b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "CP_FIRST_NAME",
+            "type": "string",
+            "display": "CP First Name",
+            "legacyId": "DP2.DOed9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "CP_LAST_NAME",
+            "type": "string",
+            "display": "CP Last Name",
+            "legacyId": "DP2.DOed8",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "EMERGENCY_CONTACT_FLAG",
+            "type": "string",
+            "display": "Is Emergency Contact?",
+            "legacyId": "DP2.DOeaa",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "BIRTHDATE",
+            "type": "date",
+            "display": "Birthdate",
+            "legacyId": "DP2.DO107b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "SEX",
+            "type": "string",
+            "display": "Sex",
+            "legacyId": "DP2.DO107c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "RELATIONSHIP_TYPE",
+            "type": "string",
+            "display": "Relationship Type",
+            "legacyId": "DP2.DO107d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "NEXT_OF_KIN_FLAG",
+            "type": "string",
+            "display": "Is NOK?",
+            "legacyId": "DP2.DOea9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "ACTIVE_FLAG",
+            "type": "string",
+            "display": "Contact Active?",
+            "legacyId": "DP2.DOedb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "FULL_ADDRESS",
+            "type": "string",
+            "display": "Full Address",
+            "legacyId": "DP2.DO107e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "APPROVED_VISITOR_FLAG",
+            "type": "string",
+            "display": "Approved Visitor Flag",
+            "legacyId": "DP2.DO1075",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "VISTR_RSTRCN",
+            "type": "string",
+            "display": "Contact's Restriction Description",
+            "legacyId": "DP2.DO1077",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "157597.RS",
+      "name": "Contacts",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377299/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:CP_FIRST_NAME",
+            "display": "CP First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOed9"
+          },
+          {
+            "name": "$ref:CP_LAST_NAME",
+            "display": "CP Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOed8"
+          },
+          {
+            "name": "$ref:BIRTHDATE",
+            "display": "Birthdate",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO107b"
+          },
+          {
+            "name": "$ref:RELATIONSHIP_TYPE",
+            "display": "Relationship Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO107d"
+          },
+          {
+            "name": "$ref:ACTIVE_FLAG",
+            "display": "Contact Active?",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOedb"
+          },
+          {
+            "name": "$ref:EMERGENCY_CONTACT_FLAG",
+            "display": "Is Emergency Contact?",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOeaa"
+          },
+          {
+            "name": "$ref:NEXT_OF_KIN_FLAG",
+            "display": "Is NOK?",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOea9"
+          },
+          {
+            "name": "$ref:FULL_ADDRESS",
+            "display": "Full Address",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO107e"
+          },
+          {
+            "name": "$ref:VISTR_RSTRCN",
+            "display": "Contact's Restriction Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1077"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

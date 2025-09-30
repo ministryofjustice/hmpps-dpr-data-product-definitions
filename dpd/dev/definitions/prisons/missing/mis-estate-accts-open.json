@@ -1,0 +1,239 @@
+{
+  "id": "olDtmtgAC0yoH3UAf._FFfm0EcE",
+  "name": "MIS Estate ACCTs Open",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": []
+  },
+  "description": "HQ9011 v1.0 This report returns the number of prisoners who have an ACCT alert for the current population. Additionally the number of days the ACCT has been open is calculated. If an alert is active and ongoing, the days between the ACCT effective date and 'Today' are calculated. The data is split into adults (aged 18 or over) and 'juveniles' (aged less than 18 for the purposes of this report.)",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP3",
+      "name": "MIS Load End Date",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DP3.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP8",
+      "name": "Current Active ACCT Alerts",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT COUNT(DISTINCT (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY)) AS COUNT_OF_OFFENDERS, TRUNC(CURRENT_TIMESTAMP) AS TODAY_, CASE WHEN AT_ALERT_EFFECT_DATE.DAY_DATE <> '31/12/9000' THEN AT_ALERT_EFFECT_DATE.DAY_DATE ELSE NULL END AS ALERT_EFFECTIVE_DATE, CASE WHEN AT_ALERT_EXPIRY_DATE.DAY_DATE <> '31/12/9000' THEN AT_ALERT_EXPIRY_DATE.DAY_DATE ELSE NULL END AS ALERT_EXPIRY_DATE, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE <> '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_ALERT_EFFECT_DATE, BODIMIS.DIM_DATE AT_ALERT_EXPIRY_DATE, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_ALERT AT_ALERT, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT, BODIMIS.DIM_CELL AT_CELL WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK (+)) AND (AT_ALERT.ALERT_SK (+) = AT_OFFENDER_ALERT.ALERT_SK) AND (AT_OFFENDER_ALERT.ALERT_DATE_SK = AT_ALERT_EFFECT_DATE.DATE_SK (+)) AND (AT_OFFENDER_ALERT.ALERT_EXPIRY_DATE_SK = AT_ALERT_EXPIRY_DATE.DATE_SK (+)) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND ((AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O') AND AT_OFFENDER_BOOKING.IN_OUT <> 'TRN' AND AT_ALERT.ALERT_CODE_NK = 'HA' AND (AT_OFFENDER_ALERT.ALERT_STATUS = 'ACTIVE')) GROUP BY TRUNC(CURRENT_TIMESTAMP), CASE WHEN AT_ALERT_EFFECT_DATE.DAY_DATE <> '31/12/9000' THEN AT_ALERT_EFFECT_DATE.DAY_DATE ELSE NULL END, CASE WHEN AT_ALERT_EXPIRY_DATE.DAY_DATE <> '31/12/9000' THEN AT_ALERT_EXPIRY_DATE.DAY_DATE ELSE NULL END, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE <> '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12), AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION), dataset_ AS (SELECT COUNT_OF_OFFENDERS, TODAY_, ALERT_EFFECTIVE_DATE, ALERT_EXPIRY_DATE, OFFENDER_AGE, ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION, SUM((TO_DATE(ALERT_EFFECTIVE_DATE, 'DD/MM/YYYY') - TO_DATE(V_EXPIRY, 'DD/MM/YYYY'))) AS VACCTDURATION, CASE WHEN OFFENDER_AGE < 18 THEN 'Juveniles' ELSE 'Adults' END AS VAGEBAND FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "COUNT_OF_OFFENDERS",
+            "type": "double",
+            "display": "Count of Offenders",
+            "legacyId": "DP8.DO655",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "TODAY_",
+            "type": "date",
+            "display": "Today (Date Only)",
+            "legacyId": "DP8.DO4cd",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ALERT_EFFECTIVE_DATE",
+            "type": "date",
+            "display": "Alert Effective Date",
+            "legacyId": "DP8.DO95",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ALERT_EXPIRY_DATE",
+            "type": "date",
+            "display": "Alert Expiry Date",
+            "legacyId": "DP8.DO96",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DP8.DO82",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP8.DO139",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP8.DO129",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "VACCTDURATION",
+            "type": "string",
+            "display": "VACCTDURATION",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 8,
+            "name": "VAGEBAND",
+            "type": "string",
+            "display": "VAGEBAND",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "106979.RS",
+      "name": "Estate ACCTs Open",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP8",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "crosstab",
+        "field": [
+          {
+            "name": "$ref:VACCTDURATION",
+            "display": "Prisoners with ACCT",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum(DaysBetween([Alert Effective Date];[v_Expiry]))"
+          },
+          {
+            "name": "$ref:VAGEBAND",
+            "display": "Days Open",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Offender Age]<18;\"Juveniles\";\"Adults\")"
+          },
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP8.DO655"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP8.DO139"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP8.DO129"
+          },
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP8.DO655"
+          },
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP8.DO655"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "instance.report[0].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "olDtmtgAC0yoH3UAf._FFfm0EcE",
+      "entityType": "dpd"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3376639/DP8",
+      "entityType": "dataset"
+    }
+  ]
+}

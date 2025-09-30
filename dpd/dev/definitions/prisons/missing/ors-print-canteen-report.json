@@ -1,0 +1,319 @@
+{
+  "id": "okSFfmoAAjMwRgEAlACDBvfpJyI",
+  "name": "ORS Print Canteen Report",
+  "description": "This report provides details of prisoners' spending balances which are available to spend in the canteen. It also provides space for manual entry of 'new spend' and a 'signature'.<br/>FIN0024 - v00.01.05 Last Modified: 10/03/09",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "FIN0024 v00.00.05 drop10.2"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376816/DP3",
+      "name": "Prisoners within prison",
+      "description": "Finance",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.MIDDLE_NAME, AT_OFFENDER.BIRTH_DATE, TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) AS AGE, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_OFFENDERS_LOCATIONS.DESCRIPTION, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) = 0 THEN NULL ELSE SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) + 1, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) = 0 THEN LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION) ELSE INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) - INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) END - 1) END AS UNIT_CODE_1, DT_CURRENT_OFFENDER_IEP_LEVEL.IEP_LEVEL, CASE WHEN (AT_ACCOUNT_CODES.ACCOUNT_NAME) = 'Spends' THEN (AT_OFFENDER_SUB_ACCOUNTS.BALANCE) ELSE 0 END AS SPEND_ACCOUNT_BALANCE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, (SELECT offender_book_id, iep_date, iep_time, agy_loc_id, iep_level FROM (SELECT offender_book_id, iep_date, iep_time, agy_loc_id, iep_level, ROW_NUMBER() OVER (PARTITION BY offender_book_id ORDER BY iep_time DESC, iep_level_seq DESC) AS row_seq_filter FROM oms_owner.offender_iep_levels) WHERE row_seq_filter = 1) DT_CURRENT_OFFENDER_IEP_LEVEL, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, USER_ACCESSIBLE_CASELOADS, OMS_OWNER.OFFENDER_SUB_ACCOUNTS AT_OFFENDER_SUB_ACCOUNTS, OMS_OWNER.ACCOUNT_CODES AT_ACCOUNT_CODES, OMS_OWNER.LIVING_UNITS AT_LIVING_UNITS WHERE (AT_OFFENDER_SUB_ACCOUNTS.OFFENDER_ID (+) = AT_OFFENDER_BOOKING.ROOT_OFFENDER_ID) AND (AT_ACCOUNT_CODES.ACCOUNT_CODE = AT_OFFENDER_SUB_ACCOUNTS.TRUST_ACCOUNT_CODE) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (DT_CURRENT_OFFENDER_IEP_LEVEL.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID = AT_LIVING_UNITS.LIVING_UNIT_ID) AND (NOT AT_LIVING_UNITS.HOUSING_UNIT_TYPE IN ('OU', 'REC')) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_)) AND (AT_LIVING_UNITS.AGY_LOC_ID || '-' || AT_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' AND AT_OFFENDER_BOOKING.IN_OUT_STATUS = 'IN'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, MIDDLE_NAME, BIRTH_DATE, AGE, UNIT_DESCRIPTION_4_SHORT, DESCRIPTION, UNIT_CODE_1, IEP_LEVEL, SPEND_ACCOUNT_BALANCE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP3.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP3.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP3.DO10046",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "MIDDLE_NAME",
+            "type": "string",
+            "display": "Middle Name",
+            "legacyId": "DP3.DO103c8",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "BIRTH_DATE",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP3.DO10075",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "AGE",
+            "type": "double",
+            "display": "Age",
+            "legacyId": "DP3.DO10072",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP3.DO10427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP3.DO1033b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "UNIT_CODE_1",
+            "type": "string",
+            "display": "Unit Code 1",
+            "legacyId": "DP3.DO10472",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "Current IEP Band",
+            "legacyId": "DP3.DO1049c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "SPEND_ACCOUNT_BALANCE",
+            "type": "double",
+            "display": "Spend Account Balance",
+            "legacyId": "DP3.DOd7",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376816/DP4",
+      "name": "Prisoners Active Out",
+      "description": "Finance",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.MIDDLE_NAME, AT_OFFENDER.BIRTH_DATE, TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) AS AGE, AT_OFFENDERS_LOCATIONS.DESCRIPTION, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) = 0 THEN NULL ELSE SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) + 1, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) = 0 THEN LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION) ELSE INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) - INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) END - 1) END AS UNIT_CODE_1, DT_CURRENT_OFFENDER_IEP_LEVEL.IEP_LEVEL, CASE WHEN (AT_ACCOUNT_CODES.ACCOUNT_NAME) = 'Spends' THEN (AT_OFFENDER_SUB_ACCOUNTS.BALANCE) ELSE 0 END AS SPEND_ACCOUNT_BALANCE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, (SELECT offender_book_id, iep_date, iep_time, agy_loc_id, iep_level FROM (SELECT offender_book_id, iep_date, iep_time, agy_loc_id, iep_level, ROW_NUMBER() OVER (PARTITION BY offender_book_id ORDER BY iep_time DESC, iep_level_seq DESC) AS row_seq_filter FROM oms_owner.offender_iep_levels) WHERE row_seq_filter = 1) DT_CURRENT_OFFENDER_IEP_LEVEL, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, OMS_OWNER.OFFENDER_SUB_ACCOUNTS AT_OFFENDER_SUB_ACCOUNTS, OMS_OWNER.ACCOUNT_CODES AT_ACCOUNT_CODES, OMS_OWNER.LIVING_UNITS AT_LIVING_UNITS WHERE (AT_OFFENDER_SUB_ACCOUNTS.OFFENDER_ID (+) = AT_OFFENDER_BOOKING.ROOT_OFFENDER_ID) AND (AT_ACCOUNT_CODES.ACCOUNT_CODE = AT_OFFENDER_SUB_ACCOUNTS.TRUST_ACCOUNT_CODE) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (DT_CURRENT_OFFENDER_IEP_LEVEL.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID = AT_LIVING_UNITS.LIVING_UNIT_ID) AND (NOT AT_LIVING_UNITS.HOUSING_UNIT_TYPE IN ('OU', 'REC')) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_)) AND (AT_LIVING_UNITS.AGY_LOC_ID || '-' || AT_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.IN_OUT_STATUS = 'OUT'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, MIDDLE_NAME, BIRTH_DATE, AGE, DESCRIPTION, UNIT_DESCRIPTION_4_SHORT, UNIT_CODE_1, IEP_LEVEL, SPEND_ACCOUNT_BALANCE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP4.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP4.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP4.DO10046",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "MIDDLE_NAME",
+            "type": "string",
+            "display": "Middle Name",
+            "legacyId": "DP4.DO103c8",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "BIRTH_DATE",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP4.DO10075",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "AGE",
+            "type": "double",
+            "display": "Age",
+            "legacyId": "DP4.DO10072",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP4.DO1033b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP4.DO10427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "UNIT_CODE_1",
+            "type": "string",
+            "display": "Unit Code 1",
+            "legacyId": "DP4.DO10472",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "Current IEP Band",
+            "legacyId": "DP4.DO1049c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "SPEND_ACCOUNT_BALANCE",
+            "type": "double",
+            "display": "Spend Account Balance",
+            "legacyId": "DP4.DOd7",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "11207.RS",
+      "name": "Active In Prisoners",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376816/DP3",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP3.DO1033b"
+          }
+        ]
+      }
+    },
+    {
+      "id": "9115.RS",
+      "name": "Active Out Prisoners",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376816/DP4",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO1033b"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,418 @@
+{
+  "id": "ok8pQnIABfw_DQUAQv_D8K7B4SY",
+  "name": "MIS Prisoner Address by Sentence Length",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0035 v00.00.00 LSRIT036"
+    ]
+  },
+  "description": "Lists the most logical address for each prisoner. This will be the Primary, if that exists, otherwise the most recently updated/active. The report data is split by Effective Sentence Lengths of 'up to and including 12 months' and 'more than 12 months'. The report prompts for an Establishment code at runtime.<br/>PDD0035 - v00.00.00",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP4",
+      "name": "Addresses",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.INITIALS, DT_OFFENDER_ADDRESSES.FLAT, DT_OFFENDER_ADDRESSES.PREMISE, DT_OFFENDER_ADDRESSES.STREET, DT_OFFENDER_ADDRESSES.LOCALITY, DT_OFFENDER_ADDRESSES.CITY_DESC, DT_OFFENDER_ADDRESSES.COUNTY_DESC, DT_OFFENDER_ADDRESSES.POSTAL_CODE, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END, DT_OFFENDER_ADDRESSES.NO_FIXED_ADDRESS_FLAG, BODIMIS.DIM_REGION.REGION_CODE_NK, BODIMIS.DIM_REGION.REGION_DESCRIPTION, DT_OFFENDER_ADDRESSES.ROW_SEQ_FILTER, DT_OFFENDER_ADDRESSES.ADDRESS_USAGE, DT_OFFENDER_ADDRESSES.ADDR_USAGE_DESCRIPTION, DT_OFFENDER_ADDRESSES.USAGE_ACTIVE_FLAG, Case when DT_OFFENDER_ADDRESSES.ADDRESS_USAGE in ('HOME') then 'Y' else 'N' end , Case when DT_OFFENDER_ADDRESSES.ADDRESS_USAGE in ('RECEP') then 'Y' else 'N' end , Case when DT_OFFENDER_ADDRESSES.ADDRESS_USAGE in ('RELEASE','DBH','DNF','DPH','DSH','DST','DUT','DAP','DBA','DOH') then 'Y' else 'N' end , DT_OFFENDER_ADDRESSES.USAGES_DTTM, Case When DT_LIFEFLAG.LIFE_SENTENCE_FLAG='Y' then 'Life' Else DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH End, DT_CURRENT_KEY_DATES.CURR_ARD_DATE, DT_CURRENT_KEY_DATES.CURR_HDCED_DATE FROM ( Select AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK as OFFENDER_BOOKING_SK, case when AT_APD_DATE.DAY_DATE <> '31/12/9000' Then AT_APD_DATE.DAY_DATE end as CURR_APD_DATE, case when AT_ARD_DATE.DAY_DATE <> '31/12/9000' Then AT_ARD_DATE.DAY_DATE end as CURR_ARD_DATE, case when AT_CRD_DATE.DAY_DATE <> '31/12/9000' Then AT_CRD_DATE.DAY_DATE end as CURR_CRD_DATE, case when AT_ETD_DATE.DAY_DATE <> '31/12/9000' Then AT_ETD_DATE.DAY_DATE end as CURR_ETD_DATE, case when AT_HDCAD_DATE.DAY_DATE <> '31/12/9000' Then AT_HDCAD_DATE.DAY_DATE end as CURR_HDCAD_DATE, case when AT_HDCED_DATE.DAY_DATE <> '31/12/9000' Then AT_HDCED_DATE.DAY_DATE end as CURR_HDCED_DATE, case when AT_PED_DATE.DAY_DATE <> '31/12/9000' Then AT_PED_DATE.DAY_DATE end as CURR_PED_DATE, case when AT_LED_DATE.DAY_DATE <> '31/12/9000' Then AT_LED_DATE.DAY_DATE end as CURR_LED_DATE, case when AT_LTD_DATE.DAY_DATE <> '31/12/9000' Then AT_LTD_DATE.DAY_DATE end as CURR_LTD_DATE, case when AT_MTD_DATE.DAY_DATE <> '31/12/9000' Then AT_MTD_DATE.DAY_DATE end as CURR_MTD_DATE, case when AT_NPD_DATE.DAY_DATE <> '31/12/9000' Then AT_NPD_DATE.DAY_DATE end as CURR_NPD_DATE, case when AT_PRRD_DATE.DAY_DATE <> '31/12/9000' Then AT_PRRD_DATE.DAY_DATE end as CURR_PRRD_DATE, case when AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE, case when AT_SED_DATE.DAY_DATE <> '31/12/9000' Then AT_SED_DATE.DAY_DATE end as SED, MIN(case when AT_SENT_START_DATE.DAY_DATE <> '31/12/9000' Then AT_SENT_START_DATE.DAY_DATE end) as SSD, case when AT_TARIFF_DATE.DAY_DATE <> '31/12/9000' Then AT_TARIFF_DATE.DAY_DATE end as TARIFF, case when AT_ROTL_DATE.DAY_DATE <> '31/12/9000' Then AT_ROTL_DATE.DAY_DATE end as CURR_ROTL_DATE, case when AT_ERSED_DATE.DAY_DATE <> '31/12/9000' Then AT_ERSED_DATE.DAY_DATE end as CURR_ERSED_DATE, case when AT_TERSED_DATE.DAY_DATE <> '31/12/9000' Then AT_TERSED_DATE.DAY_DATE end as CURR_TERSED_DATE, at_fact_offender_sentence.tused_date_sk as tused_sk, nullif(td.day_date, to_date('31/12/9000', 'DD/MM/YYYY')) as tused From BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_DATE AT_ARD_DATE, BODIMIS.DIM_DATE AT_APD_DATE, BODIMIS.DIM_DATE AT_CRD_DATE, BODIMIS.DIM_DATE AT_ETD_DATE, BODIMIS.DIM_DATE AT_HDCAD_DATE, BODIMIS.DIM_DATE AT_HDCED_DATE, BODIMIS.DIM_DATE AT_PED_DATE, BODIMIS.DIM_DATE AT_LED_DATE, BODIMIS.DIM_DATE AT_LTD_DATE, BODIMIS.DIM_DATE AT_MTD_DATE, BODIMIS.DIM_DATE AT_NPD_DATE, BODIMIS.DIM_DATE AT_PRRD_DATE, BODIMIS.DIM_DATE AT_RELEASE_DATE, BODIMIS.DIM_DATE AT_SED_DATE, BODIMIS.DIM_DATE AT_SENT_START_DATE, BODIMIS.DIM_DATE AT_TARIFF_DATE, BODIMIS.DIM_DATE AT_ROTL_DATE, BODIMIS.DIM_DATE AT_ERSED_DATE, BODIMIS.DIM_DATE AT_TERSED_DATE, bodimis.dim_date td where AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK=AT_FACT_SENTENCE.OFFENDER_BOOKING_SK(+) and AT_FACT_OFFENDER_SENTENCE.ARD_DATE_SK=AT_ARD_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.APD_DATE_SK=AT_APD_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.CRD_DATE_SK=AT_CRD_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.ETD_DATE_SK=AT_ETD_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.HDCAD_DATE_SK=AT_HDCAD_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.HDCED_DATE_SK=AT_HDCED_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.PED_DATE_SK=AT_PED_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.LED_DATE_SK=AT_LED_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.LTD_DATE_SK=AT_LTD_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.MTD_DATE_SK=AT_MTD_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.NPD_DATE_SK= AT_NPD_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.PED_DATE_SK=AT_PED_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.PRRD_DATE_SK=AT_PRRD_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK=AT_RELEASE_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.SED_DATE_SK=AT_SED_DATE.DATE_SK(+) and AT_FACT_SENTENCE.SENTENCE_START_DATE_SK=AT_SENT_START_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.TARIFF_DATE_SK=AT_TARIFF_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.ROTL_DATE_SK=AT_ROTL_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.ERSED_DATE_SK=AT_ERSED_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.TERSED_DATE_SK=AT_TERSED_DATE.DATE_SK(+) and at_fact_offender_sentence.tused_date_sk = td.date_sk(+) and AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' GROUP BY AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK, case when AT_APD_DATE.DAY_DATE <> '31/12/9000' Then AT_APD_DATE.DAY_DATE end, case when AT_ARD_DATE.DAY_DATE <> '31/12/9000' Then AT_ARD_DATE.DAY_DATE end, case when AT_CRD_DATE.DAY_DATE <> '31/12/9000' Then AT_CRD_DATE.DAY_DATE end, case when AT_ETD_DATE.DAY_DATE <> '31/12/9000' Then AT_ETD_DATE.DAY_DATE end, case when AT_HDCAD_DATE.DAY_DATE <> '31/12/9000' Then AT_HDCAD_DATE.DAY_DATE end, case when AT_HDCED_DATE.DAY_DATE <> '31/12/9000' Then AT_HDCED_DATE.DAY_DATE end, case when AT_PED_DATE.DAY_DATE <> '31/12/9000' Then AT_PED_DATE.DAY_DATE end, case when AT_LED_DATE.DAY_DATE <> '31/12/9000' Then AT_LED_DATE.DAY_DATE end, case when AT_LTD_DATE.DAY_DATE <> '31/12/9000' Then AT_LTD_DATE.DAY_DATE end, case when AT_MTD_DATE.DAY_DATE <> '31/12/9000' Then AT_MTD_DATE.DAY_DATE end, case when AT_NPD_DATE.DAY_DATE <> '31/12/9000' Then AT_NPD_DATE.DAY_DATE end, case when AT_PRRD_DATE.DAY_DATE <> '31/12/9000' Then AT_PRRD_DATE.DAY_DATE end, case when AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end, case when at_sed_date.day_date <> '31/12/9000' then at_sed_date.day_date end, case when AT_TARIFF_DATE.DAY_DATE <> '31/12/9000' Then AT_TARIFF_DATE.DAY_DATE END, case when AT_ROTL_DATE.DAY_DATE <> '31/12/9000' Then AT_ROTL_DATE.DAY_DATE END, case when AT_ERSED_DATE.DAY_DATE <> '31/12/9000' Then AT_ERSED_DATE.DAY_DATE END, case when AT_TERSED_DATE.DAY_DATE <> '31/12/9000' Then AT_TERSED_DATE.DAY_DATE END, at_fact_offender_sentence.tused_date_sk, td.day_date ) DT_CURRENT_KEY_DATES, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, ( select ROW_NUMBER() OVER (PARTITION BY ss.OWNER_ID ORDER BY PRIMARY_FLAG desc, ss.address_active_flag desc, ss.USAGE_ACTIVE_FLAG desc, ss.usages_dttm DESC nulls last) row_seq_filter, ss.* from ( select * from ( select AT_DIM_ADDRESSES.OWNER_ID, AT_DIM_ADDRESS_USAGES.ADDRESS_ID_NK, AT_DIM_ADDRESS_USAGES.ADDRESS_USAGE, AT_DIM_ADDRESS_USAGES.ADDR_USAGE_DESCRIPTION, AT_DIM_ADDRESS_USAGES.ACTIVE_FLAG as USAGE_ACTIVE_FLAG, AT_DIM_ADDRESSES.flat, AT_DIM_ADDRESSES.premise, AT_DIM_ADDRESSES.Street, AT_DIM_ADDRESSES.locality, AT_DIM_ADDRESSES.city_code, AT_DIM_ADDRESSES.city_desc, AT_DIM_ADDRESSES.county_code, AT_DIM_ADDRESSES.county_desc, AT_DIM_ADDRESSES.postal_code, AT_DIM_ADDRESSES.COUNTRY_CODE, AT_DIM_ADDRESSES.country_desc, AT_DIM_ADDRESSES.HOME_TEL_NO, AT_DIM_ADDRESSES.HOME_EXT_NO, AT_DIM_ADDRESSES.NO_FIXED_ADDRESS_FLAG, AT_DIM_ADDRESSES.establishment_sk, AT_DIM_ADDRESSES.PRIMARY_FLAG, AT_DIM_ADDRESSES.active_flag as address_active_flag, AT_DIM_ADDRESS_USAGES.CREATE_DATETIME, AT_DIM_ADDRESS_USAGES.MODIFY_DATETIME, COALESCE(AT_DIM_ADDRESS_USAGES.modify_datetime, AT_DIM_ADDRESS_USAGES.create_datetime) as usages_dttm from BODIMIS.DIM_ADDRESS_USAGES AT_DIM_ADDRESS_USAGES inner join BODIMIS.dim_addresses AT_DIM_ADDRESSES on AT_DIM_ADDRESS_USAGES.address_id_nk = AT_DIM_ADDRESSES.address_id_nk and AT_DIM_ADDRESSES.owner_class='OFF'  ) Addr_usages --where Addr_usages.usages_dttm is not null ) ss ) DT_OFFENDER_ADDRESSES, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_REGION, ( SELECT BODIMIS.FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK, BODIMIS.FACT_OFFENDER_SENTENCE.EFFECTIVE_SENTENCE_LENGTH FROM BODIMIS.FACT_OFFENDER_SENTENCE WHERE ( BODIMIS.FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' ) ) DT_CURREFFSENLEN, (  SELECT distinct BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE ( BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK=dss.sentence_status_sk) AND dss.sentence_status='Active' AND ( BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK=BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK ) AND ( BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK=BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK ) AND ( BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK=BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK ) and BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG='Y' ) DT_LIFEFLAG, BODISTAGING.REF_OFFENDERS AT_BODISTAG_REF_OFFENDERS, BODIMIS.DIM_CELL AT_CELL, BODIMIS.DIM_REFERENCE_CODES AT_DIM_REFERENCE_CODES WHERE ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_CURRENT_KEY_DATES.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_CURREFFSENLEN.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_LIFEFLAG.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.BIRTH_DATE_SK=AT_DOB.DATE_SK ) AND ( AT_CELL.ESTABLISHMENT_SK=AT_ESTABLISHMENT.ESTABLISHMENT_SK ) AND ( AT_CELL.UNIT_4_SK=AT_OFFENDER_BOOKING.LIVING_UNIT_SK ) AND ( AT_ESTABLISHMENT.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_ID=AT_BODISTAG_REF_OFFENDERS.OFFENDER_ID(+) ) AND ( AT_BODISTAG_REF_OFFENDERS.ROOT_OFFENDER_ID=DT_OFFENDER_ADDRESSES.OWNER_ID(+) ) AND ( rtrim(DT_OFFENDER_ADDRESSES.COUNTY_CODE)=AT_DIM_REFERENCE_CODES.CODE(+) ) AND ( AT_DIM_REFERENCE_CODES.CODE_DOMAIN(+)='COUNTY' ) AND ( AT_DIM_REFERENCE_CODES.PARENT_CODE=BODIMIS.DIM_REGION.REGION_CODE_NK(+) ) AND ( ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND ( AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,Not_Persistent,User:70) */ ) ) )), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,Not_Persistent,User:70)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3376639/DP9",
+      "name": "MIS load",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP9.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "136685.RS",
+      "name": "Effective Sentence <12Mths",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP4",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (()))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP4_DO10076",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO1012D",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO10948",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO10949",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO1094E",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO2D0",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO47",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO70",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "136582.RS",
+      "name": "Effective Sentence >12Mths",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP4",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (EFFECTIVE_SENTENCE_LENGTH > 01/00/00 AND (OFFENDER_ADDRESS_ROW_SEQ_FIL31 = 1 OR OFFENDER_ADDRESS_ROW_SEQ_FIL31 IS NULL)))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP4_DO10076",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO1012D",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO10948",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO10949",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO1094E",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO2D0",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO47",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO70",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Expecting ). Line 1, Col: 8620.\n  ESS_USAGES.address_id_nk = AT_DIM_ADDRESSES.address_id_nk and AT_DIM_ADDRESSES.owner_class='OFF'  ) \u001b[4mAddr_usages\u001b[0m --where Addr_usages.usages_dttm is not null ) ss ) DT_OFFENDER_ADDRESSES, BODIMIS.DIM_DATE AT_DOB, ]",
+      "entityId": "ok8pQnIABfw_DQUAQv_D8K7B4SY",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields (comments -- in query)",
+      "entityId": "3375368/DP4",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO10076 does not have corresponding dataset schema field",
+      "entityId": "136685.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO1007B does not have corresponding dataset schema field",
+      "entityId": "136685.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO1012D does not have corresponding dataset schema field",
+      "entityId": "136685.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO10948 does not have corresponding dataset schema field",
+      "entityId": "136685.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO10949 does not have corresponding dataset schema field",
+      "entityId": "136685.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO1094E does not have corresponding dataset schema field",
+      "entityId": "136685.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO2D0 does not have corresponding dataset schema field",
+      "entityId": "136685.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO47 does not have corresponding dataset schema field",
+      "entityId": "136685.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO70 does not have corresponding dataset schema field",
+      "entityId": "136685.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO10076 does not have corresponding dataset schema field",
+      "entityId": "136582.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO1007B does not have corresponding dataset schema field",
+      "entityId": "136582.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO1012D does not have corresponding dataset schema field",
+      "entityId": "136582.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO10948 does not have corresponding dataset schema field",
+      "entityId": "136582.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO10949 does not have corresponding dataset schema field",
+      "entityId": "136582.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO1094E does not have corresponding dataset schema field",
+      "entityId": "136582.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO2D0 does not have corresponding dataset schema field",
+      "entityId": "136582.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO47 does not have corresponding dataset schema field",
+      "entityId": "136582.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO70 does not have corresponding dataset schema field",
+      "entityId": "136582.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3375368/DP4",
+      "entityType": "dataset"
+    }
+  ]
+}

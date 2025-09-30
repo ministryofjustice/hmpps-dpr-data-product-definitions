@@ -1,0 +1,2989 @@
+{
+  "id": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+  "name": "MIS Draft NSR-3664 IT TEST",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACT0048"
+    ]
+  },
+  "description": "<br/>This report details Activities allocated along with protected chars. Each protected char has a graphical and tabular illustration. <br/><br/>ACT0048 - v1.0 Last Modified: 14/06/2021",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP9",
+      "name": "ActivitIes A-L",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, floor((months_between(( trunc(sysdate) ), ( CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END ))) / 12), CASE WHEN AT_DIM_ETHNICITY_CODES.CODE='MERGE' Then 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL Then 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE='W8' then 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE='O1' then 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END , NVL(AT_OFFENDER_BOOKING.RELIGION_CODE,'Not Specified'), CASE WHEN AT_CURRENT_SECURITY_CATEGORY.CURRENT_SEC_CAT_LEVEL IS NULL THEN 'Unclassified' ELSE AT_CURRENT_SECURITY_CATEGORY.CURRENT_SEC_CAT_LEVEL END, nvl(AT_OFFENDER_BOOKING.IEP_BAND,'** Incentive Level Missing **'), DT_CURRENT_RELEASE_DATE.CURR_RELEASE_DATE, AT_DIM_PROGRAMME_SERVICE.DESCRIPTION, AT_DIM_PROGRAMME_TYPE.DESCRIPTION, AT_FACT_OFFENDER_ACTIVITY.SUSPENDED_FLAG, AT_FACT_OFFENDER_ACTIVITY.OFFENDER_START_DATE, AT_FACT_OFFENDER_ACTIVITY.OFFENDER_END_DATE, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION, AT_OFFENDER_BOOKING.GENDER_CODE, AT_OFFENDER_BOOKING.MATERNITY_STATUS_DESCRIPTION, AT_OFFENDER_BOOKING.MARITAL_STATUS_DESCRIPTION, AT_OFFENDER_BOOKING.SEX_ORIENTATION_DESCRIPTION, CASE when AT_DIM_ETHNICITY_CODES.DESCRIPTION= 'Chinese' then 'Asian/Asian British: Chinese' when AT_DIM_ETHNICITY_CODES.DESCRIPTION='White : Irish Traveller/Gypsy' then 'White: Gypsy or Irish Traveller' when AT_DIM_ETHNICITY_CODES.DESCRIPTION is null then 'Code Missing' else AT_DIM_ETHNICITY_CODES.DESCRIPTION END FROM BODIMIS.FACT_OFFENDER_ACTIVITY AT_FACT_OFFENDER_ACTIVITY, BODIMIS.DIM_CELL AT_DIM_LOCATION, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_ESTABLISHMENT AT_ACTIVITY_ESTABLISHMENT, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_OFFENDER_ASSESSMENT AT_CURRENT_SECURITY_CATEGORY, (   Select AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK as OFFENDER_BOOKING_SK, case when AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE From --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_DATE AT_RELEASE_DATE where --AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK=AT_FACT_SENTENCE.OFFENDER_BOOKING_SK(+) AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK=AT_RELEASE_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' --and AT_RELEASE_DATE.DAY_DATE !='31/12/9000' ) DT_CURRENT_RELEASE_DATE, BODIMIS.DIM_PROGRAMME_SERVICE AT_DIM_PROGRAMME_SERVICE, BODIMIS.DIM_PROGRAMME_TYPE AT_DIM_PROGRAMME_TYPE WHERE ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_CURRENT_RELEASE_DATE.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.BIRTH_DATE_SK=AT_DOB.DATE_SK ) AND ( AT_DIM_ETHNICITY_CODES.CODE(+)=AT_OFFENDER_BOOKING.ETHNICITY_CODE ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.ESTABLISHMENT_SK=AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK ) AND ( AT_ESTABLISHMENT_TAP.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=AT_FACT_OFFENDER_ACTIVITY.OFFENDER_BOOKING_SK ) AND ( AT_DIM_PROGRAMME_TYPE.PROGRAMME_TYPE_SK=AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_TYPE_SK ) AND ( AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_SK=AT_FACT_OFFENDER_ACTIVITY.ESTABLISHMENT_SK ) AND ( AT_DIM_PROGRAMME_SERVICE.PROGRAMME_SERVICE_SK=AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_SERVICE_SK ) AND ( AT_CURRENT_SECURITY_CATEGORY.CURRENT_SEC_CAT_FLAG(+)='Y' ) AND ( AT_CURRENT_SECURITY_CATEGORY.OFFENDER_BOOKING_SK(+)=AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK ) AND ( AT_OFFENDER_BOOKING.LIVING_UNIT_SK=AT_DIM_LOCATION.UNIT_4_SK(+) ) AND ( ( AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND='Y' ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND AT_OFFENDER_BOOKING.SURNAME < 'M' AND ( AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK =(SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #Prompt('Establishment Code','A','Associated Establishment\\Associated Establishment Code',mono,free,Not_Persistent,User:69) */ ) ) AND AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #prompt('Establishment Code','A','Activities\\Activity Establishment Code',Mono,Free,Not_Persistent,,User:0) */ ) AND ( (AT_DIM_PROGRAMME_TYPE.SCHEDULE_END_DATE IS NULL OR AT_DIM_PROGRAMME_TYPE.SCHEDULE_END_DATE > trunc(sysdate)) ) AND TRUNC(AT_FACT_OFFENDER_ACTIVITY.OFFENDER_START_DATE) <= trunc(sysdate) AND ( CASE WHEN TRUNC(AT_FACT_OFFENDER_ACTIVITY.OFFENDER_END_DATE) <> '31/12/9999' THEN TRUNC(AT_FACT_OFFENDER_ACTIVITY.OFFENDER_END_DATE) END > trunc(sysdate) OR CASE WHEN TRUNC(AT_FACT_OFFENDER_ACTIVITY.OFFENDER_END_DATE) <> '31/12/9999' THEN TRUNC(AT_FACT_OFFENDER_ACTIVITY.OFFENDER_END_DATE) END Is Null ) )), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code','A','Associated Establishment\\Associated Establishment Code',mono,free,Not_Persistent,User:69)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3375368/DP14",
+      "name": "MIS Load",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP14.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP15",
+      "name": "Disability",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE IS NULL THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'I' THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'ON' AND NOT BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'PRD', 'RD', 'NR') THEN 'Y' ELSE 'N' END AS DISABILITY_ACTIVE_FLAG FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_OFFENDER_PERSONAL_CARE WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.DIM_OFFENDER_PERSONAL_CARE.OFFENDER_BOOKING_SK (+)) AND ((AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND CASE WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE IS NULL THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'I' THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'ON' AND NOT BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'PRD', 'RD', 'NR') THEN 'Y' ELSE 'N' END IN ('Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, DISABILITY_ACTIVE_FLAG FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP15.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DISABILITY_ACTIVE_FLAG",
+            "type": "string",
+            "display": "Disability Active Flag",
+            "legacyId": "DP15.DOa9d",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP16",
+      "name": "Population",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, COALESCE(AT_OFFENDER_BOOKING.RELIGION_CODE, 'Not Specified') AS RELIGION_CODE, CASE WHEN AT_CURRENT_SECURITY_CATEGORY.CURRENT_SEC_CAT_LEVEL IS NULL THEN 'Unclassified' ELSE AT_CURRENT_SECURITY_CATEGORY.CURRENT_SEC_CAT_LEVEL END AS CURRENT_SECURITY_CATEGORY, COALESCE(AT_OFFENDER_BOOKING.IEP_BAND, '** Incentive Level Missing **') AS IEP_BAND, AT_OFFENDER_BOOKING.MATERNITY_STATUS_DESCRIPTION, AT_OFFENDER_BOOKING.MARITAL_STATUS_DESCRIPTION, AT_OFFENDER_BOOKING.SEX_ORIENTATION_DESCRIPTION, CASE WHEN AT_DIM_ETHNICITY_CODES.DESCRIPTION = 'Chinese' THEN 'Asian/Asian British: Chinese' WHEN AT_DIM_ETHNICITY_CODES.DESCRIPTION = 'White : Irish Traveller/Gypsy' THEN 'White: Gypsy or Irish Traveller' WHEN AT_DIM_ETHNICITY_CODES.DESCRIPTION IS NULL THEN 'Code Missing' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION END AS ETHNIC_GROUP FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_OFFENDER_ASSESSMENT AT_CURRENT_SECURITY_CATEGORY WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_CURRENT_SECURITY_CATEGORY.CURRENT_SEC_CAT_FLAG (+) = 'Y') AND (AT_CURRENT_SECURITY_CATEGORY.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND ((AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, OFFENDER_AGE, ETHNIC_CODE, RELIGION_CODE, CURRENT_SECURITY_CATEGORY, IEP_BAND, MATERNITY_STATUS_DESCRIPTION, MARITAL_STATUS_DESCRIPTION, SEX_ORIENTATION_DESCRIPTION, ETHNIC_GROUP FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP16.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DP16.DO10082",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP16.DO1009b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "RELIGION_CODE",
+            "type": "string",
+            "display": "Religion Code",
+            "legacyId": "DP16.DO100b2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "CURRENT_SECURITY_CATEGORY",
+            "type": "string",
+            "display": "Current Security Category",
+            "legacyId": "DP16.DO100e1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "IEP_BAND",
+            "type": "string",
+            "display": "IEP Band",
+            "legacyId": "DP16.DO100e4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "MATERNITY_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Maternity Status",
+            "legacyId": "DP16.DO100b0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "MARITAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Marital Status Description",
+            "legacyId": "DP16.DO100af",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "SEX_ORIENTATION_DESCRIPTION",
+            "type": "string",
+            "display": "Sexual Orientation Description",
+            "legacyId": "DP16.DO10970",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "ETHNIC_GROUP",
+            "type": "string",
+            "display": "Ethnic Group",
+            "legacyId": "DP16.DO1009c",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP17",
+      "name": "Age 18-20",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) BETWEEN 18 AND 20)), dataset_ AS (SELECT OFFENDER_AGE, OFFENDER_ID_DISPLAY FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DP17.DO82",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP17.DO76",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP18",
+      "name": "Age 21-24",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) BETWEEN 21 AND 24)), dataset_ AS (SELECT OFFENDER_AGE, OFFENDER_ID_DISPLAY FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DP18.DO82",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP18.DO76",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP19",
+      "name": "Age 25-29",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) BETWEEN 25 AND 29)), dataset_ AS (SELECT OFFENDER_AGE, OFFENDER_ID_DISPLAY FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DP19.DO82",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP19.DO76",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP1a",
+      "name": "Age 30-39",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) BETWEEN 30 AND 39)), dataset_ AS (SELECT OFFENDER_AGE, OFFENDER_ID_DISPLAY FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DP1a.DO82",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP1a.DO76",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP1b",
+      "name": "Age 40-49",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) BETWEEN 40 AND 49)), dataset_ AS (SELECT OFFENDER_AGE, OFFENDER_ID_DISPLAY FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DP1b.DO82",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP1b.DO76",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP1c",
+      "name": "Age 50-59",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) BETWEEN 50 AND 59)), dataset_ AS (SELECT OFFENDER_AGE, OFFENDER_ID_DISPLAY FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DP1c.DO82",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP1c.DO76",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP1d",
+      "name": "Age 60",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) >= 60)), dataset_ AS (SELECT OFFENDER_AGE, OFFENDER_ID_DISPLAY FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DP1d.DO82",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP1d.DO76",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP1e",
+      "name": "Unallocated",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND NOT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY IN ('A0009EV', 'A0060AJ', 'A0092CG', 'A0110EQ', 'A0111AT', 'A0147DX', 'A0153DV', 'A0162AD', 'A0198CG', 'A0222AW', 'A0239CF', 'A0265EN', 'A0270ET', 'A0296CE', 'A0343EV', 'A0348DL', 'A0360EM', 'A0361EF', 'A0366AH', 'A0375CJ', 'A0381AP', 'A0413DL', 'A0424DN', 'A0436AK', 'A0495EV', 'A0542AW', 'A0555AH', 'A0570ER', 'A0571AK', 'A0593AK', 'A0624CL', 'A0630EN', 'A0640AX', 'A0641EH', 'A0659CA', 'A0699CX', 'A0734CJ', 'A0758CZ', 'A0778DN', 'A0784EF', 'A0816CG', 'A0818AL', 'A0836AK', 'A0842EQ', 'A0845AK', 'A0847DJ', 'A0895EV', 'A0902DH', 'A0913EL', 'A0915EK', 'A0920DY', 'A0952AE', 'A0961EM', 'A0994ER', 'A1000CY', 'A1000ER', 'A1013DJ', 'A1040CL', 'A1041AK', 'A1056AK', 'A1056EV', 'A1091DK', 'A1107AC', 'A1129DE', 'A1172EN', 'A1195AK', 'A1196DY', 'A1207DK', 'A1217AK', 'A1238CL', 'A1256DT', 'A1258ED', 'A1264EV', 'A1268DZ', 'A1295EL', 'A1298EC', 'A1309AL', 'A1313AG', 'A1313AK', 'A1336DH', 'A1345AK', 'A1361DC', 'A1407AG', 'A1433CH', 'A1442CH', 'A1461AJ', 'A1479EK', 'A1485EQ', 'A1486ET', 'A1488ET', 'A1501EV', 'A1558AK', 'A1558DP', 'A1574AK', 'A1576DW', 'A1580CV', 'A1591AY', 'A1600AC', 'A1602AY', 'A1625AH', 'A1636AF', 'A1642DX', 'A1645CM', 'A1655CJ', 'A1658CN', 'A1661ER', 'A1693CW', 'A1708AJ', 'A1722AE', 'A1728CQ', 'A1735CL', 'A1748DP', 'A1761EK', 'A1766AV', 'A1777AV', 'A1801AJ', 'A1813AR', 'A1870ET', 'A1871ET', 'A1886AJ', 'A1892CX', 'A1901CQ', 'A1903AJ', 'A1913AJ', 'A1914ED', 'A1920AJ', 'A1927AJ', 'A1931EE', 'A1964DG', 'A1984EK', 'A1987AG', 'A1992AK', 'A1993AK', 'A2002AN', 'A2002EN', 'A2011EP', 'A2014EQ', 'A2020CM', 'A2024EN', 'A2033AJ', 'A2055DC', 'A2061AJ', 'A2074CE', 'A2079AK', 'A2082AW', 'A2094EP', 'A2118EJ', 'A2119AK', 'A2132AK', 'A2148AJ', 'A2155EQ', 'A2184EL', 'A2185DP', 'A2194EN', 'A2202AE', 'A2216DN', 'A2218DN', 'A2221DK', 'A2223EN', 'A2233DJ', 'A2258DA', 'A2294AK', 'A2332EF', 'A2346DM', 'A2391AK', 'A2396EM', 'A2401ER', 'A2438CZ', 'A2458AH', 'A2487AJ', 'A2503EP', 'A2506ET', 'A2510AC', 'A2515CF', 'A2527ET', 'A2553ET', 'A2586AJ', 'A2598DK', 'A2600ET', 'A2637AC', 'A2649AJ', 'A2670EA', 'A2671DF', 'A2673DN', 'A2677AL', 'A2681CD', 'A2701AC', 'A2719ER', 'A2765AJ', 'A2778DQ', 'A2783CH', 'A2825AW', 'A2835ET', 'A2895CL', 'A2899AK', 'A2909CW', 'A2913EH', 'A2916DP', 'A2941AJ', 'A2995AJ', 'A3011AH', 'A3018AK', 'A3041AJ', 'A3042AV', 'A3048EF', 'A3078AW', 'A3094CQ', 'A3126AE', 'A3162EF', 'A3169CC', 'A3191EM', 'A3202DT', 'A3248CH', 'A3263AH', 'A3266ER', 'A3305AH', 'A3341AE', 'A3359EG', 'A3360EM', 'A3369CQ', 'A3407AT', 'A3412AQ', 'A3458EQ', 'A3473ET', 'A3487CL', 'A3517AJ', 'A3519EQ', 'A3526AK', 'A3559AJ', 'A3559DD', 'A3568DH', 'A3575DQ', 'A3598DE', 'A3622AD', 'A3634EV', 'A3653AL', 'A3668AX', 'A3706DP', 'A3709AJ', 'A3718DM', 'A3720EP', 'A3734AJ', 'A3734EN', 'A3751EL', 'A3762CH', 'A3763AJ', 'A3764EF', 'A3777EN', 'A3802AJ', 'A3825EF', 'A3835AY', 'A3870DZ', 'A3880ER', 'A3914AK', 'A3922CV', 'A3930CA', 'A3944AJ', 'A3945DW', 'A3957AJ', 'A3971AX', 'A3993ER', 'A3996ER', 'A4038EN', 'A4121DD', 'A4139AY', 'A4146CL', 'A4161AC', 'A4168AR', 'A4189CK', 'A4248EM', 'A4284AH', 'A4289AX', 'A4307DW', 'A4386CF', 'A4430CC', 'A4450EM', 'A4539CX', 'A4558DL', 'A4575EV', 'A4620DC', 'A4625DE', 'A4643AM', 'A4779AW', 'A4815CD', 'A4840AF', 'A4852DP', 'A4920ER', 'A5011ET', 'A5036EQ', 'A5062EA', 'A5124EV', 'A5159AL', 'A5159AZ', 'A5183EQ', 'A5220ET', 'A5250AJ', 'A5278EK', 'A5283DJ', 'A5289AR', 'A5314DE', 'A5315CR', 'A5332AL', 'A5335EC', 'A5343ER', 'A5361DH', 'A5361EV', 'A5370AT', 'A5373EL', 'A5385CV', 'A5405EM', 'A5419AW', 'A5428DF', 'A5430AX', 'A5431DD', 'A5447CL', 'A5452CP', 'A5475CX', 'A5505AT', 'A5526EV', 'A5527EF', 'A5529EE', 'A5534EF', 'A5560EN', 'A5601CY', 'A5609AN', 'A5664ET', 'A5683AJ', 'A5683DP', 'A5727EV', 'A5731AV', 'A5776AY', 'A5847AE', 'A5855AN', 'A5888AJ', 'A5894ET', 'A5903ET', 'A5909AV', 'A5926AH', 'A5927AM', 'A5932DH', 'A5932DX', 'A5945ER', 'A5949EH', 'A5970AA', 'A6004CQ', 'A6032AJ', 'A6073AK', 'A6083EE', 'A6085EV', 'A6107AG', 'A6115AE', 'A6140CA', 'A6170AX', 'A6181DZ', 'A6188CY', 'A6207AJ', 'A6218AT', 'A6220AJ', 'A6244AG', 'A6291AK', 'A6293DA', 'A6297CW', 'A6318EV', 'A6322DP', 'A6329EM', 'A6398DM', 'A6407DP', 'A6415DX', 'A6423AJ', 'A6423CC', 'A6434DN', 'A6452CG', 'A6477AD', 'A6482AW', 'A6486AJ', 'A6490CT', 'A6497CY', 'A6537CY', 'A6540CM', 'A6550AV', 'A6563AX', 'A6593AC', 'A6594AX', 'A6635AG', 'A6646EQ', 'A6678AK', 'A6679ET', 'A6682EV', 'A6749CP', 'A6756AT', 'A6795EV', 'A6802AD', 'A6830EM', 'A6840AL', 'A6858CW', 'A6860AC', 'A6904EV', 'A6920AE', 'A6962AW', 'A6993AK', 'A7040DF', 'A7042EV', 'A7063ED', 'A7063EM', 'A7079AV', 'A7081DV', 'A7093AE', 'A7107CC', 'A7115AT', 'A7121AH', 'A7127DP', 'A7135AJ', 'A7142AK', 'A7182CT', 'A7191CD', 'A7209CT', 'A7234AJ', 'A7245CM', 'A7261EQ', 'A7300AD', 'A7324EA', 'A7384AW', 'A7425DG', 'A7440DF', 'A7442AZ', 'A7450EQ', 'A7471EH', 'A7487EM', 'A7488AQ', 'A7494AJ', 'A7503EK', 'A7580CC', 'A7588EL', 'A7599ET', 'A7617DN', 'A7631AV', 'A7650ER', 'A7664AA', 'A7693AK', 'A7712CW', 'A7729EQ', 'A7731ED', 'A7744EM', 'A7747EE', 'A7757ED', 'A7811DG', 'A7811EV', 'A7824DJ', 'A7825AW', 'A7846CQ', 'A7858DL', 'A7908EG', 'A7974ET', 'A7984CW', 'A8015AK', 'A8021DC', 'A8039CP', 'A8041AG', 'A8059AH', 'A8083AC', 'A8088EC', 'A8089AF', 'A8093DF', 'A8093ER', 'A8112CW', 'A8123AH', 'A8132DM', 'A8140EV', 'A8153EV', 'A8185EV', 'A8202AJ', 'A8206EV', 'A8251AR', 'A8280CG', 'A8300AD', 'A8309ET', 'A8316AW', 'A8362DT', 'A8362ER', 'A8389EF', 'A8396DQ', 'A8405CD', 'A8414AH', 'A8425EL', 'A8452ER', 'A8458DN', 'A8466DN', 'A8514AM', 'A8514EJ', 'A8520DN', 'A8531AA', 'A8568AD', 'A8587EL', 'A8592DE', 'A8600DE', 'A8611CP', 'A8625AP', 'A8628AE', 'A8640AK', 'A8651CP', 'A8683EN', 'A8684CT', 'A8799AH', 'A8807AG', 'A8815AG', 'A8817AA', 'A8834DA', 'A8846EC', 'A8851AV', 'A8884AH', 'A8912EV', 'A8923EF', 'A8926DH', 'A8930ER', 'A8945EK', 'A8970CG', 'A8983ET', 'A8987AH', 'A9027EF', 'A9044CQ', 'A9045DP', 'A9058EV', 'A9064AL', 'A9089ET', 'A9090EV', 'A9096EL', 'A9104DL', 'A9128DW', 'A9137AJ', 'A9177CN', 'A9181DJ', 'A9190EV', 'A9196EE', 'A9197ET', 'A9203EV', 'A9232AT', 'A9247DF', 'A9293DJ', 'A9302EN', 'A9303ET', 'A9307AH', 'A9312EV', 'A9324DW', 'A9324EE', 'A9353EG', 'A9376EV', 'A9379CD', 'A9379EC', 'A9447ER', 'A9459DV', 'A9467CV', 'A9469EK', 'A9476CD', 'A9480ET', 'A9486CX', 'A9562EC', 'A9569AG', 'A9590EJ', 'A9608ET', 'A9624ER', 'A9634EM', 'A9651CJ', 'A9652EN', 'A9660EK', 'A9684EM', 'A9689CG', 'A9701EV', 'A9709DR', 'A9710ER', 'A9720ET', 'A9731AD', 'A9744CL', 'A9749EP', 'A9757CG', 'A9768ET', 'A9771AG', 'A9774AP', 'A9886EE', 'A9894AG', 'A9922ER', 'A9938EA', 'A9977AF', 'A9990ET', 'A9993CG') AND NOT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY IN ('A0006EQ', 'A0046DG', 'A0056DG', 'A0103CQ', 'A0122AC', 'A0158CQ', 'A0193ET', 'A0224AG', 'A0236EW', 'A0254DJ', 'A0258DW', 'A0358EW', 'A0403EV', 'A0407CM', 'A0413AP', 'A0427CM', 'A0454EE', 'A0473EV', 'A0477EN', 'A0525AK', 'A0547AK', 'A0564AJ', 'A0600DN', 'A0609AP', 'A0621DL', 'A0631AE', 'A0635CE', 'A0635DN', 'A0662DC', 'A0686AF', 'A0689AL', 'A0749EM', 'A0749ET', 'A0754AK', 'A0765CC', 'A0789CY', 'A0804EQ', 'A0834AX', 'A0860EL', 'A0884DP', 'A0885EV', 'A0906ED', 'A0906ET', 'A1014AY', 'A1018AT', 'A1020AT', 'A1082ET', 'A1163AE', 'A1193AJ', 'A1201ED', 'A1218ET', 'A1231CK', 'A1277AK', 'A1281EF', 'A1322CG', 'A1361CA', 'A1371AJ', 'A1397AW', 'A1421EE', 'A1458AX', 'A1466CY', 'A1477ER', 'A1513DC', 'A1533CD', 'A1546CX', 'A1569AM', 'A1574AG', 'A1587AN', 'A1607AY', 'A1661AW', 'A1662ER', 'A1668EV', 'A1708EG', 'A1737EC', 'A1753AD', 'A1786AJ', 'A1811ER', 'A1829EQ', 'A1853EK', 'A1867ER', 'A1877EA', 'A1882CG', 'A1886AN', 'A1898CV', 'A1905AJ', 'A1938CM', 'A1970AM', 'A2000AZ', 'A2034EN', 'A2064AJ', 'A2097DC', 'A2097ER', 'A2139EP', 'A2170DG', 'A2245CK', 'A2254AK', 'A2272DL', 'A2286DP', 'A2331EH', 'A2335ET', 'A2365AK', 'A2424CY', 'A2431AK', 'A2435AK', 'A2452CV', 'A2473DK', 'A2475AT', 'A2480AC', 'A2538EV', 'A2569AC', 'A2588AJ', 'A2663DF', 'A2684CD', 'A2693AJ', 'A2697AJ', 'A2703DZ', 'A2710AJ', 'A2760CX', 'A2824CG', 'A2826EK', 'A2889AN', 'A2889DV', 'A2903AJ', 'A2909ET', 'A3027AQ', 'A3105EF', 'A3165DF', 'A3220AM', 'A3281ET', 'A3296EQ', 'A3336AJ', 'A3348CN', 'A3355DH', 'A3398CC', 'A3439EV', 'A3452ER', 'A3464ER', 'A3514AC', 'A3579ET', 'A3598DV', 'A3605CR', 'A3619ER', 'A3726ER', 'A3750EQ', 'A3766DX', 'A3788ER', 'A3876DT', 'A3920DK', 'A3962AC', 'A3971AL', 'A3980EQ', 'A4004CN', 'A4011ER', 'A4033DR', 'A4086CW', 'A4086DV', 'A4110DV', 'A4130CL', 'A4213EJ', 'A4264CP', 'A4273AQ', 'A4312CL', 'A4338AR', 'A4384CL', 'A4417EK', 'A4443EQ', 'A4461DA', 'A4466CP', 'A4483ET', 'A4511AT', 'A4515DN', 'A4524AJ', 'A4535CJ', 'A4540AL', 'A4541DX', 'A4542CL', 'A4550DD', 'A4603EV', 'A4657AA', 'A4661CA', 'A4686EM', 'A4689ET', 'A4712DW', 'A4739EQ', 'A4747AG', 'A4755CZ', 'A4779AV', 'A4798EQ', 'A4829AN', 'A4829CZ', 'A4858CC', 'A4938AC', 'A5003EQ', 'A5025AF', 'A5101ET', 'A5116AV', 'A5116EV', 'A5218ER', 'A5227EM', 'A5279EV', 'A5289AM', 'A5295CV', 'A5305AE', 'A5314EL', 'A5337EQ', 'A5372DP', 'A5479ER', 'A5556AE', 'A5568AJ', 'A5585DP', 'A5590DR', 'A5598EQ', 'A5614CA', 'A5620AL', 'A5631EF', 'A5699AL', 'A5763AG', 'A5774ER', 'A5780AX', 'A5816DV', 'A5901EP', 'A5947ET', 'A5950AY', 'A5955ER', 'A5959AJ', 'A5970AY', 'A6014DK', 'A6022AJ', 'A6026EP', 'A6036AR', 'A6071ET', 'A6072ET', 'A6079ET', 'A6120EJ', 'A6131ER', 'A6200DN', 'A6210DR', 'A6232AG', 'A6263AN', 'A6312DH', 'A6380ED', 'A6399AJ', 'A6470AQ', 'A6471AG', 'A6517AJ', 'A6517ET', 'A6518DF', 'A6572AE', 'A6618DJ', 'A6690CV', 'A6703DF', 'A6719CJ', 'A6778EP', 'A6793AQ', 'A6826EQ', 'A6835EJ', 'A6960DX', 'A7001EV', 'A7046ET', 'A7051AA', 'A7123CP', 'A7141AT', 'A7165EA', 'A7197EC', 'A7253AV', 'A7255ER', 'A7259ER', 'A7347AJ', 'A7359EL', 'A7377AX', 'A7386AJ', 'A7416AV', 'A7432DC', 'A7443ER', 'A7475EE', 'A7486EM', 'A7551EV', 'A7586DN', 'A7633EJ', 'A7637EP', 'A7669DG', 'A7741DJ', 'A7766AX', 'A7774DY', 'A7792CC', 'A7814CF', 'A7832AE', 'A7873AV', 'A7882EQ', 'A7917EC', 'A7983EJ', 'A8001DD', 'A8033ER', 'A8147AR', 'A8147EP', 'A8160EM', 'A8183EG', 'A8187ER', 'A8215EJ', 'A8222AG', 'A8233AG', 'A8258ET', 'A8296EP', 'A8339DK', 'A8365CD', 'A8421ER', 'A8477ET', 'A8522CY', 'A8573CZ', 'A8577AH', 'A8587EK', 'A8614AG', 'A8630DE', 'A8636CW', 'A8662EN', 'A8662ET', 'A8712ET', 'A8738AG', 'A8748AJ', 'A8813AF', 'A8831ET', 'A8851DN', 'A8853AF', 'A8877AH', 'A8879CN', 'A8886ET', 'A8897AH', 'A8900EM', 'A8939AQ', 'A8976DV', 'A8982ER', 'A8983AE', 'A9008DP', 'A9017DZ', 'A9042EK', 'A9092CD', 'A9107DK', 'A9123AD', 'A9126CV', 'A9129ET', 'A9159EN', 'A9161EN', 'A9192EP', 'A9230AH', 'A9260ER', 'A9274EV', 'A9289DA', 'A9304ET', 'A9313EV', 'A9326AH', 'A9384EC', 'A9405CL', 'A9411EV', 'A9414EE', 'A9427AH', 'A9451EV', 'A9463AL', 'A9476AH', 'A9479AG', 'A9485ER', 'A9490CD', 'A9495EJ', 'A9542DE', 'A9544DX', 'A9553CE', 'A9577DF', 'A9627DZ', 'A9643AF', 'A9679EV', 'A9693AE', 'A9723AH', 'A9760DK', 'A9761AV', 'A9793AL', 'A9797AP', 'A9815EP', 'A9832ET', 'A9837CJ', 'A9838EK', 'A9861EA', 'A9914EV'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP1e.DO76",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP1f",
+      "name": "Activities M-Z",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, floor((months_between(( trunc(sysdate) ), ( CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END ))) / 12), CASE WHEN AT_DIM_ETHNICITY_CODES.CODE='MERGE' Then 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL Then 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE='W8' then 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE='O1' then 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END , NVL(AT_OFFENDER_BOOKING.RELIGION_CODE,'Not Specified'), CASE WHEN AT_CURRENT_SECURITY_CATEGORY.CURRENT_SEC_CAT_LEVEL IS NULL THEN 'Unclassified' ELSE AT_CURRENT_SECURITY_CATEGORY.CURRENT_SEC_CAT_LEVEL END, nvl(AT_OFFENDER_BOOKING.IEP_BAND,'** Incentive Level Missing **'), DT_CURRENT_RELEASE_DATE.CURR_RELEASE_DATE, AT_DIM_PROGRAMME_SERVICE.DESCRIPTION, AT_DIM_PROGRAMME_TYPE.DESCRIPTION, AT_FACT_OFFENDER_ACTIVITY.SUSPENDED_FLAG, AT_FACT_OFFENDER_ACTIVITY.OFFENDER_START_DATE, AT_FACT_OFFENDER_ACTIVITY.OFFENDER_END_DATE, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION, AT_OFFENDER_BOOKING.GENDER_CODE, AT_OFFENDER_BOOKING.MATERNITY_STATUS_DESCRIPTION, AT_OFFENDER_BOOKING.MARITAL_STATUS_DESCRIPTION, AT_OFFENDER_BOOKING.SEX_ORIENTATION_DESCRIPTION, CASE when AT_DIM_ETHNICITY_CODES.DESCRIPTION= 'Chinese' then 'Asian/Asian British: Chinese' when AT_DIM_ETHNICITY_CODES.DESCRIPTION='White : Irish Traveller/Gypsy' then 'White: Gypsy or Irish Traveller' when AT_DIM_ETHNICITY_CODES.DESCRIPTION is null then 'Code Missing' else AT_DIM_ETHNICITY_CODES.DESCRIPTION END FROM BODIMIS.FACT_OFFENDER_ACTIVITY AT_FACT_OFFENDER_ACTIVITY, BODIMIS.DIM_CELL AT_DIM_LOCATION, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_ESTABLISHMENT AT_ACTIVITY_ESTABLISHMENT, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_OFFENDER_ASSESSMENT AT_CURRENT_SECURITY_CATEGORY, (   Select AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK as OFFENDER_BOOKING_SK, case when AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE From --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_DATE AT_RELEASE_DATE where --AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK=AT_FACT_SENTENCE.OFFENDER_BOOKING_SK(+) AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK=AT_RELEASE_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' --and AT_RELEASE_DATE.DAY_DATE !='31/12/9000' ) DT_CURRENT_RELEASE_DATE, BODIMIS.DIM_PROGRAMME_SERVICE AT_DIM_PROGRAMME_SERVICE, BODIMIS.DIM_PROGRAMME_TYPE AT_DIM_PROGRAMME_TYPE WHERE ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_CURRENT_RELEASE_DATE.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.BIRTH_DATE_SK=AT_DOB.DATE_SK ) AND ( AT_DIM_ETHNICITY_CODES.CODE(+)=AT_OFFENDER_BOOKING.ETHNICITY_CODE ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.ESTABLISHMENT_SK=AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK ) AND ( AT_ESTABLISHMENT_TAP.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=AT_FACT_OFFENDER_ACTIVITY.OFFENDER_BOOKING_SK ) AND ( AT_DIM_PROGRAMME_TYPE.PROGRAMME_TYPE_SK=AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_TYPE_SK ) AND ( AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_SK=AT_FACT_OFFENDER_ACTIVITY.ESTABLISHMENT_SK ) AND ( AT_DIM_PROGRAMME_SERVICE.PROGRAMME_SERVICE_SK=AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_SERVICE_SK ) AND ( AT_CURRENT_SECURITY_CATEGORY.CURRENT_SEC_CAT_FLAG(+)='Y' ) AND ( AT_CURRENT_SECURITY_CATEGORY.OFFENDER_BOOKING_SK(+)=AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK ) AND ( AT_OFFENDER_BOOKING.LIVING_UNIT_SK=AT_DIM_LOCATION.UNIT_4_SK(+) ) AND ( ( AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND='Y' ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND AT_OFFENDER_BOOKING.SURNAME >= 'M' AND ( AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK =(SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #Prompt('Establishment Code','A','Associated Establishment\\Associated Establishment Code',mono,free,Not_Persistent,User:69) */ ) ) AND AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #prompt('Establishment Code','A','Activities\\Activity Establishment Code',Mono,Free,Not_Persistent,,User:0) */ ) AND ( (AT_DIM_PROGRAMME_TYPE.SCHEDULE_END_DATE IS NULL OR AT_DIM_PROGRAMME_TYPE.SCHEDULE_END_DATE > trunc(sysdate)) ) AND TRUNC(AT_FACT_OFFENDER_ACTIVITY.OFFENDER_START_DATE) <= trunc(sysdate) AND ( CASE WHEN TRUNC(AT_FACT_OFFENDER_ACTIVITY.OFFENDER_END_DATE) <> '31/12/9999' THEN TRUNC(AT_FACT_OFFENDER_ACTIVITY.OFFENDER_END_DATE) END > trunc(sysdate) OR CASE WHEN TRUNC(AT_FACT_OFFENDER_ACTIVITY.OFFENDER_END_DATE) <> '31/12/9999' THEN TRUNC(AT_FACT_OFFENDER_ACTIVITY.OFFENDER_END_DATE) END Is Null ) )), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code','A','Associated Establishment\\Associated Establishment Code',mono,free,Not_Persistent,User:69)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "208193.RS",
+      "name": "All Allocations",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP9_DO10650",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_ACTIVITY_DESCRIPTION_WORDCAP",
+            "display": "Service Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([ActivitIes A-L].[Activity Description])"
+          },
+          {
+            "name": "$ref:DP9_DO109EA",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_OFF_ALL_END_DATE",
+            "display": "Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If FormatDate([ActivitIes A-L].[Offender Allocation End Date];\"dd/MM/yyyy\")=\"31/12/9999\" Then \"-\" Else [ActivitIes A-L].[Offender Allocation End Date]"
+          },
+          {
+            "name": "$ref:DP9_DO10A7C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10076",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO100A8",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10082",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO1009B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO100B2",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO100B0",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO100AF",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10970",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO100E1",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_RELEASEDATE",
+            "display": "IEP",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([ActivitIes A-L].[Release Date (Current)]);\"-\";[ActivitIes A-L].[Release Date (Current)])"
+          },
+          {
+            "name": "$ref:DP9_DO10707",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DISABILITY_Y_N",
+            "display": "Sus",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Disability Active Flag] = \"Y\") Then \"Y\" Else \"N\""
+          }
+        ]
+      }
+    },
+    {
+      "id": "231073.RS",
+      "name": "Age Group Table",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP9_DO1064C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_AGE_18_20",
+            "display": "Age 18-20",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count(([ActivitIes A-L].[NOMS Number]) Where ([ActivitIes A-L].[Offender Age] Between(18;20)))"
+          },
+          {
+            "name": "$ref:V_AGE_21_24",
+            "display": "Age 21-24",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count(([NOMS Number]) Where ([ActivitIes A-L].[Offender Age] Between(21;24)))"
+          },
+          {
+            "name": "$ref:V_AGE_25_29",
+            "display": "Age 25-29",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count(([NOMS Number]) Where ([ActivitIes A-L].[Offender Age] Between(25;29)))\t"
+          },
+          {
+            "name": "$ref:V_AGE_30_39",
+            "display": "Age 30-39",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count(([NOMS Number]) Where ([ActivitIes A-L].[Offender Age] Between(30;39)))\t"
+          },
+          {
+            "name": "$ref:V_AGE_40_49",
+            "display": "Age 40-49",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count(([NOMS Number]) Where ([ActivitIes A-L].[Offender Age] Between(40;49)))\t"
+          },
+          {
+            "name": "$ref:V_AGE_50_59",
+            "display": "Age 50-59",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count(([NOMS Number]) Where ([ActivitIes A-L].[Offender Age] Between(50;59)))\t"
+          },
+          {
+            "name": "$ref:V_AGE_60_",
+            "display": "Age 60+",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count(([NOMS Number]) Where ([ActivitIes A-L].[Offender Age]>=60))\t"
+          }
+        ]
+      }
+    },
+    {
+      "id": "232675.RS",
+      "name": "Age Group Graph",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      }
+    },
+    {
+      "id": "232432.RS",
+      "name": "Ethnic Group Table",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "crosstab",
+        "field": [
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "=Sum([v_Count_NOMS])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          },
+          {
+            "name": "$ref:DP9_DO1009C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO1064C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "231321.RS",
+      "name": "Ethnic Group Graph",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "chart",
+        "field": []
+      }
+    },
+    {
+      "id": "265980.RS",
+      "name": "Ethnic Group Prot Chars",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "chart",
+        "field": [
+          {
+            "name": "$ref:DP9_DO1009C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "No. of Prisoners",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "258890.RS",
+      "name": "Ethnic Group Table - %Pop",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "crosstab",
+        "field": [
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "% of Ethnic Group in Activity",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_PERENTAGE",
+            "display": "% of Total Ethnic vs Group Pop",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Percentage([v_Count_NOMS];Row)"
+          },
+          {
+            "name": "$ref:V_OF_POP",
+            "display": "=Sum([v_Count_NOMS])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Count_NOMS]/[v_Count_NOMS_Pop]"
+          },
+          {
+            "name": "$ref:DP9_DO1009C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_OF_POP",
+            "display": "=Sum([v_Count_NOMS])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Count_NOMS]/[v_Count_NOMS_Pop]"
+          },
+          {
+            "name": "$ref:DP9_DO1064C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_OF_POP",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Count_NOMS]/[v_Count_NOMS_Pop]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "231594.RS",
+      "name": "Religion Table",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "crosstab",
+        "field": [
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "=Sum([v_Count_NOMS])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          },
+          {
+            "name": "$ref:DP9_DO100B2",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO1064C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "231719.RS",
+      "name": "Religion Graph",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "chart",
+        "field": []
+      }
+    },
+    {
+      "id": "275058.RS",
+      "name": "Religion Prot Chars",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "chart",
+        "field": [
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "=Sum([v_Count_NOMS])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          },
+          {
+            "name": "$ref:DP9_DO100B2",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "273635.RS",
+      "name": "Religion Group Table - %Pop",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "crosstab",
+        "field": [
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "% of Religion Group in Activity",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_PERENTAGE",
+            "display": "% of Total Religion vs Group Pop",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Percentage([v_Count_NOMS];Row)"
+          },
+          {
+            "name": "$ref:V_OF_POP",
+            "display": "=Sum([v_Count_NOMS])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Count_NOMS]/[v_Count_NOMS_Pop]"
+          },
+          {
+            "name": "$ref:DP9_DO100B2",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_OF_POP",
+            "display": "=Sum([v_Count_NOMS])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Count_NOMS]/[v_Count_NOMS_Pop]"
+          },
+          {
+            "name": "$ref:DP9_DO1064C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_OF_POP",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Count_NOMS]/[v_Count_NOMS_Pop]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "233124.RS",
+      "name": "Maternity Table",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "crosstab",
+        "field": [
+          {
+            "name": "$ref:V_COUNT_MATERNITY",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count(([NOMS Number]) Where ([ActivitIes A-L].[Maternity Status] = \"Pregnant Unaccompanied\"))"
+          },
+          {
+            "name": "$ref:DP9_DO1064C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO100B0",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "233666.RS",
+      "name": "Marital Status Table",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "crosstab",
+        "field": [
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "=Sum([v_Count_NOMS])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          },
+          {
+            "name": "$ref:DP9_DO100AF",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO1064C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "233735.RS",
+      "name": "Marital Graph",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "chart",
+        "field": []
+      }
+    },
+    {
+      "id": "278758.RS",
+      "name": "Marital Status Prot Chars",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "chart",
+        "field": [
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "=Sum([v_Count_NOMS])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          },
+          {
+            "name": "$ref:DP9_DO100AF",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "281015.RS",
+      "name": "Marital Status Table - %Pop",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "crosstab",
+        "field": [
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "% of Marital Status Group in Activity",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_PERENTAGE",
+            "display": "% of Total Religion vs Group Pop",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Percentage([v_Count_NOMS];Row)"
+          },
+          {
+            "name": "$ref:V_OF_POP",
+            "display": "=Sum([v_Count_NOMS])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Count_NOMS]/[v_Count_NOMS_Pop]"
+          },
+          {
+            "name": "$ref:DP9_DO100AF",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_OF_POP",
+            "display": "=Sum([v_Count_NOMS])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Count_NOMS]/[v_Count_NOMS_Pop]"
+          },
+          {
+            "name": "$ref:DP9_DO1064C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_OF_POP",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Count_NOMS]/[v_Count_NOMS_Pop]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "234139.RS",
+      "name": "Sex Orientation Table",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "crosstab",
+        "field": [
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "=Sum([v_Count_NOMS])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          },
+          {
+            "name": "$ref:DP9_DO10970",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO1064C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "234233.RS",
+      "name": "Sex Orientation Graph",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "chart",
+        "field": []
+      }
+    },
+    {
+      "id": "282028.RS",
+      "name": "Sexual Orientation Prot Chars",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_COUNT_NOMS > 1)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "chart",
+        "field": [
+          {
+            "name": "$ref:DP9_DO10970",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "Total Prisoners",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "282617.RS",
+      "name": "Sexual Orientation Table - %Pop",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "crosstab",
+        "field": [
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "% of Sexual Orientation Group in Activity",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_PERENTAGE",
+            "display": "% of Total Religion vs Group Pop",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Percentage([v_Count_NOMS];Row)"
+          },
+          {
+            "name": "$ref:V_OF_POP",
+            "display": "=Sum([v_Count_NOMS])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Count_NOMS]/[v_Count_NOMS_Pop]"
+          },
+          {
+            "name": "$ref:DP9_DO10970",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_OF_POP",
+            "display": "=Sum([v_Count_NOMS])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Count_NOMS]/[v_Count_NOMS_Pop]"
+          },
+          {
+            "name": "$ref:DP9_DO1064C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_OF_POP",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Count_NOMS]/[v_Count_NOMS_Pop]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "234508.RS",
+      "name": "Disability Table",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "crosstab",
+        "field": [
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "=If(([Disability Y/N.] = \"Y\");\"Y\";\"N\")",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          },
+          {
+            "name": "$ref:DP9_DO1064C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "234727.RS",
+      "name": "Disability Graph",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "chart",
+        "field": []
+      }
+    },
+    {
+      "id": "285011.RS",
+      "name": "Disability Prot Chars",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "chart",
+        "field": [
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "=Sum([v_Count_NOMS])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          },
+          {
+            "name": "$ref:DISABILITY_Y_N_",
+            "display": "Total",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsError([Disability Y/N]);\"Y\";[Disability Y/N])"
+          },
+          {
+            "name": "$ref:DP9_DO1064C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "286409.RS",
+      "name": "Disability Table - %Pop",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "crosstab",
+        "field": [
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "% of Prisoners with Dsiability in Activity",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_PERENTAGE",
+            "display": "% of Total Religion vs Group Pop",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Percentage([v_Count_NOMS];Row)"
+          },
+          {
+            "name": "$ref:V_OF_POP",
+            "display": "=Sum([v_Count_NOMS])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Count_NOMS]/[v_Count_NOMS_Pop]"
+          },
+          {
+            "name": "$ref:DISABILITY_Y_N_",
+            "display": "Total",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsError([Disability Y/N]);\"Y\";[Disability Y/N])"
+          },
+          {
+            "name": "$ref:V_OF_POP",
+            "display": "=Sum([v_Count_NOMS])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Count_NOMS]/[v_Count_NOMS_Pop]"
+          },
+          {
+            "name": "$ref:DP9_DO1064C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_OF_POP",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Count_NOMS]/[v_Count_NOMS_Pop]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "230886.RS",
+      "name": "Suspended Table",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ACTIVITIES_A_L_PRISONER_SUSP38 = 'Y')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP9_DO10650",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_ACTIVITY_DESCRIPTION_WORDCAP",
+            "display": "Service Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([ActivitIes A-L].[Activity Description])"
+          },
+          {
+            "name": "$ref:DP9_DO109EA",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_OFF_ALL_END_DATE",
+            "display": "Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If FormatDate([ActivitIes A-L].[Offender Allocation End Date];\"dd/MM/yyyy\")=\"31/12/9999\" Then \"-\" Else [ActivitIes A-L].[Offender Allocation End Date]"
+          },
+          {
+            "name": "$ref:DP9_DO10A7C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10076",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO100A8",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10082",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO1009B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO100B2",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO100B0",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO100AF",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10970",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO100E1",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_RELEASEDATE",
+            "display": "IEP",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([ActivitIes A-L].[Release Date (Current)]);\"-\";[ActivitIes A-L].[Release Date (Current)])"
+          },
+          {
+            "name": "$ref:DP9_DO10707",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DISABILITY_Y_N",
+            "display": "Sus",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Disability Active Flag] = \"Y\") Then \"Y\" Else \"N\""
+          }
+        ]
+      }
+    },
+    {
+      "id": "289061.RS",
+      "name": "Suspended % Pop",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP9_DO10707",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_COUNT_NOMS",
+            "display": "Total Prisoners",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_COUNT_NOMS_POP",
+            "display": "Total Population (inc Unallocated)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Population].[NOMS Number])"
+          },
+          {
+            "name": "$ref:V_COUNT_NOMS_PERCENTAGE",
+            "display": "% of Population",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Percentage([v_Count_NOMS];Col)"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Expected table name but got None. Line 1, Col: 2130.\n  hen AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE \u001b[4mFrom\u001b[0m --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENT]",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:DISABILITY_Y_N :: ReferenceError: error is not defined",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_AGE_18_20 :: Error: =Count(([ActivitIes A-L].[NOMS Number]) Where ([ActivitIes A-L].[Offender Age] Between(18;20))) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_AGE_21_24 :: Error: =Count(([NOMS Number]) Where ([ActivitIes A-L].[Offender Age] Between(21;24))) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_AGE_25_29 :: Error: =Count(([NOMS Number]) Where ([ActivitIes A-L].[Offender Age] Between(25;29)))\t ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_AGE_30_39 :: Error: =Count(([NOMS Number]) Where ([ActivitIes A-L].[Offender Age] Between(30;39)))\t ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_AGE_40_49 :: Error: =Count(([NOMS Number]) Where ([ActivitIes A-L].[Offender Age] Between(40;49)))\t ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_AGE_50_59 :: Error: =Count(([NOMS Number]) Where ([ActivitIes A-L].[Offender Age] Between(50;59)))\t ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_PERENTAGE :: Error: =Percentage([v_Count_NOMS];Row) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_OF_POP :: Error: argument 'sql': 'float' object cannot be converted to 'PyString'",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_COUNT_NOMS_PERCENTAGE :: Error: =Percentage([v_Count_NOMS];Col) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Expected table name but got None. Line 1, Col: 2130.\n  hen AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE \u001b[4mFrom\u001b[0m --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENT]",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[2] requires property \"dataset\"",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[3].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[4] requires property \"dataset\"",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[4].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[5].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[6].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[7].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[8] requires property \"dataset\"",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[8].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[9].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[10].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[11].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[12].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[13] requires property \"dataset\"",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[13].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[14].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[15].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[16].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[17] requires property \"dataset\"",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[17].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[18].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[19].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[20].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[21] requires property \"dataset\"",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[21].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[22].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[23].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "Fuq4PQDviwEAmkkEAADXDKoAACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10650 does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ACTIVITY_DESCRIPTION_WORDCAP does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO109EA does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OFF_ALL_END_DATE does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10A7C does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10076 does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1007B does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10080 does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO100A8 does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10082 does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1009B does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO100B2 does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO100B0 does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO100AF does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10970 does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO100E1 does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_RELEASEDATE does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10707 does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DISABILITY_Y_N does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1064C does not have corresponding dataset schema field",
+      "entityId": "231073.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_AGE_18_20 does not have corresponding dataset schema field",
+      "entityId": "231073.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_AGE_21_24 does not have corresponding dataset schema field",
+      "entityId": "231073.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_AGE_25_29 does not have corresponding dataset schema field",
+      "entityId": "231073.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_AGE_30_39 does not have corresponding dataset schema field",
+      "entityId": "231073.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_AGE_40_49 does not have corresponding dataset schema field",
+      "entityId": "231073.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_AGE_50_59 does not have corresponding dataset schema field",
+      "entityId": "231073.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_AGE_60_ does not have corresponding dataset schema field",
+      "entityId": "231073.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 232675.RS does not have corresponding dataset undefined",
+      "entityId": "232675.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS does not have corresponding dataset schema field",
+      "entityId": "232432.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1009C does not have corresponding dataset schema field",
+      "entityId": "232432.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1064C does not have corresponding dataset schema field",
+      "entityId": "232432.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 231321.RS does not have corresponding dataset undefined",
+      "entityId": "231321.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1009C does not have corresponding dataset schema field",
+      "entityId": "265980.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS does not have corresponding dataset schema field",
+      "entityId": "265980.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS does not have corresponding dataset schema field",
+      "entityId": "258890.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERENTAGE does not have corresponding dataset schema field",
+      "entityId": "258890.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OF_POP does not have corresponding dataset schema field",
+      "entityId": "258890.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1009C does not have corresponding dataset schema field",
+      "entityId": "258890.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OF_POP does not have corresponding dataset schema field",
+      "entityId": "258890.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1064C does not have corresponding dataset schema field",
+      "entityId": "258890.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OF_POP does not have corresponding dataset schema field",
+      "entityId": "258890.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS does not have corresponding dataset schema field",
+      "entityId": "231594.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO100B2 does not have corresponding dataset schema field",
+      "entityId": "231594.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1064C does not have corresponding dataset schema field",
+      "entityId": "231594.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 231719.RS does not have corresponding dataset undefined",
+      "entityId": "231719.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS does not have corresponding dataset schema field",
+      "entityId": "275058.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO100B2 does not have corresponding dataset schema field",
+      "entityId": "275058.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS does not have corresponding dataset schema field",
+      "entityId": "273635.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERENTAGE does not have corresponding dataset schema field",
+      "entityId": "273635.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OF_POP does not have corresponding dataset schema field",
+      "entityId": "273635.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO100B2 does not have corresponding dataset schema field",
+      "entityId": "273635.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OF_POP does not have corresponding dataset schema field",
+      "entityId": "273635.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1064C does not have corresponding dataset schema field",
+      "entityId": "273635.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OF_POP does not have corresponding dataset schema field",
+      "entityId": "273635.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_MATERNITY does not have corresponding dataset schema field",
+      "entityId": "233124.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1064C does not have corresponding dataset schema field",
+      "entityId": "233124.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO100B0 does not have corresponding dataset schema field",
+      "entityId": "233124.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS does not have corresponding dataset schema field",
+      "entityId": "233666.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO100AF does not have corresponding dataset schema field",
+      "entityId": "233666.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1064C does not have corresponding dataset schema field",
+      "entityId": "233666.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 233735.RS does not have corresponding dataset undefined",
+      "entityId": "233735.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS does not have corresponding dataset schema field",
+      "entityId": "278758.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO100AF does not have corresponding dataset schema field",
+      "entityId": "278758.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS does not have corresponding dataset schema field",
+      "entityId": "281015.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERENTAGE does not have corresponding dataset schema field",
+      "entityId": "281015.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OF_POP does not have corresponding dataset schema field",
+      "entityId": "281015.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO100AF does not have corresponding dataset schema field",
+      "entityId": "281015.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OF_POP does not have corresponding dataset schema field",
+      "entityId": "281015.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1064C does not have corresponding dataset schema field",
+      "entityId": "281015.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OF_POP does not have corresponding dataset schema field",
+      "entityId": "281015.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS does not have corresponding dataset schema field",
+      "entityId": "234139.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10970 does not have corresponding dataset schema field",
+      "entityId": "234139.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1064C does not have corresponding dataset schema field",
+      "entityId": "234139.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 234233.RS does not have corresponding dataset undefined",
+      "entityId": "234233.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10970 does not have corresponding dataset schema field",
+      "entityId": "282028.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS does not have corresponding dataset schema field",
+      "entityId": "282028.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS does not have corresponding dataset schema field",
+      "entityId": "282617.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERENTAGE does not have corresponding dataset schema field",
+      "entityId": "282617.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OF_POP does not have corresponding dataset schema field",
+      "entityId": "282617.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10970 does not have corresponding dataset schema field",
+      "entityId": "282617.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OF_POP does not have corresponding dataset schema field",
+      "entityId": "282617.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1064C does not have corresponding dataset schema field",
+      "entityId": "282617.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OF_POP does not have corresponding dataset schema field",
+      "entityId": "282617.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS does not have corresponding dataset schema field",
+      "entityId": "234508.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1064C does not have corresponding dataset schema field",
+      "entityId": "234508.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 234727.RS does not have corresponding dataset undefined",
+      "entityId": "234727.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS does not have corresponding dataset schema field",
+      "entityId": "285011.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DISABILITY_Y_N_ does not have corresponding dataset schema field",
+      "entityId": "285011.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1064C does not have corresponding dataset schema field",
+      "entityId": "285011.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS does not have corresponding dataset schema field",
+      "entityId": "286409.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_PERENTAGE does not have corresponding dataset schema field",
+      "entityId": "286409.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OF_POP does not have corresponding dataset schema field",
+      "entityId": "286409.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DISABILITY_Y_N_ does not have corresponding dataset schema field",
+      "entityId": "286409.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OF_POP does not have corresponding dataset schema field",
+      "entityId": "286409.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1064C does not have corresponding dataset schema field",
+      "entityId": "286409.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OF_POP does not have corresponding dataset schema field",
+      "entityId": "286409.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10650 does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ACTIVITY_DESCRIPTION_WORDCAP does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO109EA does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OFF_ALL_END_DATE does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10A7C does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10076 does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1007B does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10080 does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO100A8 does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10082 does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1009B does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO100B2 does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO100B0 does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO100AF does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10970 does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO100E1 does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_RELEASEDATE does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10707 does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DISABILITY_Y_N does not have corresponding dataset schema field",
+      "entityId": "230886.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10707 does not have corresponding dataset schema field",
+      "entityId": "289061.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS does not have corresponding dataset schema field",
+      "entityId": "289061.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS_POP does not have corresponding dataset schema field",
+      "entityId": "289061.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS_PERCENTAGE does not have corresponding dataset schema field",
+      "entityId": "289061.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3375368/DP9",
+      "entityType": "dataset"
+    }
+  ]
+}

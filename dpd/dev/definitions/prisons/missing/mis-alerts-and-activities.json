@@ -1,0 +1,382 @@
+{
+  "id": "FqrjUVsKXwQAGZAAAHALZF4BACJIAFJ8",
+  "name": "MIS Alerts and Activities",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": []
+  },
+  "description": "List of all alerts (Active Y / N prompt) and Activities (active).",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DPe",
+      "name": "Alerts",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_ALERT.ALERT_DESCRIPTION, CASE WHEN AT_ALERT.ALERT_ACTIVE_FLAG = 'Y' THEN AT_ALERT.ALERT_TYPE_DESCRIPTION END AS ALERT_CATEGORY_DESCRIPTION FROM BODIMIS.DIM_ALERT AT_ALERT WHERE (AT_ALERT.ALERT_ACTIVE_FLAG IN (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #Prompt('Alert Active Flag (All for all)','A','Alerts\\Alert Active Flag',multi,free,Not_Persistent,User:101) */) OR 'All' IN (SELECT UNKNOWN_PARAMETER FROM prompt_ /* = #Prompt('Alert Active Flag (All for all)','A','Alerts\\Alert Active Flag',multi,free,Not_Persistent,User:101) */))), dataset_ AS (SELECT ALERT_DESCRIPTION, ALERT_CATEGORY_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "unknown_parameter",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Alert Active Flag (All for all)",
+          "description": "@Prompt('Alert Active Flag (All for all)','A','Alerts\\Alert Active Flag',multi,free,Not_Persistent,User:101)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ALERT_DESCRIPTION",
+            "type": "string",
+            "display": "Alert Description",
+            "legacyId": "DPe.DO90",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ALERT_CATEGORY_DESCRIPTION",
+            "type": "string",
+            "display": "Alert Category Description",
+            "legacyId": "DPe.DO93",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DPa",
+      "name": "MIS Load Date",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DPa.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP10",
+      "name": "Activities",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_DIM_PROGRAMME_SERVICE.CODE, AT_DIM_PROGRAMME_SERVICE.DESCRIPTION, AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_DIM_PROGRAMME_TYPE.CODE AS ACTIVITY_CODE, AT_DIM_PROGRAMME_TYPE.DESCRIPTION AS ACTIVITY_DESCRIPTION FROM BODIMIS.FACT_OFFENDER_ACTIVITY AT_FACT_OFFENDER_ACTIVITY, BODIMIS.DIM_ESTABLISHMENT AT_ACTIVITY_ESTABLISHMENT, BODIMIS.DIM_PROGRAMME_SERVICE AT_DIM_PROGRAMME_SERVICE, BODIMIS.DIM_PROGRAMME_TYPE AT_DIM_PROGRAMME_TYPE WHERE (AT_DIM_PROGRAMME_TYPE.PROGRAMME_TYPE_SK = AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_TYPE_SK) AND (AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_SK = AT_FACT_OFFENDER_ACTIVITY.ESTABLISHMENT_SK) AND (AT_DIM_PROGRAMME_SERVICE.PROGRAMME_SERVICE_SK = AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_SERVICE_SK) AND ((AT_DIM_PROGRAMME_TYPE.SCHEDULE_END_DATE IS NULL OR AT_DIM_PROGRAMME_TYPE.SCHEDULE_END_DATE > TRUNC(CURRENT_TIMESTAMP)))), dataset_ AS (SELECT CODE, DESCRIPTION, ESTABLISHMENT_DESCRIPTION, ACTIVITY_CODE, ACTIVITY_DESCRIPTION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "CODE",
+            "type": "string",
+            "display": "Activity Service Code",
+            "legacyId": "DP10.DO7e9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Activity Service Description",
+            "legacyId": "DP10.DO650",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Activity Establishment Name",
+            "legacyId": "DP10.DO6b2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ACTIVITY_CODE",
+            "type": "string",
+            "display": "Activity Code",
+            "legacyId": "DP10.DO7e7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ACTIVITY_DESCRIPTION",
+            "type": "string",
+            "display": "Activity Description",
+            "legacyId": "DP10.DO64c",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP11",
+      "name": "Query 18",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING_CASE_NOTES.OFFENDER_ID_DISPLAY, AT_CASE_NOTE_TYPE.CODE FROM BODIMIS.DIM_REFERENCE_CODES AT_CASE_NOTE_TYPE, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING_CASE_NOTES, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.FACT_OFFENDER_CASE_NOTE AT_FACT_OFFENDER_CASE_NOTE, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_CASE_NOTE_TYPE.REFERENCE_CODE_SK = AT_FACT_OFFENDER_CASE_NOTE.CASE_NOTE_TYPE_CODE_SK) AND (AT_CASE_NOTE_TYPE.CODE_DOMAIN = 'TASK_TYPE') AND (AT_FACT_OFFENDER_CASE_NOTE.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_OFFENDER_BOOKING_CASE_NOTES.OFFENDER_BOOKING_SK = AT_FACT_OFFENDER_CASE_NOTE.OFFENDER_BOOKING_SK) AND (AT_CASE_NOTE_TYPE.CODE IN ('POM') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Associated Establishment\\Associated Establishment Code',multi,free,Not_Persistent,User:69) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Associated Establishment\\Associated Establishment Code',multi,free,Not_Persistent,User:69) */)))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, CODE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code (All for all)','A','Associated Establishment\\Associated Establishment Code',multi,free,Not_Persistent,User:69)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "Case Note NOMS Number",
+            "legacyId": "DP11.DOb72",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "CODE",
+            "type": "string",
+            "display": "Case Note Type Code",
+            "legacyId": "DP11.DOa8b",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "119708.RS",
+      "name": "Alerts",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DPe",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ALERT_CATEGORY_DESCRIPTION NOT(IN ('Not Applicable','Not Valid','Unknown')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ALERT_CATEGORY_DESCRIPTION",
+            "display": "Alert Category Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO93"
+          },
+          {
+            "name": "$ref:ALERT_DESCRIPTION",
+            "display": "Alert Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO90"
+          }
+        ]
+      }
+    },
+    {
+      "id": "120556.RS",
+      "name": "Activities",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP10",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ALERT_CATEGORY_DESCRIPTION NOT(IN ('Not Applicable','Not Valid','Unknown')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Activity Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO6b2"
+          },
+          {
+            "name": "$ref:CODE",
+            "display": "Activity Service Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO7e9"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Activity Service Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO650"
+          },
+          {
+            "name": "$ref:ACTIVITY_CODE",
+            "display": "Activity Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO7e7"
+          },
+          {
+            "name": "$ref:ACTIVITY_DESCRIPTION",
+            "display": "Activity Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO64c"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Activity Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO6b2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "120630.RS",
+      "name": "Service Descriptions",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP10",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ALERT_CATEGORY_DESCRIPTION NOT(IN ('Not Applicable','Not Valid','Unknown')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:CODE",
+            "display": "Activity Service Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO7e9"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Activity Service Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP10.DO650"
+          }
+        ]
+      }
+    },
+    {
+      "id": "120673.RS",
+      "name": "Report 4",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP11",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "Case Note NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DOb72"
+          },
+          {
+            "name": "$ref:CODE",
+            "display": "Case Note Type Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DOa8b"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

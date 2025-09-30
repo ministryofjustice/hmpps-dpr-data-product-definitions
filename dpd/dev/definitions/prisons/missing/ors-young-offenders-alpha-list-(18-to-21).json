@@ -1,0 +1,495 @@
+{
+  "id": "FlM0o1x92woA8uAAAHAbKF8bACJIAAzC",
+  "name": "ORS Young Offenders Alpha List (18 to 21)",
+  "description": "ACC0062 - v1.2 Last Modified: 02/04/2019 The report retrieves all Young Offenders in an Establishment",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACC0062",
+      "Alpha",
+      "Young Offenders"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376286/DP0",
+      "name": "Prisoners",
+      "description": "Sentence",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.BIRTH_DATE, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) = 0 THEN NULL ELSE SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) + 1, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 3) = 0 THEN LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION) ELSE INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 3) - INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) END - 1) END AS UNIT_CODE_2, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) AS AGE_IN_YEARS, CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END AS CURRENT_RELEASE_DATE, AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE AS AGY_AND_LOCATION FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, OMS_OWNER.OFFENDER_RELEASE_DETAILS AT_OFFENDER_RELEASE_DETAILS, (SELECT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID, CASE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE ELSE NULL END AS Last_Rel_Date, EFFECTIVE_SENTENCE_LENGTH FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) DT_LAST_RELEASE_DATE, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_RELEASE_DETAILS.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_LAST_RELEASE_DATE.OFFENDER_BOOK_ID (+)) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ((SELECT establishment_code FROM prompt_)) OR 'All' IN ((SELECT establishment_code FROM prompt_))) AND TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) >= 18 AND TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) <= 21)), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, BIRTH_DATE, UNIT_CODE_2, UNIT_DESCRIPTION_4_SHORT, AGE_IN_YEARS, CURRENT_RELEASE_DATE, AGY_AND_LOCATION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP0.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP0.DO10046",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "BIRTH_DATE",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP0.DO10075",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "UNIT_CODE_2",
+            "type": "string",
+            "display": "Unit Code 2",
+            "legacyId": "DP0.DO10471",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP0.DO10427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "AGE_IN_YEARS",
+            "type": "double",
+            "display": "Age in Years",
+            "legacyId": "DP0.DO10a15",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "CURRENT_RELEASE_DATE",
+            "type": "date",
+            "display": "Current Release Date",
+            "legacyId": "DP0.DO10b29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "AGY_AND_LOCATION",
+            "type": "string",
+            "display": "Agy and Location",
+            "legacyId": "DP0.DO11069",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "165584.RS",
+      "name": "By Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:AGE_IN_YEARS",
+            "display": "Age in Years",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10a15"
+          },
+          {
+            "name": "$ref:CURRENT_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b29"
+          }
+        ]
+      }
+    },
+    {
+      "id": "179241.RS",
+      "name": "By Age",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:AGE_IN_YEARS",
+            "display": "Age in Years",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10a15"
+          },
+          {
+            "name": "$ref:CURRENT_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b29"
+          }
+        ]
+      }
+    },
+    {
+      "id": "179297.RS",
+      "name": "By Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:AGE_IN_YEARS",
+            "display": "Age in Years",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10a15"
+          },
+          {
+            "name": "$ref:CURRENT_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b29"
+          }
+        ]
+      }
+    },
+    {
+      "id": "179390.RS",
+      "name": "YOs Per Wing",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:AGY_AND_LOCATION",
+            "display": "Agy and Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO11069"
+          }
+        ]
+      }
+    },
+    {
+      "id": "179515.RS",
+      "name": "Under 21 only",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP0",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE AGE_IN_YEARS < 21)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10427"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:AGE_IN_YEARS",
+            "display": "Age in Years",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10a15"
+          },
+          {
+            "name": "$ref:CURRENT_RELEASE_DATE",
+            "display": "Current Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10b29"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

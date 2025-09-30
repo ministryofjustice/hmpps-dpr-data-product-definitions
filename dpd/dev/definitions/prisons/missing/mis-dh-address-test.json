@@ -1,0 +1,216 @@
+{
+  "id": "klTiKeIAAT_hMUEA4.8AFE.rcVQ",
+  "name": "MIS DH address test",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0030 v00.00.02 LSRIT036"
+    ]
+  },
+  "description": "Lists the main addresses for prisoners and divides it by NOMS Area and County. Main address takes into account the Primary flag first, and if no Primary flag set it will use the most recently set address usage flag.   <br/>Taken from PDD0030 - v00.00.02 but extended for whole estate",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP4",
+      "name": "Addresses",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, DT_OFFENDER_ADDRESSES.CITY_DESC, DT_OFFENDER_ADDRESSES.COUNTY_DESC, DT_OFFENDER_ADDRESSES.POSTAL_CODE, DT_OFFENDER_ADDRESSES.NO_FIXED_ADDRESS_FLAG, BODIMIS.DIM_REGION.REGION_CODE_NK, BODIMIS.DIM_REGION.REGION_DESCRIPTION, DT_OFFENDER_ADDRESSES.ROW_SEQ_FILTER, DT_OFFENDER_ADDRESSES.ADDRESS_USAGE, DT_OFFENDER_ADDRESSES.ADDR_USAGE_DESCRIPTION, DT_OFFENDER_ADDRESSES.USAGE_ACTIVE_FLAG, Case when DT_OFFENDER_ADDRESSES.ADDRESS_USAGE in ('HOME') then 'Y' else 'N' end , Case when DT_OFFENDER_ADDRESSES.ADDRESS_USAGE in ('RECEP') then 'Y' else 'N' end , Case when DT_OFFENDER_ADDRESSES.ADDRESS_USAGE in ('RELEASE','DBH','DNF','DPH','DSH','DST','DUT','DAP','DBA','DOH') then 'Y' else 'N' end FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, ( select ROW_NUMBER() OVER (PARTITION BY ss.OWNER_ID ORDER BY PRIMARY_FLAG desc, ss.address_active_flag desc, ss.USAGE_ACTIVE_FLAG desc, ss.usages_dttm DESC nulls last) row_seq_filter, ss.* from ( select * from ( select AT_DIM_ADDRESSES.OWNER_ID, AT_DIM_ADDRESS_USAGES.ADDRESS_ID_NK, AT_DIM_ADDRESS_USAGES.ADDRESS_USAGE, AT_DIM_ADDRESS_USAGES.ADDR_USAGE_DESCRIPTION, AT_DIM_ADDRESS_USAGES.ACTIVE_FLAG as USAGE_ACTIVE_FLAG, AT_DIM_ADDRESSES.flat, AT_DIM_ADDRESSES.premise, AT_DIM_ADDRESSES.Street, AT_DIM_ADDRESSES.locality, AT_DIM_ADDRESSES.city_code, AT_DIM_ADDRESSES.city_desc, AT_DIM_ADDRESSES.county_code, AT_DIM_ADDRESSES.county_desc, AT_DIM_ADDRESSES.postal_code, AT_DIM_ADDRESSES.COUNTRY_CODE, AT_DIM_ADDRESSES.country_desc, AT_DIM_ADDRESSES.HOME_TEL_NO, AT_DIM_ADDRESSES.HOME_EXT_NO, AT_DIM_ADDRESSES.NO_FIXED_ADDRESS_FLAG, AT_DIM_ADDRESSES.establishment_sk, AT_DIM_ADDRESSES.PRIMARY_FLAG, AT_DIM_ADDRESSES.active_flag as address_active_flag, AT_DIM_ADDRESS_USAGES.CREATE_DATETIME, AT_DIM_ADDRESS_USAGES.MODIFY_DATETIME, COALESCE(AT_DIM_ADDRESS_USAGES.modify_datetime, AT_DIM_ADDRESS_USAGES.create_datetime) as usages_dttm from BODIMIS.DIM_ADDRESS_USAGES AT_DIM_ADDRESS_USAGES inner join BODIMIS.dim_addresses AT_DIM_ADDRESSES on AT_DIM_ADDRESS_USAGES.address_id_nk = AT_DIM_ADDRESSES.address_id_nk and AT_DIM_ADDRESSES.owner_class='OFF'  ) Addr_usages --where Addr_usages.usages_dttm is not null ) ss ) DT_OFFENDER_ADDRESSES, BODIMIS.DIM_REGION, BODIMIS.DIM_CELL AT_CELL, BODISTAGING.REF_OFFENDERS AT_BODISTAG_REF_OFFENDERS, BODIMIS.DIM_REFERENCE_CODES AT_DIM_REFERENCE_CODES WHERE ( AT_CELL.ESTABLISHMENT_SK=AT_ESTABLISHMENT.ESTABLISHMENT_SK ) AND ( AT_CELL.UNIT_4_SK=AT_OFFENDER_BOOKING.LIVING_UNIT_SK ) AND ( AT_ESTABLISHMENT.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username from context_) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_ID=AT_BODISTAG_REF_OFFENDERS.OFFENDER_ID(+) ) AND ( AT_BODISTAG_REF_OFFENDERS.ROOT_OFFENDER_ID=DT_OFFENDER_ADDRESSES.OWNER_ID(+) ) AND ( rtrim(DT_OFFENDER_ADDRESSES.COUNTY_CODE)=AT_DIM_REFERENCE_CODES.CODE(+) ) AND ( AT_DIM_REFERENCE_CODES.CODE_DOMAIN(+)='COUNTY' ) AND ( AT_DIM_REFERENCE_CODES.PARENT_CODE=BODIMIS.DIM_REGION.REGION_CODE_NK(+) ) AND ( ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND ( AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK in ((SELECT establishment_code from prompt_)) Or 'All' in ((SELECT establishment_code from prompt_)) ) )), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3376639/DP9",
+      "name": "MIS load",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DP9.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "137392.RS",
+      "name": "by Town or City",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP4",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (OFFENDER_ADDRESS_ROW_SEQ_FIL31 = 1 OR OFFENDER_ADDRESS_ROW_SEQ_FIL31 IS NULL))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DP4_DO10076",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO1094B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO1094C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO1094E",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO1096B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Expecting ). Line 1, Col: 2275.\n  ESS_USAGES.address_id_nk = AT_DIM_ADDRESSES.address_id_nk and AT_DIM_ADDRESSES.owner_class='OFF'  ) \u001b[4mAddr_usages\u001b[0m --where Addr_usages.usages_dttm is not null ) ss ) DT_OFFENDER_ADDRESSES, BODIMIS.DIM_REGION, BODIM]",
+      "entityId": "klTiKeIAAT_hMUEA4.8AFE.rcVQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields (comments -- in query)",
+      "entityId": "3375368/DP4",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO10076 does not have corresponding dataset schema field",
+      "entityId": "137392.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO1007B does not have corresponding dataset schema field",
+      "entityId": "137392.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO1094B does not have corresponding dataset schema field",
+      "entityId": "137392.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO1094C does not have corresponding dataset schema field",
+      "entityId": "137392.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO1094E does not have corresponding dataset schema field",
+      "entityId": "137392.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO1096B does not have corresponding dataset schema field",
+      "entityId": "137392.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3375368/DP4",
+      "entityType": "dataset"
+    }
+  ]
+}

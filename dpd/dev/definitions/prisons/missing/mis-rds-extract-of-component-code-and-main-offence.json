@@ -1,0 +1,278 @@
+{
+  "id": "okX6hrIABmnFHR0AJReD8K7B948",
+  "name": "MIS RDS Extract Of Component Code and Main Offence",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0016 v00.00.02 drop9.6"
+    ]
+  },
+  "description": "A data extract for RDS to list prisoners with their Component code and Main Offence.<br/>PDD0016 v00.00.02",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP0",
+      "name": "RDS Extract",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.PRISON_NUMBER, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.MIDDLE_NAME_1, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, AT_OFFENDER_BOOKING.COMPONENT_CODE, DT_MAIN_OFFENCE.OFFENCE_CJIT_CODE, DT_MAIN_OFFENCE.LIDS_MAIN_OFFENCE_CODE, DT_MAIN_OFFENCE.LIDS_MAIN_OFFENCE_DESCRIPTION FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, (SELECT AT_COURT_CASE.OFFENDER_BOOKING_SK, CASE WHEN AT_DIM_OFFENCE.OFFENCE_SK > 0 THEN AT_DIM_OFFENCE.OFFENCE_CODE_NK ELSE '-' END AS OFFENCE_CJIT_CODE, CASE WHEN AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG = ('Y') THEN (CASE WHEN AT_DIM_OFFENCE_INDICATOR.INDICATOR_CODE IN ('D', 'ERS', 'M', 'RA', 'V', 'S') THEN AT_DIM_OFFENCE_INDICATOR.OFFENCE_INDICATOR_DESCRIPTION WHEN AT_DIM_OFFENCE_INDICATOR.INDICATOR_CODE IN ('S', 'SOR') THEN 'Sexual' WHEN AT_DIM_OFFENCE_INDICATOR.OFFENCE_INDICATOR_DESCRIPTION LIKE '%ARSON%' THEN 'Arson' WHEN AT_DIM_OFFENCE_INDICATOR.OFFENCE_INDICATOR_DESCRIPTION LIKE '%DRUG%' THEN 'Drug Offences' WHEN AT_DIM_OFFENCE_INDICATOR.OFFENCE_INDICATOR_DESCRIPTION LIKE '%FIREARM%' THEN 'Firearms' WHEN AT_DIM_OFFENCE_INDICATOR.OFFENCE_INDICATOR_DESCRIPTION LIKE '%ESCAPE%' THEN 'Escape' WHEN AT_DIM_OFFENCE_INDICATOR.OFFENCE_INDICATOR_DESCRIPTION LIKE '%VIOLENT%' THEN 'Violent' WHEN AT_DIM_OFFENCE_INDICATOR.OFFENCE_INDICATOR_DESCRIPTION LIKE '%SEX%' THEN 'Sexual' ELSE 'Unclassified' END) ELSE 'NO MAIN OFFENCE' END AS MAIN_OFFENCE_CATEGORY, CASE WHEN AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG = ('Y') THEN AT_DIM_OFFENCE.OFFENCE_CODE_NK ELSE 'NO MAIN OFFENCE' END AS MAIN_OFFENCE_CODE, CASE WHEN AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG = ('Y') THEN AT_DIM_OFFENCE.OFFENCE_NAME ELSE 'NO MAIN OFFENCE' END AS MAIN_OFFENCE_NAME, CASE WHEN AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG = ('Y') THEN AT_DIM_OFFENCE.LIDS_OFFENCE_NUMCODE ELSE 'NO MAIN OFFENCE' END AS LIDS_MAIN_OFFENCE_CODE, CASE WHEN AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG = ('Y') THEN AT_DIM_OFFENCE.LIDS_DESCRIPTION ELSE 'NO MAIN OFFENCE' END AS LIDS_MAIN_OFFENCE_DESCRIPTION, AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG FROM BODIMIS.DIM_COURT_CASE AT_COURT_CASE, BODIMIS.DIM_OFFENCE_INDICATOR AT_DIM_OFFENCE_INDICATOR, BODIMIS.FACT_COURT_CHARGE AT_FACT_COURT_CHARGE, BODIMIS.DIM_OFFENCE AT_DIM_OFFENCE WHERE AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG = 'Y' AND (AT_FACT_COURT_CHARGE.OFFENCE_SK = AT_DIM_OFFENCE.OFFENCE_SK) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_COURT_CHARGE.COURT_CASE_SK) AND (AT_DIM_OFFENCE.OFFENCE_SK = AT_DIM_OFFENCE_INDICATOR.OFFENCE_SK) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT AT_COURT_CASE.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_COURT_CASE AT_COURT_CASE, BODIMIS.FACT_COURT_CHARGE AT_FACT_COURT_CHARGE WHERE (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_COURT_CHARGE.COURT_CASE_SK) AND (AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG = 'Y'))) UNION SELECT DOF.OFFENDER_BOOKING_SK, 'NO MAIN OFFENCE' AS OFFENCE_CJIT_CODE, 'NO MAIN OFFENCE' AS MAIN_OFFENCE_CATEGORY, 'NO MAIN OFFENCE' AS MAIN_OFFENCE_CODE, 'NO MAIN OFFENCE' AS MAIN_OFFENCE_NAME, 'NO MAIN OFFENCE' AS LIDS_MAIN_OFFENCE_CODE, 'NO MAIN OFFENCE' AS LIDS_MAIN_OFFENCE_DESCRIPTION, 'N' AS MOST_SERIOUS_FLAG FROM BODIMIS.DIM_OFFENDER_BOOKING DOF WHERE NOT DOF.OFFENDER_BOOKING_SK IN (SELECT AT_COURT_CASE.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_COURT_CASE AT_COURT_CASE, BODIMIS.FACT_COURT_CHARGE AT_FACT_COURT_CHARGE WHERE AT_COURT_CASE.COURT_CASE_SK = AT_FACT_COURT_CHARGE.COURT_CASE_SK AND AT_FACT_COURT_CHARGE.MOST_SERIOUS_FLAG = 'Y')) DT_MAIN_OFFENCE WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_MAIN_OFFENCE.OFFENDER_BOOKING_SK) AND (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, PRISON_NUMBER, SURNAME, FIRST_NAME, MIDDLE_NAME_1, DATE_OF_BIRTH, COMPONENT_CODE, OFFENCE_CJIT_CODE, LIDS_MAIN_OFFENCE_CODE, LIDS_MAIN_OFFENCE_DESCRIPTION, CASE WHEN DP0DO104DA = '-' THEN 'No Cell Allocated' ELSE DP0DO104DA END AS V_UNIT_4_COMPONENT_CODE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "PRISON_NUMBER",
+            "type": "string",
+            "display": "Prison Number",
+            "legacyId": "DP0.DO1007d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP0.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP0.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "MIDDLE_NAME_1",
+            "type": "string",
+            "display": "Offender Given Name 2",
+            "legacyId": "DP0.DO10081",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP0.DO10085",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "COMPONENT_CODE",
+            "type": "string",
+            "display": "Component Code",
+            "legacyId": "DP0.DO10a80",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "OFFENCE_CJIT_CODE",
+            "type": "string",
+            "display": "(Main Offence) CJIT Code",
+            "legacyId": "DP0.DO578",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "LIDS_MAIN_OFFENCE_CODE",
+            "type": "string",
+            "display": "LIDS (Main Offence) Code",
+            "legacyId": "DP0.DO560",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "LIDS_MAIN_OFFENCE_DESCRIPTION",
+            "type": "string",
+            "display": "LIDS (Main Offence) Description",
+            "legacyId": "DP0.DO561",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "V_UNIT_4_COMPONENT_CODE",
+            "type": "string",
+            "display": "V_UNIT_4_COMPONENT_CODE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP1",
+      "name": "MIS Load End Date",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP1.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "133104.RS",
+      "name": "RDS Extract",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10076"
+          },
+          {
+            "name": "$ref:PRISON_NUMBER",
+            "display": "Prison Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1007d"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1007b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10080"
+          },
+          {
+            "name": "$ref:MIDDLE_NAME_1",
+            "display": "Offender Given Name 2",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10081"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10085"
+          },
+          {
+            "name": "$ref:V_UNIT_4_COMPONENT_CODE",
+            "display": "Unit 4 Component Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([??DP0.DO104da??]=\"-\";\"No Cell Allocated\";[??DP0.DO104da??])"
+          },
+          {
+            "name": "$ref:OFFENCE_CJIT_CODE",
+            "display": "(Main Offence) CJIT Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO578"
+          },
+          {
+            "name": "$ref:LIDS_MAIN_OFFENCE_CODE",
+            "display": "LIDS (Main Offence) Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO560"
+          },
+          {
+            "name": "$ref:LIDS_MAIN_OFFENCE_DESCRIPTION",
+            "display": "LIDS (Main Offence) Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO561"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DP0",
+      "entityType": "dataset"
+    }
+  ]
+}

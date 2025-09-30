@@ -1,0 +1,341 @@
+{
+  "id": "kloNqXwAAKAaazUA5WwAISgV_bQ",
+  "name": "MIS ACCT Alert History Report",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0232 v00.00.01",
+      "ACCT"
+    ]
+  },
+  "description": "Displays current Prisoners who have, or have had, an ACCT Alert. An optional prompt has been added for NOMS number so you can either search for an individual Prisoner or leave it blank for all.  There is also a prompt for Active ACCT Alerts, Inactive ACCT Alerts or both.<br/>PDD0232 - v00.00.01 Last Modified: 17/01/2018",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP4",
+      "name": "ACCT Alerts",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE, AT_ALERT.ALERT_CODE_NK, AT_ALERT.ALERT_DESCRIPTION, AT_OFFENDER_ALERT.ALERT_STATUS, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION, AT_OFFENDER_ALERT.COMMENT_TEXT, CASE WHEN AT_ALERT_EFFECT_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EFFECT_DATE.DAY_DATE ELSE NULL END AS ALERT_EFFECTIVE_DATE, CASE WHEN AT_ALERT_EXPIRY_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EXPIRY_DATE.DAY_DATE ELSE NULL END AS ALERT_EXPIRY_DATE FROM BODIMIS.DIM_CELL AT_DIM_LOCATION, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_ALERT AT_ALERT, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT, BODIMIS.DIM_DATE AT_ALERT_EFFECT_DATE, BODIMIS.DIM_DATE AT_ALERT_EXPIRY_DATE WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK (+)) AND (AT_ALERT.ALERT_SK (+) = AT_OFFENDER_ALERT.ALERT_SK) AND (AT_OFFENDER_ALERT.ALERT_DATE_SK = AT_ALERT_EFFECT_DATE.DATE_SK (+)) AND (AT_OFFENDER_ALERT.ALERT_EXPIRY_DATE_SK = AT_ALERT_EXPIRY_DATE.DATE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.LIVING_UNIT_SK = AT_DIM_LOCATION.UNIT_4_SK (+)) AND ((AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK IN ((SELECT establishment_code FROM prompt_)) OR 'All' IN ((SELECT establishment_code FROM prompt_))) AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_OFFENDER_ALERT.ALERT_STATUS IN ('ACTIVE') OR 'All' IN ('ACTIVE')) AND AT_ALERT.ALERT_CODE_NK IN ('HA', 'HA1', 'HA2'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, FIRST_NAME, DATE_OF_BIRTH, MAIN_LEGAL_STATUS_CODE, ALERT_CODE_NK, ALERT_DESCRIPTION, ALERT_STATUS, UNIT_4_SHORT_DESCRIPTION, COMMENT_TEXT, ALERT_EFFECTIVE_DATE, ALERT_EXPIRY_DATE, CASE WHEN NO_OF_DAYS_OPEN IS NULL THEN V_COUNT_OF_DAYS_NOT_CURRENT_OPEN ELSE NO_OF_DAYS_OPEN END || 1 AS V_COUNT_OF_DAYS_OPEN_DISPLAY, CASE WHEN ALERT_STATUS = 'ACTIVE' THEN 'Y' ELSE 'N' END AS V_ACTIVE_ALERT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP4.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP4.DO7b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP4.DO80",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP4.DO85",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "MAIN_LEGAL_STATUS_CODE",
+            "type": "string",
+            "display": "Main Legal Status Code",
+            "legacyId": "DP4.DOde",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ALERT_CODE_NK",
+            "type": "string",
+            "display": "Alert Code",
+            "legacyId": "DP4.DO8e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ALERT_DESCRIPTION",
+            "type": "string",
+            "display": "Alert Description",
+            "legacyId": "DP4.DO90",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "ALERT_STATUS",
+            "type": "string",
+            "display": "Alert Status",
+            "legacyId": "DP4.DO94",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "UNIT_4_SHORT_DESCRIPTION",
+            "type": "string",
+            "display": "Prisoner Location",
+            "legacyId": "DP4.DOa7c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "Alert Comment Text",
+            "legacyId": "DP4.DO7ba",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ALERT_EFFECTIVE_DATE",
+            "type": "date",
+            "display": "Alert Effective Date",
+            "legacyId": "DP4.DO95",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "ALERT_EXPIRY_DATE",
+            "type": "date",
+            "display": "Alert Expiry Date",
+            "legacyId": "DP4.DO96",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "V_COUNT_OF_DAYS_OPEN_DISPLAY",
+            "type": "string",
+            "display": "V_COUNT_OF_DAYS_OPEN_DISPLAY",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 13,
+            "name": "V_ACTIVE_ALERT",
+            "type": "string",
+            "display": "V_ACTIVE_ALERT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DPa",
+      "name": "MIS Load",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DPa.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "113787.RS",
+      "name": "ACCT Alerts",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP4",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO76"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO7b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO80"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO85"
+          },
+          {
+            "name": "$ref:UNIT_4_SHORT_DESCRIPTION",
+            "display": "Prisoner Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DOa7c"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_CODE",
+            "display": "Main Legal Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DOde"
+          },
+          {
+            "name": "$ref:ALERT_CODE_NK",
+            "display": "Alert Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO8e"
+          },
+          {
+            "name": "$ref:ALERT_DESCRIPTION",
+            "display": "Alert Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO90"
+          },
+          {
+            "name": "$ref:ALERT_EFFECTIVE_DATE",
+            "display": "Alert Effective Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO95"
+          },
+          {
+            "name": "$ref:ALERT_EXPIRY_DATE",
+            "display": "Alert Expiry Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO96"
+          },
+          {
+            "name": "$ref:V_COUNT_OF_DAYS_OPEN_DISPLAY",
+            "display": "Days Open",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([No_of_days_open]);[v_count_of_days_not_current_open];[No_of_days_open])+1"
+          },
+          {
+            "name": "$ref:COMMENT_TEXT",
+            "display": "Alert Comment Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO7ba"
+          },
+          {
+            "name": "$ref:V_ACTIVE_ALERT",
+            "display": "Active Y/N",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Alert Status]=\"ACTIVE\";\"Y\";\"N\")"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3376639/DP4",
+      "entityType": "dataset"
+    }
+  ]
+}
