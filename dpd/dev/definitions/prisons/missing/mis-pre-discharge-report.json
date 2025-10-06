@@ -1,0 +1,243 @@
+{
+  "id": "FhJAkWBY4wcAvjEBAHBbyF4dACJIAFJ8",
+  "name": "MIS Pre Discharge Report",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "SEN0006 v00.02.01",
+      "Pre Discharge Report"
+    ]
+  },
+  "description": "SEN0006 v00.02.01 Last Modified: 15/07/21 This form-style report is run and then printed. Section A is completed by the prison; it is then sent to the supervising officer no later than 8 weeks prior to the HDC eligibility date for prisoners eligible for Home Detention Curfew; for other prisoners, to be sent out no later than 8 weeks prior to the date of release. The supervising officer completes sections B and C and returns it to the prison. ",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP2",
+      "name": "Pre Discharge Prisoner details",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_OFFENDER_BOOKING.MIDDLE_NAME_1, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END, FACT_CURR_KEY_DATES_SENT.CURR_HDCED_DATE, decode(( AT_DIM_SENTENCE_TYPE.SENTENCE_CATEGORY_NK ),'LICENCE',DT_LICENCE_DATES.LSD), FACT_CURR_KEY_DATES_SENT.CURR_LED_DATE, FACT_CURR_KEY_DATES_SENT.SED, CASE WHEN AT_ALERT.ALERT_CODE_NK in ('SR','SOR') AND AT_OFFENDER_ALERT.ALERT_STATUS='ACTIVE' THEN 'Yes' ELSE 'No' END, DECODE(AT_OFFENDER_BOOKING.PSO_4400_FLAG,'Y','Yes','N','No',null), CASE WHEN DT_SENTENCE_LICENCES.OTHER_CONDITIONS_FLAG= 'Y' THEN 'Yes' ELSE 'No' END , 'Please manually check', FACT_CURR_KEY_DATES_SENT.CURR_RELEASE_DATE, DT_OFFENDER_ADDRESSES.ADDRESS_USAGE, DT_OFFENDER_ADDRESSES.USAGE_ACTIVE_FLAG, DT_OFFENDER_ADDRESSES.ROW_SEQ_FILTER, DT_OFFENDER_ADDRESSES.FLAT || ' '|| DT_OFFENDER_ADDRESSES.PREMISE || ' '|| DT_OFFENDER_ADDRESSES.STREET || ' '|| DT_OFFENDER_ADDRESSES.LOCALITY || ' '|| DT_OFFENDER_ADDRESSES.CITY_DESC || ' '|| DT_OFFENDER_ADDRESSES.POSTAL_CODE || ' '|| DT_OFFENDER_ADDRESSES.COUNTRY_DESC, Case when DT_OFFENDER_ADDRESSES.ADDRESS_USAGE in ('RELEASE','DBH','DNF','DPH','DSH','DST','DUT','DAP','DBA','DOH') then 'Y' else 'N' end , trim( case when DT_OFFENDER_CONTACT_ADDRESS.TITLE is not null then DT_OFFENDER_CONTACT_ADDRESS.TITLE || ' ' end || case when DT_OFFENDER_CONTACT_ADDRESS.FIRST_NAME is not null then DT_OFFENDER_CONTACT_ADDRESS.FIRST_NAME || ' ' end || case when DT_OFFENDER_CONTACT_ADDRESS.MIDDLE_NAME is not null then DT_OFFENDER_CONTACT_ADDRESS.MIDDLE_NAME || ' ' end || DT_OFFENDER_CONTACT_ADDRESS.LAST_NAME ), DT_OFFENDER_CONTACT_ADDRESS.FLAT||' '||DT_OFFENDER_CONTACT_ADDRESS.PREMISE, DT_OFFENDER_CONTACT_ADDRESS.STREET, DT_OFFENDER_CONTACT_ADDRESS.locality|| ( case when DT_OFFENDER_CONTACT_ADDRESS.locality is null then DT_OFFENDER_CONTACT_ADDRESS.city when DT_OFFENDER_CONTACT_ADDRESS.locality is not null and DT_OFFENDER_CONTACT_ADDRESS.city is null then null when DT_OFFENDER_CONTACT_ADDRESS.locality is null and DT_OFFENDER_CONTACT_ADDRESS.city is null then null when DT_OFFENDER_CONTACT_ADDRESS.locality is not null then ', '||DT_OFFENDER_CONTACT_ADDRESS.city ELSE ', '||DT_OFFENDER_CONTACT_ADDRESS.city end )|| ( case when DT_OFFENDER_CONTACT_ADDRESS.county is not null and DT_OFFENDER_CONTACT_ADDRESS.city is not null then ', '||DT_OFFENDER_CONTACT_ADDRESS.county when DT_OFFENDER_CONTACT_ADDRESS.county is not null and DT_OFFENDER_CONTACT_ADDRESS.city is null and DT_OFFENDER_CONTACT_ADDRESS.locality is not null then ', '||DT_OFFENDER_CONTACT_ADDRESS.county when DT_OFFENDER_CONTACT_ADDRESS.county is not null and DT_OFFENDER_CONTACT_ADDRESS.city is not null then ', '||DT_OFFENDER_CONTACT_ADDRESS.county when DT_OFFENDER_CONTACT_ADDRESS.county is not null and DT_OFFENDER_CONTACT_ADDRESS.city is null and DT_OFFENDER_CONTACT_ADDRESS.locality is null then DT_OFFENDER_CONTACT_ADDRESS.county else null end ) , DT_OFFENDER_CONTACT_ADDRESS.POST_CODE, DT_OFFENDER_ADDRESSES.ADDRESS_ACTIVE_FLAG, FACT_CURR_KEY_DATES_SENT.TUSED_DATE, AT_ALERT.ALERT_CODE_NK FROM BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_SENTENCE_TYPE AT_DIM_SENTENCE_TYPE, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, FACT_CURR_KEY_DATES_SENT, ( select min(decode(AT_SENT_START_DATE.DAY_DATE,to_date('12/31/9000','mm/dd/yyyy'),to_date(null) ,AT_SENT_START_DATE.DAY_DATE )) as LSD, decode(AT_SED_DATE.DAY_DATE,to_date('12/31/9000','mm/dd/yyyy') ,to_date(null) , AT_SED_DATE.DAY_DATE) as LED, AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK as OFFENDER_BOOKING_SK from BODIMIS.DIM_DATE AT_SENT_START_DATE , BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_DATE AT_SED_DATE where AT_FACT_SENTENCE.SENTENCE_START_DATE_SK=AT_SENT_START_DATE.DATE_SK and AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK=AT_FACT_SENTENCE.OFFENDER_BOOKING_SK and AT_FACT_OFFENDER_SENTENCE.SED_DATE_SK=AT_SED_DATE.DATE_SK group by decode(AT_SED_DATE.DAY_DATE,to_date('12/31/9000','mm/dd/yyyy') ,to_date(null) , AT_SED_DATE.DAY_DATE), AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK ) DT_LICENCE_DATES, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT, BODIMIS.DIM_ALERT AT_ALERT, ( Select OFFENDER_BOOKING_SK, OTHER_CONDITIONS_FLAG from BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.DIM_SENTENCE_TYPE AT_DIM_SENTENCE_TYPE where AT_FACT_SENTENCE.OTHER_CONDITIONS_FLAG = 'Y' and AT_FACT_SENTENCE.SENTENCE_TYPE_SK = AT_DIM_SENTENCE_TYPE.SENTENCE_TYPE_SK and AT_DIM_SENTENCE_TYPE.SENTENCE_CATEGORY_NK = 'LICENCE' ) DT_SENTENCE_LICENCES, ( select ROW_NUMBER() OVER (PARTITION BY ss.OWNER_ID ORDER BY PRIMARY_FLAG desc, ss.address_active_flag desc, ss.USAGE_ACTIVE_FLAG desc, ss.usages_dttm DESC nulls last) row_seq_filter, ss.* from ( select * from ( select AT_DIM_ADDRESSES.OWNER_ID, AT_DIM_ADDRESS_USAGES.ADDRESS_ID_NK, AT_DIM_ADDRESS_USAGES.ADDRESS_USAGE, AT_DIM_ADDRESS_USAGES.ADDR_USAGE_DESCRIPTION, AT_DIM_ADDRESS_USAGES.ACTIVE_FLAG as USAGE_ACTIVE_FLAG, AT_DIM_ADDRESSES.flat, AT_DIM_ADDRESSES.premise, AT_DIM_ADDRESSES.Street, AT_DIM_ADDRESSES.locality, AT_DIM_ADDRESSES.city_code, AT_DIM_ADDRESSES.city_desc, AT_DIM_ADDRESSES.county_code, AT_DIM_ADDRESSES.county_desc, AT_DIM_ADDRESSES.postal_code, AT_DIM_ADDRESSES.COUNTRY_CODE, AT_DIM_ADDRESSES.country_desc, AT_DIM_ADDRESSES.HOME_TEL_NO, AT_DIM_ADDRESSES.HOME_EXT_NO, AT_DIM_ADDRESSES.NO_FIXED_ADDRESS_FLAG, AT_DIM_ADDRESSES.establishment_sk, AT_DIM_ADDRESSES.PRIMARY_FLAG, AT_DIM_ADDRESSES.active_flag as address_active_flag, AT_DIM_ADDRESS_USAGES.CREATE_DATETIME, AT_DIM_ADDRESS_USAGES.MODIFY_DATETIME, COALESCE(AT_DIM_ADDRESS_USAGES.modify_datetime, AT_DIM_ADDRESS_USAGES.create_datetime) as usages_dttm from BODIMIS.DIM_ADDRESS_USAGES AT_DIM_ADDRESS_USAGES inner join BODIMIS.dim_addresses AT_DIM_ADDRESSES on AT_DIM_ADDRESS_USAGES.address_id_nk = AT_DIM_ADDRESSES.address_id_nk and AT_DIM_ADDRESSES.owner_class='OFF'  ) Addr_usages --where Addr_usages.usages_dttm is not null ) ss ) DT_OFFENDER_ADDRESSES, ( SELECT ROW_NUMBER() OVER (PARTITION BY dooc.offender_booking_sk, dooc.relationship ORDER BY dooc.active_flag DESC, dooc.address_flag DESC, dooc.mis_load_id DESC) row_seq_filter, dooc.*, CASE WHEN dooc.next_of_kin_flag = 'Y' THEN 'NEXTOFKIN' ELSE 'CONTACT' END Con_Addr_Type, CASE WHEN dooc.next_of_kin_flag = 'Y' THEN 'Next of Kin' ELSE 'Contact' END ConAddrTypeDesc FROM bodimis.dim_offender_other_contacts dooc ) DT_OFFENDER_CONTACT_ADDRESS, BODIMIS.DIM_CELL AT_CELL, BODIMIS.DIM_COURT_CASE AT_COURT_CASE, BODISTAGING.REF_OFFENDERS AT_BODISTAG_REF_OFFENDERS WHERE ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_LICENCE_DATES.OFFENDER_BOOKING_SK ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=AT_COURT_CASE.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.BIRTH_DATE_SK=AT_DOB.DATE_SK ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK(+) ) AND ( AT_ALERT.ALERT_SK(+)=AT_OFFENDER_ALERT.ALERT_SK ) AND ( AT_CELL.ESTABLISHMENT_SK=AT_ESTABLISHMENT.ESTABLISHMENT_SK ) AND ( AT_CELL.UNIT_4_SK=AT_OFFENDER_BOOKING.LIVING_UNIT_SK ) AND ( AT_COURT_CASE.COURT_CASE_SK=AT_FACT_SENTENCE.COURT_CASE_SK(+) ) AND ( AT_ESTABLISHMENT.ACTIVE_FLAG='Y' ) AND ( AT_FACT_SENTENCE.SENTENCE_TYPE_SK=AT_DIM_SENTENCE_TYPE.SENTENCE_TYPE_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username from context_) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username from context_) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK(+) ) AND ( DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK IS NULL OR DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username from context_) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( DT_SENTENCE_LICENCES.OFFENDER_BOOKING_SK(+)=AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK ) AND ( AT_OFFENDER_BOOKING.OFFENDER_ID=AT_BODISTAG_REF_OFFENDERS.OFFENDER_ID(+) ) AND ( AT_BODISTAG_REF_OFFENDERS.ROOT_OFFENDER_ID=DT_OFFENDER_ADDRESSES.OWNER_ID(+) ) AND ( ( AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND='Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY = 'A0703EF' ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND ( DT_OFFENDER_CONTACT_ADDRESS.ADDRESS_FLAG(+)='Y' ) AND ( DT_OFFENDER_CONTACT_ADDRESS.ROW_SEQ_FILTER(+)=1 ) AND ( DT_OFFENDER_CONTACT_ADDRESS.RELATIONSHIP(+)='Probation Officer' ) AND ( DT_OFFENDER_CONTACT_ADDRESS.ACTIVE_FLAG(+)='Y' ) )), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3375368/DP7",
+      "name": "Load End Date",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP7.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DPd",
+      "name": "COM",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, DT_OFFENDER_CONTACT_ADDRESS.TITLE, TRIM(CASE WHEN NOT DT_OFFENDER_CONTACT_ADDRESS.TITLE IS NULL THEN DT_OFFENDER_CONTACT_ADDRESS.TITLE || ' ' END || CASE WHEN NOT DT_OFFENDER_CONTACT_ADDRESS.FIRST_NAME IS NULL THEN DT_OFFENDER_CONTACT_ADDRESS.FIRST_NAME || ' ' END || CASE WHEN NOT DT_OFFENDER_CONTACT_ADDRESS.MIDDLE_NAME IS NULL THEN DT_OFFENDER_CONTACT_ADDRESS.MIDDLE_NAME || ' ' END || DT_OFFENDER_CONTACT_ADDRESS.LAST_NAME) AS CONTACT_NAME, DT_OFFENDER_CONTACT_ADDRESS.LAST_NAME, DT_OFFENDER_CONTACT_ADDRESS.FIRST_NAME, DT_OFFENDER_CONTACT_ADDRESS.PREMISE, DT_OFFENDER_CONTACT_ADDRESS.STREET, DT_OFFENDER_CONTACT_ADDRESS.LOCALITY, DT_OFFENDER_CONTACT_ADDRESS.CITY, DT_OFFENDER_CONTACT_ADDRESS.COUNTY, DT_OFFENDER_CONTACT_ADDRESS.POST_CODE, DT_OFFENDER_CONTACT_ADDRESS.TEL_NO, DT_OFFENDER_CONTACT_ADDRESS.OTHER_CONTACT_SK FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT ROW_NUMBER() OVER (PARTITION BY dooc.offender_booking_sk, dooc.relationship ORDER BY dooc.active_flag DESC, dooc.address_flag DESC, dooc.mis_load_id DESC) AS row_seq_filter, dooc.*, CASE WHEN dooc.next_of_kin_flag = 'Y' THEN 'NEXTOFKIN' ELSE 'CONTACT' END AS Con_Addr_Type, CASE WHEN dooc.next_of_kin_flag = 'Y' THEN 'Next of Kin' ELSE 'Contact' END AS ConAddrTypeDesc FROM bodimis.dim_offender_other_contacts dooc) DT_OFFENDER_CONTACT_ADDRESS WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK (+)) AND (DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK IS NULL OR DT_OFFENDER_CONTACT_ADDRESS.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (DT_OFFENDER_CONTACT_ADDRESS.RELATIONSHIP IN ('Community Offender Manager') AND DT_OFFENDER_CONTACT_ADDRESS.ACTIVE_FLAG IN ('Y') AND (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY = 'A0703EF'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, TITLE, CONTACT_NAME, LAST_NAME, FIRST_NAME, PREMISE, STREET, LOCALITY, CITY, COUNTY, POST_CODE, TEL_NO, OTHER_CONTACT_SK FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPd.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "TITLE",
+            "type": "string",
+            "display": "Contact Title",
+            "legacyId": "DPd.DO10ad9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "CONTACT_NAME",
+            "type": "string",
+            "display": "Contact Name",
+            "legacyId": "DPd.DO10747",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Contact Last Name",
+            "legacyId": "DPd.DO10adc",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Contact First Name",
+            "legacyId": "DPd.DO10ada",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "PREMISE",
+            "type": "string",
+            "display": "Contact Address Premise",
+            "legacyId": "DPd.DO1074a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "STREET",
+            "type": "string",
+            "display": "Contact Address Street",
+            "legacyId": "DPd.DO1074b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "LOCALITY",
+            "type": "string",
+            "display": "Contact Address Locality",
+            "legacyId": "DPd.DO1074c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "CITY",
+            "type": "string",
+            "display": "Contact Address City",
+            "legacyId": "DPd.DO1074d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "COUNTY",
+            "type": "string",
+            "display": "Contact Address County",
+            "legacyId": "DPd.DO1074e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "POST_CODE",
+            "type": "string",
+            "display": "Contact Address Post Code",
+            "legacyId": "DPd.DO10750",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "TEL_NO",
+            "type": "string",
+            "display": "Contact Address Telephone Number",
+            "legacyId": "DPd.DO10753",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "OTHER_CONTACT_SK",
+            "type": "double",
+            "display": "Contact Address ID",
+            "legacyId": "DPd.DO10758",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "198917.RS",
+      "name": "Pre Discharge Report",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:DP2_DO1095C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Required keyword: 'format' missing for <class 'sqlglot.expressions.StrToDate'>. Line 1, Col: 3518.\n  ENT, ( select min(decode(AT_SENT_START_DATE.DAY_DATE,to_date('12/31/9000','mm/dd/yyyy'),to_date(null\u001b[4m)\u001b[0m ,AT_SENT_START_DATE.DAY_DATE )) as LSD, decode(AT_SED_DATE.DAY_DATE,to_date('12/31/9000','mm/dd/yyy]",
+      "entityId": "FhJAkWBY4wcAvjEBAHBbyF4dACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields (comments -- in query)",
+      "entityId": "3375368/DP2",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO1095C does not have corresponding dataset schema field",
+      "entityId": "198917.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3375368/DP2",
+      "entityType": "dataset"
+    }
+  ]
+}

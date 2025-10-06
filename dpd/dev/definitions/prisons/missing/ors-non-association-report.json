@@ -1,0 +1,649 @@
+{
+  "id": "klc_7JMAAiGwO5ABAtQAISgWcQA",
+  "name": "ORS Non Association Report",
+  "description": "This report retrieves those Prisoners who have a current, active Non Association on their record, along with the details and location of the Non Association Prisoners. Report is over 5 tabs:<br/>Located in Same Establishment, Same Est without Sections, Same Est by Location, All NA's, All without Sections.<br/>ACC0039 - v3.0 Last Modified: 06/09/2022",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACC0039 v3.0"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377299/DP0",
+      "name": "Non Assocation A-I",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, CASE WHEN AT_OFFENDER.RACE_CODE = 'W8' THEN 'W3' WHEN AT_OFFENDER.RACE_CODE = 'O1' THEN 'A4' ELSE AT_OFFENDER.RACE_CODE END || '-' || CASE WHEN AT_ETHNICITY_DESC.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_ETHNICITY_DESC.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_ETHNICITY_DESC.DESCRIPTION END AS ETHNIC_DESCRIPTION, AT_RELIGION.DESCRIPTION, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_OFFENDER_NA_DETAILS.COMMENT_TEXT, AT_OFFENDER_NA_DETAILS.NS_EFFECTIVE_DATE, AT_OFFENDER_NA_DETAILS.NS_TYPE, AT_OFFENDER_NA_DETAILS.NS_REASON_CODE, AT_OFFENDERS_NA.OFFENDER_ID_DISPLAY AS NA_NOMS_NUMBER, AT_OFFENDERS_NA.LAST_NAME AS NA_LAST_NAME, AT_OFFENDERS_NA.FIRST_NAME AS NA_FIRST_NAME FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_ETHNICITY_DESC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFFENDER_RELIGION, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDERS AT_OFFENDERS_NA, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING_NA, OMS_OWNER.PROFILE_CODES AT_RELIGION, OMS_OWNER.OFFENDER_NA_DETAILS AT_OFFENDER_NA_DETAILS, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS, OMS_OWNER.OFFENDER_NON_ASSOCIATIONS AT_OFFENDER_NON_ASSOCIATIONS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_ETHNICITY_DESC.DOMAIN (+) = 'ETHNICITY') AND (AT_ETHNICITY_DESC.CODE (+) = AT_OFFENDER.RACE_CODE) AND (AT_OFFENDER_RELIGION.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_RELIGION.PROFILE_TYPE (+) = 'RELF') AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_RELIGION.PROFILE_CODE (+) = AT_OFFENDER_RELIGION.PROFILE_CODE) AND (AT_RELIGION.PROFILE_TYPE (+) = AT_OFFENDER_RELIGION.PROFILE_TYPE) AND (AT_OFFENDER_NON_ASSOCIATIONS.OFFENDER_ID (+) = AT_OFFENDER.ROOT_OFFENDER_ID) AND (AT_OFFENDERS_NA.ROOT_OFFENDER_ID = AT_OFFENDER_NA_DETAILS.NS_OFFENDER_ID) AND (AT_OFFENDER_NA_DETAILS.OFFENDER_ID = AT_OFFENDER_NON_ASSOCIATIONS.OFFENDER_ID AND AT_OFFENDER_NA_DETAILS.NS_OFFENDER_ID = AT_OFFENDER_NON_ASSOCIATIONS.NS_OFFENDER_ID) AND (AT_OFFENDERS_NA.OFFENDER_ID = AT_OFFENDER_BOOKING_NA.OFFENDER_ID) AND (AT_OFFENDER.LAST_NAME < 'J' AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ((SELECT establishment_code FROM prompt_)) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */ AND (AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')) AND AT_OFFENDER_NA_DETAILS.NS_EXPIRY_DATE IS NULL AND AT_OFFENDER_BOOKING_NA.ACTIVE_FLAG = 'Y')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, ETHNIC_DESCRIPTION, DESCRIPTION, LAST_NAME, FIRST_NAME, COMMENT_TEXT, NS_EFFECTIVE_DATE, NS_TYPE, NS_REASON_CODE, NA_NOMS_NUMBER, NA_LAST_NAME, NA_FIRST_NAME FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ETHNIC_DESCRIPTION",
+            "type": "string",
+            "display": "Ethnic Description",
+            "legacyId": "DP0.DO9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DP0.DOc29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP0.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP0.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "NAD Comment Text",
+            "legacyId": "DP0.DO10a3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "NS_EFFECTIVE_DATE",
+            "type": "date",
+            "display": "NAD Effective Date",
+            "legacyId": "DP0.DO10a1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "NS_TYPE",
+            "type": "string",
+            "display": "NAD Type",
+            "legacyId": "DP0.DO10b6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "NS_REASON_CODE",
+            "type": "string",
+            "display": "NAD Reason Code",
+            "legacyId": "DP0.DO10b4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "NA_NOMS_NUMBER",
+            "type": "string",
+            "display": "NA Noms number",
+            "legacyId": "DP0.DO10a6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "NA_LAST_NAME",
+            "type": "string",
+            "display": "NA Last Name",
+            "legacyId": "DP0.DO10ad",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "NA_FIRST_NAME",
+            "type": "string",
+            "display": "NA First Name",
+            "legacyId": "DP0.DO10ae",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DPd",
+      "name": "Non Assocation J-R",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, CASE WHEN AT_OFFENDER.RACE_CODE = 'W8' THEN 'W3' WHEN AT_OFFENDER.RACE_CODE = 'O1' THEN 'A4' ELSE AT_OFFENDER.RACE_CODE END || '-' || CASE WHEN AT_ETHNICITY_DESC.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_ETHNICITY_DESC.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_ETHNICITY_DESC.DESCRIPTION END AS ETHNIC_DESCRIPTION, AT_OFFENDER.LAST_NAME, AT_RELIGION.DESCRIPTION, AT_OFFENDER.FIRST_NAME, AT_OFFENDER_NA_DETAILS.COMMENT_TEXT, AT_OFFENDER_NA_DETAILS.NS_EFFECTIVE_DATE, AT_OFFENDER_NA_DETAILS.NS_TYPE, AT_OFFENDER_NA_DETAILS.NS_REASON_CODE, AT_OFFENDERS_NA.OFFENDER_ID_DISPLAY AS NA_NOMS_NUMBER, AT_OFFENDERS_NA.LAST_NAME AS NA_LAST_NAME, AT_OFFENDERS_NA.FIRST_NAME AS NA_FIRST_NAME FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_ETHNICITY_DESC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFFENDER_RELIGION, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDERS AT_OFFENDERS_NA, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING_NA, OMS_OWNER.PROFILE_CODES AT_RELIGION, OMS_OWNER.OFFENDER_NA_DETAILS AT_OFFENDER_NA_DETAILS, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS, OMS_OWNER.OFFENDER_NON_ASSOCIATIONS AT_OFFENDER_NON_ASSOCIATIONS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_ETHNICITY_DESC.DOMAIN (+) = 'ETHNICITY') AND (AT_ETHNICITY_DESC.CODE (+) = AT_OFFENDER.RACE_CODE) AND (AT_OFFENDER_RELIGION.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_RELIGION.PROFILE_TYPE (+) = 'RELF') AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_RELIGION.PROFILE_CODE (+) = AT_OFFENDER_RELIGION.PROFILE_CODE) AND (AT_RELIGION.PROFILE_TYPE (+) = AT_OFFENDER_RELIGION.PROFILE_TYPE) AND (AT_OFFENDER_NON_ASSOCIATIONS.OFFENDER_ID (+) = AT_OFFENDER.ROOT_OFFENDER_ID) AND (AT_OFFENDERS_NA.ROOT_OFFENDER_ID = AT_OFFENDER_NA_DETAILS.NS_OFFENDER_ID) AND (AT_OFFENDER_NA_DETAILS.OFFENDER_ID = AT_OFFENDER_NON_ASSOCIATIONS.OFFENDER_ID AND AT_OFFENDER_NA_DETAILS.NS_OFFENDER_ID = AT_OFFENDER_NON_ASSOCIATIONS.NS_OFFENDER_ID) AND (AT_OFFENDERS_NA.OFFENDER_ID = AT_OFFENDER_BOOKING_NA.OFFENDER_ID) AND (AT_OFFENDER.LAST_NAME BETWEEN 'J' AND 'S' AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ((SELECT establishment_code FROM prompt_)) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */ AND (AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')) AND AT_OFFENDER_NA_DETAILS.NS_EXPIRY_DATE IS NULL AND AT_OFFENDER_BOOKING_NA.ACTIVE_FLAG = 'Y')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, ETHNIC_DESCRIPTION, LAST_NAME, DESCRIPTION, FIRST_NAME, COMMENT_TEXT, NS_EFFECTIVE_DATE, NS_TYPE, NS_REASON_CODE, NA_NOMS_NUMBER, NA_LAST_NAME, NA_FIRST_NAME FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPd.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ETHNIC_DESCRIPTION",
+            "type": "string",
+            "display": "Ethnic Description",
+            "legacyId": "DPd.DO9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DPd.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DPd.DOc29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DPd.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "NAD Comment Text",
+            "legacyId": "DPd.DO10a3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "NS_EFFECTIVE_DATE",
+            "type": "date",
+            "display": "NAD Effective Date",
+            "legacyId": "DPd.DO10a1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "NS_TYPE",
+            "type": "string",
+            "display": "NAD Type",
+            "legacyId": "DPd.DO10b6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "NS_REASON_CODE",
+            "type": "string",
+            "display": "NAD Reason Code",
+            "legacyId": "DPd.DO10b4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "NA_NOMS_NUMBER",
+            "type": "string",
+            "display": "NA Noms number",
+            "legacyId": "DPd.DO10a6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "NA_LAST_NAME",
+            "type": "string",
+            "display": "NA Last Name",
+            "legacyId": "DPd.DO10ad",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "NA_FIRST_NAME",
+            "type": "string",
+            "display": "NA First Name",
+            "legacyId": "DPd.DO10ae",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DPc",
+      "name": "Non Assocation S-Z",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, CASE WHEN AT_OFFENDER.RACE_CODE = 'W8' THEN 'W3' WHEN AT_OFFENDER.RACE_CODE = 'O1' THEN 'A4' ELSE AT_OFFENDER.RACE_CODE END || '-' || CASE WHEN AT_ETHNICITY_DESC.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_ETHNICITY_DESC.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_ETHNICITY_DESC.DESCRIPTION END AS ETHNIC_DESCRIPTION, AT_RELIGION.DESCRIPTION, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_OFFENDER_NA_DETAILS.COMMENT_TEXT, AT_OFFENDER_NA_DETAILS.NS_EFFECTIVE_DATE, AT_OFFENDER_NA_DETAILS.NS_TYPE, AT_OFFENDER_NA_DETAILS.NS_REASON_CODE, AT_OFFENDERS_NA.OFFENDER_ID_DISPLAY AS NA_NOMS_NUMBER, AT_OFFENDERS_NA.LAST_NAME AS NA_LAST_NAME, AT_OFFENDERS_NA.FIRST_NAME AS NA_FIRST_NAME FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_ETHNICITY_DESC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFFENDER_RELIGION, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDERS AT_OFFENDERS_NA, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING_NA, OMS_OWNER.PROFILE_CODES AT_RELIGION, OMS_OWNER.OFFENDER_NA_DETAILS AT_OFFENDER_NA_DETAILS, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS, OMS_OWNER.OFFENDER_NON_ASSOCIATIONS AT_OFFENDER_NON_ASSOCIATIONS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_ETHNICITY_DESC.DOMAIN (+) = 'ETHNICITY') AND (AT_ETHNICITY_DESC.CODE (+) = AT_OFFENDER.RACE_CODE) AND (AT_OFFENDER_RELIGION.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_RELIGION.PROFILE_TYPE (+) = 'RELF') AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_RELIGION.PROFILE_CODE (+) = AT_OFFENDER_RELIGION.PROFILE_CODE) AND (AT_RELIGION.PROFILE_TYPE (+) = AT_OFFENDER_RELIGION.PROFILE_TYPE) AND (AT_OFFENDER_NON_ASSOCIATIONS.OFFENDER_ID (+) = AT_OFFENDER.ROOT_OFFENDER_ID) AND (AT_OFFENDERS_NA.ROOT_OFFENDER_ID = AT_OFFENDER_NA_DETAILS.NS_OFFENDER_ID) AND (AT_OFFENDER_NA_DETAILS.OFFENDER_ID = AT_OFFENDER_NON_ASSOCIATIONS.OFFENDER_ID AND AT_OFFENDER_NA_DETAILS.NS_OFFENDER_ID = AT_OFFENDER_NON_ASSOCIATIONS.NS_OFFENDER_ID) AND (AT_OFFENDERS_NA.OFFENDER_ID = AT_OFFENDER_BOOKING_NA.OFFENDER_ID) AND (AT_OFFENDER.LAST_NAME > 'S' AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ((SELECT establishment_code FROM prompt_)) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */ AND (AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')) AND AT_OFFENDER_NA_DETAILS.NS_EXPIRY_DATE IS NULL AND AT_OFFENDER_BOOKING_NA.ACTIVE_FLAG = 'Y')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, ETHNIC_DESCRIPTION, DESCRIPTION, LAST_NAME, FIRST_NAME, COMMENT_TEXT, NS_EFFECTIVE_DATE, NS_TYPE, NS_REASON_CODE, NA_NOMS_NUMBER, NA_LAST_NAME, NA_FIRST_NAME FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPc.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ETHNIC_DESCRIPTION",
+            "type": "string",
+            "display": "Ethnic Description",
+            "legacyId": "DPc.DO9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DPc.DOc29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DPc.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DPc.DO46",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "NAD Comment Text",
+            "legacyId": "DPc.DO10a3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "NS_EFFECTIVE_DATE",
+            "type": "date",
+            "display": "NAD Effective Date",
+            "legacyId": "DPc.DO10a1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "NS_TYPE",
+            "type": "string",
+            "display": "NAD Type",
+            "legacyId": "DPc.DO10b6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "NS_REASON_CODE",
+            "type": "string",
+            "display": "NAD Reason Code",
+            "legacyId": "DPc.DO10b4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "NA_NOMS_NUMBER",
+            "type": "string",
+            "display": "NA Noms number",
+            "legacyId": "DPc.DO10a6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "NA_LAST_NAME",
+            "type": "string",
+            "display": "NA Last Name",
+            "legacyId": "DPc.DO10ad",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "NA_FIRST_NAME",
+            "type": "string",
+            "display": "NA First Name",
+            "legacyId": "DPc.DO10ae",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DPa",
+      "name": "Prisoner Location (5)",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE AS AGY_AND_LOCATION FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ((SELECT establishment_code FROM prompt_)) /* END Filter: Hierarchies/Establishment/''Establishment Code'' */) /* START Filter: Hierarchies/Establishment/''Establishment Code'' */ AND (AT_ALL_LIVING_UNITS.AGY_LOC_ID || '-' || AT_ALL_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, UNIT_DESCRIPTION_4_SHORT, AGY_AND_LOCATION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPa.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DPa.DO427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "AGY_AND_LOCATION",
+            "type": "string",
+            "display": "Agy and Location",
+            "legacyId": "DPa.DO1069",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377299/DPb",
+      "name": "NA Loc",
+      "description": "OR - Demographics",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_ALL_LIVING_UNITS.DESCRIPTION, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, OMS_OWNER.LIVING_UNITS AT_ALL_LIVING_UNITS, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID (+) = AT_ALL_LIVING_UNITS.LIVING_UNIT_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A0004AP', 'A0066DF', 'A0164AT', 'A0184CP', 'A0342AP', 'A0432ED', 'A0496CR', 'A0548DR', 'A0548EC', 'A0549DC', 'A0583CZ', 'A0665EN', 'A0707AH', 'A0744DR', 'A0896CV', 'A0989DJ', 'A0991DD', 'A0998EQ', 'A1002EL', 'A1052DJ', 'A1079EE', 'A1131AD', 'A1147AE', 'A1159AH', 'A1161DQ', 'A1169EA', 'A1172EQ', 'A1222AQ', 'A1259EM', 'A1335EM', 'A1377DF', 'A1446DC', 'A1475DE', 'A1533CD', 'A1558EN', 'A1600CH', 'A1617DR', 'A1651EF', 'A1757EP', 'A1870DQ', 'A1930EC', 'A1941AD', 'A1956DV', 'A1968CL', 'A1994DX', 'A2015EP', 'A2025ED', 'A2082EQ', 'A2153DX', 'A2164EL', 'A2242AE', 'A2265CE', 'A2303AZ', 'A2337ER', 'A2343CE', 'A2362AT', 'A2503CZ', 'A2509DA', 'A2607DH', 'A2612AN', 'A2678CW', 'A2692EA', 'A2702DA', 'A2734DK', 'A2734EE', 'A2819EV', 'A2900AW', 'A3020CK', 'A3080EM', 'A3294DL', 'A3316AH', 'A3394AP', 'A3395CW', 'A3472AE', 'A3520CR', 'A3563EQ', 'A3626AE', 'A3835EE', 'A3891DD', 'A3940EN', 'A4079DT', 'A4091EH', 'A4144AK', 'A4155DX', 'A4177DX', 'A4213ER', 'A4215ET', 'A4225DC', 'A4285AN', 'A4329DM', 'A4384AK', 'A4393AT', 'A4581DN', 'A4634CL', 'A4653DJ', 'A4724EC', 'A4805DE', 'A4811EN', 'A4897AX', 'A4911AK', 'A4963DP', 'A5017ER', 'A5020ER', 'A5044AV', 'A5069DC', 'A5169DD', 'A5188ER', 'A5213EQ', 'A5220DL', 'A5386CV', 'A5427AX', 'A5428EQ', 'A5463AR', 'A5471AK', 'A5490AJ', 'A5607AF', 'A5699DZ', 'A5736AK', 'A5759DF', 'A5799CA', 'A5870EA', 'A5891DR', 'A5965ED', 'A5981EC', 'A5993CY', 'A6175ED', 'A6229AR', 'A6304AK', 'A6343CX', 'A6432EQ', 'A6461DZ', 'A6519DH', 'A6523DL', 'A6572EQ', 'A6636EK', 'A6692CQ', 'A6701EL', 'A6776CW', 'A6810ET', 'A6922AP', 'A7077CV', 'A7115ET', 'A7212ET', 'A7250ED', 'A7303DZ', 'A7327AL', 'A7362AC', 'A7366DY', 'A7398EE', 'A7433EA', 'A7637DZ', 'A7741CD', 'A7795DC', 'A7879EP', 'A7890AM', 'A7928DN', 'A8042ER', 'A8077AG', 'A8081EE', 'A8088AC', 'A8153DY', 'A8220EQ', 'A8244DZ', 'A8259DT', 'A8270EF', 'A8300DY', 'A8389ER', 'A8392ER', 'A8443EM', 'A8456EN', 'A8459AG', 'A8673ET', 'A8693CX', 'A8856CY', 'A8878ED', 'A8994DJ', 'A9026AG', 'A9056DL', 'A9072ER', 'A9074EM', 'A9087EM', 'A9095EE', 'A9112AZ', 'A9124DN', 'A9133AC', 'A9165CK', 'A9203AP', 'A9229EF', 'A9240AT', 'A9290AW', 'A9321EP', 'A9347AQ', 'A9361EF', 'A9377EL', 'A9385EE', 'A9391DZ', 'A9745EA', 'A9757EP', 'A9765EK', 'A9773DL', 'A9792EK', 'A9855EE', 'A9982ED') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A0004AP', 'A0027EA', 'A0087DA', 'A0151DX', 'A0258EG', 'A0316EG', 'A0360AH', 'A0588AW', 'A0777CC', 'A0777DW', 'A0810AN', 'A0841EA', 'A0868EN', 'A0939CC', 'A1038DT', 'A1076DC', 'A1079EE', 'A1101CX', 'A1272EV', 'A1320AN', 'A1340CH', 'A1400CY', 'A1474EM', 'A1551EJ', 'A1651EF', 'A1913AL', 'A2076EQ', 'A2078EQ', 'A2082EQ', 'A2134EG', 'A2224DX', 'A2233DE', 'A2313DG', 'A2369CT', 'A2370DF', 'A2386EE', 'A2397CT', 'A2418CK', 'A2448ED', 'A2465AL', 'A2477EF', 'A2568DM', 'A2675CX', 'A2710CK', 'A2875AL', 'A3164CX', 'A3166EK', 'A3187CW', 'A3228DP', 'A3230AD', 'A3281EE', 'A3316CA', 'A3449EE', 'A3527CP', 'A3734EP', 'A3848AW', 'A3872EG', 'A3937EA', 'A3945CN', 'A3991AD', 'A4003AV', 'A4025EV', 'A4093DG', 'A4099DZ', 'A4168DR', 'A4201AK', 'A4205CC', 'A4241DX', 'A4267AD', 'A4292AC', 'A4315ED', 'A4379EL', 'A4489EQ', 'A4634EM', 'A4642AD', 'A4653DJ', 'A4846CH', 'A4934CF', 'A4963DP', 'A5044AV', 'A5075CE', 'A5152ED', 'A5182DW', 'A5289EK', 'A5373AD', 'A5450DL', 'A5473EK', 'A5585DR', 'A5628DH', 'A5681ED', 'A5738EQ', 'A5743DP', 'A5750EK', 'A5755EM', 'A5778DW', 'A5806DM', 'A5835EA', 'A5851AL', 'A5870EA', 'A5956AP', 'A5964DL', 'A6102EA', 'A6259DY', 'A6332EK', 'A6404EJ', 'A6431CD', 'A6486AE', 'A6523DK', 'A6536EL', 'A6698AT', 'A6758EH', 'A6782DF', 'A6825DF', 'A6887DK', 'A6996AN', 'A7056EE', 'A7112ET', 'A7115ET', 'A7248DV', 'A7255DL', 'A7336AL', 'A7348DK', 'A7407DL', 'A7434ER', 'A7484ED', 'A7538AC', 'A7565CF', 'A7614CX', 'A7662AR', 'A7795DC', 'A7840AT', 'A7976DV', 'A8019CZ', 'A8081EE', 'A8083EG', 'A8224EL', 'A8270EF', 'A8362AZ', 'A8425DT', 'A8454EN', 'A8540EG', 'A8587CF', 'A8617DX', 'A8706DR', 'A8723EH', 'A8752CM', 'A8761CH', 'A8966EJ', 'A9031EM', 'A9073CM', 'A9087EM', 'A9112AZ', 'A9151DN', 'A9175DY', 'A9182DY', 'A9186AC', 'A9321EP', 'A9361EF', 'A9428CW', 'A9475EM', 'A9513EE', 'A9640CC', 'A9702CY', 'A9714DL', 'A9718DR', 'A9719DT', 'A9760AR', 'A9765DZ', 'A9811AM', 'A9814AA', 'A9871DH', 'A9876DZ', 'A9884AT', 'A9932EC') OR AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('A0026AH', 'A0383EV', 'A0434CH', 'A0488AK', 'A0548DR', 'A0728CC', 'A0777CC', 'A0789CY', 'A1131EL', 'A1165AK', 'A1269DT', 'A1295AG', 'A1365EV', 'A1514AG', 'A1620AX', 'A1757EP', 'A1773AL', 'A1913AL', 'A1932EL', 'A1941AD', 'A1993DW', 'A1996ET', 'A2015EP', 'A2149DP', 'A2324CF', 'A2638CA', 'A2645DR', 'A2831DV', 'A2900AW', 'A3164CF', 'A3302EC', 'A3577CQ', 'A3790AM', 'A3837EC', 'A3960AR', 'A4097EP', 'A4141AK', 'A4146EH', 'A4215ET', 'A4524AM', 'A4569AM', 'A4634EK', 'A4650DP', 'A4767EQ', 'A4784AK', 'A4840AR', 'A4897AX', 'A5044AV', 'A5064ET', 'A5322AJ', 'A5490AJ', 'A5524EJ', 'A5681ED', 'A5755EM', 'A5870EA', 'A6056AL', 'A6173AR', 'A6483AK', 'A6515EG', 'A6653CM', 'A6825DF', 'A6851DP', 'A7036DR', 'A7045AL', 'A7045CY', 'A7364EM', 'A7397AK', 'A7407DL', 'A7514ED', 'A7602DZ', 'A7657DY', 'A7738DZ', 'A8031EM', 'A8190DT', 'A8250EP', 'A8398AL', 'A8678DX', 'A8797EN', 'A8843DQ', 'A8990CR', 'A9519AR', 'A9604EP', 'A9760AR', 'A9798AJ', 'A9872EQ', 'A9999DV'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, UNIT_DESCRIPTION_4_SHORT, DESCRIPTION, AGY_LOC_ID FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPb.DO44",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DPb.DO427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Location",
+            "legacyId": "DPb.DO9fe",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DPb.DO43b",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "167502.RS",
+      "name": "Located in Same Est",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (V_SAME_PRISON IN (1)))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": []
+      },
+      "dataset": "MISSING"
+    },
+    {
+      "id": "167593.RS",
+      "name": "Same Est without Sections",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      },
+      "dataset": "MISSING"
+    },
+    {
+      "id": "167777.RS",
+      "name": "Same Est by location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      },
+      "dataset": "MISSING"
+    },
+    {
+      "id": "165584.RS",
+      "name": "All NA's",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": []
+      },
+      "dataset": "MISSING"
+    },
+    {
+      "id": "166851.RS",
+      "name": "All without Sections",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      },
+      "dataset": "MISSING"
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "instance.report[0] requires property \"dataset\"",
+      "entityId": "klc_7JMAAiGwO5ABAtQAISgWcQA",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[1] requires property \"dataset\"",
+      "entityId": "klc_7JMAAiGwO5ABAtQAISgWcQA",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[2] requires property \"dataset\"",
+      "entityId": "klc_7JMAAiGwO5ABAtQAISgWcQA",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[3] requires property \"dataset\"",
+      "entityId": "klc_7JMAAiGwO5ABAtQAISgWcQA",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[4] requires property \"dataset\"",
+      "entityId": "klc_7JMAAiGwO5ABAtQAISgWcQA",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 167502.RS does not have corresponding dataset undefined",
+      "entityId": "167502.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 167593.RS does not have corresponding dataset undefined",
+      "entityId": "167593.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 167777.RS does not have corresponding dataset undefined",
+      "entityId": "167777.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 165584.RS does not have corresponding dataset undefined",
+      "entityId": "165584.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 166851.RS does not have corresponding dataset undefined",
+      "entityId": "166851.RS",
+      "entityType": "variant"
+    }
+  ]
+}

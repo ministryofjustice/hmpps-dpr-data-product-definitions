@@ -1,0 +1,489 @@
+{
+  "id": "okefD9UACv3saBgANACEcEPmVys",
+  "name": "MIS Ethnic Adjudication Monitoring Report",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ADJ0001 v00.01.01 LSRIT039"
+    ]
+  },
+  "description": "Gives a breakdown by ethnicity of an establishment's adjudications. It has two main tabs; the first showing the adjudication Verdict result vs. ethnic origin code and the second showing the Adjudication Charge result vs. ethnic origin code. There are two further tabs to show the ethnic code breakdown and the charge code breakdown.<br/>ADJ0001 - v00.01.01 Last Modified: 28/09/12",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375377/DP5",
+      "name": "Charges",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_DIM_OIC_OFFENCE_CHARGE.OIC_OFFENCE_CODE, AT_DIM_OIC_OFFENCE_CHARGE.DESCRIPTION, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, AT_ADJUDICATION_ESTAB.ESTABLISHMENT_DESCRIPTION, COUNT(DISTINCT TRIM(DT_OFFENDER_ADJUDICATION.AGENCY_INCIDENT_ID_NK || ' ' || DT_OFFENDER_ADJUDICATION.CHARGE_SEQ_NK)) AS COUNT_OF_CHARGES FROM BODIMIS.DIM_ESTABLISHMENT AT_ADJUDICATION_ESTAB, BODIMIS.DIM_OIC_OFFENCE AT_DIM_OIC_OFFENCE_CHARGE, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, (SELECT a.oic_incident_id, c.offender_booking_sk, c.agency_incident_id_nk, c.charge_seq_nk, c.oic_offence_sk, a.oic_hearing_id_nk, a.party_seq_nk, a.establishment_sk, c.report_date, a.oic_hearing_type, a.notification_charge_date_sk FROM bodimis.fact_incident_charge c LEFT OUTER JOIN bodimis.fact_offender_adjudication a ON c.agency_incident_id_nk = a.agency_incident_id_nk AND c.offender_booking_sk = a.offender_booking_sk) DT_OFFENDER_ADJUDICATION, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING WHERE (AT_DIM_OIC_OFFENCE_CHARGE.OIC_OFFENCE_SK = DT_OFFENDER_ADJUDICATION.OIC_OFFENCE_SK) AND (DT_OFFENDER_ADJUDICATION.OFFENDER_BOOKING_SK = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_ADJUDICATION_ESTAB.ESTABLISHMENT_SK (+) = DT_OFFENDER_ADJUDICATION.ESTABLISHMENT_SK) AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((AT_ADJUDICATION_ESTAB.ESTABLISHMENT_CODE_NK = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Adjudication Establishment Code','A','Adjudications\\Adjudication Establishment Code',mono,free,Not_Persistent,User:252) */)) AND DT_OFFENDER_ADJUDICATION.REPORT_DATE BETWEEN (SELECT START_DATE FROM prompt_ /* = #prompt('Charges and Verdicts Date (Start):','D',,Mono,Free,Not_Persistent,,User:0) */) AND (SELECT END_DATE FROM prompt_ /* = #prompt('Charges and Verdicts Date (End):','D',,Mono,Free,Not_Persistent,,User:1) */)) GROUP BY AT_DIM_OIC_OFFENCE_CHARGE.OIC_OFFENCE_CODE, AT_DIM_OIC_OFFENCE_CHARGE.DESCRIPTION, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END, AT_ADJUDICATION_ESTAB.ESTABLISHMENT_DESCRIPTION), dataset_ AS (SELECT OIC_OFFENCE_CODE, DESCRIPTION, ETHNIC_CODE, ESTABLISHMENT_DESCRIPTION, COUNT_OF_CHARGES FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Adjudication Establishment Code','A','Adjudications\\Adjudication Establishment Code',mono,free,Not_Persistent,User:252)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Charges and Verdicts Date (Start):",
+          "description": "@prompt('Charges and Verdicts Date (Start):','D',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Charges and Verdicts Date (End):",
+          "description": "@prompt('Charges and Verdicts Date (End):','D',,Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OIC_OFFENCE_CODE",
+            "type": "string",
+            "display": "Charge Code",
+            "legacyId": "DP5.DO282",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Charge Description",
+            "legacyId": "DP5.DO26d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP5.DO1009b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Adjudication Establishment Name",
+            "legacyId": "DP5.DO6c2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "COUNT_OF_CHARGES",
+            "type": "double",
+            "display": "Count of Charges",
+            "legacyId": "DP5.DO270",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DP9",
+      "name": "Verdicts",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_FACT_INCIDENT_CHARGE_RESULT.FINDING_CODE, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, AT_ADJUDICATION_ESTAB.ESTABLISHMENT_DESCRIPTION, COUNT(DISTINCT TRIM(AT_FACT_INCIDENT_CHARGE_RESULT.OIC_HEARING_ID_NK || ' ' || AT_FACT_INCIDENT_CHARGE_RESULT.RESULT_SEQ_NK)) AS COUNT_OF_VERDICTS FROM BODIMIS.FACT_INCIDENT_CHARGE_RESULT AT_FACT_INCIDENT_CHARGE_RESULT, BODIMIS.DIM_ESTABLISHMENT AT_ADJUDICATION_ESTAB, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_DATE AT_DIM_DATE_VERDICT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT a.oic_incident_id, c.offender_booking_sk, c.agency_incident_id_nk, c.charge_seq_nk, c.oic_offence_sk, a.oic_hearing_id_nk, a.party_seq_nk, a.establishment_sk, c.report_date, a.oic_hearing_type, a.notification_charge_date_sk FROM bodimis.fact_incident_charge c LEFT OUTER JOIN bodimis.fact_offender_adjudication a ON c.agency_incident_id_nk = a.agency_incident_id_nk AND c.offender_booking_sk = a.offender_booking_sk) DT_OFFENDER_ADJUDICATION WHERE (AT_DIM_DATE_VERDICT.DATE_SK (+) = AT_FACT_INCIDENT_CHARGE_RESULT.DELIVERY_DATE_SK) AND (DT_OFFENDER_ADJUDICATION.OFFENDER_BOOKING_SK = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_ADJUDICATION_ESTAB.ESTABLISHMENT_SK (+) = DT_OFFENDER_ADJUDICATION.ESTABLISHMENT_SK) AND (DT_OFFENDER_ADJUDICATION.AGENCY_INCIDENT_ID_NK = AT_FACT_INCIDENT_CHARGE_RESULT.AGENCY_INCIDENT_ID (+) AND DT_OFFENDER_ADJUDICATION.OIC_HEARING_ID_NK = AT_FACT_INCIDENT_CHARGE_RESULT.OIC_HEARING_ID_NK (+) AND DT_OFFENDER_ADJUDICATION.OFFENDER_BOOKING_SK = AT_FACT_INCIDENT_CHARGE_RESULT.OFFENDER_BOOKING_SK (+) AND DT_OFFENDER_ADJUDICATION.CHARGE_SEQ_NK = AT_FACT_INCIDENT_CHARGE_RESULT.CHARGE_SEQ (+)) AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_DIM_DATE_VERDICT.DAY_DATE BETWEEN (SELECT START_DATE FROM prompt_ /* = #prompt('Charges and Verdicts Date (Start):','D',,Mono,Free,Not_Persistent,,User:0) */) AND (SELECT END_DATE FROM prompt_ /* = #prompt('Charges and Verdicts Date (End):','D',,Mono,Free,Not_Persistent,,User:1) */) AND (AT_ADJUDICATION_ESTAB.ESTABLISHMENT_CODE_NK = (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Adjudication Establishment Code','A','Adjudications\\Adjudication Establishment Code',mono,free,Not_Persistent,User:252) */))) GROUP BY AT_FACT_INCIDENT_CHARGE_RESULT.FINDING_CODE, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END, AT_ADJUDICATION_ESTAB.ESTABLISHMENT_DESCRIPTION), dataset_ AS (SELECT FINDING_CODE, ETHNIC_CODE, ESTABLISHMENT_DESCRIPTION, COUNT_OF_VERDICTS, 'TBD' AS V_HEARING_FINDING FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Charges and Verdicts Date (Start):",
+          "description": "@prompt('Charges and Verdicts Date (Start):','D',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Charges and Verdicts Date (End):",
+          "description": "@prompt('Charges and Verdicts Date (End):','D',,Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Adjudication Establishment Code','A','Adjudications\\Adjudication Establishment Code',mono,free,Not_Persistent,User:252)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "FINDING_CODE",
+            "type": "string",
+            "display": "Hearing Finding",
+            "legacyId": "DP9.DO26e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP9.DO1009b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Adjudication Establishment Name",
+            "legacyId": "DP9.DO6c2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "COUNT_OF_VERDICTS",
+            "type": "double",
+            "display": "Count of Verdicts",
+            "legacyId": "DP9.DO271",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "V_HEARING_FINDING",
+            "type": "string",
+            "display": "V_HEARING_FINDING",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DPa",
+      "name": "Ethnic Codes",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION END AS ETHNIC_DESCRIPTION FROM BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES), dataset_ AS (SELECT ETHNIC_CODE, ETHNIC_DESCRIPTION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DPa.DO1009b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ETHNIC_DESCRIPTION",
+            "type": "string",
+            "display": "Ethnic Description",
+            "legacyId": "DPa.DO1009d",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DPb",
+      "name": "MIS Load",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DPb.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "121218.RS",
+      "name": "By Verdicts",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP9",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE HEARING_FINDING IN ('GUILTY','PROVED'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_VERDICTS",
+            "display": "Count of Verdicts",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP9.DO271"
+          },
+          {
+            "name": "$ref:COUNT_OF_VERDICTS",
+            "display": "Count of Verdicts",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP9.DO271"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Adjudication Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP9.DO6c2"
+          },
+          {
+            "name": "$ref:V_HEARING_FINDING",
+            "display": "=Percentage([Count of Verdicts]) In Report",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap(Replace([Hearing Finding];\"_\";\" \"))"
+          },
+          {
+            "name": "$ref:COUNT_OF_VERDICTS",
+            "display": "Count of Verdicts",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP9.DO271"
+          },
+          {
+            "name": "$ref:COUNT_OF_VERDICTS",
+            "display": "Count of Verdicts",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP9.DO271"
+          }
+        ]
+      }
+    },
+    {
+      "id": "203041.RS",
+      "name": "By Charges",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP5",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_CHARGES",
+            "display": "Count of Charges",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO270"
+          },
+          {
+            "name": "$ref:COUNT_OF_CHARGES",
+            "display": "Count of Charges",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO270"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Adjudication Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO6c2"
+          },
+          {
+            "name": "$ref:OIC_OFFENCE_CODE",
+            "display": "Charge Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO282"
+          },
+          {
+            "name": "$ref:COUNT_OF_CHARGES",
+            "display": "Count of Charges",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO270"
+          },
+          {
+            "name": "$ref:COUNT_OF_CHARGES",
+            "display": "Count of Charges",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO270"
+          }
+        ]
+      }
+    },
+    {
+      "id": "120109.RS",
+      "name": "Ethnic Code Breakdown",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DPa",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ETHNIC_DESCRIPTION",
+            "display": "Ethnic Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPa.DO1009d"
+          }
+        ]
+      }
+    },
+    {
+      "id": "120320.RS",
+      "name": "Charge Code Breakdown",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP5",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OIC_OFFENCE_CODE",
+            "display": "Charge Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO282"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Charge Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO26d"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_HEARING_FINDING :: Error: =WordCap(Replace([Hearing Finding];\"_\";\" \")) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "okefD9UACv3saBgANACEcEPmVys",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_HEARING_FINDING :: Error: =WordCap(Replace([Hearing Finding];\"_\";\" \")) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "okefD9UACv3saBgANACEcEPmVys",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[0].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "okefD9UACv3saBgANACEcEPmVys",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[1].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "okefD9UACv3saBgANACEcEPmVys",
+      "entityType": "dpd"
+    }
+  ]
+}

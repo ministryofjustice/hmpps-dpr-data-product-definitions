@@ -1,0 +1,550 @@
+{
+  "id": "FvHFmV5JwAQAdIgAAHBLxF4VACJIAFJ8",
+  "name": "MIS Prisoner Quarantine Cell Sharing History",
+  "description": "This report displays the cell location history for a specified prisoner's bookings along with prisoners who have shared a cell with the selected prisoner. A filter is available on the cell history tab showing whether the Quarantine alert was active in the specified location (with a 21 day incubation period built in to the calculation).<br/>ACC0071 v00.01.00 Last Modified: 15/04/20",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACC0071 v00.01.00"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP4",
+      "name": "Cell History",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_BED_ASSIGNMENT_HISTORY.ASSIGNMENT_TIME AS ASSIGNMENT_TIME, AT_BED_ASSIGNMENT_HISTORY.ASSIGNMENT_END_TIME AS ASSIGNMENT_END_TIME, MOVEMENT_TO_ESTABLISHMENT.ESTABLISHMENT_CODE_NK AS ESTABLISHMENT_CODE_NK, AT_OFFENDER_BOOKING_BAH.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING_BAH.SURNAME AS SURNAME, AT_OFFENDER_BOOKING_BAH.MIDDLE_NAME_1 AS MIDDLE_NAME_1, AT_OFFENDER_BOOKING_BAH.GENDER_DESCRIPTION AS GENDER_DESCRIPTION, AT_DOB_DATE.DAY_DATE AS DAY_DATE, AT_OFFENDER_BOOKING_BAH.FIRST_NAME AS FIRST_NAME, AT_OFFENDER_BOOKING_BAH.BOOKING_STATUS AS BOOKING_STATUS, AT_OFFENDER_BOOKING_BAH.BOOKING_NUMBER AS BOOKING_NUMBER, AT_ST_DT.DAY_DATE AS BOOKING_START_DATE, AT_ED_DT.DAY_DATE AS BOOKING_END_DATE, AT_TO_CELL.UNIT_4_DESCRIPTION AS UNIT_4_DESCRIPTION, AT_BED_ASSIGNMENT_HISTORY.LIVING_UNIT_SK AS LIVING_UNIT_SK, CASE WHEN AT_ALERT_EFFECT_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EFFECT_DATE.DAY_DATE ELSE NULL END AS ALERT_EFFECTIVE_DATE, CASE WHEN AT_ALERT_EXPIRY_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EXPIRY_DATE.DAY_DATE ELSE NULL END AS ALERT_EXPIRY_DATE FROM BODIMIS.FACT_BED_ASSIGNMENT_HISTORY AT_BED_ASSIGNMENT_HISTORY, BODIMIS.DIM_ESTABLISHMENT MOVEMENT_TO_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING_BAH, BODIMIS.DIM_DATE AT_DOB_DATE, BODIMIS.DIM_DATE AT_ST_DT, BODIMIS.DIM_DATE AT_ED_DT, BODIMIS.DIM_CELL AT_TO_CELL, BODIMIS.DIM_DATE AT_ALERT_EFFECT_DATE, BODIMIS.DIM_DATE AT_ALERT_EXPIRY_DATE, BODIMIS.DIM_ALERT AT_ALERT, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK (+)) AND (AT_ALERT.ALERT_SK (+) = AT_OFFENDER_ALERT.ALERT_SK) AND (AT_OFFENDER_ALERT.ALERT_DATE_SK = AT_ALERT_EFFECT_DATE.DATE_SK (+)) AND (AT_OFFENDER_ALERT.ALERT_EXPIRY_DATE_SK = AT_ALERT_EXPIRY_DATE.DATE_SK (+)) AND (AT_BED_ASSIGNMENT_HISTORY.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_BED_ASSIGNMENT_HISTORY.LIVING_UNIT_SK = AT_TO_CELL.UNIT_4_SK (+)) AND (AT_TO_CELL.ESTABLISHMENT_SK = MOVEMENT_TO_ESTABLISHMENT.ESTABLISHMENT_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING_BAH.OFFENDER_BOOKING_SK = AT_BED_ASSIGNMENT_HISTORY.OFFENDER_BOOKING_SK) AND (AT_DOB_DATE.DATE_SK = AT_OFFENDER_BOOKING_BAH.BIRTH_DATE_SK) AND (AT_ST_DT.DATE_SK = AT_OFFENDER_BOOKING_BAH.BOOKING_BEGIN_DATE_SK) AND (AT_ED_DT.DATE_SK = AT_OFFENDER_BOOKING_BAH.BOOKING_END_DATE_SK) AND (AT_OFFENDER_BOOKING_BAH.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('Enter NOMS Number','A',,Mono,Free,Not_Persistent,,User:0) */) AND AT_TO_CELL.UNIT_4_DESCRIPTION <> 'Not Applicable' AND AT_ALERT.ALERT_CODE_NK IN ('RCDR'))), dataset_ AS (SELECT ASSIGNMENT_TIME, ASSIGNMENT_END_TIME, ESTABLISHMENT_CODE_NK, OFFENDER_ID_DISPLAY, SURNAME, MIDDLE_NAME_1, GENDER_DESCRIPTION, DAY_DATE, FIRST_NAME, BOOKING_STATUS, BOOKING_NUMBER, BOOKING_START_DATE, BOOKING_END_DATE, UNIT_4_DESCRIPTION, LIVING_UNIT_SK, ALERT_EFFECTIVE_DATE, ALERT_EXPIRY_DATE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number",
+          "description": "@prompt('Enter NOMS Number','A',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ASSIGNMENT_TIME",
+            "type": "date",
+            "display": "Movement Assignment Date and Time",
+            "legacyId": "DP4.DO3ca",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 1,
+            "name": "ASSIGNMENT_END_TIME",
+            "type": "date",
+            "display": "Movement Assignment End Date and Time (Internal)",
+            "legacyId": "DP4.DO3cb",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 2,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Movement Location To Establishment Code",
+            "legacyId": "DP4.DO674",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 3,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "Offender Id Display",
+            "legacyId": "DP4.DOb02",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 4,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Surname",
+            "legacyId": "DP4.DOb03",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 5,
+            "name": "MIDDLE_NAME_1",
+            "type": "string",
+            "display": "Middle Name 1",
+            "legacyId": "DP4.DOb07",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 6,
+            "name": "GENDER_DESCRIPTION",
+            "type": "string",
+            "display": "Gender Description",
+            "legacyId": "DP4.DOb08",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 7,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "DOB",
+            "legacyId": "DP4.DOb09",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 8,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP4.DOb04",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 9,
+            "name": "BOOKING_STATUS",
+            "type": "string",
+            "display": "Booking Status",
+            "legacyId": "DP4.DOb0a",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 10,
+            "name": "BOOKING_NUMBER",
+            "type": "string",
+            "display": "Booking Number",
+            "legacyId": "DP4.DOb05",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 11,
+            "name": "BOOKING_START_DATE",
+            "type": "date",
+            "display": "Booking Start Date",
+            "legacyId": "DP4.DOb0b",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 12,
+            "name": "BOOKING_END_DATE",
+            "type": "date",
+            "display": "Booking End Date",
+            "legacyId": "DP4.DOb0c",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 13,
+            "name": "UNIT_4_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Location To Description (Internal)",
+            "legacyId": "DP4.DO162",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 14,
+            "name": "LIVING_UNIT_SK",
+            "type": "double",
+            "display": "Living Unit Sk",
+            "legacyId": "DP4.DO715",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 15,
+            "name": "ALERT_EFFECTIVE_DATE",
+            "type": "date",
+            "display": "Alert Effective Date",
+            "legacyId": "DP4.DO95",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 16,
+            "name": "ALERT_EXPIRY_DATE",
+            "type": "date",
+            "display": "Alert Expiry Date",
+            "legacyId": "DP4.DO96",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP5",
+      "name": "MIS Load Log",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE AS BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP5.DO4dd",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP6",
+      "name": "Sharers",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "DP4_ AS (SELECT AT_BED_ASSIGNMENT_HISTORY.ASSIGNMENT_TIME AS ASSIGNMENT_TIME, AT_BED_ASSIGNMENT_HISTORY.ASSIGNMENT_END_TIME AS ASSIGNMENT_END_TIME, MOVEMENT_TO_ESTABLISHMENT.ESTABLISHMENT_CODE_NK AS ESTABLISHMENT_CODE_NK, AT_OFFENDER_BOOKING_BAH.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING_BAH.SURNAME AS SURNAME, AT_OFFENDER_BOOKING_BAH.MIDDLE_NAME_1 AS MIDDLE_NAME_1, AT_OFFENDER_BOOKING_BAH.GENDER_DESCRIPTION AS GENDER_DESCRIPTION, AT_DOB_DATE.DAY_DATE AS DAY_DATE, AT_OFFENDER_BOOKING_BAH.FIRST_NAME AS FIRST_NAME, AT_OFFENDER_BOOKING_BAH.BOOKING_STATUS AS BOOKING_STATUS, AT_OFFENDER_BOOKING_BAH.BOOKING_NUMBER AS BOOKING_NUMBER, AT_ST_DT.DAY_DATE AS BOOKING_START_DATE, AT_ED_DT.DAY_DATE AS BOOKING_END_DATE, AT_TO_CELL.UNIT_4_DESCRIPTION AS UNIT_4_DESCRIPTION, AT_BED_ASSIGNMENT_HISTORY.LIVING_UNIT_SK AS LIVING_UNIT_SK, CASE WHEN AT_ALERT_EFFECT_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EFFECT_DATE.DAY_DATE ELSE NULL END AS ALERT_EFFECTIVE_DATE, CASE WHEN AT_ALERT_EXPIRY_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EXPIRY_DATE.DAY_DATE ELSE NULL END AS ALERT_EXPIRY_DATE FROM BODIMIS.FACT_BED_ASSIGNMENT_HISTORY AT_BED_ASSIGNMENT_HISTORY, BODIMIS.DIM_ESTABLISHMENT MOVEMENT_TO_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING_BAH, BODIMIS.DIM_DATE AT_DOB_DATE, BODIMIS.DIM_DATE AT_ST_DT, BODIMIS.DIM_DATE AT_ED_DT, BODIMIS.DIM_CELL AT_TO_CELL, BODIMIS.DIM_DATE AT_ALERT_EFFECT_DATE, BODIMIS.DIM_DATE AT_ALERT_EXPIRY_DATE, BODIMIS.DIM_ALERT AT_ALERT, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK (+)) AND (AT_ALERT.ALERT_SK (+) = AT_OFFENDER_ALERT.ALERT_SK) AND (AT_OFFENDER_ALERT.ALERT_DATE_SK = AT_ALERT_EFFECT_DATE.DATE_SK (+)) AND (AT_OFFENDER_ALERT.ALERT_EXPIRY_DATE_SK = AT_ALERT_EXPIRY_DATE.DATE_SK (+)) AND (AT_BED_ASSIGNMENT_HISTORY.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_BED_ASSIGNMENT_HISTORY.LIVING_UNIT_SK = AT_TO_CELL.UNIT_4_SK (+)) AND (AT_TO_CELL.ESTABLISHMENT_SK = MOVEMENT_TO_ESTABLISHMENT.ESTABLISHMENT_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING_BAH.OFFENDER_BOOKING_SK = AT_BED_ASSIGNMENT_HISTORY.OFFENDER_BOOKING_SK) AND (AT_DOB_DATE.DATE_SK = AT_OFFENDER_BOOKING_BAH.BIRTH_DATE_SK) AND (AT_ST_DT.DATE_SK = AT_OFFENDER_BOOKING_BAH.BOOKING_BEGIN_DATE_SK) AND (AT_ED_DT.DATE_SK = AT_OFFENDER_BOOKING_BAH.BOOKING_END_DATE_SK) AND (AT_OFFENDER_BOOKING_BAH.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('Enter NOMS Number','A',,Mono,Free,Not_Persistent,,User:0) */) AND AT_TO_CELL.UNIT_4_DESCRIPTION <> 'Not Applicable' AND AT_ALERT.ALERT_CODE_NK IN ('RCDR'))), dataset_base_ AS (SELECT AT_BED_ASSIGNMENT_HISTORY.ASSIGNMENT_TIME, AT_BED_ASSIGNMENT_HISTORY.ASSIGNMENT_END_TIME, AT_TO_CELL.UNIT_4_DESCRIPTION, MOVEMENT_TO_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_OFFENDER_BOOKING_BAH.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING_BAH.SURNAME, AT_OFFENDER_BOOKING_BAH.FIRST_NAME, AT_OFFENDER_BOOKING_BAH.MIDDLE_NAME_1, AT_DOB_DATE.DAY_DATE FROM BODIMIS.FACT_BED_ASSIGNMENT_HISTORY AT_BED_ASSIGNMENT_HISTORY, BODIMIS.DIM_CELL AT_TO_CELL, BODIMIS.DIM_ESTABLISHMENT MOVEMENT_TO_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING_BAH, BODIMIS.DIM_DATE AT_DOB_DATE WHERE ( AT_BED_ASSIGNMENT_HISTORY.LIVING_UNIT_SK=AT_TO_CELL.UNIT_4_SK(+) ) AND ( AT_TO_CELL.ESTABLISHMENT_SK=MOVEMENT_TO_ESTABLISHMENT.ESTABLISHMENT_SK(+) ) AND ( AT_OFFENDER_BOOKING_BAH.OFFENDER_BOOKING_SK=AT_BED_ASSIGNMENT_HISTORY.OFFENDER_BOOKING_SK ) AND ( AT_DOB_DATE.DATE_SK=AT_OFFENDER_BOOKING_BAH.BIRTH_DATE_SK ) AND ( AT_BED_ASSIGNMENT_HISTORY.LIVING_UNIT_SK IN (SELECT LIVING_UNIT_SK FROM DP4_ ) AND AT_OFFENDER_BOOKING_BAH.OFFENDER_ID_DISPLAY <> (SELECT PRISONER_NUMBER FROM prompt_ /*= #prompt('Enter NOMS Number','A',,Mono,Free,Not_Persistent,,User:0) */ ) AND ( exists ( select 1 from bodimis.fact_bed_assignment_history fbah inner join bodimis.dim_offender_booking dob on fbah.offender_booking_sk = dob.offender_booking_sk where fbah.living_unit_sk = at_bed_assignment_history.living_unit_sk and trunc(fbah.assignment_time) <= coalesce(trunc(at_bed_assignment_history.assignment_end_time), sysdate) and coalesce(trunc(fbah.assignment_end_time), sysdate) >= trunc(at_bed_assignment_history.assignment_time) and fbah.living_unit_sk > 0 and dob.offender_id_display = @variable('Enter NOMS Number') ) ) )), dataset_ AS (SELECT  FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number",
+          "description": "@prompt('Enter NOMS Number','A',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3376639/DP7",
+      "name": "Cell Capacity",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "DP4_ AS (SELECT AT_BED_ASSIGNMENT_HISTORY.ASSIGNMENT_TIME AS ASSIGNMENT_TIME, AT_BED_ASSIGNMENT_HISTORY.ASSIGNMENT_END_TIME AS ASSIGNMENT_END_TIME, MOVEMENT_TO_ESTABLISHMENT.ESTABLISHMENT_CODE_NK AS ESTABLISHMENT_CODE_NK, AT_OFFENDER_BOOKING_BAH.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING_BAH.SURNAME AS SURNAME, AT_OFFENDER_BOOKING_BAH.MIDDLE_NAME_1 AS MIDDLE_NAME_1, AT_OFFENDER_BOOKING_BAH.GENDER_DESCRIPTION AS GENDER_DESCRIPTION, AT_DOB_DATE.DAY_DATE AS DAY_DATE, AT_OFFENDER_BOOKING_BAH.FIRST_NAME AS FIRST_NAME, AT_OFFENDER_BOOKING_BAH.BOOKING_STATUS AS BOOKING_STATUS, AT_OFFENDER_BOOKING_BAH.BOOKING_NUMBER AS BOOKING_NUMBER, AT_ST_DT.DAY_DATE AS BOOKING_START_DATE, AT_ED_DT.DAY_DATE AS BOOKING_END_DATE, AT_TO_CELL.UNIT_4_DESCRIPTION AS UNIT_4_DESCRIPTION, AT_BED_ASSIGNMENT_HISTORY.LIVING_UNIT_SK AS LIVING_UNIT_SK, CASE WHEN AT_ALERT_EFFECT_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EFFECT_DATE.DAY_DATE ELSE NULL END AS ALERT_EFFECTIVE_DATE, CASE WHEN AT_ALERT_EXPIRY_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EXPIRY_DATE.DAY_DATE ELSE NULL END AS ALERT_EXPIRY_DATE FROM BODIMIS.FACT_BED_ASSIGNMENT_HISTORY AT_BED_ASSIGNMENT_HISTORY, BODIMIS.DIM_ESTABLISHMENT MOVEMENT_TO_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING_BAH, BODIMIS.DIM_DATE AT_DOB_DATE, BODIMIS.DIM_DATE AT_ST_DT, BODIMIS.DIM_DATE AT_ED_DT, BODIMIS.DIM_CELL AT_TO_CELL, BODIMIS.DIM_DATE AT_ALERT_EFFECT_DATE, BODIMIS.DIM_DATE AT_ALERT_EXPIRY_DATE, BODIMIS.DIM_ALERT AT_ALERT, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK (+)) AND (AT_ALERT.ALERT_SK (+) = AT_OFFENDER_ALERT.ALERT_SK) AND (AT_OFFENDER_ALERT.ALERT_DATE_SK = AT_ALERT_EFFECT_DATE.DATE_SK (+)) AND (AT_OFFENDER_ALERT.ALERT_EXPIRY_DATE_SK = AT_ALERT_EXPIRY_DATE.DATE_SK (+)) AND (AT_BED_ASSIGNMENT_HISTORY.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_BED_ASSIGNMENT_HISTORY.LIVING_UNIT_SK = AT_TO_CELL.UNIT_4_SK (+)) AND (AT_TO_CELL.ESTABLISHMENT_SK = MOVEMENT_TO_ESTABLISHMENT.ESTABLISHMENT_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING_BAH.OFFENDER_BOOKING_SK = AT_BED_ASSIGNMENT_HISTORY.OFFENDER_BOOKING_SK) AND (AT_DOB_DATE.DATE_SK = AT_OFFENDER_BOOKING_BAH.BIRTH_DATE_SK) AND (AT_ST_DT.DATE_SK = AT_OFFENDER_BOOKING_BAH.BOOKING_BEGIN_DATE_SK) AND (AT_ED_DT.DATE_SK = AT_OFFENDER_BOOKING_BAH.BOOKING_END_DATE_SK) AND (AT_OFFENDER_BOOKING_BAH.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('Enter NOMS Number','A',,Mono,Free,Not_Persistent,,User:0) */) AND AT_TO_CELL.UNIT_4_DESCRIPTION <> 'Not Applicable' AND AT_ALERT.ALERT_CODE_NK IN ('RCDR'))), dataset_base_ AS (SELECT AT_CELL.UNIT_4_DESCRIPTION AS UNIT_4_DESCRIPTION, AT_CELL.UNIT_4_CAPACITY AS UNIT_4_CAPACITY FROM BODIMIS.DIM_CELL AT_CELL WHERE AT_CELL.UNIT_4_DESCRIPTION IN (SELECT UNIT_4_DESCRIPTION FROM DP4_)), dataset_ AS (SELECT UNIT_4_DESCRIPTION, UNIT_4_CAPACITY FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number",
+          "description": "@prompt('Enter NOMS Number','A',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "UNIT_4_DESCRIPTION",
+            "type": "string",
+            "display": "Unit Description 4",
+            "legacyId": "DP7.DO136",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 1,
+            "name": "UNIT_4_CAPACITY",
+            "type": "double",
+            "display": "Unit 4 Capacity",
+            "legacyId": "DP7.DO665",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP8",
+      "name": "Alert",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING_BAH.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_ALERT.ALERT_CODE_NK AS ALERT_CODE_NK, CASE WHEN AT_ALERT_EFFECT_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EFFECT_DATE.DAY_DATE ELSE NULL END AS ALERT_EFFECTIVE_DATE, CASE WHEN AT_ALERT_EXPIRY_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EXPIRY_DATE.DAY_DATE ELSE NULL END AS ALERT_EXPIRY_DATE FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING_BAH, BODIMIS.DIM_ALERT AT_ALERT, BODIMIS.DIM_DATE AT_ALERT_EFFECT_DATE, BODIMIS.DIM_DATE AT_ALERT_EXPIRY_DATE, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_BED_ASSIGNMENT_HISTORY AT_BED_ASSIGNMENT_HISTORY WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK (+)) AND (AT_ALERT.ALERT_SK (+) = AT_OFFENDER_ALERT.ALERT_SK) AND (AT_OFFENDER_ALERT.ALERT_DATE_SK = AT_ALERT_EFFECT_DATE.DATE_SK (+)) AND (AT_OFFENDER_ALERT.ALERT_EXPIRY_DATE_SK = AT_ALERT_EXPIRY_DATE.DATE_SK (+)) AND (AT_BED_ASSIGNMENT_HISTORY.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING_BAH.OFFENDER_BOOKING_SK = AT_BED_ASSIGNMENT_HISTORY.OFFENDER_BOOKING_SK) AND (AT_OFFENDER_BOOKING_BAH.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('Enter NOMS Number','A',,Mono,Free,Persistent,,User:0) */) AND AT_ALERT.ALERT_CODE_NK IN ('RCDR'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, ALERT_CODE_NK, ALERT_EFFECTIVE_DATE, ALERT_EXPIRY_DATE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number",
+          "description": "@prompt('Enter NOMS Number','A',,Mono,Free,Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "Offender Id Display",
+            "legacyId": "DP8.DOb02",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 1,
+            "name": "ALERT_CODE_NK",
+            "type": "string",
+            "display": "Alert Code",
+            "legacyId": "DP8.DO8e",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 2,
+            "name": "ALERT_EFFECTIVE_DATE",
+            "type": "date",
+            "display": "Alert Effective Date",
+            "legacyId": "DP8.DO95",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 3,
+            "name": "ALERT_EXPIRY_DATE",
+            "type": "date",
+            "display": "Alert Expiry Date",
+            "legacyId": "DP8.DO96",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "221649.RS",
+      "name": "Guidance",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      },
+      "dataset": "MISSING"
+    },
+    {
+      "id": "119532.RS",
+      "name": "Cell History",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP8",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:BOOKING_NUMBER",
+            "display": "Booking Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DOb05"
+          },
+          {
+            "name": "$ref:BOOKING_START_DATE",
+            "display": "Booking Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DOb0b"
+          },
+          {
+            "name": "$ref:ASSIGNMENT_TIME",
+            "display": "Movement Assignment Date and Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO3ca"
+          },
+          {
+            "name": "$ref:ASSIGNMENT_END_TIME",
+            "display": "Movement Assignment End Date and Time (Internal)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO3cb"
+          },
+          {
+            "name": "$ref:V_ALERT_EFFECTIVE1",
+            "display": "Occupancy End Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=RelativeDate([Cell History].[Alert Effective Date];-21)"
+          },
+          {
+            "name": "$ref:ALERT_EXPIRY_DATE",
+            "display": "Alert Expiry Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO96"
+          },
+          {
+            "name": "$ref:UNIT_4_DESCRIPTION",
+            "display": "Movement Location To Description (Internal)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP4.DO162"
+          },
+          {
+            "name": "$ref:VCAPACITY",
+            "display": "Cell",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Unit 4 Capacity]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "121179.RS",
+      "name": "Cell Sharers",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP6",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:ALERT_EFFECTIVE_DATE",
+            "display": "Alert Effective Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP8.DO95"
+          },
+          {
+            "name": "$ref:ALERT_EXPIRY_DATE",
+            "display": "Alert Expiry Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP8.DO96"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "resolveEmbeddedVariables did not resolve all variables",
+      "entityId": "FvHFmV5JwAQAdIgAAHBLxF4VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[0] requires property \"dataset\"",
+      "entityId": "FvHFmV5JwAQAdIgAAHBLxF4VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 221649.RS does not have corresponding dataset undefined",
+      "entityId": "221649.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field BOOKING_NUMBER does not have corresponding dataset schema field",
+      "entityId": "119532.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field BOOKING_START_DATE does not have corresponding dataset schema field",
+      "entityId": "119532.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field ASSIGNMENT_TIME does not have corresponding dataset schema field",
+      "entityId": "119532.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field ASSIGNMENT_END_TIME does not have corresponding dataset schema field",
+      "entityId": "119532.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ALERT_EFFECTIVE1 does not have corresponding dataset schema field",
+      "entityId": "119532.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field UNIT_4_DESCRIPTION does not have corresponding dataset schema field",
+      "entityId": "119532.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field VCAPACITY does not have corresponding dataset schema field",
+      "entityId": "119532.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field ALERT_EFFECTIVE_DATE does not have corresponding dataset schema field",
+      "entityId": "121179.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field ALERT_EXPIRY_DATE does not have corresponding dataset schema field",
+      "entityId": "121179.RS",
+      "entityType": "variant"
+    }
+  ]
+}

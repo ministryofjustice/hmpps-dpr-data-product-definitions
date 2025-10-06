@@ -1,0 +1,224 @@
+{
+  "id": "okyPRRIABLyadMUAlv_FFfm0Xoc",
+  "name": "MIS Active Offenders Unique Identifiers",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": []
+  },
+  "description": "v1.0 This report returns all Active offenders and their unique identifiers, NOMS Number, Booking Number, PNC ID, the Establishment and their current Active Status.  At runtime the user can select a single or multiple areas.",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP0",
+      "name": "Query 1",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.BOOKING_NUMBER, AT_OFFENDER_BOOKING.CRO_NUMBER, AT_OFFENDER_BOOKING.PNC_ID, AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_OFFENDER_BOOKING.ACTIVE_STATUS, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, AT_OFFENDER_BOOKING.GENDER_DESCRIPTION, CASE WHEN AT_DOB.DAY_DATE <> '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_CELL AT_CELL WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_OFFENDER_BOOKING.ACTIVE_STATUS IN ('Active In', 'Active In Transit', 'Active Out', 'Active UAL') AND AT_ESTABLISHMENT.AREA_DESCRIPTION IN ('Kent and Sussex'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, BOOKING_NUMBER, CRO_NUMBER, PNC_ID, ESTABLISHMENT_CODE_NK, ACTIVE_STATUS, ETHNIC_CODE, GENDER_DESCRIPTION, DATE_OF_BIRTH FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "BOOKING_NUMBER",
+            "type": "string",
+            "display": "Booking Number",
+            "legacyId": "DP0.DO77",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "CRO_NUMBER",
+            "type": "string",
+            "display": "Criminal Records Office number",
+            "legacyId": "DP0.DOda",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "PNC_ID",
+            "type": "string",
+            "display": "PNC ID",
+            "legacyId": "DP0.DOdb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP0.DO139",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ACTIVE_STATUS",
+            "type": "string",
+            "display": "Active Status",
+            "legacyId": "DP0.DO4d5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP0.DO9b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "GENDER_DESCRIPTION",
+            "type": "string",
+            "display": "Gender Description",
+            "legacyId": "DP0.DOa9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP0.DO85",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "97195.RS",
+      "name": "Report 1",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO76"
+          },
+          {
+            "name": "$ref:BOOKING_NUMBER",
+            "display": "Booking Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO77"
+          },
+          {
+            "name": "$ref:CRO_NUMBER",
+            "display": "Criminal Records Office number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOda"
+          },
+          {
+            "name": "$ref:PNC_ID",
+            "display": "PNC ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOdb"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO139"
+          },
+          {
+            "name": "$ref:ACTIVE_STATUS",
+            "display": "Active Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO4d5"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO9b"
+          },
+          {
+            "name": "$ref:GENDER_DESCRIPTION",
+            "display": "Gender Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DOa9"
+          },
+          {
+            "name": "$ref:DATE_OF_BIRTH",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO85"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

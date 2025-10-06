@@ -1,0 +1,824 @@
+{
+  "id": "FjOxfF5l8QgAEQsBAHD7MV8VACJIAFJ8",
+  "name": "MIS Transfers for a Date Range CC Males only version for Henry",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "MOV0042"
+    ]
+  },
+  "description": "Outputs a list of discharges for a specified date range in the past and also includes the current location. This report will be useful for establishing where to send prisoner files and property following a historical release/tranfer of an offender.<br/>Now included Input  Controls / filter on Movement Type<br/>MOV0042 v00.00.06 Last Modified: 30/07/19",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP2",
+      "name": "Discharges",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' ELSE FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH END AS EFFECTIVE_SENTENCE_LENGTH, CASE WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE IS NULL THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'I' THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'ON' AND NOT BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'PRD', 'RD', 'NR') THEN 'Y' ELSE 'N' END AS DISABILITY_ACTIVE_FLAG, AT_OFFENDER_BOOKING.MARITAL_STATUS_DESCRIPTION, AT_FACT_MOV_EXT.MOVEMENT_TIME, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_DESCRIPTION, AT_FACT_MOV_EXT.DIRECTION_CODE, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE, CASE WHEN AT_SENT_START_DATE.DAY_DATE < '31/12/9000' THEN AT_SENT_START_DATE.DAY_DATE END AS SENTENCE_START_DATE, CASE WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) <= 17 THEN 'Juvenile' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) BETWEEN 18 AND 20 THEN 'Young Person' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) >= 21 THEN 'Adult' END AS ADULT_YOUNG_PERSON_INDICATOR, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE FROM BODIMIS.DIM_DATE AT_SENT_START_DATE, BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT DISTINCT BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK = dss.sentence_status_sk) AND dss.sentence_status = 'Active' AND (BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK = BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK) AND (BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK) AND BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG = 'Y') DT_LIFEFLAG, FACT_CURR_KEY_DATES_SENT, BODIMIS.DIM_OFFENDER_PERSONAL_CARE, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_FROM, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.DIM_COURT_CASE AT_COURT_CASE WHERE (AT_FACT_SENTENCE.SENTENCE_START_DATE_SK = AT_SENT_START_DATE.DATE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_LIFEFLAG.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_COURT_CASE.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (CASE WHEN AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.FROM_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_SK (+)) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_SENTENCE.COURT_CASE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.DIM_OFFENDER_PERSONAL_CARE.OFFENDER_BOOKING_SK (+)) AND (AT_DIM_DATE_EXT_MOV.DAY_DATE >= TO_DATE('01-01-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_DIM_DATE_EXT_MOV.DAY_DATE <= TO_DATE('31-12-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'OUT' AND AT_FACT_MOV_EXT.TYPE IN ('Transfers') AND NOT AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('ALP', 'ALP_LASPO', 'CFLIFE', 'DFL', 'DLP', 'HMP', 'HMPL', 'LIFE', 'LR_ALP', 'DPP', 'LR_DPP', 'LR_ALP_LASPO', 'LR_DLP', 'LR_LIFE', 'LR_MLP', 'IPP', 'LR_IPP', 'MLP', 'SEC53', 'SEC90', 'SEC90_03', 'SEC93', 'SEC93_03', 'SEC94', 'SEC236A', 'LR_SEC236A', 'LASPO_DR', 'LR_LASPO_DR', 'LASPO_AR', 'LR_LASPO_AR', 'EXSENT08', 'EXSENT03', 'EXSENT', 'LR_ES', 'SENT_EXL', 'LR_EPP') AND CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Sentenced' WHEN FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH = '00/00/00' THEN 'Unsentenced' WHEN FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH IS NULL THEN 'Unsentenced' ELSE 'Sentenced' END IN ('Sentenced') AND AT_OFFENDER_BOOKING.GENDER_CODE = 'M')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, EFFECTIVE_SENTENCE_LENGTH, DISABILITY_ACTIVE_FLAG, MARITAL_STATUS_DESCRIPTION, MOVEMENT_TIME, ESTABLISHMENT_DESCRIPTION, DIRECTION_CODE, MAIN_LEGAL_STATUS_DESCRIPTION, MAIN_LEGAL_STATUS_CODE, SENTENCE_START_DATE, ADULT_YOUNG_PERSON_INDICATOR, OFFENDER_AGE, CASE WHEN DISABILITY.DISABILITY_ACTIVE_FLAG IS NULL THEN 'N' ELSE DISABILITY.DISABILITY_ACTIVE_FLAG END AS V_DISABILITY, DISCHARGES.MOVEMENT_TIME AS V_MOVEMENT_ALL, 'TBD' AS V_SENT_LENGTH, OFFENDER_ID_DISPLAY || DISCHARGES.MOVEMENT_TIME AS V_CONCAT_MOVES FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "EFFECTIVE_SENTENCE_LENGTH",
+            "type": "string",
+            "display": "Effective Sentence Length",
+            "legacyId": "DP2.DO2d0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DISABILITY_ACTIVE_FLAG",
+            "type": "string",
+            "display": "Disability Active Flag",
+            "legacyId": "DP2.DO10a9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "MARITAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Marital Status Description",
+            "legacyId": "DP2.DO100af",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "MOVEMENT_TIME",
+            "type": "date",
+            "display": "Movement Date and Time (External)",
+            "legacyId": "DP2.DO103eb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Location From Description (External)",
+            "legacyId": "DP2.DO1015d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DIRECTION_CODE",
+            "type": "string",
+            "display": "Movement Direction Code (External)",
+            "legacyId": "DP2.DO103fd",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "MAIN_LEGAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Main Legal Status Description",
+            "legacyId": "DP2.DO100df",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "MAIN_LEGAL_STATUS_CODE",
+            "type": "string",
+            "display": "Main Legal Status Code",
+            "legacyId": "DP2.DO100de",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "SENTENCE_START_DATE",
+            "type": "date",
+            "display": "Sentence Start Date",
+            "legacyId": "DP2.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ADULT_YOUNG_PERSON_INDICATOR",
+            "type": "string",
+            "display": "Adult/Young Person Indicator",
+            "legacyId": "DP2.DO10083",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DP2.DO10082",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "V_DISABILITY",
+            "type": "string",
+            "display": "V_DISABILITY",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 13,
+            "name": "V_MOVEMENT_ALL",
+            "type": "string",
+            "display": "V_MOVEMENT_ALL",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 14,
+            "name": "V_SENT_LENGTH",
+            "type": "string",
+            "display": "V_SENT_LENGTH",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 15,
+            "name": "V_CONCAT_MOVES",
+            "type": "string",
+            "display": "V_CONCAT_MOVES",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP3",
+      "name": "Load End Date",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP3.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP8",
+      "name": "Disability",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE IS NULL THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'I' THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'ON' AND NOT BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'PRD', 'RD', 'NR') THEN 'Y' ELSE 'N' END AS DISABILITY_ACTIVE_FLAG, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE_DESCRIPTION, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS, BODIMIS.DIM_OFFENDER_PERSONAL_CARE.START_DATE FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_OFFENDER_PERSONAL_CARE WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.DIM_OFFENDER_PERSONAL_CARE.OFFENDER_BOOKING_SK (+)) AND (((CASE WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND NOT BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'NR', 'PRD', 'RD') THEN 'Y' ELSE 'N' END) = 'Y') AND (BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'ON') AND AT_OFFENDER_BOOKING.GENDER_CODE = 'M')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, DISABILITY_ACTIVE_FLAG, CODE_DESCRIPTION, STATUS, START_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP8.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DISABILITY_ACTIVE_FLAG",
+            "type": "string",
+            "display": "Disability Active Flag",
+            "legacyId": "DP8.DO10a9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "CODE_DESCRIPTION",
+            "type": "string",
+            "display": "Care Code Description",
+            "legacyId": "DP8.DO1097d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "STATUS",
+            "type": "string",
+            "display": "Care Status",
+            "legacyId": "DP8.DO1097e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "START_DATE",
+            "type": "date",
+            "display": "Care Start Date",
+            "legacyId": "DP8.DO10978",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DPa",
+      "name": "Discharges ISP",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' ELSE FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH END AS EFFECTIVE_SENTENCE_LENGTH, CASE WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE IS NULL THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'I' THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'ON' AND NOT BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'PRD', 'RD', 'NR') THEN 'Y' ELSE 'N' END AS DISABILITY_ACTIVE_FLAG, AT_OFFENDER_BOOKING.MARITAL_STATUS_DESCRIPTION, AT_FACT_MOV_EXT.MOVEMENT_TIME, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_DESCRIPTION, AT_FACT_MOV_EXT.DIRECTION_CODE, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE, CASE WHEN AT_SENT_START_DATE.DAY_DATE < '31/12/9000' THEN AT_SENT_START_DATE.DAY_DATE END AS SENTENCE_START_DATE, CASE WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) <= 17 THEN 'Juvenile' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) BETWEEN 18 AND 20 THEN 'Young Person' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) >= 21 THEN 'Adult' END AS ADULT_YOUNG_PERSON_INDICATOR, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE FROM BODIMIS.DIM_DATE AT_SENT_START_DATE, BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT DISTINCT BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK = dss.sentence_status_sk) AND dss.sentence_status = 'Active' AND (BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK = BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK) AND (BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK) AND BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG = 'Y') DT_LIFEFLAG, FACT_CURR_KEY_DATES_SENT, BODIMIS.DIM_OFFENDER_PERSONAL_CARE, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_FROM, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.DIM_COURT_CASE AT_COURT_CASE WHERE (AT_FACT_SENTENCE.SENTENCE_START_DATE_SK = AT_SENT_START_DATE.DATE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_LIFEFLAG.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_COURT_CASE.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (CASE WHEN AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.FROM_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_SK (+)) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_SENTENCE.COURT_CASE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.DIM_OFFENDER_PERSONAL_CARE.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.GENDER_CODE = 'M' AND AT_DIM_DATE_EXT_MOV.DAY_DATE >= TO_DATE('01-01-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_DIM_DATE_EXT_MOV.DAY_DATE <= TO_DATE('31-12-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'OUT' AND AT_FACT_MOV_EXT.TYPE IN ('Transfers') AND (AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('ALP', 'ALP_LASPO', 'CFLIFE', 'DFL', 'DLP', 'HMP', 'HMPL', 'LIFE', 'LR_ALP', 'DPP', 'LR_DPP', 'LR_ALP_LASPO', 'LR_DLP', 'LR_LIFE', 'LR_MLP', 'IPP', 'LR_IPP', 'MLP', 'SEC53', 'SEC90', 'SEC90_03', 'SEC93', 'SEC93_03', 'SEC94') OR CASE WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '1' THEN 'Y' ELSE 'N' END = 'Y' OR DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' OR CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' WHEN NOT FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH IS NULL THEN CASE WHEN TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) IS NULL THEN NULL ELSE TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) || ' yrs ' END || CASE WHEN TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 4, 2)) IS NULL THEN NULL ELSE TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 4, 2)) || ' mths ' END || CASE WHEN TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 7, 2)) IS NULL THEN NULL ELSE TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 7, 2)) || ' days ' END ELSE '' END LIKE '99%'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, EFFECTIVE_SENTENCE_LENGTH, DISABILITY_ACTIVE_FLAG, MARITAL_STATUS_DESCRIPTION, MOVEMENT_TIME, ESTABLISHMENT_DESCRIPTION, DIRECTION_CODE, MAIN_LEGAL_STATUS_DESCRIPTION, MAIN_LEGAL_STATUS_CODE, SENTENCE_START_DATE, ADULT_YOUNG_PERSON_INDICATOR, OFFENDER_AGE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPa.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "EFFECTIVE_SENTENCE_LENGTH",
+            "type": "string",
+            "display": "Effective Sentence Length",
+            "legacyId": "DPa.DO2d0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DISABILITY_ACTIVE_FLAG",
+            "type": "string",
+            "display": "Disability Active Flag",
+            "legacyId": "DPa.DO10a9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "MARITAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Marital Status Description",
+            "legacyId": "DPa.DO100af",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "MOVEMENT_TIME",
+            "type": "date",
+            "display": "Movement Date and Time (External)",
+            "legacyId": "DPa.DO103eb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Location From Description (External)",
+            "legacyId": "DPa.DO1015d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DIRECTION_CODE",
+            "type": "string",
+            "display": "Movement Direction Code (External)",
+            "legacyId": "DPa.DO103fd",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "MAIN_LEGAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Main Legal Status Description",
+            "legacyId": "DPa.DO100df",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "MAIN_LEGAL_STATUS_CODE",
+            "type": "string",
+            "display": "Main Legal Status Code",
+            "legacyId": "DPa.DO100de",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "SENTENCE_START_DATE",
+            "type": "date",
+            "display": "Sentence Start Date",
+            "legacyId": "DPa.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ADULT_YOUNG_PERSON_INDICATOR",
+            "type": "string",
+            "display": "Adult/Young Person Indicator",
+            "legacyId": "DPa.DO10083",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DPa.DO10082",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DPb",
+      "name": "Discharges PED",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' ELSE FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH END AS EFFECTIVE_SENTENCE_LENGTH, CASE WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE IS NULL THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'I' THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'ON' AND NOT BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'PRD', 'RD', 'NR') THEN 'Y' ELSE 'N' END AS DISABILITY_ACTIVE_FLAG, AT_OFFENDER_BOOKING.MARITAL_STATUS_DESCRIPTION, AT_FACT_MOV_EXT.MOVEMENT_TIME, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_DESCRIPTION, AT_FACT_MOV_EXT.DIRECTION_CODE, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE, CASE WHEN AT_SENT_START_DATE.DAY_DATE < '31/12/9000' THEN AT_SENT_START_DATE.DAY_DATE END AS SENTENCE_START_DATE, CASE WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) <= 17 THEN 'Juvenile' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) BETWEEN 18 AND 20 THEN 'Young Person' WHEN (FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12)) >= 21 THEN 'Adult' END AS ADULT_YOUNG_PERSON_INDICATOR, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE FROM BODIMIS.DIM_DATE AT_SENT_START_DATE, BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT DISTINCT BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK = dss.sentence_status_sk) AND dss.sentence_status = 'Active' AND (BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK = BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK) AND (BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK) AND BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG = 'Y') DT_LIFEFLAG, FACT_CURR_KEY_DATES_SENT, BODIMIS.DIM_OFFENDER_PERSONAL_CARE, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_FROM, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.DIM_COURT_CASE AT_COURT_CASE WHERE (AT_FACT_SENTENCE.SENTENCE_START_DATE_SK = AT_SENT_START_DATE.DATE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_LIFEFLAG.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_COURT_CASE.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (CASE WHEN AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.FROM_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_SK (+)) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_SENTENCE.COURT_CASE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.DIM_OFFENDER_PERSONAL_CARE.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.GENDER_CODE = 'M' AND AT_DIM_DATE_EXT_MOV.DAY_DATE >= TO_DATE('01-01-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_DIM_DATE_EXT_MOV.DAY_DATE <= TO_DATE('31-12-2018 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'OUT' AND AT_FACT_MOV_EXT.TYPE IN ('Transfers') AND AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('SEC236A', 'LR_SEC236A', 'LASPO_DR', 'LR_LASPO_DR', 'LASPO_AR', 'LR_LASPO_AR', 'EXSENT08', 'EXSENT03', 'EXSENT', 'LR_ES', 'SENT_EXL', 'LR_EPP'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, EFFECTIVE_SENTENCE_LENGTH, DISABILITY_ACTIVE_FLAG, MARITAL_STATUS_DESCRIPTION, MOVEMENT_TIME, ESTABLISHMENT_DESCRIPTION, DIRECTION_CODE, MAIN_LEGAL_STATUS_DESCRIPTION, MAIN_LEGAL_STATUS_CODE, SENTENCE_START_DATE, ADULT_YOUNG_PERSON_INDICATOR, OFFENDER_AGE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPb.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "EFFECTIVE_SENTENCE_LENGTH",
+            "type": "string",
+            "display": "Effective Sentence Length",
+            "legacyId": "DPb.DO2d0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DISABILITY_ACTIVE_FLAG",
+            "type": "string",
+            "display": "Disability Active Flag",
+            "legacyId": "DPb.DO10a9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "MARITAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Marital Status Description",
+            "legacyId": "DPb.DO100af",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "MOVEMENT_TIME",
+            "type": "date",
+            "display": "Movement Date and Time (External)",
+            "legacyId": "DPb.DO103eb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Location From Description (External)",
+            "legacyId": "DPb.DO1015d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DIRECTION_CODE",
+            "type": "string",
+            "display": "Movement Direction Code (External)",
+            "legacyId": "DPb.DO103fd",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "MAIN_LEGAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Main Legal Status Description",
+            "legacyId": "DPb.DO100df",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "MAIN_LEGAL_STATUS_CODE",
+            "type": "string",
+            "display": "Main Legal Status Code",
+            "legacyId": "DPb.DO100de",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "SENTENCE_START_DATE",
+            "type": "date",
+            "display": "Sentence Start Date",
+            "legacyId": "DPb.DO45",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ADULT_YOUNG_PERSON_INDICATOR",
+            "type": "string",
+            "display": "Adult/Young Person Indicator",
+            "legacyId": "DPb.DO10083",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DPb.DO10082",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "223637.RS",
+      "name": "Transfers 18+",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      },
+      "dataset": "MISSING"
+    },
+    {
+      "id": "137327.RS",
+      "name": "Prisoners Moved",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_SENT_DATE = 1)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:EFFECTIVE_SENTENCE_LENGTH",
+            "display": "Effective Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO2d0"
+          },
+          {
+            "name": "$ref:MARITAL_STATUS_DESCRIPTION",
+            "display": "Marital Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100af"
+          },
+          {
+            "name": "$ref:V_DISABILITY",
+            "display": "Disability",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If IsNull([Disability].[Disability Active Flag])Then \"N\" Else [Disability].[Disability Active Flag]"
+          },
+          {
+            "name": "$ref:V_MOVEMENT_ALL",
+            "display": "=NameOf([v_movement_all])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Discharges].[Movement Date and Time (External)]"
+          },
+          {
+            "name": "$ref:V_DISABILITY_DATE",
+            "display": "=NameOf([v_disability_date])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If ([Care Start Date]>=[v_movement_all] In ([NOMS Number])) Then \"Y\" Else \"N\""
+          },
+          {
+            "name": "$ref:V_SENT_LENGTH",
+            "display": "=NameOf([v_sent_length])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If ([Discharges].[Effective Sentence Length]Between (\"00/00/01\";\"00/06/00\"); \"6 Months or Less\"; \nIf ([Discharges].[Effective Sentence Length] Between (\"00/06/00\";\"00/12/00\"); \"6 Months to 12 Months\";\nIf ([Discharges].[Effective Sentence Length] Between (\"00/12/00\";\"02/00/00\"); \"12 Months to 2 Years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"00/12/00\";\"02/00/00\"); \"12 Months to 2 Years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"02/00/00\";\"04/00/00\"); \"2 To 4 years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"04/00/00\";\"05/00/00\"); \"4 To 5 years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"05/00/00\";\"07/00/00\"); \"5 To 7 years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"07/00/00\";\"10/00/00\"); \"7 To 10 years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"10/00/00\";\"14/00/00\"); \"10 To 14 years\";\nIf ([Discharges].[Effective Sentence Length]>=\"14/0/00\"; \"14 Years and Over\"))))))))))"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_DESCRIPTION",
+            "display": "Main Legal Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100df"
+          },
+          {
+            "name": "$ref:SENTENCE_START_DATE",
+            "display": "Sentence Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO45"
+          }
+        ]
+      }
+    },
+    {
+      "id": "222459.RS",
+      "name": "Marital St per sent length",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      },
+      "dataset": "MISSING"
+    },
+    {
+      "id": "222567.RS",
+      "name": "Disability per sent length",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      },
+      "dataset": "MISSING"
+    },
+    {
+      "id": "223066.RS",
+      "name": "All Transfers Main Data",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:OFFENDER_AGE",
+            "display": "Offender Age",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10082"
+          },
+          {
+            "name": "$ref:V_CONCAT_MOVES",
+            "display": "=NameOf([v_Concat_Moves])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[NOMS Number] + [Discharges].[Movement Date and Time (External)]"
+          },
+          {
+            "name": "$ref:MOVEMENT_TIME",
+            "display": "Movement Date and Time (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO103eb"
+          },
+          {
+            "name": "$ref:V_SENT_LENGTH",
+            "display": "=NameOf([v_sent_length])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If ([Discharges].[Effective Sentence Length]Between (\"00/00/01\";\"00/06/00\"); \"6 Months or Less\"; \nIf ([Discharges].[Effective Sentence Length] Between (\"00/06/00\";\"00/12/00\"); \"6 Months to 12 Months\";\nIf ([Discharges].[Effective Sentence Length] Between (\"00/12/00\";\"02/00/00\"); \"12 Months to 2 Years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"00/12/00\";\"02/00/00\"); \"12 Months to 2 Years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"02/00/00\";\"04/00/00\"); \"2 To 4 years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"04/00/00\";\"05/00/00\"); \"4 To 5 years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"05/00/00\";\"07/00/00\"); \"5 To 7 years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"07/00/00\";\"10/00/00\"); \"7 To 10 years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"10/00/00\";\"14/00/00\"); \"10 To 14 years\";\nIf ([Discharges].[Effective Sentence Length]>=\"14/0/00\"; \"14 Years and Over\"))))))))))"
+          },
+          {
+            "name": "$ref:V_COUNT_CONCAT_MOVES_PER_NOMS",
+            "display": "=NameOf([v_Count_Concat_Moves_Per_NOMS])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([v_Concat_Moves]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:EFFECTIVE_SENTENCE_LENGTH",
+            "display": "Effective Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO2d0"
+          },
+          {
+            "name": "$ref:MARITAL_STATUS_DESCRIPTION",
+            "display": "Marital Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100af"
+          },
+          {
+            "name": "$ref:V_DISABILITY",
+            "display": "Disability",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If IsNull([Disability].[Disability Active Flag])Then \"N\" Else [Disability].[Disability Active Flag]"
+          },
+          {
+            "name": "$ref:ADULT_YOUNG_PERSON_INDICATOR",
+            "display": "Adult/Young Person Indicator",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10083"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_SENT_LENGTH :: Error: =If ([Discharges].[Effective Sentence Length]Between (\"00/00/01\";\"00/06/00\"); \"6 Months or Less\"; \nIf ([Discharges].[Effective Sentence Length] Between (\"00/06/00\";\"00/12/00\"); \"6 Months to 12 Months\";\nIf ([Discharges].[Effective Sentence Length] Between (\"00/12/00\";\"02/00/00\"); \"12 Months to 2 Years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"00/12/00\";\"02/00/00\"); \"12 Months to 2 Years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"02/00/00\";\"04/00/00\"); \"2 To 4 years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"04/00/00\";\"05/00/00\"); \"4 To 5 years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"05/00/00\";\"07/00/00\"); \"5 To 7 years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"07/00/00\";\"10/00/00\"); \"7 To 10 years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"10/00/00\";\"14/00/00\"); \"10 To 14 years\";\nIf ([Discharges].[Effective Sentence Length]>=\"14/0/00\"; \"14 Years and Over\")))))))))) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "FjOxfF5l8QgAEQsBAHD7MV8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_DISABILITY_DATE :: Error: Required keyword: 'true' missing for <class 'sqlglot.expressions.If'>. Line 1, Col: 43.\n  CASE WHEN START_DATE >= V_MOVEMENT_ALL IN \u001b[4m,\u001b[0mOFFENDER_ID_DISPLAY, THEN 'Y' ELSE 'N' END",
+      "entityId": "FjOxfF5l8QgAEQsBAHD7MV8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_SENT_LENGTH :: Error: =If ([Discharges].[Effective Sentence Length]Between (\"00/00/01\";\"00/06/00\"); \"6 Months or Less\"; \nIf ([Discharges].[Effective Sentence Length] Between (\"00/06/00\";\"00/12/00\"); \"6 Months to 12 Months\";\nIf ([Discharges].[Effective Sentence Length] Between (\"00/12/00\";\"02/00/00\"); \"12 Months to 2 Years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"00/12/00\";\"02/00/00\"); \"12 Months to 2 Years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"02/00/00\";\"04/00/00\"); \"2 To 4 years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"04/00/00\";\"05/00/00\"); \"4 To 5 years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"05/00/00\";\"07/00/00\"); \"5 To 7 years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"07/00/00\";\"10/00/00\"); \"7 To 10 years\";\nIf ([Discharges].[Effective Sentence Length] Between (\"10/00/00\";\"14/00/00\"); \"10 To 14 years\";\nIf ([Discharges].[Effective Sentence Length]>=\"14/0/00\"; \"14 Years and Over\")))))))))) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "FjOxfF5l8QgAEQsBAHD7MV8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_COUNT_CONCAT_MOVES_PER_NOMS :: Error: Invalid expression / Unexpected token. Line 1, Col: 26.\n  COUNT(V_CONCAT_MOVES) IN \u001b[4m,\u001b[0mOFFENDER_ID_DISPLAY,",
+      "entityId": "FjOxfF5l8QgAEQsBAHD7MV8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[0] requires property \"dataset\"",
+      "entityId": "FjOxfF5l8QgAEQsBAHD7MV8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[2] requires property \"dataset\"",
+      "entityId": "FjOxfF5l8QgAEQsBAHD7MV8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[3] requires property \"dataset\"",
+      "entityId": "FjOxfF5l8QgAEQsBAHD7MV8VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 223637.RS does not have corresponding dataset undefined",
+      "entityId": "223637.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_DISABILITY_DATE does not have corresponding dataset schema field",
+      "entityId": "137327.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 222459.RS does not have corresponding dataset undefined",
+      "entityId": "222459.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 222567.RS does not have corresponding dataset undefined",
+      "entityId": "222567.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_CONCAT_MOVES_PER_NOMS does not have corresponding dataset schema field",
+      "entityId": "223066.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DP2",
+      "entityType": "dataset"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DPa",
+      "entityType": "dataset"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DPb",
+      "entityType": "dataset"
+    }
+  ]
+}

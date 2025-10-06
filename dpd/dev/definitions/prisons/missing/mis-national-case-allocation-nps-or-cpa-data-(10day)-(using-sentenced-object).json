@@ -1,0 +1,264 @@
+{
+  "id": "klcptcYACNzdE24A6lAAISgV_bQ",
+  "name": "MIS National Case Allocation NPS or CPA data (10Day) (using Sentenced object)",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PND0022"
+    ]
+  },
+  "description": "% of Sentenced Population who are not allocated to a rehabilitation provider.<br/>This version is restricted to looking at offenders who were recieved into the establishment more than 10 days prior to runtime)<br/>PND0022 v1.0 National Case Allocation (10-Day Grace)",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP4",
+      "name": "Main Data",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_REF_REHAB_DECISION_CODE.CODE, CASE WHEN BODIMIS.DIM_REHAB_PROVIDER.REHAB_PROVIDER_SK > 0 THEN BODIMIS.DIM_REHAB_PROVIDER.CODE_NK END AS REHAB_PROVIDER_CODE, CASE WHEN BODIMIS.DIM_REHAB_PROVIDER.REHAB_PROVIDER_SK > 0 THEN BODIMIS.DIM_REHAB_PROVIDER.DESCRIPTION END AS REHAB_PROVIDER_DESCRIPTION, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_REFERENCE_CODES AT_REF_REHAB_DECISION_CODE, BODIMIS.DIM_REHAB_PROVIDER, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT BODIMIS.FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK, BODIMIS.FACT_OFFENDER_SENTENCE.EFFECTIVE_SENTENCE_LENGTH FROM BODIMIS.FACT_OFFENDER_SENTENCE WHERE (BODIMIS.FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG = 'Y')) DT_CURREFFSENLEN, (SELECT DISTINCT BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK = dss.sentence_status_sk) AND dss.sentence_status = 'Active' AND (BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK = BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK) AND (BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK) AND BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG = 'Y') DT_LIFEFLAG, BODIMIS.FACT_OFFENDER_REHAB WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_CURREFFSENLEN.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_LIFEFLAG.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.FACT_OFFENDER_REHAB.OFFENDER_BOOKING_SK (+)) AND (BODIMIS.FACT_OFFENDER_REHAB.REHAB_PROVIDER_SK = BODIMIS.DIM_REHAB_PROVIDER.REHAB_PROVIDER_SK (+)) AND (BODIMIS.FACT_OFFENDER_REHAB.DECISION_CODE_SK = AT_REF_REHAB_DECISION_CODE.REFERENCE_CODE_SK (+)) AND (AT_REF_REHAB_DECISION_CODE.CODE_DOMAIN (+) = 'ALL_DEC') AND (CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Sentenced' WHEN DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH = '00/00/00' THEN 'Unsentenced' WHEN DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH IS NULL THEN 'Unsentenced' ELSE 'Sentenced' END = 'Sentenced' AND NOT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY IN (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT BODIMIS.FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK, BODIMIS.FACT_OFFENDER_SENTENCE.EFFECTIVE_SENTENCE_LENGTH FROM BODIMIS.FACT_OFFENDER_SENTENCE WHERE (BODIMIS.FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG = 'Y')) DT_CURREFFSENLEN, (SELECT DISTINCT BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK = dss.sentence_status_sk) AND dss.sentence_status = 'Active' AND (BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK = BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK) AND (BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK) AND BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG = 'Y') DT_LIFEFLAG, BODIMIS.FACT_OFFENDER_REHAB, BODIMIS.DIM_REHAB_PROVIDER WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_CURREFFSENLEN.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_LIFEFLAG.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.FACT_OFFENDER_REHAB.OFFENDER_BOOKING_SK (+)) AND (BODIMIS.FACT_OFFENDER_REHAB.REHAB_PROVIDER_SK = BODIMIS.DIM_REHAB_PROVIDER.REHAB_PROVIDER_SK (+)) AND (CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Sentenced' WHEN DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH = '00/00/00' THEN 'Unsentenced' WHEN DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH IS NULL THEN 'Unsentenced' ELSE 'Sentenced' END = 'Sentenced' AND BODIMIS.FACT_OFFENDER_REHAB.DECISION_ACTIVE_FLAG = 'Y' AND BODIMIS.FACT_OFFENDER_REHAB.PROVIDER_ACTIVE_FLAG = 'Y' AND CASE WHEN BODIMIS.DIM_REHAB_PROVIDER.REHAB_PROVIDER_SK > 0 THEN BODIMIS.DIM_REHAB_PROVIDER.ACTIVE_FLAG END = 'Y' AND (AT_OFFENDER_BOOKING.ACTIVE_STATUS IN ('Active Out', 'Active In', 'Active In Transit', 'Active UAL')) AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O'))) AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O') AND (AT_OFFENDER_BOOKING.ACTIVE_STATUS IN ('Active Out', 'Active In', 'Active In Transit', 'Active UAL')))), dataset_ AS (SELECT CODE, REHAB_PROVIDER_CODE, REHAB_PROVIDER_DESCRIPTION, OFFENDER_ID_DISPLAY, ESTABLISHMENT_CODE_NK FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "CODE",
+            "type": "string",
+            "display": "Rehab Decision Code",
+            "legacyId": "DP4.DO10b3f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "REHAB_PROVIDER_CODE",
+            "type": "string",
+            "display": "Rehab Provider Code",
+            "legacyId": "DP4.DO10b37",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "REHAB_PROVIDER_DESCRIPTION",
+            "type": "string",
+            "display": "Rehab Provider Description",
+            "legacyId": "DP4.DO10b38",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP4.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Associated Establishment Code",
+            "legacyId": "DP4.DO107b2",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP8",
+      "name": "Latest Date Available",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP8.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DPd",
+      "name": "Population",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (SELECT BODIMIS.FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK, BODIMIS.FACT_OFFENDER_SENTENCE.EFFECTIVE_SENTENCE_LENGTH FROM BODIMIS.FACT_OFFENDER_SENTENCE WHERE (BODIMIS.FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG = 'Y')) DT_CURREFFSENLEN, (SELECT DISTINCT BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK = dss.sentence_status_sk) AND dss.sentence_status = 'Active' AND (BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK = BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK) AND (BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK) AND BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG = 'Y') DT_LIFEFLAG WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_CURREFFSENLEN.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_LIFEFLAG.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O') AND (AT_OFFENDER_BOOKING.ACTIVE_STATUS IN ('Active Out', 'Active In', 'Active In Transit', 'Active UAL')) AND CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Sentenced' WHEN DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH = '00/00/00' THEN 'Unsentenced' WHEN DT_CURREFFSENLEN.EFFECTIVE_SENTENCE_LENGTH IS NULL THEN 'Unsentenced' ELSE 'Sentenced' END = 'Sentenced')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, ESTABLISHMENT_CODE_NK FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPd.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Associated Establishment Code",
+            "legacyId": "DPd.DO107b2",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DPf",
+      "name": "Admission",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DT_ADMISSION.MOVEMENT_TIME, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY FROM (SELECT ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk, fme.from_location_type, MAX(fme.MOVEMENT_SEQ) AS MOVEMENT_SEQ, MAX(d.day_date) AS MOVEMENT_TIME, TRUNC(ETL.LOAD_END_DATETIME) AS LOAD_DATE FROM BODIMIS.FACT_MOVEMENT_EXTERNAL fme, BODIMIS.DIM_OFFENDER_BOOKING ob, BODIMIS.DIM_ESTABLISHMENT est, BODIMIS.ETL_LOAD_LOG ETL, BODIMIS.DIM_DATE d WHERE ob.ESTABLISHMENT_SK = est.ESTABLISHMENT_SK AND d.date_sk = fme.date_sk AND fme.offender_booking_sk = ob.offender_booking_sk AND ob.active_status IN ('Active In', 'Active Out') AND ob.MIS_CURRENT_RECORD_IND = 'Y' AND ob.ACTIVE_FLAG = 'Y' AND ETL.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL) AND ob.ESTABLISHMENT_SK = fme.to_location_sk AND fme.movement_seq = (SELECT MAX(fme2.movement_seq) FROM BODIMIS.FACT_MOVEMENT_EXTERNAL fme2 WHERE fme.offender_booking_sk = fme2.offender_booking_sk AND fme2.direction_code = 'IN' AND fme2.TYPE = 'Admission' AND fme2.To_location_type = 'Establishment' AND fme2.reason_code <> 'R') GROUP BY ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk, fme.from_location_type, ETL.LOAD_END_DATETIME) DT_ADMISSION, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_ADMISSION.OFFENDER_BOOKING_SK (+)) AND ((AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_OFFENDER_BOOKING.ACTIVE_STATUS IN ('Active Out', 'Active In', 'Active In Transit', 'Active UAL')) AND (AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O'))), dataset_ AS (SELECT MOVEMENT_TIME, OFFENDER_ID_DISPLAY FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "MOVEMENT_TIME",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DPf.DO107ce",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPf.DO10076",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "131836.RS",
+      "name": "Case Allocation to NPS or CPA",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DPd",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (V_10_WORKING_DAYS IN ('Y') AND REHAB_DECISION_CODE <> 'NSO'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Associated Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPd.DO107b2"
+          },
+          {
+            "name": "$ref:V_COUNT_SENTENCED",
+            "display": "Establishment",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Population].[NOMS Number]) In ([Population].[Associated Establishment Code])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "200404.RS",
+      "name": "Detail",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP4",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (V_10_WORKING_DAYS IN ('Y') AND REHAB_DECISION_CODE <> 'NSO'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Associated Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP4.DO107b2"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP4.DO10076"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_COUNT_SENTENCED :: Error: Invalid expression / Unexpected token. Line 1, Col: 42.\n  COUNT(POPULATION.OFFENDER_ID_DISPLAY) IN \u001b[4m,\u001b[0mPOPULATION.ESTABLISHMENT_CODE_NK,",
+      "entityId": "klcptcYACNzdE24A6lAAISgV_bQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_SENTENCED does not have corresponding dataset schema field",
+      "entityId": "131836.RS",
+      "entityType": "variant"
+    }
+  ]
+}

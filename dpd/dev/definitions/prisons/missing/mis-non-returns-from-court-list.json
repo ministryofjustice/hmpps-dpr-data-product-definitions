@@ -1,0 +1,227 @@
+{
+  "id": "okXHZf4ACIzTBFEAKgaD8K7BeXE",
+  "name": "MIS Non Returns from Court List",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "MOV0007 v00.00.06 LSRIT039"
+    ]
+  },
+  "description": "Returns a list of all prisoners who were discharged to court and who did not return to the establishment but are still on the prison roll as 'Active Out'. The data is ordered by prisoner last name.<br/>MOV0007 v00.00.06 Last Modified: 14/07/09",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP2",
+      "name": "Non Returns From Court List",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.INITIALS, Case When AT_OFFENDER_BOOKING.YOUNG_PERSON_INDICATOR='Young Offender' then 'Young Person' else AT_OFFENDER_BOOKING.YOUNG_PERSON_INDICATOR End, DT_LATEST_COURT_MOVEMENTS.DAY_DATE, substr(DT_LATEST_COURT_MOVEMENTS.MOVEMENT_TIME,11,6), DT_TO_COURT_LOCATIONS.COURT_DESCRIPTION FROM ( SELECT BODIMIS.DIM_COURT.COURT_SK, BODIMIS.DIM_COURT.COURT_CODE_NK, BODIMIS.DIM_COURT.COURT_DESCRIPTION, 'Court' as Location_Type_To FROM BODIMIS.DIM_COURT ) DT_TO_COURT_LOCATIONS, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, ( --for MOV0007 SELECT AT_FACT_MOV_EXT.Movement_Time, at_fact_mov_ext.movement_seq, at_fact_mov_ext.date_sk, AT_DIM_DATE2.Day_Date, AT_FACT_MOV_EXT.Offender_Booking_Sk, AT_FACT_MOV_EXT.From_Location_Sk, AT_FACT_MOV_EXT.To_Location_SK, AT_FACT_MOV_EXT.From_Location_Type, AT_FACT_MOV_EXT.To_Location_Type, AT_FACT_MOV_EXT.Direction_Code, AT_FACT_MOV_EXT.Type Movement_Type, AT_FACT_MOV_EXT.Reason Movement_Reason FROM BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_DATE AT_DIM_DATE2 Where AT_FACT_MOV_EXT.Date_sk=AT_DIM_DATE2.Date_Sk And AT_FACT_MOV_EXT.MOVEMENT_TIME = (SELECT MAX(BODIMIS.FACT_MOVEMENT_EXTERNAL.MOVEMENT_TIME) FROM BODIMIS.FACT_MOVEMENT_EXTERNAL WHERE BODIMIS.FACT_MOVEMENT_EXTERNAL.OFFENDER_BOOKING_SK =AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK) ) DT_LATEST_COURT_MOVEMENTS, ( SELECT BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_SK as SK_ID_From, BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_CODE_NK as CODE_NK_From, BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION as TYPE_DESCRIPTION_From, 'Establishment' as Location_Type_From FROM BODIMIS.DIM_ESTABLISHMENT WHERE BODIMIS.DIM_ESTABLISHMENT.ESTABLISHMENT_SK >0 ) DT_FROM_ESTABLISHMENT, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT WHERE ( AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK(+)=AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('RRUSSELL') AND (CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 OR CSL.ENDYEAR = '2999' ) ) ) AND ( DT_TO_COURT_LOCATIONS.COURT_SK=DT_LATEST_COURT_MOVEMENTS.TO_LOCATION_SK ) AND ( DT_LATEST_COURT_MOVEMENTS.FROM_LOCATION_SK=DT_FROM_ESTABLISHMENT.SK_ID_FROM ) AND ( AT_FACT_MOV_EXT.MOVEMENT_SEQ=DT_LATEST_COURT_MOVEMENTS.MOVEMENT_SEQ and AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK=DT_LATEST_COURT_MOVEMENTS.OFFENDER_BOOKING_SK ) AND ( DT_LATEST_COURT_MOVEMENTS.TO_LOCATION_TYPE='Court' ) AND ( ( DT_FROM_ESTABLISHMENT.CODE_NK_FROM= (SELECT establishment_code from prompt_) ) AND ( AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y' ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND ( AT_OFFENDER_BOOKING.IN_OUT = 'OUT' ) )), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3376639/DP3",
+      "name": "MIS Load",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DP3.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "193534.RS",
+      "name": "Non Returns From Court List",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP2_DO76",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO7B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO12D",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO83",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO770",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO783",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO77A",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Expected table name but got None. Line 1, Col: 628.\n  o FROM BODIMIS.DIM_COURT ) DT_TO_COURT_LOCATIONS, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, \u001b[4m(\u001b[0m --for MOV0007 SELECT AT_FACT_MOV_EXT.Movement_Time, at_fact_mov_ext.movement_seq, at_fact_mov_ext.d]",
+      "entityId": "okXHZf4ACIzTBFEAKgaD8K7BeXE",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields (comments -- in query)",
+      "entityId": "3376639/DP2",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO76 does not have corresponding dataset schema field",
+      "entityId": "193534.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO7B does not have corresponding dataset schema field",
+      "entityId": "193534.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO12D does not have corresponding dataset schema field",
+      "entityId": "193534.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO83 does not have corresponding dataset schema field",
+      "entityId": "193534.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO770 does not have corresponding dataset schema field",
+      "entityId": "193534.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO783 does not have corresponding dataset schema field",
+      "entityId": "193534.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO77A does not have corresponding dataset schema field",
+      "entityId": "193534.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3376639/DP2",
+      "entityType": "dataset"
+    }
+  ]
+}

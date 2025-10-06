@@ -1,0 +1,280 @@
+{
+  "id": "FhwLumDOWwgAi2QAAHALtF4dACJIAFJ8",
+  "name": "MIS NSR2240 Remand Prisoners",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0088, Population"
+    ]
+  },
+  "description": "Retrieves the Population at an Establishment chosen at run time.  The report has numerous tabs to display Population Information, Legal Status Groupings, ISP's, IEP levels, Nationality and Age, Length of Sentence, Religion and Country of Birth.<br/>PDD0088 v1.0 Last update 16/10/2018",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP4",
+      "name": "Prisoners",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' WHEN SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) = '99' THEN 'Life' WHEN FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH = '00/00/00' THEN 'No sentence' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) = '00' AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 4, 2)) < 6 THEN 'Less than 6 Months' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) = '00' AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 4, 2)) < 12 THEN '6 Months to less than 1 Year' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) <> '00' AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) < 2 THEN '1 Year to less than 2 Years' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND NOT SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) IN ('00', '01') AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) < 3 THEN '2 Years to less than 3 Years' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND NOT SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) IN ('00', '01', '02') AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) < 4 THEN '3 Years to less than 4 Years' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND NOT SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2) IN ('00', '01', '02', '03') AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) < 10 THEN '4 Years to less than 10 Years' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND TO_NUMBER(SUBSTR(FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH, 1, 2)) >= 10 THEN '10 Years or more and Less than Life' WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG IS NULL AND FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH IS NULL THEN 'No sentence' ELSE 'Not Categorised' END AS CURRENT_SENTENCE_LENGTH_BAND, CASE WHEN MONTHS_BETWEEN(DT_ADMISSION.LOAD_DATE, DT_ADMISSION.MOVEMENT_TIME) < 1 THEN 'Less than 1 month' WHEN MONTHS_BETWEEN(DT_ADMISSION.LOAD_DATE, DT_ADMISSION.MOVEMENT_TIME) >= 1 AND MONTHS_BETWEEN(DT_ADMISSION.LOAD_DATE, DT_ADMISSION.MOVEMENT_TIME) < 3 THEN '1 month to 3 months' WHEN MONTHS_BETWEEN(DT_ADMISSION.LOAD_DATE, DT_ADMISSION.MOVEMENT_TIME) >= 3 AND MONTHS_BETWEEN(DT_ADMISSION.LOAD_DATE, DT_ADMISSION.MOVEMENT_TIME) < 6 THEN '3 months to 6 months' WHEN MONTHS_BETWEEN(DT_ADMISSION.LOAD_DATE, DT_ADMISSION.MOVEMENT_TIME) >= 6 AND MONTHS_BETWEEN(DT_ADMISSION.LOAD_DATE, DT_ADMISSION.MOVEMENT_TIME) < 12 THEN '6 months to 1 year' WHEN MONTHS_BETWEEN(DT_ADMISSION.LOAD_DATE, DT_ADMISSION.MOVEMENT_TIME) >= 12 AND MONTHS_BETWEEN(DT_ADMISSION.LOAD_DATE, DT_ADMISSION.MOVEMENT_TIME) < 24 THEN '1 year to 2 years' WHEN MONTHS_BETWEEN(DT_ADMISSION.LOAD_DATE, DT_ADMISSION.MOVEMENT_TIME) >= 24 AND MONTHS_BETWEEN(DT_ADMISSION.LOAD_DATE, DT_ADMISSION.MOVEMENT_TIME) < 48 THEN '2 years to 4 years' WHEN MONTHS_BETWEEN(DT_ADMISSION.LOAD_DATE, DT_ADMISSION.MOVEMENT_TIME) >= 48 THEN '4 years or more' END AS LENGTH_OF_STAY, CASE WHEN AT_OFFENDER_BOOKING.NATIONALITY_CODE = 'BRIT' THEN 'British' WHEN AT_OFFENDER_BOOKING.NATIONALITY_CODE IN ('UNKNOWN', 'REF', 'STATE') THEN 'Not stated' WHEN AT_OFFENDER_BOOKING.NATIONALITY_CODE IS NULL THEN 'Not stated' ELSE 'Foreign nationals' END AS NATIONALITY_GROUPING, CASE WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE IN ('14FTR_ORA', '14FTRHDC_ORA', 'CUR_ORA', 'FTR/08', 'FTR_HDC', 'FTR_HDC_ORA', 'FTR_ORA', 'FTR_SCH15', 'FTRSCH15_ORA', 'HDR_ORA', 'LR', 'LR_ALP', 'LR_ALP_LASPO', 'LR_DLP', 'LR_DPP', 'LR_EPP', 'LR_ES', 'LR_HDC', 'LR_IPP', 'LR_LASPO_AR', 'LR_LASPO_DR', 'LR_LIFE', 'LR_MLP', 'LR_ORA', 'LR_SEC236A', 'LR_SEC91_ORA', 'LR_YOI', 'LR_YOI_ORA', 'FTRSCH18_ORA', 'FTRSCH18', 'LR_EDS18', 'LR_EDS21', 'LR_SOPC18', 'LR_SOPC21', 'LRSEC250_ORA', 'LR_ALP_CDE18', 'LR_ALP_CDE21', 'LR_EDSU18') THEN 'Recall' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '0' THEN 'Dead' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '1' THEN 'Indeterminate Sentence' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('2', '3') THEN 'Sentenced' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('4', '5', '6', '7') THEN 'Convicted Unsentenced' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('9', '10') OR AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'CIV_RMD' THEN 'Civil Prisoner' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('8', '11') THEN 'Immigration Detainee' WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND IN ('12', '13', '14') THEN 'Remand' WHEN AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'UNKNOWN' THEN 'Unknown' ELSE 'Other' END AS LEGAL_STATUS_GROUPING, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_DIM_OFFENCE.OFFENCE_NAME, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION, AT_OFFENDER_BOOKING.SURNAME, CASE WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '1' THEN 'Y' ELSE 'N' END AS IS_INDETERMINATE_SENTENCE_, AT_OFFENDER_BOOKING.FIRST_NAME, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION, CASE WHEN DT_LIFEFLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Sentenced' WHEN FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH = '00/00/00' THEN 'Unsentenced' WHEN FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH IS NULL THEN 'Unsentenced' ELSE 'Sentenced' END AS SENTENCED_, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_DESCRIPTION FROM BODIMIS.DIM_OFFENCE AT_DIM_OFFENCE, (SELECT ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk, fme.from_location_type, MAX(fme.MOVEMENT_SEQ) AS MOVEMENT_SEQ, MAX(d.day_date) AS MOVEMENT_TIME, TRUNC(ETL.LOAD_END_DATETIME) AS LOAD_DATE FROM BODIMIS.FACT_MOVEMENT_EXTERNAL fme, BODIMIS.DIM_OFFENDER_BOOKING ob, BODIMIS.DIM_ESTABLISHMENT est, BODIMIS.ETL_LOAD_LOG ETL, BODIMIS.DIM_DATE d WHERE ob.ESTABLISHMENT_SK = est.ESTABLISHMENT_SK AND d.date_sk = fme.date_sk AND fme.offender_booking_sk = ob.offender_booking_sk AND ob.active_status IN ('Active In', 'Active Out') AND ob.MIS_CURRENT_RECORD_IND = 'Y' AND ob.ACTIVE_FLAG = 'Y' AND ETL.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL) AND ob.ESTABLISHMENT_SK = fme.to_location_sk AND fme.movement_seq = (SELECT MAX(fme2.movement_seq) FROM BODIMIS.FACT_MOVEMENT_EXTERNAL fme2 WHERE fme.offender_booking_sk = fme2.offender_booking_sk AND fme2.direction_code = 'IN' AND fme2.TYPE = 'Admission' AND fme2.To_location_type = 'Establishment' AND fme2.reason_code <> 'R') GROUP BY ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk, fme.from_location_type, ETL.LOAD_END_DATETIME) DT_ADMISSION, BODIMIS.DIM_CELL AT_DIM_LOCATION, BODIMIS.FACT_COURT_CHARGE AT_FACT_COURT_CHARGE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, (SELECT DISTINCT BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK = dss.sentence_status_sk) AND dss.sentence_status = 'Active' AND (BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK = BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK) AND (BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK = BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK) AND BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG = 'Y') DT_LIFEFLAG, FACT_CURR_KEY_DATES_SENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_COURT_CASE AT_COURT_CASE WHERE (AT_FACT_COURT_CHARGE.OFFENCE_SK = AT_DIM_OFFENCE.OFFENCE_SK (+)) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_COURT_CHARGE.COURT_CASE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_LIFEFLAG.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_COURT_CASE.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_ADMISSION.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_SK = AT_DIM_LOCATION.UNIT_4_SK (+)) AND ((AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK IN ('All') OR 'All' IN ('All')))), dataset_ AS (SELECT CURRENT_SENTENCE_LENGTH_BAND, LENGTH_OF_STAY, NATIONALITY_GROUPING, LEGAL_STATUS_GROUPING, OFFENDER_ID_DISPLAY, OFFENCE_NAME, MAIN_LEGAL_STATUS_CODE, MAIN_LEGAL_STATUS_DESCRIPTION, SURNAME, IS_INDETERMINATE_SENTENCE_, FIRST_NAME, UNIT_4_SHORT_DESCRIPTION, SENTENCED_, ESTABLISHMENT_DESCRIPTION, COUNT(OFFENDER_ID_DISPLAY) AS COUNT_OF_PRISONERS FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "CURRENT_SENTENCE_LENGTH_BAND",
+            "type": "string",
+            "display": "Current Sentence Length Band",
+            "legacyId": "DP4.DO1ef",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LENGTH_OF_STAY",
+            "type": "string",
+            "display": "Length of Stay",
+            "legacyId": "DP4.DO107cf",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "NATIONALITY_GROUPING",
+            "type": "string",
+            "display": "Nationality Grouping",
+            "legacyId": "DP4.DO107be",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "LEGAL_STATUS_GROUPING",
+            "type": "string",
+            "display": "Legal Status Grouping",
+            "legacyId": "DP4.DO107cb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP4.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "OFFENCE_NAME",
+            "type": "string",
+            "display": "Offence Name",
+            "legacyId": "DP4.DO4b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "MAIN_LEGAL_STATUS_CODE",
+            "type": "string",
+            "display": "Main Legal Status Code",
+            "legacyId": "DP4.DO100de",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "MAIN_LEGAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Main Legal Status Description",
+            "legacyId": "DP4.DO100df",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP4.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "IS_INDETERMINATE_SENTENCE_",
+            "type": "string",
+            "display": "Is Indeterminate Sentence?",
+            "legacyId": "DP4.DO107d9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP4.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "UNIT_4_SHORT_DESCRIPTION",
+            "type": "string",
+            "display": "Prisoner Location",
+            "legacyId": "DP4.DO10a7c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "SENTENCED_",
+            "type": "string",
+            "display": "Sentenced?",
+            "legacyId": "DP4.DO5d6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Associated Establishment Name",
+            "legacyId": "DP4.DO107b1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "COUNT_OF_PRISONERS",
+            "type": "string",
+            "display": "COUNT_OF_PRISONERS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP2e",
+      "name": "MIS Load",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATETIME FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATETIME",
+            "type": "date",
+            "display": "Load End Datetime",
+            "legacyId": "DP2e.DO104ca",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "227187.RS",
+      "name": "Total",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP4",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_PRISONERS",
+            "display": "=Percentage([Count of Prisoners])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          },
+          {
+            "name": "$ref:LEGAL_STATUS_GROUPING",
+            "display": "Legal Status Grouping",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO107cb"
+          }
+        ]
+      }
+    },
+    {
+      "id": "227391.RS",
+      "name": "By Establishment",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP4",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_PRISONERS",
+            "display": "=Percentage([Count of Prisoners])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])"
+          },
+          {
+            "name": "$ref:LEGAL_STATUS_GROUPING",
+            "display": "Legal Status Grouping",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO107cb"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "instance.report[0].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "FhwLumDOWwgAi2QAAHALtF4dACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375368/DP4",
+      "entityType": "dataset"
+    }
+  ]
+}

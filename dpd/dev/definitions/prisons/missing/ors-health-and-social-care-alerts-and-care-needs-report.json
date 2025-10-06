@@ -1,0 +1,680 @@
+{
+  "id": "FspRrwEUTgwAF_MGAAC3vJD.ACJIAGc1",
+  "name": "ORS Health and Social Care Alerts and Care Needs Report",
+  "description": "The report returns a list of Prisoners who have active medical and social care alerts as well as those prisoners who have on-going Personal Care Needs<br/>PDD0227 v1.0 Last Modified: 28/03/2022",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0227 v1.0 Alerts",
+      "Medical",
+      "Personal Care Needs"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376286/DPe",
+      "name": "Alerts",
+      "description": "OR - Sentence",
+      "datasource": "nomis",
+      "query": "DP11_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_OFFENDER.FIRST_NAME, AT_OFFENDER_HEALTH.PROBLEM_TYPE AS CARE_TYPE, AT_HLTH_PRB_DISAB_DSC.DESCRIPTION, AT_OFFENDER_HEALTH.START_DATE AS CARE_FROM_DATE, AT_OFFENDERS_LOCATIONS.DESCRIPTION AS ESTABLISHMENT_NAME, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.REFERENCE_CODES AT_HLTH_PRB_DISAB_DSC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.OFFENDER_HEALTH_PROBLEMS AT_OFFENDER_HEALTH, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_HEALTH.OFFENDER_BOOK_ID) AND (AT_HLTH_PRB_DISAB_DSC.DOMAIN = 'HEALTH_PBLM') AND (AT_OFFENDER_HEALTH.PROBLEM_CODE = AT_HLTH_PRB_DISAB_DSC.CODE) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ((SELECT establishment_code FROM prompt_)) OR 'All' IN ((SELECT establishment_code FROM prompt_))) AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID <> 'ZZGHI' AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_HEALTH.PROBLEM_STATUS = 'ON' AND NOT AT_HLTH_PRB_DISAB_DSC.DESCRIPTION IN ('No Disability', 'No Disability Recorded', 'Refusal to Disclose', 'Refused to Disclose') AND AT_OFFENDER_HEALTH.PROBLEM_TYPE <> 'BSCAN')), dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_ALERT_TYPE_DESC.DESCRIPTION, AT_OFFENDER_ALERTS.ALERT_DATE, AT_OFFENDER_ALERTS.EXPIRY_DATE, CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END AS CURRENT_RELEASE_DATE, AT_OFFENDERS_LOCATIONS.DESCRIPTION AS ESTABLISHMENT_NAME, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID, AT_OFFENDER_ALERTS.COMMENT_TEXT, DP11_.CARE_TYPE, DP11_.CARE_FROM_DATE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.REFERENCE_CODES AT_ALERT_TYPE_DESC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDER_ALERTS AT_OFFENDER_ALERTS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, OMS_OWNER.OFFENDER_RELEASE_DETAILS AT_OFFENDER_RELEASE_DETAILS, (SELECT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID, CASE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE ELSE NULL END AS Last_Rel_Date, EFFECTIVE_SENTENCE_LENGTH FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) DT_LAST_RELEASE_DATE, USER_ACCESSIBLE_CASELOADS, DP11_ WHERE ((AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_ALERTS.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_ALERT_TYPE_DESC.CODE = AT_OFFENDER_ALERTS.ALERT_CODE) AND (AT_ALERT_TYPE_DESC.DOMAIN = 'ALERT_CODE' OR AT_ALERT_TYPE_DESC.DOMAIN IS NULL) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_RELEASE_DETAILS.OFFENDER_BOOK_ID) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_LAST_RELEASE_DATE.OFFENDER_BOOK_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ((SELECT establishment_code FROM prompt_)) OR 'All' IN ((SELECT establishment_code FROM prompt_))) AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID <> 'ZZGHI' AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_ALERTS.ALERT_STATUS = 'ACTIVE') AND (AT_OFFENDER_ALERTS.ALERT_TYPE = 'M' OR AT_OFFENDER_ALERTS.ALERT_CODE IN ('TM', 'AS', 'ADSC')))) AND (DP11_.OFFENDER_ID_DISPLAY = AT_OFFENDER.OFFENDER_ID_DISPLAY)), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, UNIT_DESCRIPTION_4_SHORT, DESCRIPTION, ALERT_DATE, EXPIRY_DATE, CURRENT_RELEASE_DATE, ESTABLISHMENT_NAME, AGY_LOC_ID, COMMENT_TEXT, V_ALERT_EFFECTIVE_DATE AS V_ALERT_EFFECTIVE_DATE_DISPLAY, EXPIRY_DATE AS V_ALERT_EXPIRY_DATE, DESCRIPTION AS V_ALERT_DESCRIPTION, CASE WHEN CARE_TYPE = 'PHY' THEN 'Medical' ELSE CASE WHEN CARE_TYPE = 'PSYCH' THEN 'Psychological' ELSE CASE WHEN CARE_TYPE = 'DISAB' THEN 'Disability' ELSE CASE WHEN CARE_TYPE = 'MATSTAT' THEN 'Maternity' ELSE CASE WHEN CARE_TYPE = 'SC' THEN 'Social Care' ELSE CARE_TYPE END END END END END AS CARE_TYPE_DESCRIPTIONS, V_CARE_SUB_TYPE AS V_CARE_SUB_TYPE_DISPLAY, CURRENT_RELEASE_DATE AS V_CURRENT_RELEASE_DATE, CARE_FROM_DATE AS V_CARE_FROM_DATE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPe.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DPe.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Given Name 1",
+            "legacyId": "DPe.DO11066",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DPe.DO10427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Alert Description",
+            "legacyId": "DPe.DO10097",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ALERT_DATE",
+            "type": "date",
+            "display": "Alert Effective Date",
+            "legacyId": "DPe.DO1059e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "EXPIRY_DATE",
+            "type": "date",
+            "display": "Expiry Date",
+            "legacyId": "DPe.DO10082",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "CURRENT_RELEASE_DATE",
+            "type": "date",
+            "display": "Current Release Date",
+            "legacyId": "DPe.DO10b29",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "ESTABLISHMENT_NAME",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DPe.DO1033b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DPe.DO1043b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "Alert Comment Text",
+            "legacyId": "DPe.DO110eb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "V_ALERT_EFFECTIVE_DATE_DISPLAY",
+            "type": "string",
+            "display": "V_ALERT_EFFECTIVE_DATE_DISPLAY",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 12,
+            "name": "V_ALERT_EXPIRY_DATE",
+            "type": "string",
+            "display": "V_ALERT_EXPIRY_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 13,
+            "name": "V_ALERT_DESCRIPTION",
+            "type": "string",
+            "display": "V_ALERT_DESCRIPTION",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 14,
+            "name": "CARE_TYPE_DESCRIPTIONS",
+            "type": "string",
+            "display": "CARE_TYPE_DESCRIPTIONS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 15,
+            "name": "V_CARE_SUB_TYPE_DISPLAY",
+            "type": "string",
+            "display": "V_CARE_SUB_TYPE_DISPLAY",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 16,
+            "name": "V_CURRENT_RELEASE_DATE",
+            "type": "string",
+            "display": "V_CURRENT_RELEASE_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 17,
+            "name": "V_CARE_FROM_DATE",
+            "type": "string",
+            "display": "V_CARE_FROM_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376286/DP11",
+      "name": "Personal Care Needs (5)",
+      "description": "OR - Sentence",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_OFFENDER.FIRST_NAME, AT_OFFENDER_HEALTH.PROBLEM_TYPE, AT_HLTH_PRB_DISAB_DSC.DESCRIPTION, AT_OFFENDER_HEALTH.START_DATE, AT_OFFENDERS_LOCATIONS.DESCRIPTION AS ESTABLISHMENT_NAME, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.REFERENCE_CODES AT_HLTH_PRB_DISAB_DSC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.OFFENDER_HEALTH_PROBLEMS AT_OFFENDER_HEALTH, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_HEALTH.OFFENDER_BOOK_ID) AND (AT_HLTH_PRB_DISAB_DSC.DOMAIN = 'HEALTH_PBLM') AND (AT_OFFENDER_HEALTH.PROBLEM_CODE = AT_HLTH_PRB_DISAB_DSC.CODE) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ((SELECT establishment_code FROM prompt_)) OR 'All' IN ((SELECT establishment_code FROM prompt_))) AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID <> 'ZZGHI' AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFFENDER_HEALTH.PROBLEM_STATUS = 'ON' AND NOT AT_HLTH_PRB_DISAB_DSC.DESCRIPTION IN ('No Disability', 'No Disability Recorded', 'Refusal to Disclose', 'Refused to Disclose') AND AT_OFFENDER_HEALTH.PROBLEM_TYPE <> 'BSCAN')), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, UNIT_DESCRIPTION_4_SHORT, FIRST_NAME, PROBLEM_TYPE, DESCRIPTION, START_DATE, ESTABLISHMENT_NAME, AGY_LOC_ID FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP11.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP11.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP11.DO10427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Given Name 1",
+            "legacyId": "DP11.DO11066",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "PROBLEM_TYPE",
+            "type": "string",
+            "display": "Care Type",
+            "legacyId": "DP11.DO10c35",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Care Sub-Type",
+            "legacyId": "DP11.DO10c83",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "START_DATE",
+            "type": "date",
+            "display": "Care From Date",
+            "legacyId": "DP11.DO10c37",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "ESTABLISHMENT_NAME",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP11.DO1033b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP11.DO1043b",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "171726.RS",
+      "name": "Detail",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DPe",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:V_ALERT_EFFECTIVE_DATE_DISPLAY",
+            "display": "Alert Effective Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Alert_Effective_Date]"
+          },
+          {
+            "name": "$ref:V_ALERT_EXPIRY_DATE",
+            "display": "Alert Expiry Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Expiry Date]"
+          },
+          {
+            "name": "$ref:V_ALERT_DESCRIPTION",
+            "display": "Alert Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Alert Description]"
+          },
+          {
+            "name": "$ref:COMMENT_TEXT",
+            "display": "Alert Comment Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO110eb"
+          },
+          {
+            "name": "$ref:CARE_TYPE_DESCRIPTIONS",
+            "display": "Care Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Care Type] = \"PHY\"; \"Medical\"; If([Care Type] = \"PSYCH\"; \"Psychological\"; If([Care Type] = \"DISAB\"; \"Disability\"; If([Care Type] = \"MATSTAT\"; \"Maternity\"; If([Care Type] = \"SC\"; \"Social Care\";[Care Type])))))"
+          },
+          {
+            "name": "$ref:V_CARE_SUB_TYPE_DISPLAY",
+            "display": "Care Sub Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_care_sub_type]"
+          },
+          {
+            "name": "$ref:V_CURRENT_RELEASE_DATE",
+            "display": "Release Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Current Release Date]"
+          },
+          {
+            "name": "$ref:V_CARE_FROM_DATE",
+            "display": "Care Type Start",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Care From Date]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "170460.RS",
+      "name": "Alerts",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DPe",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Alert Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO10097"
+          },
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPe.DO1043b"
+          }
+        ]
+      }
+    },
+    {
+      "id": "170646.RS",
+      "name": "Disability Care Type",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP11",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_CARE_SUB_TYPE NOT(IN ('No Disability Recorded','No Disability','Refusal to Disclose','Refused to Disclose')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Care Sub-Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO10c83"
+          },
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP11.DO1043b"
+          }
+        ]
+      }
+    },
+    {
+      "id": "171354.RS",
+      "name": "Medical Care Type",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP11",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_CARE_SUB_TYPE NOT(IN ('No Disability Recorded','No Disability','Refusal to Disclose','Refused to Disclose')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Care Sub-Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO10c83"
+          },
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP11.DO1043b"
+          }
+        ]
+      }
+    },
+    {
+      "id": "171389.RS",
+      "name": "Psychological Care Type",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP11",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_CARE_SUB_TYPE NOT(IN ('No Disability Recorded','No Disability','Refusal to Disclose','Refused to Disclose')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Care Sub-Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO10c83"
+          },
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP11.DO1043b"
+          }
+        ]
+      }
+    },
+    {
+      "id": "171425.RS",
+      "name": "Social Care Type",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP11",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_CARE_SUB_TYPE NOT(IN ('No Disability Recorded','No Disability','Refusal to Disclose','Refused to Disclose')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Care Sub-Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO10c83"
+          },
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP11.DO1043b"
+          }
+        ]
+      }
+    },
+    {
+      "id": "171460.RS",
+      "name": "Maternity Care Type",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DP11",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_CARE_SUB_TYPE NOT(IN ('No Disability Recorded','No Disability','Refusal to Disclose','Refused to Disclose')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Care Sub-Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP11.DO10c83"
+          },
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP11.DO1043b"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "instance.report[1].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child",
+      "entityId": "FspRrwEUTgwAF_MGAAC3vJD.ACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[2].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child",
+      "entityId": "FspRrwEUTgwAF_MGAAC3vJD.ACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[3].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child",
+      "entityId": "FspRrwEUTgwAF_MGAAC3vJD.ACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[4].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child",
+      "entityId": "FspRrwEUTgwAF_MGAAC3vJD.ACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[5].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child",
+      "entityId": "FspRrwEUTgwAF_MGAAC3vJD.ACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[6].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child",
+      "entityId": "FspRrwEUTgwAF_MGAAC3vJD.ACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00904: \"V_CARE_SUB_TYPE\": invalid identifier\nHelp: https://docs.oracle.com/error-help/db/ora-00904/",
+      "entityId": "3376286/DPe",
+      "entityType": "dataset"
+    }
+  ]
+}

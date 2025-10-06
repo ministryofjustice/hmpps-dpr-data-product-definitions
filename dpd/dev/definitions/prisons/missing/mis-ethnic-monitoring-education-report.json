@@ -1,0 +1,259 @@
+{
+  "id": "okhGYi8ADxxaTVUANAaEcEP69_g",
+  "name": "MIS Ethnic Monitoring Education Report",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACT0003 v00.01.01 LSRIT039"
+    ]
+  },
+  "description": "Counts the number of prisoners who attended an educational activity within a specified time period and splits the counts by percentage values; it is grouped by Establishment Area, Establishment Code, Educational Activity and Ethnicity.<br/>ACT0003 - v00.01.01 Last Modified: 03/09/12",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP2",
+      "name": "Ethnic Education",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_ACTIVITY_ESTABLISHMENT.AREA_DESCRIPTION, AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_DIM_PROGRAMME_TYPE.DESCRIPTION, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE='MERGE' Then 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL Then 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE='W8' then 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE='O1' then 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END , COUNT(distinct(AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY)) FROM BODIMIS.FACT_OFFENDER_ACTIVITY AT_FACT_OFFENDER_ACTIVITY, BODIMIS.DIM_ESTABLISHMENT AT_ACTIVITY_ESTABLISHMENT, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_PROGRAMME_TYPE AT_DIM_PROGRAMME_TYPE, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_PROGRAMME_SERVICE AT_DIM_PROGRAMME_SERVICE WHERE ( AT_DIM_ETHNICITY_CODES.CODE(+)=AT_OFFENDER_BOOKING.ETHNICITY_CODE ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=AT_FACT_OFFENDER_ACTIVITY.OFFENDER_BOOKING_SK ) AND ( AT_DIM_PROGRAMME_TYPE.PROGRAMME_TYPE_SK=AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_TYPE_SK ) AND ( AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_SK=AT_FACT_OFFENDER_ACTIVITY.ESTABLISHMENT_SK ) AND ( AT_DIM_PROGRAMME_SERVICE.PROGRAMME_SERVICE_SK=AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_SERVICE_SK ) AND ( ( AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK in (SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #Prompt('Establishment Code (All for all)','A','Activities\\Activity Establishment Code',multi,free,Not_Persistent,User:70) */ ) Or 'All' in (SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #Prompt('Establishment Code (All for all)','A','Activities\\Activity Establishment Code',multi,free,Not_Persistent,User:70) */ ) ) AND ( AT_ACTIVITY_ESTABLISHMENT.AREA_DESCRIPTION in (SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #Prompt('Establishment Area (All for all)','A','Hidden Objects\\Activity Establishment Area',multi,free,Not_Persistent,User:68) */ ) Or 'All' in (SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #Prompt('Establishment Area (All for all)','A','Hidden Objects\\Activity Establishment Area',multi,free,Not_Persistent,User:68) */ ) ) AND AT_DIM_PROGRAMME_SERVICE.DESCRIPTION IN ( 'Education Leading to Accreditation','Other Education Activities' ) AND ( AT_FACT_OFFENDER_ACTIVITY.START_TIME >= (SELECT START_DATE FROM prompt_ /*= #Prompt('Enter Begin Date (DD/MM/YYYY):','D',,mono,free,Not_Persistent,User:3) */ ) and AT_FACT_OFFENDER_ACTIVITY.START_TIME < to_date((SELECT END_DATE FROM prompt_ /*= #Prompt('Enter End Date (DD/MM/YYYY):','D',,mono,free,Not_Persistent,User:4) */ )) + 1 ) AND ( AT_FACT_OFFENDER_ACTIVITY.ALLOCATED_FLAG = 'Y' ) AND ( AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND='Y' ) ) GROUP BY AT_ACTIVITY_ESTABLISHMENT.AREA_DESCRIPTION, AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_DIM_PROGRAMME_TYPE.DESCRIPTION, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE='MERGE' Then 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL Then 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE='W8' then 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE='O1' then 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code (All for all)','A','Activities\\Activity Establishment Code',multi,free,Not_Persistent,User:70)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Begin Date (DD/MM/YYYY):",
+          "description": "@Prompt('Enter Begin Date (DD/MM/YYYY):','D',,mono,free,Not_Persistent,User:3)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter End Date (DD/MM/YYYY):",
+          "description": "@Prompt('Enter End Date (DD/MM/YYYY):','D',,mono,free,Not_Persistent,User:4)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3376639/DP6",
+      "name": "Ethnic Code",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS PHYSICAL_DETAILS_ETHNIC_CODE, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION END AS ETHNIC_DESCRIPTION FROM BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES), dataset_ AS (SELECT PHYSICAL_DETAILS_ETHNIC_CODE, ETHNIC_DESCRIPTION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "PHYSICAL_DETAILS_ETHNIC_CODE",
+            "type": "string",
+            "display": "Physical Details.Ethnic Code",
+            "legacyId": "DP6.DO9b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ETHNIC_DESCRIPTION",
+            "type": "string",
+            "display": "Ethnic Description",
+            "legacyId": "DP6.DO9d",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP5",
+      "name": "MIS Data Load Date",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP5.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "203559.RS",
+      "name": "Ethnic Monitoring Education Report",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP2_DO655",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO792",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO6B1",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO64C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "202056.RS",
+      "name": "Ethnic Code Breakdown",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP6",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ETHNIC_DESCRIPTION NOT(IN ('Unknown','Not Valid','Not Applicable')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ETHNIC_DESCRIPTION",
+            "display": "Ethnic Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP6.DO9d"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Required keyword: 'format' missing for <class 'sqlglot.expressions.StrToDate'>. Line 1, Col: 2868.\n  E FROM prompt_ /*= #Prompt('Enter End Date (DD/MM/YYYY):','D',,mono,free,Not_Persistent,User:4) */ )\u001b[4m)\u001b[0m + 1 ) AND ( AT_FACT_OFFENDER_ACTIVITY.ALLOCATED_FLAG = 'Y' ) AND ( AT_OFFENDER_BOOKING.MIS_CURRENT_]",
+      "entityId": "okhGYi8ADxxaTVUANAaEcEP69_g",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[0].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "okhGYi8ADxxaTVUANAaEcEP69_g",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO655 does not have corresponding dataset schema field",
+      "entityId": "203559.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO792 does not have corresponding dataset schema field",
+      "entityId": "203559.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO6B1 does not have corresponding dataset schema field",
+      "entityId": "203559.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO64C does not have corresponding dataset schema field",
+      "entityId": "203559.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3376639/DP2",
+      "entityType": "dataset"
+    }
+  ]
+}

@@ -1,0 +1,648 @@
+{
+  "id": "Fln3mAEOCgMAoskaAAB3uhn.ACJIAGc1",
+  "name": "ORS Print Activities and Appointments",
+  "description": "<br/>22/03/22 - Last update brings Pay Rates, Codes and Special pay status<br/>ACT0006 v00.01.02 Last modified: 22/03/2022 This report prints a list of all prisoners who are due to attend an Activity or Appointment. Activities with a status of Cancelled or Suspended are not displayed.",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACT0006 v00.01.02"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377239/DP6",
+      "name": "Appointments",
+      "description": "OR - Activities",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_HEADER_BLOCK.STATUS_2, CASE WHEN MAX(CASE WHEN AT_OFFENDER_ALERTS.ALERT_CODE = 'HA' THEN CASE WHEN AT_OFFENDER_ALERTS.ALERT_TYPE = 'H' THEN CASE WHEN AT_OFFENDER_ALERTS.ALERT_STATUS = 'ACTIVE' THEN 2 ELSE 1 END ELSE 1 END ELSE 1 END) OVER (PARTITION BY (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID)) = 2 THEN 'Y' ELSE 'N' END AS ACCT, AT_V_OFFND_ALL_SCHDLS.START_TIME, AT_V_OFFND_ALL_SCHDLS.END_TIME, AT_OFFENDER_BOOKING.IN_OUT_STATUS, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) = 0 THEN NULL ELSE SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) + 1, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) = 0 THEN LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION) ELSE INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) - INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) END - 1) END AS UNIT_CODE_1, AT_V_OFFND_ALL_SCHDLS.TO_INTERNAL_LOCATION_DESC, AT_V_OFFND_ALL_SCHDLS.EVENT_SUB_TYPE_DESC, AT_V_OFFND_ALL_SCHDLS.EVENT_STATUS FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.V_HEADER_BLOCK AT_HEADER_BLOCK, OMS_OWNER.OFFENDER_ALERTS AT_OFFENDER_ALERTS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, OMS_OWNER.V_OFFENDER_ALL_SCHEDULES AT_V_OFFND_ALL_SCHDLS, OMS_OWNER.LIVING_UNITS AT_LIVING_UNITS, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_ALERTS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_V_OFFND_ALL_SCHDLS.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID = AT_LIVING_UNITS.LIVING_UNIT_ID) AND (NOT AT_LIVING_UNITS.HOUSING_UNIT_TYPE IN ('OU', 'REC')) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_HEADER_BLOCK.OFFENDER_BOOK_ID (+)) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND ((AT_LIVING_UNITS.AGY_LOC_ID || '-' || AT_LIVING_UNITS.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')) AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND AT_V_OFFND_ALL_SCHDLS.EVENT_STATUS <> 'CANC' AND AT_V_OFFND_ALL_SCHDLS.EVENT_TYPE = 'APP' AND AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' AND AT_V_OFFND_ALL_SCHDLS.EVENT_DATE = TO_DATE('22-03-2022 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_V_OFFND_ALL_SCHDLS.EVENT_DATE >= TRUNC(CURRENT_TIMESTAMP))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, UNIT_DESCRIPTION_4_SHORT, STATUS_2, ACCT, START_TIME, END_TIME, IN_OUT_STATUS, UNIT_CODE_1, TO_INTERNAL_LOCATION_DESC, EVENT_SUB_TYPE_DESC, EVENT_STATUS FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP6.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP6.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP6.DO10046",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DP6.DO10427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "STATUS_2",
+            "type": "string",
+            "display": "Header Block Category",
+            "legacyId": "DP6.DO11051",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ACCT",
+            "type": "string",
+            "display": "ACCT",
+            "legacyId": "DP6.DO10585",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "START_TIME",
+            "type": "date",
+            "display": "Event Start Time",
+            "legacyId": "DP6.DO105ab",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "END_TIME",
+            "type": "date",
+            "display": "Event End Time",
+            "legacyId": "DP6.DO10be9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "IN_OUT_STATUS",
+            "type": "string",
+            "display": "In Out Status",
+            "legacyId": "DP6.DO1049a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "UNIT_CODE_1",
+            "type": "string",
+            "display": "Unit Code 1",
+            "legacyId": "DP6.DO10472",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "TO_INTERNAL_LOCATION_DESC",
+            "type": "string",
+            "display": "To Internal Location Description",
+            "legacyId": "DP6.DO10be8",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "EVENT_SUB_TYPE_DESC",
+            "type": "string",
+            "display": "Event Sub Type Desc",
+            "legacyId": "DP6.DO105ad",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "EVENT_STATUS",
+            "type": "string",
+            "display": "Event Status",
+            "legacyId": "DP6.DO105b3",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376286/DPb",
+      "name": "Special Pay",
+      "description": "OR - Sentence",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_OFFENDER_PAY_STATUSES.SPECIAL_PAY_TYPE_CODE, AT_OFFENDER_PAY_STATUSES.START_DATE, AT_OFFENDER_PAY_STATUSES.END_DATE, AT_SPECIAL_PAY_DESC.DESCRIPTION FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_SPECIAL_PAY_DESC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDER_PAY_STATUSES AT_OFFENDER_PAY_STATUSES, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_PAY_STATUSES.OFFENDER_BOOK_ID) AND (AT_OFFENDER_PAY_STATUSES.SPECIAL_PAY_TYPE_CODE = AT_SPECIAL_PAY_DESC.CODE (+)) AND (AT_SPECIAL_PAY_DESC.DOMAIN (+) = 'PAY_TYPE' AND AT_SPECIAL_PAY_DESC.PARENT_CODE (+) = 'SPECIAL') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('DPRWS')) AND (AT_OFFENDER_PAY_STATUSES.END_DATE IS NULL OR AT_OFFENDER_PAY_STATUSES.END_DATE >= CURRENT_TIMESTAMP))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, SPECIAL_PAY_TYPE_CODE, START_DATE, END_DATE, DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPb.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DPb.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DPb.DO10046",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "SPECIAL_PAY_TYPE_CODE",
+            "type": "string",
+            "display": "Special Pay Type Code",
+            "legacyId": "DPb.DO1106a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "START_DATE",
+            "type": "date",
+            "display": "Special Pay Start Date",
+            "legacyId": "DPb.DO1106b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "END_DATE",
+            "type": "date",
+            "display": "Special Pay End Date",
+            "legacyId": "DPb.DO1106c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Special Pay Description",
+            "legacyId": "DPb.DO11074",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "14191.RS",
+      "name": "By Slot, Wing and Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ACTIVITIES_EVENT_STATUS <> 'CANC')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": []
+      },
+      "dataset": "MISSING"
+    },
+    {
+      "id": "170683.RS",
+      "name": "By Slot, Event and Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ACTIVITIES_EVENT_STATUS <> 'CANC')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": []
+      },
+      "dataset": "MISSING"
+    },
+    {
+      "id": "170712.RS",
+      "name": "By Slot, Location, Event",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ACTIVITIES_EVENT_STATUS <> 'CANC')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": []
+      },
+      "dataset": "MISSING"
+    },
+    {
+      "id": "166994.RS",
+      "name": "By NOMS Number",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ACTIVITIES_EVENT_STATUS <> 'CANC')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      },
+      "dataset": "MISSING"
+    },
+    {
+      "id": "17264.RS",
+      "name": "By Cell",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377239/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (ACTIVITIES_EVENT_STATUS <> 'CANC'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:V_PAY_BAND_CODE",
+            "display": "Pay Band",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Offender Pay Band Code] ForEach([Activity Description]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_IEP_LEVEL_PAY_RATE",
+            "display": "Pay Rate",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([IEP Level] =\"BAS\";[Offender Half Day Rate BAS];If([IEP Level] = \"ENH\"; [Offender Half Day Rate ENH];If([IEP Level] = \"STD\";[Offender Half Day Rate STD]))) ForEach([Activity Description]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_SPECIAL_PAY_STATUS",
+            "display": "Special Pay Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Special Pay Type Code] ForEach([Activity Description]) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:V_IEP",
+            "display": "IEP",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[IEP Level]"
+          },
+          {
+            "name": "$ref:DP2_DO1049A",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "170432.RS",
+      "name": "Special Pay Only",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376286/DPb",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ACTIVITIES_EVENT_STATUS <> 'CANC')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPb.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DO10046"
+          },
+          {
+            "name": "$ref:START_DATE",
+            "display": "Special Pay Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DO1106b"
+          },
+          {
+            "name": "$ref:END_DATE",
+            "display": "Special Pay End Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DO1106c"
+          },
+          {
+            "name": "$ref:DESCRIPTION",
+            "display": "Special Pay Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPb.DO11074"
+          }
+        ]
+      }
+    },
+    {
+      "id": "17459.RS",
+      "name": "Unlock List by Wing (AM and PM)",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377239/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ACTIVITIES_EVENT_STATUS <> 'CANC')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DP2_DO10472",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "17949.RS",
+      "name": "Unlock List by AM Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377239/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ACTIVITIES_EVENT_STATUS <> 'CANC')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DP2_DO10472",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "18049.RS",
+      "name": "Unlock List by PM Location ",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377239/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ACTIVITIES_EVENT_STATUS <> 'CANC')"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DP2_DO10472",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "missing query plan statement",
+      "entityId": "3377239/DP2",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[0] requires property \"dataset\"",
+      "entityId": "Fln3mAEOCgMAoskaAAB3uhn.ACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[1] requires property \"dataset\"",
+      "entityId": "Fln3mAEOCgMAoskaAAB3uhn.ACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[2] requires property \"dataset\"",
+      "entityId": "Fln3mAEOCgMAoskaAAB3uhn.ACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[3] requires property \"dataset\"",
+      "entityId": "Fln3mAEOCgMAoskaAAB3uhn.ACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 14191.RS does not have corresponding dataset undefined",
+      "entityId": "14191.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 170683.RS does not have corresponding dataset undefined",
+      "entityId": "170683.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 170712.RS does not have corresponding dataset undefined",
+      "entityId": "170712.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 166994.RS does not have corresponding dataset undefined",
+      "entityId": "166994.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 17264.RS does not have corresponding dataset 3377239/DP2",
+      "entityId": "17264.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 17459.RS does not have corresponding dataset 3377239/DP2",
+      "entityId": "17459.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 17949.RS does not have corresponding dataset 3377239/DP2",
+      "entityId": "17949.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 18049.RS does not have corresponding dataset 3377239/DP2",
+      "entityId": "18049.RS",
+      "entityType": "variant"
+    }
+  ]
+}

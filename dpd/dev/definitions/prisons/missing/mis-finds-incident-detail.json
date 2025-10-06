@@ -1,0 +1,1341 @@
+{
+  "id": "FrQG1lrrYgAAtOAAAHCb6F4AACJIAFJ8",
+  "name": "MIS Finds Incident Detail",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "INC0021 v2.0 Finds",
+      "Incidents"
+    ]
+  },
+  "description": "Returns the Finds recorded at an establishment between the date range specified.  If a drug was found then the detail of that drug is also displayed. Please note this report will not show Incidents where a 'No' response was recorded to all 'Find' questions.<br/>INC0021 - v2.0 Last Modified 06/02/2023",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375377/DP13",
+      "name": "Finds",
+      "description": "MIS - Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, CASE WHEN DT_FIRST_RECEPTION.DAY_DATE < '31/12/9000' THEN DT_FIRST_RECEPTION.DAY_DATE ELSE NULL END AS DATE_FIRST_RECEPTION, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION END AS ETHNIC_DESCRIPTION, COALESCE(AT_OFFENDER_BOOKING.RELIGION_CODE, 'Not Specified') AS RELIGION_CODE, COALESCE(AT_OFFENDER_BOOKING.RELIGION_DESCRIPTION, 'Not Specified') AS RELIGION_DESCRIPTION, DT_ADMISSION.MOVEMENT_TIME, DT_COURT_FIRST_RCVD_FROM.COURT_DESCRIPTION, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_INCIDENT.INCIDENT_CASE_ID, AT_INCIDENT_DATE.DAY_DATE, AT_INCIDENT.INCIDENT_CASE_ID AS INCIDENT_NUMBER, AT_INCIDENT_PARTICIP_ROLE.PARTICIPATION_ROLE_DESCRIPTION, AT_INCIDENT.INCIDENT_TITLE, AT_INCIDENT.INCIDENT_TEXT, AT_INCIDENT_ANSWER.ANSWER_DESCRIPTION, AT_INCIDENT_ANSWER.QUESTIONNAIRE_ANS_ID, AT_INCIDENT_STATUS.INCIDENT_STATUS_DESCRIPTION, AT_INCIDENT_QUESTION.QUESTION_DESCRIPTION FROM BODIMIS.FACT_INCIDENT_QUESTIONNAIRE AT_INCIDENT_QUESTIONNAIRE, (SELECT ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk, fme.from_location_type, MAX(fme.MOVEMENT_SEQ) AS MOVEMENT_SEQ, MAX(d.day_date) AS MOVEMENT_TIME, TRUNC(ETL.LOAD_END_DATETIME) AS LOAD_DATE FROM BODIMIS.FACT_MOVEMENT_EXTERNAL fme, BODIMIS.DIM_OFFENDER_BOOKING ob, BODIMIS.DIM_ESTABLISHMENT est, BODIMIS.ETL_LOAD_LOG ETL, BODIMIS.DIM_DATE d WHERE ob.ESTABLISHMENT_SK = est.ESTABLISHMENT_SK AND d.date_sk = fme.date_sk AND fme.offender_booking_sk = ob.offender_booking_sk AND ob.active_status IN ('Active In', 'Active Out') AND ob.MIS_CURRENT_RECORD_IND = 'Y' AND ob.ACTIVE_FLAG = 'Y' AND ETL.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL) AND ob.ESTABLISHMENT_SK = fme.to_location_sk AND fme.movement_seq = (SELECT MAX(fme2.movement_seq) FROM BODIMIS.FACT_MOVEMENT_EXTERNAL fme2 WHERE fme.offender_booking_sk = fme2.offender_booking_sk AND fme2.direction_code = 'IN' AND fme2.TYPE = 'Admission' AND fme2.To_location_type = 'Establishment' AND fme2.reason_code <> 'R') GROUP BY ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk, fme.from_location_type, ETL.LOAD_END_DATETIME) DT_ADMISSION, BODIMIS.FACT_INCIDENT AT_INCIDENT, BODIMIS.DIM_ESTABLISHMENT AT_INCIDENT_ESTABLISHMENT, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, (SELECT * FROM (SELECT m.offender_booking_sk, d.day_date, m.movement_seq, m.movement_time, ROW_NUMBER() OVER (PARTITION BY m.offender_booking_sk ORDER BY m.movement_seq) AS row_seq_filter FROM bodimis.fact_movement_external m INNER JOIN bodimis.dim_date d ON m.date_sk = d.date_sk WHERE m.direction_code = 'IN') WHERE row_seq_filter = 1) DT_FIRST_RECEPTION, (SELECT F_M_E.OFFENDER_BOOKING_SK, D_D.DAY_DATE, F_M_E.MOVEMENT_TIME, D_C.COURT_DESCRIPTION FROM BODIMIS.FACT_MOVEMENT_EXTERNAL F_M_E, BODIMIS.DIM_DATE D_D, BODIMIS.DIM_COURT D_C WHERE D_D.DATE_SK = F_M_E.DATE_SK AND D_C.COURT_SK = F_M_E.FROM_LOCATION_SK AND (F_M_E.OFFENDER_BOOKING_SK, D_D.DAY_DATE, F_M_E.MOVEMENT_TIME) IN (SELECT F_M_E.OFFENDER_BOOKING_SK, MIN(D_D.DAY_DATE), MIN(F_M_E.MOVEMENT_TIME) FROM BODIMIS.FACT_MOVEMENT_EXTERNAL F_M_E, BODIMIS.DIM_DATE D_D WHERE D_D.DATE_SK = F_M_E.DATE_SK GROUP BY F_M_E.OFFENDER_BOOKING_SK)) DT_COURT_FIRST_RCVD_FROM, BODIMIS.DIM_INCIDENT_STATUS AT_INCIDENT_STATUS, BODIMIS.DIM_DATE AT_INCIDENT_DATE, BODIMIS.DIM_INCIDENT_PARTICIP_ROLE AT_INCIDENT_PARTICIP_ROLE, BODIMIS.DIM_INCIDENT_ANSWER AT_INCIDENT_ANSWER, BODIMIS.DIM_INCIDENT_QUESTION AT_INCIDENT_QUESTION, BODIMIS.DIM_INCIDENT_TYPE AT_INCIDENT_TYPE, BODIMIS.FACT_INCIDENT_PARTICIPATION AT_INCIDENT_PARTICIPATION WHERE (AT_INCIDENT.INCIDENT_STATUS_SK = AT_INCIDENT_STATUS.INCIDENT_STATUS_SK) AND (AT_INCIDENT_PARTICIPATION.INCIDENT_PARTICIPATION_ROLE_SK = AT_INCIDENT_PARTICIP_ROLE.INCIDENT_PARTICIPATION_ROLE_SK) AND (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_SK = AT_INCIDENT.ESTABLISHMENT_SK) AND (AT_INCIDENT_DATE.DATE_SK = AT_INCIDENT.INCIDENT_DATE_SK) AND (AT_INCIDENT.INCIDENT_CASE_ID = AT_INCIDENT_PARTICIPATION.INCIDENT_CASE_ID) AND (AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_INCIDENT_QUESTIONNAIRE.INCIDENT_CASE_ID = AT_INCIDENT.INCIDENT_CASE_ID) AND (AT_INCIDENT_ANSWER.INCIDENT_QUESTION_SK = AT_INCIDENT_QUESTION.INCIDENT_QUESTION_SK) AND (AT_INCIDENT_QUESTIONNAIRE.INCIDENT_ANSWER_SK = AT_INCIDENT_ANSWER.INCIDENT_ANSWER_SK) AND (AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK IS NULL OR AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_INCIDENT_QUESTION.QUESTIONNAIRE_ID = AT_INCIDENT_TYPE.QUESTIONNAIRE_ID) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (DT_COURT_FIRST_RCVD_FROM.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (DT_FIRST_RECEPTION.OFFENDER_BOOKING_SK = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_ADMISSION.OFFENDER_BOOKING_SK (+)) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_TYPE.INCIDENT_TYPE_CODE_NK IN ('FINDS', 'FIND', 'FINDS1', 'FIND1', 'FIND0322', 'FIND0422') AND ((AT_INCIDENT_DATE.DAY_DATE) BETWEEN TO_DATE('01-12-2022 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('23-01-2023 00:00:00', 'DD-MM-YYYY HH24:MI:SS')) AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, OFFENDER_AGE, DATE_OF_BIRTH, DATE_FIRST_RECEPTION, MAIN_LEGAL_STATUS_CODE, MAIN_LEGAL_STATUS_DESCRIPTION, ETHNIC_CODE, ETHNIC_DESCRIPTION, RELIGION_CODE, RELIGION_DESCRIPTION, MOVEMENT_TIME, COURT_DESCRIPTION, SURNAME, FIRST_NAME, ESTABLISHMENT_DESCRIPTION, INCIDENT_CASE_ID, DAY_DATE, INCIDENT_NUMBER, PARTICIPATION_ROLE_DESCRIPTION, INCIDENT_TITLE, INCIDENT_TEXT, ANSWER_DESCRIPTION, QUESTIONNAIRE_ANS_ID, INCIDENT_STATUS_DESCRIPTION, QUESTION_DESCRIPTION, 'TBD' AS V_AGE_AT_FIND_DISPLAY FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP13.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DP13.DO10082",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP13.DO10085",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DATE_FIRST_RECEPTION",
+            "type": "date",
+            "display": "Date First Reception",
+            "legacyId": "DP13.DO10106",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "MAIN_LEGAL_STATUS_CODE",
+            "type": "string",
+            "display": "Main Legal Status Code",
+            "legacyId": "DP13.DO100de",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "MAIN_LEGAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Main Legal Status Description",
+            "legacyId": "DP13.DO100df",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP13.DO1009b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "ETHNIC_DESCRIPTION",
+            "type": "string",
+            "display": "Ethnic Description",
+            "legacyId": "DP13.DO1009d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "RELIGION_CODE",
+            "type": "string",
+            "display": "Religion Code",
+            "legacyId": "DP13.DO100b2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "RELIGION_DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DP13.DO100b3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "MOVEMENT_TIME",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DP13.DO107ce",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "COURT_DESCRIPTION",
+            "type": "string",
+            "display": "Court 1st Received From (External)",
+            "legacyId": "DP13.DO10163",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP13.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP13.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Establishment Name",
+            "legacyId": "DP13.DO20",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "INCIDENT_CASE_ID",
+            "type": "double",
+            "display": "Incident Case Id",
+            "legacyId": "DP13.DO6ba",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Incident Date (Date Only)",
+            "legacyId": "DP13.DO1b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "INCIDENT_NUMBER",
+            "type": "double",
+            "display": "Incident Number",
+            "legacyId": "DP13.DOb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 18,
+            "name": "PARTICIPATION_ROLE_DESCRIPTION",
+            "type": "string",
+            "display": "Participation Role Description",
+            "legacyId": "DP13.DO6a7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 19,
+            "name": "INCIDENT_TITLE",
+            "type": "string",
+            "display": "Incident Title",
+            "legacyId": "DP13.DO69e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 20,
+            "name": "INCIDENT_TEXT",
+            "type": "string",
+            "display": "Incident Text",
+            "legacyId": "DP13.DO297",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 21,
+            "name": "ANSWER_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Response Description",
+            "legacyId": "DP13.DO1f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 22,
+            "name": "QUESTIONNAIRE_ANS_ID",
+            "type": "double",
+            "display": "Incident Questionnaire Ans Id",
+            "legacyId": "DP13.DO731",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 23,
+            "name": "INCIDENT_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Status",
+            "legacyId": "DP13.DOa",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 24,
+            "name": "QUESTION_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Question Description",
+            "legacyId": "DP13.DO1d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 25,
+            "name": "V_AGE_AT_FIND_DISPLAY",
+            "type": "string",
+            "display": "V_AGE_AT_FIND_DISPLAY",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DP15",
+      "name": "No Prisoners",
+      "description": "MIS - Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_INCIDENT.INCIDENT_CASE_ID, AT_INCIDENT_DATE.DAY_DATE, AT_INCIDENT.INCIDENT_CASE_ID AS INCIDENT_NUMBER, AT_INCIDENT.INCIDENT_TITLE, AT_INCIDENT.INCIDENT_TEXT, AT_INCIDENT_ANSWER.ANSWER_DESCRIPTION, AT_INCIDENT_ANSWER.QUESTIONNAIRE_ANS_ID, AT_INCIDENT_STATUS.INCIDENT_STATUS_DESCRIPTION, AT_INCIDENT_QUESTION.QUESTION_DESCRIPTION FROM BODIMIS.FACT_INCIDENT_QUESTIONNAIRE AT_INCIDENT_QUESTIONNAIRE, BODIMIS.FACT_INCIDENT AT_INCIDENT, BODIMIS.DIM_ESTABLISHMENT AT_INCIDENT_ESTABLISHMENT, BODIMIS.DIM_INCIDENT_STATUS AT_INCIDENT_STATUS, BODIMIS.DIM_DATE AT_INCIDENT_DATE, BODIMIS.DIM_INCIDENT_ANSWER AT_INCIDENT_ANSWER, BODIMIS.DIM_INCIDENT_QUESTION AT_INCIDENT_QUESTION, BODIMIS.DIM_INCIDENT_TYPE AT_INCIDENT_TYPE WHERE (AT_INCIDENT.INCIDENT_STATUS_SK = AT_INCIDENT_STATUS.INCIDENT_STATUS_SK) AND (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_SK = AT_INCIDENT.ESTABLISHMENT_SK) AND (AT_INCIDENT_DATE.DATE_SK = AT_INCIDENT.INCIDENT_DATE_SK) AND (AT_INCIDENT_QUESTIONNAIRE.INCIDENT_CASE_ID = AT_INCIDENT.INCIDENT_CASE_ID) AND (AT_INCIDENT_ANSWER.INCIDENT_QUESTION_SK = AT_INCIDENT_QUESTION.INCIDENT_QUESTION_SK) AND (AT_INCIDENT_QUESTIONNAIRE.INCIDENT_ANSWER_SK = AT_INCIDENT_ANSWER.INCIDENT_ANSWER_SK) AND (AT_INCIDENT_QUESTION.QUESTIONNAIRE_ID = AT_INCIDENT_TYPE.QUESTIONNAIRE_ID) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (NOT AT_INCIDENT.INCIDENT_CASE_ID IN (3976641, 3977281, 3977291, 3977309, 3977932, 3977965, 3978110, 3979811, 3979975, 3980308, 3980816, 3982443, 3982778, 3982803, 3982821, 3983055, 3983314, 3983581, 3987498, 3989105, 3989529, 3989938, 3989950, 3990061, 3991258, 3991299, 3993009, 3996586, 3997047, 3999299, 3999347, 3999907, 3999910, 4000254, 4000300, 4002041, 4002594, 4002625, 4002716, 4004262) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND NOT AT_INCIDENT.INCIDENT_CASE_ID IN (3975755, 3976062, 3976113, 3976217, 3976607, 3976625, 3976698, 3976791, 3976987, 3977154, 3977277, 3977316, 3977362, 3977531, 3977625, 3977644, 3977656, 3977753, 3977974, 3978164, 3978189, 3978309, 3978384, 3978392, 3978572, 3978609, 3978656, 3978678, 3978756, 3978764, 3979042, 3979177, 3979186, 3979215, 3979218, 3979270, 3979448, 3979450, 3979629, 3979702, 3979747, 3979778, 3979832, 3979949, 3979964, 3980280, 3980295, 3980298, 3980621, 3980640, 3980880, 3980947, 3981292, 3981417, 3981609, 3981628, 3981660, 3981684, 3982007, 3982026, 3982208, 3982653, 3982798, 3982821, 3982930, 3983314, 3983363, 3983387, 3983521, 3983524, 3983590, 3983811, 3983937, 3984015, 3984030, 3984176, 3984202, 3984309, 3984336, 3984424, 3984460, 3984572, 3984647, 3984770, 3984772, 3984936, 3985007, 3985217, 3985222, 3985329, 3985392, 3985691, 3985701, 3985781, 3985952, 3986005, 3986130, 3986225, 3986334, 3986390, 3986573, 3986638, 3986771, 3986864, 3986943, 3987010, 3987172, 3987294, 3987295, 3987326, 3987336, 3987441, 3987454, 3987455, 3987470, 3987504, 3987570, 3987698, 3987706, 3987807, 3987808, 3987809, 3987859, 3987908, 3987955, 3988176, 3988340, 3988363, 3988402, 3988423, 3988430, 3988509, 3988525, 3988567, 3988590, 3988733, 3988740, 3988752, 3988757, 3988784, 3988872, 3989077, 3989079, 3989132, 3989205, 3989314, 3989444, 3989577, 3989729, 3989800, 3989828, 3989871, 3990138, 3990161, 3990169, 3990343, 3990592, 3990689, 3990778, 3990780, 3990927, 3991163, 3991178, 3991267, 3991285, 3991520, 3991530, 3991537, 3991556, 3991629, 3991681, 3991688, 3991737, 3991765, 3991801, 3991828, 3991857, 3991859, 3991945, 3992100, 3992257, 3992301, 3992374, 3992477, 3992713, 3992887, 3993103, 3993128, 3993138, 3993384, 3993420, 3993566, 3993599, 3993728, 3993774, 3994003, 3994079, 3994240, 3994306, 3994429, 3994530, 3994617, 3994707, 3994827, 3994972, 3994973, 3995120, 3995261, 3995529, 3995539, 3995556, 3995651, 3995758, 3995847, 3995958, 3995993, 3996108, 3996133, 3996166, 3996182, 3996224, 3996525, 3996586, 3996798, 3996900, 3996906, 3997299, 3997323, 3997354, 3997421, 3997464, 3997468, 3997561, 3997661, 3997716, 3997743, 3997801, 3998014, 3998023, 3998039, 3998072, 3998090, 3998109, 3998148, 3998372, 3998458, 3998601, 3998655, 3998779, 3998801, 3998850, 3998864, 3998871, 3999003, 3999391, 3999454, 3999469, 3999500, 3999719, 3999843, 3999959, 4000009, 4000361, 4000406, 4000413, 4000442, 4000528, 4000663, 4000865, 4001097, 4001235, 4001271, 4001275, 4001544, 4001650, 4001656, 4001692, 4001702, 4001707, 4001708, 4001709, 4001766, 4002063, 4002168, 4002241, 4002280, 4002410, 4002465, 4002600, 4002678, 4002700, 4002716, 4002773, 4002785, 4002850, 4003319, 4003551, 4003609, 4003634, 4003783, 4003784, 4003969, 4003973, 4003988, 4003992, 4003997, 4004003, 4004047, 4004374) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND AT_INCIDENT_TYPE.INCIDENT_TYPE_CODE_NK IN ('FINDS', 'FIND', 'FINDS1', 'FIND1', 'FIND0422', 'FIND0322') AND AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_) AND ((AT_INCIDENT_DATE.DAY_DATE) BETWEEN TO_DATE('01-12-2022 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('23-01-2023 00:00:00', 'DD-MM-YYYY HH24:MI:SS')))), dataset_ AS (SELECT ESTABLISHMENT_DESCRIPTION, INCIDENT_CASE_ID, DAY_DATE, INCIDENT_NUMBER, INCIDENT_TITLE, INCIDENT_TEXT, ANSWER_DESCRIPTION, QUESTIONNAIRE_ANS_ID, INCIDENT_STATUS_DESCRIPTION, QUESTION_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Establishment Name",
+            "legacyId": "DP15.DO20",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "INCIDENT_CASE_ID",
+            "type": "double",
+            "display": "Incident Case Id",
+            "legacyId": "DP15.DO6ba",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Incident Date (Date Only)",
+            "legacyId": "DP15.DO1b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "INCIDENT_NUMBER",
+            "type": "double",
+            "display": "Incident Number",
+            "legacyId": "DP15.DOb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "INCIDENT_TITLE",
+            "type": "string",
+            "display": "Incident Title",
+            "legacyId": "DP15.DO69e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "INCIDENT_TEXT",
+            "type": "string",
+            "display": "Incident Text",
+            "legacyId": "DP15.DO297",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ANSWER_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Response Description",
+            "legacyId": "DP15.DO1f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "QUESTIONNAIRE_ANS_ID",
+            "type": "double",
+            "display": "Incident Questionnaire Ans Id",
+            "legacyId": "DP15.DO731",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "INCIDENT_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Status",
+            "legacyId": "DP15.DOa",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "QUESTION_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Question Description",
+            "legacyId": "DP15.DO1d",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DP14",
+      "name": "Released Prisoners",
+      "description": "MIS - Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END AS DATE_OF_BIRTH, DT_ADMISSION_ALL_STATUS.MOVEMENT_DATE, DT_ADMISSION.MOVEMENT_TIME, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, COALESCE(AT_OFFENDER_BOOKING.RELIGION_CODE, 'Not Specified') AS RELIGION_CODE, COALESCE(AT_OFFENDER_BOOKING.RELIGION_DESCRIPTION, 'Not Specified') AS RELIGION_DESCRIPTION, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE, AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK, AT_DIM_DATE_EXT_MOV.DAY_DATE, AT_FACT_MOV_EXT.TYPE, AT_FACT_MOV_EXT.REASON_CODE, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_INCIDENT.INCIDENT_CASE_ID, AT_INCIDENT_DATE.DAY_DATE AS INCIDENT_DATE_, AT_INCIDENT.INCIDENT_CASE_ID AS INCIDENT_NUMBER, AT_INCIDENT_PARTICIP_ROLE.PARTICIPATION_ROLE_DESCRIPTION, DT_COURT_FIRST_RCVD_FROM.COURT_DESCRIPTION, AT_INCIDENT.INCIDENT_TITLE, AT_INCIDENT.INCIDENT_TEXT, AT_INCIDENT_ANSWER.ANSWER_DESCRIPTION, AT_INCIDENT_ANSWER.QUESTIONNAIRE_ANS_ID, AT_INCIDENT_STATUS.INCIDENT_STATUS_DESCRIPTION, AT_INCIDENT_QUESTION.QUESTION_DESCRIPTION FROM BODIMIS.FACT_INCIDENT_QUESTIONNAIRE AT_INCIDENT_QUESTIONNAIRE, (SELECT ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk, fme.from_location_type, MAX(fme.MOVEMENT_SEQ) AS MOVEMENT_SEQ, MAX(d.day_date) AS MOVEMENT_TIME, TRUNC(ETL.LOAD_END_DATETIME) AS LOAD_DATE FROM BODIMIS.FACT_MOVEMENT_EXTERNAL fme, BODIMIS.DIM_OFFENDER_BOOKING ob, BODIMIS.DIM_ESTABLISHMENT est, BODIMIS.ETL_LOAD_LOG ETL, BODIMIS.DIM_DATE d WHERE ob.ESTABLISHMENT_SK = est.ESTABLISHMENT_SK AND d.date_sk = fme.date_sk AND fme.offender_booking_sk = ob.offender_booking_sk AND ob.active_status IN ('Active In', 'Active Out') AND ob.MIS_CURRENT_RECORD_IND = 'Y' AND ob.ACTIVE_FLAG = 'Y' AND ETL.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL) AND ob.ESTABLISHMENT_SK = fme.to_location_sk AND fme.movement_seq = (SELECT MAX(fme2.movement_seq) FROM BODIMIS.FACT_MOVEMENT_EXTERNAL fme2 WHERE fme.offender_booking_sk = fme2.offender_booking_sk AND fme2.direction_code = 'IN' AND fme2.TYPE = 'Admission' AND fme2.To_location_type = 'Establishment' AND fme2.reason_code <> 'R') GROUP BY ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk, fme.from_location_type, ETL.LOAD_END_DATETIME) DT_ADMISSION, BODIMIS.FACT_INCIDENT AT_INCIDENT, BODIMIS.DIM_ESTABLISHMENT AT_INCIDENT_ESTABLISHMENT, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_DOB, (SELECT FME.OFFENDER_BOOKING_SK, MAX(FME.MOVEMENT_SEQ) AS MOVEMENT_SEQ, MAX(D.DAY_DATE) AS MOVEMENT_DATE FROM BODIMIS.FACT_MOVEMENT_EXTERNAL FME, BODIMIS.DIM_DATE D WHERE D.DATE_SK = FME.DATE_SK AND FME.TYPE = 'Admission' GROUP BY FME.OFFENDER_BOOKING_SK) DT_ADMISSION_ALL_STATUS, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_FROM, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_INCIDENT_STATUS AT_INCIDENT_STATUS, BODIMIS.DIM_DATE AT_INCIDENT_DATE, BODIMIS.DIM_INCIDENT_PARTICIP_ROLE AT_INCIDENT_PARTICIP_ROLE, (SELECT F_M_E.OFFENDER_BOOKING_SK, D_D.DAY_DATE, F_M_E.MOVEMENT_TIME, D_C.COURT_DESCRIPTION FROM BODIMIS.FACT_MOVEMENT_EXTERNAL F_M_E, BODIMIS.DIM_DATE D_D, BODIMIS.DIM_COURT D_C WHERE D_D.DATE_SK = F_M_E.DATE_SK AND D_C.COURT_SK = F_M_E.FROM_LOCATION_SK AND (F_M_E.OFFENDER_BOOKING_SK, D_D.DAY_DATE, F_M_E.MOVEMENT_TIME) IN (SELECT F_M_E.OFFENDER_BOOKING_SK, MIN(D_D.DAY_DATE), MIN(F_M_E.MOVEMENT_TIME) FROM BODIMIS.FACT_MOVEMENT_EXTERNAL F_M_E, BODIMIS.DIM_DATE D_D WHERE D_D.DATE_SK = F_M_E.DATE_SK GROUP BY F_M_E.OFFENDER_BOOKING_SK)) DT_COURT_FIRST_RCVD_FROM, BODIMIS.DIM_INCIDENT_ANSWER AT_INCIDENT_ANSWER, BODIMIS.DIM_INCIDENT_QUESTION AT_INCIDENT_QUESTION, BODIMIS.DIM_INCIDENT_TYPE AT_INCIDENT_TYPE, BODIMIS.FACT_INCIDENT_PARTICIPATION AT_INCIDENT_PARTICIPATION WHERE (AT_INCIDENT.INCIDENT_STATUS_SK = AT_INCIDENT_STATUS.INCIDENT_STATUS_SK) AND (AT_INCIDENT_PARTICIPATION.INCIDENT_PARTICIPATION_ROLE_SK = AT_INCIDENT_PARTICIP_ROLE.INCIDENT_PARTICIPATION_ROLE_SK) AND (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_SK = AT_INCIDENT.ESTABLISHMENT_SK) AND (AT_INCIDENT_DATE.DATE_SK = AT_INCIDENT.INCIDENT_DATE_SK) AND (AT_INCIDENT.INCIDENT_CASE_ID = AT_INCIDENT_PARTICIPATION.INCIDENT_CASE_ID) AND (AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_INCIDENT_QUESTIONNAIRE.INCIDENT_CASE_ID = AT_INCIDENT.INCIDENT_CASE_ID) AND (AT_INCIDENT_ANSWER.INCIDENT_QUESTION_SK = AT_INCIDENT_QUESTION.INCIDENT_QUESTION_SK) AND (AT_INCIDENT_QUESTIONNAIRE.INCIDENT_ANSWER_SK = AT_INCIDENT_ANSWER.INCIDENT_ANSWER_SK) AND (AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK IS NULL OR AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_INCIDENT_QUESTION.QUESTIONNAIRE_ID = AT_INCIDENT_TYPE.QUESTIONNAIRE_ID) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (CASE WHEN AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.FROM_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_SK (+)) AND (DT_COURT_FIRST_RCVD_FROM.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_ADMISSION.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = DT_ADMISSION_ALL_STATUS.OFFENDER_BOOKING_SK (+)) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_TYPE.INCIDENT_TYPE_CODE_NK IN ('FINDS', 'FIND', 'FINDS1', 'FIND1', 'FIND0422', 'FIND0322') AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'OUT' AND AT_FACT_MOV_EXT.TYPE IN ('Release', 'Transfers') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT BODIMIS.DIM_CASELOAD_SECURITY_LIST.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD, BODIMIS.DIM_CASELOAD_SECURITY_LIST WHERE BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD.CASELOAD_ID = BODIMIS.DIM_CASELOAD_SECURITY_LIST.CASELOAD_CODE AND BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD.USERNAME = (SELECT username FROM context_) AND (BODIMIS.DIM_CASELOAD_SECURITY_LIST.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR BODIMIS.DIM_CASELOAD_SECURITY_LIST.ENDYEAR = '2999'))) AND ((AT_INCIDENT_DATE.DAY_DATE) BETWEEN TO_DATE('01-12-2022 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('23-01-2023 00:00:00', 'DD-MM-YYYY HH24:MI:SS')) AND (AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, OFFENDER_AGE, DATE_OF_BIRTH, MOVEMENT_DATE, MOVEMENT_TIME, ETHNIC_CODE, RELIGION_CODE, RELIGION_DESCRIPTION, MAIN_LEGAL_STATUS_CODE, MAIN_LEGAL_STATUS_DESCRIPTION, ESTABLISHMENT_CODE_NK, DAY_DATE, TYPE, REASON_CODE, SURNAME, FIRST_NAME, ESTABLISHMENT_DESCRIPTION, INCIDENT_CASE_ID, INCIDENT_DATE_, INCIDENT_NUMBER, PARTICIPATION_ROLE_DESCRIPTION, COURT_DESCRIPTION, INCIDENT_TITLE, INCIDENT_TEXT, ANSWER_DESCRIPTION, QUESTIONNAIRE_ANS_ID, INCIDENT_STATUS_DESCRIPTION, QUESTION_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP14.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DP14.DO10b70",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "DATE_OF_BIRTH",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP14.DO10b6f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "MOVEMENT_DATE",
+            "type": "date",
+            "display": "Admission Date (All Status)",
+            "legacyId": "DP14.DO10b6d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "MOVEMENT_TIME",
+            "type": "date",
+            "display": "Admission Date",
+            "legacyId": "DP14.DO107ce",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP14.DO1009b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "RELIGION_CODE",
+            "type": "string",
+            "display": "Religion Code",
+            "legacyId": "DP14.DO100b2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "RELIGION_DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DP14.DO100b3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "MAIN_LEGAL_STATUS_CODE",
+            "type": "string",
+            "display": "Main Legal Status Code",
+            "legacyId": "DP14.DO100de",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "MAIN_LEGAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Main Legal Status Description",
+            "legacyId": "DP14.DO100df",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Movement Location From Code (External)",
+            "legacyId": "DP14.DO103ff",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Movement Date Only (External)",
+            "legacyId": "DP14.DO1015c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "TYPE",
+            "type": "string",
+            "display": "Movement Type (External)",
+            "legacyId": "DP14.DO103ec",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "REASON_CODE",
+            "type": "string",
+            "display": "Movement Reason Code (External)",
+            "legacyId": "DP14.DO103fc",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP14.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP14.DO10080",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Establishment Name",
+            "legacyId": "DP14.DO20",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "INCIDENT_CASE_ID",
+            "type": "double",
+            "display": "Incident Case Id",
+            "legacyId": "DP14.DO6ba",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 18,
+            "name": "INCIDENT_DATE_",
+            "type": "date",
+            "display": "Incident Date (Date Only)",
+            "legacyId": "DP14.DO1b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 19,
+            "name": "INCIDENT_NUMBER",
+            "type": "double",
+            "display": "Incident Number",
+            "legacyId": "DP14.DOb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 20,
+            "name": "PARTICIPATION_ROLE_DESCRIPTION",
+            "type": "string",
+            "display": "Participation Role Description",
+            "legacyId": "DP14.DO6a7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 21,
+            "name": "COURT_DESCRIPTION",
+            "type": "string",
+            "display": "Court 1st Received From (External)",
+            "legacyId": "DP14.DO10163",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 22,
+            "name": "INCIDENT_TITLE",
+            "type": "string",
+            "display": "Incident Title",
+            "legacyId": "DP14.DO69e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 23,
+            "name": "INCIDENT_TEXT",
+            "type": "string",
+            "display": "Incident Text",
+            "legacyId": "DP14.DO297",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 24,
+            "name": "ANSWER_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Response Description",
+            "legacyId": "DP14.DO1f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 25,
+            "name": "QUESTIONNAIRE_ANS_ID",
+            "type": "double",
+            "display": "Incident Questionnaire Ans Id",
+            "legacyId": "DP14.DO731",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 26,
+            "name": "INCIDENT_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Status",
+            "legacyId": "DP14.DOa",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 27,
+            "name": "QUESTION_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Question Description",
+            "legacyId": "DP14.DO1d",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DP3",
+      "name": "MIS Load",
+      "description": "MIS - Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP3.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "120059.RS",
+      "name": "Incident Detail By Date (1)",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP13",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (INCIDENT_QUESTION_DESCRIPTION IN ('OTHER DIGITAL FIND (PLEASE STATE MAKE/MODEL WHERE KNOWN)','PLEASE SELECT CATEGORY OF FIND','WAS ANY DISTILLING EQUIPMENT FOUND?','WAS ANY OHTER MOBULE PHONE/COMMUNICATION RELATED ITEM FOUND?','WAS ANY OTHER MOBILE PHONE/COMMUNICATION RELATED ITEM FOUND?','WAS A PHONE CHARGER FOUND?','WAS DRUG EQUIPMENT FOUND','WAS TOBACCO / TOBACCO RELATED ITEMS FOUND','WERE ANY DRUGS FOUND?','WERE ANY OTHER REPORTABLE ITEMS FOUND (BY NATIONAL OR LOCAL POLICY)','WERE MOBILE PHONE / PHONE RELATED ITEMS FOUND','WHAT WEAPON WAS FOUND?','Were Any Other Reportable Items Found?','Was A Mobile Phone Related Item Found','Was Drug Equipment Found','Was A Weapon Found?','Was Any Alcohol / Hooch Found?','Was Any Distilling Equipment Found?','Was A Drug Found?','Was a drug found?','Was drug equipment found?','Was a mobile phone related item found?','Was a mobile phone found?','Was a SIM card found?','Was a memory card found?','Was a charger found?','Was any other mobile phone/communication related item found?','Was a weapon found?','Was any alcohol/hooch found?','Was any distilling equipment found?','Were any other reportable items found','WERE ANY OTHER REPORTABLE ITEMS FOUND?','WAS DRUG EQUIPMENT FOUND?','WAS A MOBILE PHONE RELATED ITEM FOUND?','WAS A MOBILE PHONE FOUND?','WAS A SIM CARD FOUND?','WAS A MEMORY CARD FOUND?','WAS A CHARGER FOUND?','WAS A WEAPON FOUND?','WAS ANY TOBACCO FOUND','WERE ANY OTHER REPORTABLE ITEMS FOUND','WAS ANY ALCOHOL/HOOCH FOUND?','WAS A DRUG FOUND?',' WAS A MEMORY CARD FOUND?','WAS ANY TOBACCO FOUND?','WERE ANY OTHER REPORTABLE ITEMS FOUND (BY NATIONAL OR LOCAL POLICY)?','WERE MOBILE PHONE / MOBILE PHONE RELATED ITEMS FOUND','OTHER REPORTABLE ITEMS FOUND (BY NATIONAL OR LOCAL POLICY)','DESCRIBE THE DRUG FOUND') AND INCIDENT_RESPONSE_DESCRIPTION NOT(IN ('NO','NO - (ENTER REASON IN COMMENT)','NO MEMORY CARD FOUND','NO MOBILE PHONE FOUND','NONE FOUND','NO - NONE FOUND','NO OTHER DIGITAL FINDS','NO SIM CARDS FOUND','NOT CONCEALED','NOT APPLICABLE','No'))))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Incident Date (Date Only)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO1b"
+          },
+          {
+            "name": "$ref:INCIDENT_NUMBER",
+            "display": "Incident Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DOb"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO1007b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO10080"
+          },
+          {
+            "name": "$ref:INCIDENT_TITLE",
+            "display": "Incident Title",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO69e"
+          },
+          {
+            "name": "$ref:QUESTION_DESCRIPTION",
+            "display": "Incident Question Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO1d"
+          },
+          {
+            "name": "$ref:ANSWER_DESCRIPTION",
+            "display": "Incident Response Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO1f"
+          },
+          {
+            "name": "$ref:INCIDENT_TEXT",
+            "display": "Incident Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO297"
+          },
+          {
+            "name": "$ref:PARTICIPATION_ROLE_DESCRIPTION",
+            "display": "Participation Role Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO6a7"
+          },
+          {
+            "name": "$ref:INCIDENT_STATUS_DESCRIPTION",
+            "display": "Incident Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DOa"
+          },
+          {
+            "name": "$ref:RELIGION_CODE",
+            "display": "Religion Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO100b2"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO1009b"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_CODE",
+            "display": "Main Legal Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO100de"
+          },
+          {
+            "name": "$ref:MOVEMENT_TIME",
+            "display": "Admission Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO107ce"
+          },
+          {
+            "name": "$ref:DATE_FIRST_RECEPTION",
+            "display": "Date First Reception",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP13.DO10106"
+          },
+          {
+            "name": "$ref:V_AGE_AT_FIND_DISPLAY",
+            "display": "Age at find",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Truncate([v_age_of_prisoner_at_incident_date];0)"
+          }
+        ]
+      }
+    },
+    {
+      "id": "119196.RS",
+      "name": "Incident Detail By Prisoner",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP13",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (INCIDENT_QUESTION_DESCRIPTION IN ('OTHER DIGITAL FIND (PLEASE STATE MAKE/MODEL WHERE KNOWN)','PLEASE SELECT CATEGORY OF FIND','WAS ANY DISTILLING EQUIPMENT FOUND?','WAS ANY OHTER MOBULE PHONE/COMMUNICATION RELATED ITEM FOUND?','WAS ANY OTHER MOBILE PHONE/COMMUNICATION RELATED ITEM FOUND?','WAS A PHONE CHARGER FOUND?','WAS DRUG EQUIPMENT FOUND','WAS TOBACCO / TOBACCO RELATED ITEMS FOUND','WERE ANY DRUGS FOUND?','WERE ANY OTHER REPORTABLE ITEMS FOUND (BY NATIONAL OR LOCAL POLICY)','WERE MOBILE PHONE / PHONE RELATED ITEMS FOUND','WHAT WEAPON WAS FOUND?','Were Any Other Reportable Items Found?','Was A Mobile Phone Related Item Found','Was Drug Equipment Found','Was A Weapon Found?','Was Any Alcohol / Hooch Found?','Was Any Distilling Equipment Found?','Was A Drug Found?','Was a drug found?','Was drug equipment found?','Was a mobile phone related item found?','Was a mobile phone found?','Was a SIM card found?','Was a memory card found?','Was a charger found?','Was any other mobile phone/communication related item found?','Was a weapon found?','Was any alcohol/hooch found?','Was any distilling equipment found?','Were any other reportable items found','WERE ANY OTHER REPORTABLE ITEMS FOUND?','WAS DRUG EQUIPMENT FOUND?','WAS A MOBILE PHONE RELATED ITEM FOUND?','WAS A MOBILE PHONE FOUND?','WAS A SIM CARD FOUND?','WAS A MEMORY CARD FOUND?','WAS A CHARGER FOUND?','WAS A WEAPON FOUND?','WAS ANY TOBACCO FOUND','WERE ANY OTHER REPORTABLE ITEMS FOUND','WAS ANY ALCOHOL/HOOCH FOUND?','WAS A DRUG FOUND?',' WAS A MEMORY CARD FOUND?','WAS ANY TOBACCO FOUND?','WERE ANY OTHER REPORTABLE ITEMS FOUND (BY NATIONAL OR LOCAL POLICY)?','WERE MOBILE PHONE / MOBILE PHONE RELATED ITEMS FOUND','OTHER REPORTABLE ITEMS FOUND (BY NATIONAL OR LOCAL POLICY)','DESCRIBE THE DRUG FOUND') AND INCIDENT_RESPONSE_DESCRIPTION NOT(IN ('NO','NO - (ENTER REASON IN COMMENT)','NO MEMORY CARD FOUND','NO MOBILE PHONE FOUND','NONE FOUND','NO - NONE FOUND','NO OTHER DIGITAL FINDS','NO SIM CARDS FOUND','NOT CONCEALED','NOT APPLICABLE','No'))))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Incident Date (Date Only)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO1b"
+          },
+          {
+            "name": "$ref:INCIDENT_NUMBER",
+            "display": "Incident Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DOb"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO1007b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO10080"
+          },
+          {
+            "name": "$ref:INCIDENT_TITLE",
+            "display": "Incident Title",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO69e"
+          },
+          {
+            "name": "$ref:QUESTION_DESCRIPTION",
+            "display": "Incident Question Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO1d"
+          },
+          {
+            "name": "$ref:ANSWER_DESCRIPTION",
+            "display": "Incident Response Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO1f"
+          },
+          {
+            "name": "$ref:INCIDENT_TEXT",
+            "display": "Incident Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO297"
+          },
+          {
+            "name": "$ref:PARTICIPATION_ROLE_DESCRIPTION",
+            "display": "Participation Role Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO6a7"
+          },
+          {
+            "name": "$ref:INCIDENT_STATUS_DESCRIPTION",
+            "display": "Incident Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DOa"
+          },
+          {
+            "name": "$ref:COURT_DESCRIPTION",
+            "display": "Court 1st Received From (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO10163"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO1009b"
+          },
+          {
+            "name": "$ref:RELIGION_CODE",
+            "display": "Religion Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO100b2"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_CODE",
+            "display": "Main Legal Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO100de"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Incident Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO20"
+          },
+          {
+            "name": "$ref:DATE_FIRST_RECEPTION",
+            "display": "Date First Reception",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP13.DO10106"
+          },
+          {
+            "name": "$ref:MOVEMENT_TIME",
+            "display": "Admission Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP13.DO107ce"
+          },
+          {
+            "name": "$ref:V_AGE_AT_FIND_DISPLAY",
+            "display": "Age at find",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Truncate([v_age_of_prisoner_at_incident_date];0)"
+          }
+        ]
+      }
+    },
+    {
+      "id": "119439.RS",
+      "name": "Finds not assoc. to a Prisoner",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP15",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Incident Date (Date Only)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP15.DO1b"
+          },
+          {
+            "name": "$ref:INCIDENT_CASE_ID",
+            "display": "Incident Case Id",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP15.DO6ba"
+          },
+          {
+            "name": "$ref:INCIDENT_TITLE",
+            "display": "Incident Title",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP15.DO69e"
+          },
+          {
+            "name": "$ref:QUESTION_DESCRIPTION",
+            "display": "Incident Question Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP15.DO1d"
+          },
+          {
+            "name": "$ref:ANSWER_DESCRIPTION",
+            "display": "Incident Response Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP15.DO1f"
+          },
+          {
+            "name": "$ref:INCIDENT_TEXT",
+            "display": "Incident Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP15.DO297"
+          },
+          {
+            "name": "$ref:INCIDENT_STATUS_DESCRIPTION",
+            "display": "Incident Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP15.DOa"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Incident Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP15.DO20"
+          }
+        ]
+      }
+    },
+    {
+      "id": "120137.RS",
+      "name": "Released or Transferred Prisoners (1)",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP14",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:INCIDENT_DATE_",
+            "display": "Incident Date (Date Only)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO1b"
+          },
+          {
+            "name": "$ref:INCIDENT_CASE_ID",
+            "display": "Incident Case Id",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO6ba"
+          },
+          {
+            "name": "$ref:INCIDENT_TITLE",
+            "display": "Incident Title",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO69e"
+          },
+          {
+            "name": "$ref:QUESTION_DESCRIPTION",
+            "display": "Incident Question Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO1d"
+          },
+          {
+            "name": "$ref:ANSWER_DESCRIPTION",
+            "display": "Incident Response Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO1f"
+          },
+          {
+            "name": "$ref:INCIDENT_TEXT",
+            "display": "Incident Text",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO297"
+          },
+          {
+            "name": "$ref:INCIDENT_STATUS_DESCRIPTION",
+            "display": "Incident Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DOa"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO10076"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO10080"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO1007b"
+          },
+          {
+            "name": "$ref:COURT_DESCRIPTION",
+            "display": "Court 1st Received From (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO10163"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_CODE",
+            "display": "Main Legal Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO100de"
+          },
+          {
+            "name": "$ref:RELIGION_CODE",
+            "display": "Religion Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO100b2"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Incident Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO20"
+          },
+          {
+            "name": "$ref:PARTICIPATION_ROLE_DESCRIPTION",
+            "display": "Participation Role Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP14.DO6a7"
+          }
+        ]
+      }
+    },
+    {
+      "id": "119752.RS",
+      "name": "Summary",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      },
+      "dataset": "MISSING"
+    },
+    {
+      "id": "120122.RS",
+      "name": "Codes and Descriptions",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP13",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (INCIDENT_QUESTION_DESCRIPTION IN ('OTHER DIGITAL FIND (PLEASE STATE MAKE/MODEL WHERE KNOWN)','PLEASE SELECT CATEGORY OF FIND','WAS ANY DISTILLING EQUIPMENT FOUND?','WAS ANY OHTER MOBULE PHONE/COMMUNICATION RELATED ITEM FOUND?','WAS ANY OTHER MOBILE PHONE/COMMUNICATION RELATED ITEM FOUND?','WAS A PHONE CHARGER FOUND?','WAS DRUG EQUIPMENT FOUND','WAS TOBACCO / TOBACCO RELATED ITEMS FOUND','WERE ANY DRUGS FOUND?','WERE ANY OTHER REPORTABLE ITEMS FOUND (BY NATIONAL OR LOCAL POLICY)','WERE MOBILE PHONE / PHONE RELATED ITEMS FOUND','WHAT WEAPON WAS FOUND?','Were Any Other Reportable Items Found?','Was A Mobile Phone Related Item Found','Was Drug Equipment Found','Was A Weapon Found?','Was Any Alcohol / Hooch Found?','Was Any Distilling Equipment Found?','Was A Drug Found?','Was a drug found?','Was drug equipment found?','Was a mobile phone related item found?','Was a mobile phone found?','Was a SIM card found?','Was a memory card found?','Was a charger found?','Was any other mobile phone/communication related item found?','Was a weapon found?','Was any alcohol/hooch found?','Was any distilling equipment found?','Were any other reportable items found','WERE ANY OTHER REPORTABLE ITEMS FOUND?','WAS DRUG EQUIPMENT FOUND?','WAS A MOBILE PHONE RELATED ITEM FOUND?','WAS A MOBILE PHONE FOUND?','WAS A SIM CARD FOUND?','WAS A MEMORY CARD FOUND?','WAS A CHARGER FOUND?','WAS A WEAPON FOUND?','WAS ANY TOBACCO FOUND','WERE ANY OTHER REPORTABLE ITEMS FOUND','WAS ANY ALCOHOL/HOOCH FOUND?','WAS A DRUG FOUND?',' WAS A MEMORY CARD FOUND?','WAS ANY TOBACCO FOUND?','WERE ANY OTHER REPORTABLE ITEMS FOUND (BY NATIONAL OR LOCAL POLICY)?','WERE MOBILE PHONE / MOBILE PHONE RELATED ITEMS FOUND','OTHER REPORTABLE ITEMS FOUND (BY NATIONAL OR LOCAL POLICY)','DESCRIBE THE DRUG FOUND') AND INCIDENT_RESPONSE_DESCRIPTION NOT(IN ('NO','NO - (ENTER REASON IN COMMENT)','NO MEMORY CARD FOUND','NO MOBILE PHONE FOUND','NONE FOUND','NO - NONE FOUND','NO OTHER DIGITAL FINDS','NO SIM CARDS FOUND','NOT CONCEALED','NOT APPLICABLE','No'))))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ETHNIC_DESCRIPTION",
+            "display": "Ethnic Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP13.DO1009d"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_AGE_AT_FIND_DISPLAY :: Error: =Truncate([v_age_of_prisoner_at_incident_date];0) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "FrQG1lrrYgAAtOAAAHCb6F4AACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_AGE_AT_FIND_DISPLAY :: Error: =Truncate([v_age_of_prisoner_at_incident_date];0) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "FrQG1lrrYgAAtOAAAHCb6F4AACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[4] requires property \"dataset\"",
+      "entityId": "FrQG1lrrYgAAtOAAAHCb6F4AACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 119752.RS does not have corresponding dataset undefined",
+      "entityId": "119752.RS",
+      "entityType": "variant"
+    }
+  ]
+}

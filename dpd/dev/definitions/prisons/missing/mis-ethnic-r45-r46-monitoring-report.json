@@ -1,0 +1,428 @@
+{
+  "id": "okefD9YAA0YsaBgANgCEcEPmVys",
+  "name": "MIS Ethnic R45 R46 Monitoring Report",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0002 v00.00.12 LSRIT039"
+    ]
+  },
+  "description": "Shows R45 and R46 alerts by ethnic origin code. Percentages are calculated on the grand total of the prison population.<br/>PDD0002 - v00.00.12 Last Modified: 03/09/12",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP2",
+      "name": "Crosstab",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_ESTABLISHMENT.AREA_DESCRIPTION, AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, AT_ALERT.ALERT_DESCRIPTION, COUNT(DISTINCT (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY)) AS COUNT_OF_OFFENDERS FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_ALERT AT_ALERT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_ALERT_EFFECT_DATE, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT, BODIMIS.DIM_CELL AT_CELL WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK (+)) AND (AT_ALERT.ALERT_SK (+) = AT_OFFENDER_ALERT.ALERT_SK) AND (AT_OFFENDER_ALERT.ALERT_DATE_SK = AT_ALERT_EFFECT_DATE.DATE_SK (+)) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND ((AT_ESTABLISHMENT.AREA_DESCRIPTION IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Area (All for all)','A','Establishment\\Establishment Area',multi,free,Not_Persistent,User:68) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Area (All for all)','A','Establishment\\Establishment Area',multi,free,Not_Persistent,User:68) */)) AND (AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,Not_Persistent,User:69) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Code (All for all)','A','Establishment\\Establishment Code',multi,free,Not_Persistent,User:69) */)) AND CASE WHEN AT_ALERT_EFFECT_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EFFECT_DATE.DAY_DATE ELSE NULL END BETWEEN (SELECT START_DATE FROM prompt_ /* = #prompt('Enter Alert Effective Date (Start):','D',,Mono,Free,Not_Persistent,,User:0) */) AND (SELECT END_DATE FROM prompt_ /* = #prompt('Enter Alert Effective Date (End):','D',,Mono,Free,Not_Persistent,,User:1) */) AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_ALERT.ALERT_CODE_NK IN ('V45', 'VOP', 'V46', 'VJOP', 'V49P', 'V49G') AND AT_OFFENDER_ALERT.ALERT_STATUS = 'ACTIVE') AND AT_OFFENDER_ALERT.ALERT_STATUS = 'ACTIVE') GROUP BY AT_ESTABLISHMENT.AREA_DESCRIPTION, AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END, AT_ALERT.ALERT_DESCRIPTION), dataset_ AS (SELECT AREA_DESCRIPTION, ESTABLISHMENT_CODE_NK, ETHNIC_CODE, ALERT_DESCRIPTION, COUNT_OF_OFFENDERS, TO_CHAR(COUNT_OF_OFFENDERS, 'fm990.00') AS V_PERC_BLOCK1_ROW2, TO_CHAR(COUNT_OF_OFFENDERS, 'fm990.00') AS V_PERC_BLOCK4_ROW2, TO_CHAR(COUNT_OF_OFFENDERS, 'fm990.00') AS V_PERC_BLOCK3_ROW2, 'Total for ' || AREA_DESCRIPTION AS V_BLOCK3_COL1, TO_CHAR(COUNT_OF_OFFENDERS, 'fm990.00') AS V_TOT_PERC_BLOCK1_ROW2, TO_CHAR(COUNT_OF_OFFENDERS, 'fm990.00') AS V_TOT_PERC_BLOCK4_ROW2, TO_CHAR(COUNT_OF_OFFENDERS, 'fm990.00') AS V_TOT_PERC_BLOCK3_ROW2 FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Area (All for all)','A','Establishment\\Establishment Area',multi,free,Not_Persistent,User:68)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Alert Effective Date (Start):",
+          "description": "@prompt('Enter Alert Effective Date (Start):','D',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Alert Effective Date (End):",
+          "description": "@prompt('Enter Alert Effective Date (End):','D',,Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "AREA_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Area",
+            "legacyId": "DP2.DOc7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP2.DO139",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP2.DO9b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ALERT_DESCRIPTION",
+            "type": "string",
+            "display": "Alert Description",
+            "legacyId": "DP2.DO90",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "COUNT_OF_OFFENDERS",
+            "type": "double",
+            "display": "Count of Offenders",
+            "legacyId": "DP2.DO655",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "V_PERC_BLOCK1_ROW2",
+            "type": "string",
+            "display": "V_PERC_BLOCK1_ROW2",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 6,
+            "name": "V_PERC_BLOCK4_ROW2",
+            "type": "string",
+            "display": "V_PERC_BLOCK4_ROW2",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 7,
+            "name": "V_PERC_BLOCK3_ROW2",
+            "type": "string",
+            "display": "V_PERC_BLOCK3_ROW2",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 8,
+            "name": "V_BLOCK3_COL1",
+            "type": "string",
+            "display": "V_BLOCK3_COL1",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 9,
+            "name": "V_TOT_PERC_BLOCK1_ROW2",
+            "type": "string",
+            "display": "V_TOT_PERC_BLOCK1_ROW2",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 10,
+            "name": "V_TOT_PERC_BLOCK4_ROW2",
+            "type": "string",
+            "display": "V_TOT_PERC_BLOCK4_ROW2",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 11,
+            "name": "V_TOT_PERC_BLOCK3_ROW2",
+            "type": "string",
+            "display": "V_TOT_PERC_BLOCK3_ROW2",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP4",
+      "name": "Ethnic Codes",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION END AS ETHNIC_DESCRIPTION FROM BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES), dataset_ AS (SELECT ETHNIC_CODE, ETHNIC_DESCRIPTION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP4.DO9b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ETHNIC_DESCRIPTION",
+            "type": "string",
+            "display": "Ethnic Description",
+            "legacyId": "DP4.DO9d",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP5",
+      "name": "MIS Load Log",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP5.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "201810.RS",
+      "name": "Ethnic R45/ R46 Monitoring",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO655"
+          },
+          {
+            "name": "$ref:V_PERC_BLOCK1_ROW2",
+            "display": "=\"%\"",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Percentage([Count of Offenders]) In Report"
+          },
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO655"
+          },
+          {
+            "name": "$ref:V_PERC_BLOCK4_ROW2",
+            "display": "=\"=\"",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Percentage([Count of Offenders])"
+          },
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO655"
+          },
+          {
+            "name": "$ref:V_PERC_BLOCK3_ROW2",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Percentage([Count of Offenders]) In Report"
+          },
+          {
+            "name": "$ref:AREA_DESCRIPTION",
+            "display": "Establishment Area",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DOc7"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO139"
+          },
+          {
+            "name": "$ref:ALERT_DESCRIPTION",
+            "display": "Alert Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO90"
+          },
+          {
+            "name": "$ref:V_BLOCK3_COL1",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=\"Total for \"+[Establishment Area]"
+          },
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO655"
+          },
+          {
+            "name": "$ref:V_TOT_PERC_BLOCK1_ROW2",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Percentage([Count of Offenders]) In Report"
+          },
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO655"
+          },
+          {
+            "name": "$ref:V_TOT_PERC_BLOCK4_ROW2",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Percentage([Count of Offenders])"
+          },
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO655"
+          },
+          {
+            "name": "$ref:V_TOT_PERC_BLOCK3_ROW2",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Percentage([Count of Offenders]) In Report"
+          }
+        ]
+      }
+    },
+    {
+      "id": "201249.RS",
+      "name": "Ethnic Codes",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP4",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ETHNIC_DESCRIPTION NOT(IN ('Not Applicable','Not Valid','Unknown')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ETHNIC_DESCRIPTION",
+            "display": "Ethnic Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO9d"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "instance.report[0].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "okefD9YAA0YsaBgANgCEcEPmVys",
+      "entityType": "dpd"
+    }
+  ]
+}

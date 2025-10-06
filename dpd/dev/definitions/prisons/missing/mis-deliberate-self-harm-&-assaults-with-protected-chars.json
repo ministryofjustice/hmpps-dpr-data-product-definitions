@@ -1,0 +1,751 @@
+{
+  "id": "Fvtg7wDIUQcA_.g9AACXnf0AACJIAGc1",
+  "name": "MIS Deliberate Self Harm & Assaults with Protected chars",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "v00.00.01"
+    ]
+  },
+  "description": "<br/>This report provides protected chars data for deliberate self harm/Assaults incidents for an establishment and date range specified at runtime. Gang and Care Experienced Alerts as well as sentence details are included. <br/>v00.00.01  Last Modified: 17/09/20",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375377/DP2",
+      "name": "Incidents",
+      "description": "MIS - Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_DESCRIPTION, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_FACT_OFFENDER_SENTENCE.EFFECTIVE_SENTENCE_LENGTH, AT_OFFENDER_BOOKING.MARITAL_STATUS_CODE, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.INITIALS, FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE < '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) AS OFFENDER_AGE, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_INCIDENT_DATE.DAY_DATE, TO_NUMBER(SUBSTR(AT_INCIDENT.INCIDENT_TIME, 12, 2)) AS INCIDENT_HOUR, TO_NUMBER(SUBSTR(AT_INCIDENT.INCIDENT_TIME, 15, 2)) AS INCIDENT_MINUTES, AT_INCIDENT_STATUS.INCIDENT_STATUS_DESCRIPTION, AT_INCIDENT.INCIDENT_TITLE, AT_INCIDENT.REPORT_DATE, AT_INCIDENT.INCIDENT_TEXT, INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC) AS INCIDENT_TYPE, AT_INCIDENT.INCIDENT_CASE_ID, AT_INCIDENT_ANSWER.ANSWER_DESCRIPTION, AT_INCIDENT_ANSWER.QUESTIONNAIRE_ANS_ID, AT_INCIDENT_QUESTIONNAIRE.RESPONSE_COMMENT_TEXT, AT_OFFENDER_BOOKING.MATERNITY_STATUS_DESCRIPTION, CASE WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE IS NULL THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'I' THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'ON' AND NOT BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'PRD', 'RD', 'NR') THEN 'Y' ELSE 'N' END AS DISABILITY_ACTIVE_FLAG, COALESCE(AT_OFFENDER_BOOKING.RELIGION_DESCRIPTION, 'Not Specified') AS RELIGION_DESCRIPTION, AT_INCIDENT_PARTICIP_ROLE.PARTICIPATION_ROLE_DESCRIPTION, CASE WHEN AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '1' THEN 'Y' ELSE 'N' END AS IS_INDETERMINATE_SENTENCE_ FROM BODIMIS.FACT_INCIDENT_QUESTIONNAIRE AT_INCIDENT_QUESTIONNAIRE, BODIMIS.FACT_INCIDENT AT_INCIDENT, BODIMIS.DIM_ESTABLISHMENT AT_INCIDENT_ESTABLISHMENT, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_DATE AT_DOB, BODIMIS.DIM_DATE AT_INCIDENT_DATE, BODIMIS.DIM_INCIDENT_STATUS AT_INCIDENT_STATUS, BODIMIS.DIM_INCIDENT_TYPE AT_INCIDENT_TYPE, BODIMIS.DIM_INCIDENT_ANSWER AT_INCIDENT_ANSWER, BODIMIS.DIM_OFFENDER_PERSONAL_CARE, BODIMIS.DIM_INCIDENT_PARTICIP_ROLE AT_INCIDENT_PARTICIP_ROLE, BODIMIS.FACT_INCIDENT_PARTICIPATION AT_INCIDENT_PARTICIPATION, BODIMIS.DIM_INCIDENT_QUESTION AT_INCIDENT_QUESTION WHERE (AT_INCIDENT.INCIDENT_STATUS_SK = AT_INCIDENT_STATUS.INCIDENT_STATUS_SK) AND (AT_INCIDENT_PARTICIPATION.INCIDENT_PARTICIPATION_ROLE_SK = AT_INCIDENT_PARTICIP_ROLE.INCIDENT_PARTICIPATION_ROLE_SK) AND (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_SK = AT_INCIDENT.ESTABLISHMENT_SK) AND (AT_INCIDENT_DATE.DATE_SK = AT_INCIDENT.INCIDENT_DATE_SK) AND (AT_INCIDENT.INCIDENT_CASE_ID = AT_INCIDENT_PARTICIPATION.INCIDENT_CASE_ID) AND (AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_INCIDENT_QUESTIONNAIRE.INCIDENT_CASE_ID = AT_INCIDENT.INCIDENT_CASE_ID) AND (AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_INCIDENT_ANSWER.INCIDENT_QUESTION_SK = AT_INCIDENT_QUESTION.INCIDENT_QUESTION_SK) AND (AT_INCIDENT_QUESTIONNAIRE.INCIDENT_ANSWER_SK = AT_INCIDENT_ANSWER.INCIDENT_ANSWER_SK) AND (AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG = 'Y' OR AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG IS NULL) AND (AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK IS NULL OR AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_INCIDENT_QUESTION.QUESTIONNAIRE_ID = AT_INCIDENT_TYPE.QUESTIONNAIRE_ID) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.DIM_OFFENDER_PERSONAL_CARE.OFFENDER_BOOKING_SK (+)) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_DATE.DAY_DATE <= TO_DATE('25-07-2022 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_INCIDENT_DATE.DAY_DATE >= TO_DATE('25-04-2022 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK IN ('All') OR 'All' IN ('All')) AND (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK IN (SELECT SAC.CASELOAD_ID FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC WHERE SAC.USERNAME = (SELECT username FROM context_))) AND (INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC) IN ('Deliberate Self Harm') OR INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC) IN ('Assault (From April 2017)', 'Assaults', 'Assaults (From April 2017)') OR AT_INCIDENT_ANSWER.QUESTIONNAIRE_ANS_ID IN (SELECT DISTINCT AT_INCIDENT_ANSWER.QUESTIONNAIRE_ANS_ID FROM BODIMIS.DIM_INCIDENT_ANSWER AT_INCIDENT_ANSWER WHERE (AT_INCIDENT_ANSWER.QUESTIONNAIRE_ANS_ID IN (181552, 181555, 181554, 181553) OR AT_INCIDENT_ANSWER.QUESTIONNAIRE_ANS_ID IN (182017, 180526, 182020, 180528, 182015, 182016, 182018, 180527, 180531, 180529, 180530, 182019, 3901, 182367, 182366, 182369, 182368, 182617, 182616) OR AT_INCIDENT_ANSWER.QUESTIONNAIRE_ANS_ID IN (180734, 180733) OR AT_INCIDENT_ANSWER.QUESTIONNAIRE_ANS_ID IN (180499, 180493, 180494, 180497, 180496, 180499, 180495, 180498) OR AT_INCIDENT_ANSWER.QUESTIONNAIRE_ANS_ID IN (182175, 182176, 182177, 182178, 182179, 182180, 182181, 182182, 182183)))))), dataset_ AS (SELECT MAIN_LEGAL_STATUS_DESCRIPTION, OFFENDER_ID_DISPLAY, EFFECTIVE_SENTENCE_LENGTH, MARITAL_STATUS_CODE, SURNAME, INITIALS, OFFENDER_AGE, ETHNIC_CODE, ESTABLISHMENT_DESCRIPTION, ESTABLISHMENT_CODE_NK, DAY_DATE, INCIDENT_HOUR, INCIDENT_MINUTES, INCIDENT_STATUS_DESCRIPTION, INCIDENT_TITLE, REPORT_DATE, INCIDENT_TEXT, INCIDENT_TYPE, INCIDENT_CASE_ID, ANSWER_DESCRIPTION, QUESTIONNAIRE_ANS_ID, RESPONSE_COMMENT_TEXT, MATERNITY_STATUS_DESCRIPTION, DISABILITY_ACTIVE_FLAG, RELIGION_DESCRIPTION, PARTICIPATION_ROLE_DESCRIPTION, IS_INDETERMINATE_SENTENCE_, 'TBD' AS V_GANG_ALERT_, 'TBD' AS V_IS_CARE_EXPERIENCED, DP9DO58F AS V_LIFE_ FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "MAIN_LEGAL_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Main Legal Status Description",
+            "legacyId": "DP2.DO100df",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "EFFECTIVE_SENTENCE_LENGTH",
+            "type": "string",
+            "display": "Effective Sentence Length",
+            "legacyId": "DP2.DO293",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "MARITAL_STATUS_CODE",
+            "type": "string",
+            "display": "Marital Status Code",
+            "legacyId": "DP2.DO100ae",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP2.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "INITIALS",
+            "type": "string",
+            "display": "Offender Initials",
+            "legacyId": "DP2.DO1012d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "OFFENDER_AGE",
+            "type": "double",
+            "display": "Offender Age",
+            "legacyId": "DP2.DO10082",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP2.DO1009b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Establishment Name",
+            "legacyId": "DP2.DO20",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Incident Establishment Code",
+            "legacyId": "DP2.DO283",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Incident Date (Date Only)",
+            "legacyId": "DP2.DO1b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "INCIDENT_HOUR",
+            "type": "double",
+            "display": "Incident Hour",
+            "legacyId": "DP2.DO699",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "INCIDENT_MINUTES",
+            "type": "double",
+            "display": "Incident Minutes",
+            "legacyId": "DP2.DO69a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "INCIDENT_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Status",
+            "legacyId": "DP2.DOa",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "INCIDENT_TITLE",
+            "type": "string",
+            "display": "Incident Title",
+            "legacyId": "DP2.DO69e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "REPORT_DATE",
+            "type": "date",
+            "display": "Incident Reported Date",
+            "legacyId": "DP2.DO69c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "INCIDENT_TEXT",
+            "type": "string",
+            "display": "Incident Text",
+            "legacyId": "DP2.DO297",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "INCIDENT_TYPE",
+            "type": "string",
+            "display": "Incident Type",
+            "legacyId": "DP2.DO9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 18,
+            "name": "INCIDENT_CASE_ID",
+            "type": "double",
+            "display": "Incident Case Id",
+            "legacyId": "DP2.DO6ba",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 19,
+            "name": "ANSWER_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Response Description",
+            "legacyId": "DP2.DO1f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 20,
+            "name": "QUESTIONNAIRE_ANS_ID",
+            "type": "double",
+            "display": "Incident Questionnaire Ans Id",
+            "legacyId": "DP2.DO731",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 21,
+            "name": "RESPONSE_COMMENT_TEXT",
+            "type": "string",
+            "display": "Incident Response Additional Comment",
+            "legacyId": "DP2.DO299",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 22,
+            "name": "MATERNITY_STATUS_DESCRIPTION",
+            "type": "string",
+            "display": "Maternity Status",
+            "legacyId": "DP2.DO100b0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 23,
+            "name": "DISABILITY_ACTIVE_FLAG",
+            "type": "string",
+            "display": "Disability Active Flag",
+            "legacyId": "DP2.DO10a9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 24,
+            "name": "RELIGION_DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DP2.DO100b3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 25,
+            "name": "PARTICIPATION_ROLE_DESCRIPTION",
+            "type": "string",
+            "display": "Participation Role Description",
+            "legacyId": "DP2.DO6a7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 26,
+            "name": "IS_INDETERMINATE_SENTENCE_",
+            "type": "string",
+            "display": "Is Indeterminate Sentence?",
+            "legacyId": "DP2.DO107d9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 27,
+            "name": "V_GANG_ALERT_",
+            "type": "string",
+            "display": "V_GANG_ALERT_",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 28,
+            "name": "V_IS_CARE_EXPERIENCED",
+            "type": "string",
+            "display": "V_IS_CARE_EXPERIENCED",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 29,
+            "name": "V_LIFE_",
+            "type": "string",
+            "display": "V_LIFE_",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DP4",
+      "name": "MIS Load",
+      "description": "MIS - Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP4.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DPa",
+      "name": "Alerts",
+      "description": "MIS - Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_ALERT.ALERT_CODE_NK FROM BODIMIS.FACT_INCIDENT_QUESTIONNAIRE AT_INCIDENT_QUESTIONNAIRE, BODIMIS.FACT_INCIDENT AT_INCIDENT, BODIMIS.DIM_ESTABLISHMENT AT_INCIDENT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_ALERT AT_ALERT, BODIMIS.DIM_DATE AT_INCIDENT_DATE, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT, BODIMIS.DIM_INCIDENT_TYPE AT_INCIDENT_TYPE, BODIMIS.DIM_INCIDENT_ANSWER AT_INCIDENT_ANSWER, BODIMIS.FACT_INCIDENT_PARTICIPATION AT_INCIDENT_PARTICIPATION, BODIMIS.DIM_INCIDENT_QUESTION AT_INCIDENT_QUESTION WHERE (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_SK = AT_INCIDENT.ESTABLISHMENT_SK) AND (AT_INCIDENT_DATE.DATE_SK = AT_INCIDENT.INCIDENT_DATE_SK) AND (AT_INCIDENT.INCIDENT_CASE_ID = AT_INCIDENT_PARTICIPATION.INCIDENT_CASE_ID) AND (AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_INCIDENT_QUESTIONNAIRE.INCIDENT_CASE_ID = AT_INCIDENT.INCIDENT_CASE_ID) AND (AT_INCIDENT_ANSWER.INCIDENT_QUESTION_SK = AT_INCIDENT_QUESTION.INCIDENT_QUESTION_SK) AND (AT_INCIDENT_QUESTIONNAIRE.INCIDENT_ANSWER_SK = AT_INCIDENT_ANSWER.INCIDENT_ANSWER_SK) AND (AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK IS NULL OR AT_INCIDENT_PARTICIPATION.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_INCIDENT_QUESTION.QUESTIONNAIRE_ID = AT_INCIDENT_TYPE.QUESTIONNAIRE_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK (+)) AND (AT_ALERT.ALERT_SK (+) = AT_OFFENDER_ALERT.ALERT_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_INCIDENT_DATE.DAY_DATE <= TO_DATE('25-07-2022 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_INCIDENT_DATE.DAY_DATE >= TO_DATE('25-04-2022 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK IN ('All') OR 'All' IN ('All')) AND (AT_OFFENDER_ALERT.ALERT_STATUS = 'ACTIVE') AND (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK IN (SELECT SAC.CASELOAD_ID FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC WHERE SAC.USERNAME = (SELECT username FROM context_))) AND (INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC) IN ('Deliberate Self Harm') OR INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC) IN ('Assault (From April 2017)', 'Assaults', 'Assaults (From April 2017)') OR AT_INCIDENT_ANSWER.QUESTIONNAIRE_ANS_ID IN (SELECT DISTINCT AT_INCIDENT_ANSWER.QUESTIONNAIRE_ANS_ID FROM BODIMIS.DIM_INCIDENT_ANSWER AT_INCIDENT_ANSWER WHERE (AT_INCIDENT_ANSWER.QUESTIONNAIRE_ANS_ID IN (181552, 181555, 181554, 181553) OR AT_INCIDENT_ANSWER.QUESTIONNAIRE_ANS_ID IN (182017, 180526, 182020, 180528, 182015, 182016, 182018, 180527, 180531, 180529, 180530, 182019, 3901, 182367, 182366, 182369, 182368, 182617, 182616) OR AT_INCIDENT_ANSWER.QUESTIONNAIRE_ANS_ID IN (180734, 180733) OR AT_INCIDENT_ANSWER.QUESTIONNAIRE_ANS_ID IN (180499, 180493, 180494, 180497, 180496, 180499, 180495, 180498) OR AT_INCIDENT_ANSWER.QUESTIONNAIRE_ANS_ID IN (182175, 182176, 182177, 182178, 182179, 182180, 182181, 182182, 182183)))))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, ALERT_CODE_NK FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPa.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ALERT_CODE_NK",
+            "type": "string",
+            "display": "Alert Code",
+            "legacyId": "DPa.DO1008e",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "215563.RS",
+      "name": "Self Harm - Surname, Incident ID",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (INCIDENT_TYPE IN ('Deliberate Self Harm')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:INITIALS",
+            "display": "Offender Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1012d"
+          },
+          {
+            "name": "$ref:OFFENDER_AGE",
+            "display": "Offender Age",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10082"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1009b"
+          },
+          {
+            "name": "$ref:INCIDENT_CASE_ID",
+            "display": "Incident Case Id",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO6ba"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Incident Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO283"
+          },
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Incident Date (Date Only)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1b"
+          },
+          {
+            "name": "$ref:V_GANG_ALERT_",
+            "display": "Gang Alert ?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(([Alert Code]= \"XGANG\");\"Y\") In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:MARITAL_STATUS_CODE",
+            "display": "Marital Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100ae"
+          },
+          {
+            "name": "$ref:RELIGION_DESCRIPTION",
+            "display": "Religion Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b3"
+          },
+          {
+            "name": "$ref:MATERNITY_STATUS_DESCRIPTION",
+            "display": "Maternity Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b0"
+          },
+          {
+            "name": "$ref:V_IS_CARE_EXPERIENCED",
+            "display": "Care Exp?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(([Alert Code] = \"LCE\"); \"Y\"\n) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:EFFECTIVE_SENTENCE_LENGTH",
+            "display": "Effective Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO293"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_DESCRIPTION",
+            "display": "Main Legal Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100df"
+          },
+          {
+            "name": "$ref:INCIDENT_TYPE",
+            "display": "Incident Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO9"
+          },
+          {
+            "name": "$ref:PARTICIPATION_ROLE_DESCRIPTION",
+            "display": "Participation Role Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO6a7"
+          },
+          {
+            "name": "$ref:IS_INDETERMINATE_SENTENCE_",
+            "display": "Is Indeterminate Sentence?",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO107d9"
+          }
+        ]
+      }
+    },
+    {
+      "id": "217672.RS",
+      "name": "Assaults - By Surname, Incident ID",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (INCIDENT_TYPE <> 'Deliberate Self Harm'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:INITIALS",
+            "display": "Offender Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1012d"
+          },
+          {
+            "name": "$ref:OFFENDER_AGE",
+            "display": "Offender Age",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10082"
+          },
+          {
+            "name": "$ref:ETHNIC_CODE",
+            "display": "Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1009b"
+          },
+          {
+            "name": "$ref:INCIDENT_CASE_ID",
+            "display": "Incident Case Id",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO6ba"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_CODE_NK",
+            "display": "Incident Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO283"
+          },
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Incident Date (Date Only)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1b"
+          },
+          {
+            "name": "$ref:V_GANG_ALERT_",
+            "display": "Gang Alert ?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(([Alert Code]= \"XGANG\");\"Y\") In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:MARITAL_STATUS_CODE",
+            "display": "Marital Status Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100ae"
+          },
+          {
+            "name": "$ref:RELIGION_DESCRIPTION",
+            "display": "Religion Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b3"
+          },
+          {
+            "name": "$ref:MATERNITY_STATUS_DESCRIPTION",
+            "display": "Maternity Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100b0"
+          },
+          {
+            "name": "$ref:V_IS_CARE_EXPERIENCED",
+            "display": "Care Exp?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(([Alert Code] = \"LCE\"); \"Y\"\n) In ([NOMS Number])"
+          },
+          {
+            "name": "$ref:EFFECTIVE_SENTENCE_LENGTH",
+            "display": "Effective Sentence Length",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO293"
+          },
+          {
+            "name": "$ref:MAIN_LEGAL_STATUS_DESCRIPTION",
+            "display": "Main Legal Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO100df"
+          },
+          {
+            "name": "$ref:INCIDENT_TYPE",
+            "display": "Incident Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO9"
+          },
+          {
+            "name": "$ref:PARTICIPATION_ROLE_DESCRIPTION",
+            "display": "Participation Role Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO6a7"
+          },
+          {
+            "name": "$ref:IS_INDETERMINATE_SENTENCE_",
+            "display": "Is Indeterminate Sentence?",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO107d9"
+          },
+          {
+            "name": "$ref:V_LIFE_",
+            "display": "Life",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[??DP9.DO58f??]"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_GANG_ALERT_ :: Error: =If(([Alert Code]= \"XGANG\");\"Y\") In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:34",
+      "entityId": "Fvtg7wDIUQcA_.g9AACXnf0AACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_IS_CARE_EXPERIENCED :: Error: =If(([Alert Code] = \"LCE\"); \"Y\"\n) In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:2:3",
+      "entityId": "Fvtg7wDIUQcA_.g9AACXnf0AACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_GANG_ALERT_ :: Error: =If(([Alert Code]= \"XGANG\");\"Y\") In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:1:34",
+      "entityId": "Fvtg7wDIUQcA_.g9AACXnf0AACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_IS_CARE_EXPERIENCED :: Error: =If(([Alert Code] = \"LCE\"); \"Y\"\n) In ([NOMS Number]) ==> Error: Expected end of input but \"I\" found.\n at undefined:2:3",
+      "entityId": "Fvtg7wDIUQcA_.g9AACXnf0AACJIAGc1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375377/DP2",
+      "entityType": "dataset"
+    }
+  ]
+}

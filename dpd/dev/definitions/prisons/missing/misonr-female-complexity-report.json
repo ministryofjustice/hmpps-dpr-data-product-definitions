@@ -1,0 +1,510 @@
+{
+  "id": "FuCnJmDOLw8AO_4BAHDLFV8bACJIAFJ8",
+  "name": "MISONR Female Complexity Report",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "OAS0031"
+    ]
+  },
+  "description": "<br/>Latest Update: Released on 10/06/2021 - added in 'Unsentenced' details.<br/>OAS0031 - For Female establishments only.",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP0",
+      "name": "MIS Sentence",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.INITIALS, CASE WHEN AT_SENT_START_DATE.DAY_DATE < '31/12/9000' THEN AT_SENT_START_DATE.DAY_DATE END, DT_CURRENT_RELEASE_DATE.CURR_RELEASE_DATE, FACT_CURR_KEY_DATES_SENT.SSD, Case when AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE In ('14FTR_ORA','14FTRHDC_ORA','CUR_ORA','FTR/08','FTR_HDC','FTR_HDC_ORA','FTR_ORA','FTR_SCH15','FTRSCH15_ORA','HDR_ORA','LR','LR_ALP','LR_ALP_LASPO','LR_DLP','LR_DPP','LR_EPP','LR_ES','LR_HDC','LR_IPP','LR_LASPO_AR','LR_LASPO_DR','LR_LIFE','LR_MLP','LR_ORA','LR_SEC236A','LR_SEC91_ORA','LR_YOI','LR_YOI_ORA','FTRSCH18_ORA','FTRSCH18','LR_EDS18','LR_EDS21','LR_SOPC18','LR_SOPC21','LRSEC250_ORA','LR_ALP_CDE18','LR_ALP_CDE21','LR_EDSU18') then 'Recall' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '0' then 'Dead' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND = '1' then 'Indeterminate Sentence' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND in ('2','3') then 'Sentenced' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND in ('4','5','6','7') then 'Convicted Unsentenced' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND in ('9','10') or AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'CIV_RMD' then 'Civil Prisoner' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND in ('8','11') then 'Immigration Detainee' when AT_OFFENDER_BOOKING.LEGAL_STATUS_BAND in ('12','13','14') then 'Remand' when AT_OFFENDER_BOOKING.MAIN_LEGAL_STATUS_CODE = 'UNKNOWN' then 'Unknown' Else 'Other' End , DT_ADMISSION.MOVEMENT_TIME, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, Case When DT_LIFEFLAG.LIFE_SENTENCE_FLAG='Y' then 'Sentenced' when FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH='00/00/00' then 'Unsentenced' when FACT_CURR_KEY_DATES_SENT.EFFECTIVE_SENTENCE_LENGTH is null then 'Unsentenced' else 'Sentenced' End FROM BODIMIS.DIM_DATE AT_SENT_START_DATE, ( Select ob.offender_id_display, fme.offender_booking_sk, est.establishment_code_nk, fme.to_location_sk, fme.from_location_sk , fme.from_location_type, max(fme.MOVEMENT_SEQ ) as MOVEMENT_SEQ, max(d.day_date) as MOVEMENT_TIME, trunc(ETL.LOAD_END_DATETIME) as LOAD_DATE From BODIMIS.FACT_MOVEMENT_EXTERNAL fme, BODIMIS.DIM_OFFENDER_BOOKING ob, BODIMIS.DIM_ESTABLISHMENT est, BODIMIS.ETL_LOAD_LOG ETL, BODIMIS.DIM_DATE d Where ob.ESTABLISHMENT_SK=est.ESTABLISHMENT_SK and d.date_sk=fme.date_sk and fme.offender_booking_sk=ob.offender_booking_sk and ob.active_status IN('Active In','Active Out') And ob.MIS_CURRENT_RECORD_IND = 'Y' and ob.ACTIVE_FLAG = 'Y' and ETL.LOAD_ID=(select max(LOAD_ID) from BODIMIS.ETL_LOAD_LOG WHERE LOAD_END_DATETIME IS NOT NULL) And ob.ESTABLISHMENT_SK=fme.to_location_sk and fme.movement_seq= (select max(fme2.movement_seq ) from BODIMIS.FACT_MOVEMENT_EXTERNAL fme2 where fme.offender_booking_sk=fme2.offender_booking_sk and fme2.direction_code='IN' And fme2.TYPE='Admission' And fme2.To_location_type='Establishment' and fme2.reason_code <> 'R') GROUP BY ob.offender_id_display, fme.offender_booking_sk,est.establishment_code_nk,fme.to_location_sk,fme.from_location_sk,fme.from_location_type,ETL.LOAD_END_DATETIME ) DT_ADMISSION, BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, (   Select AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK as OFFENDER_BOOKING_SK, case when AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE From --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_DATE AT_RELEASE_DATE where --AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK=AT_FACT_SENTENCE.OFFENDER_BOOKING_SK(+) AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK=AT_RELEASE_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' --and AT_RELEASE_DATE.DAY_DATE !='31/12/9000' ) DT_CURRENT_RELEASE_DATE, FACT_CURR_KEY_DATES_SENT, (  SELECT distinct BODIMIS.FACT_CASE_SENTENCE_TERM.offender_booking_sk, BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG FROM BODIMIS.FACT_CASE_SENTENCE_TERM, BODIMIS.FACT_CASE_SENTENCE, BODIMIS.DIM_SENTENCE_STATUS dss WHERE ( BODIMIS.FACT_CASE_SENTENCE.SENTENCE_STATUS_SK=dss.sentence_status_sk) AND dss.sentence_status='Active' AND ( BODIMIS.FACT_CASE_SENTENCE.OFFENDER_BOOKING_SK=BODIMIS.FACT_CASE_SENTENCE_TERM.OFFENDER_BOOKING_SK ) AND ( BODIMIS.FACT_CASE_SENTENCE.SENTENCE_SEQ_NK=BODIMIS.FACT_CASE_SENTENCE_TERM.SENTENCE_SEQ_NK ) AND ( BODIMIS.FACT_CASE_SENTENCE.COURT_CASE_SK=BODIMIS.FACT_CASE_SENTENCE_TERM.COURT_CASE_SK ) and BODIMIS.FACT_CASE_SENTENCE_TERM.LIFE_SENTENCE_FLAG='Y' ) DT_LIFEFLAG, BODIMIS.DIM_COURT_CASE AT_COURT_CASE, BODIMIS.DIM_CELL AT_CELL WHERE ( AT_FACT_SENTENCE.SENTENCE_START_DATE_SK=AT_SENT_START_DATE.DATE_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_CURRENT_RELEASE_DATE.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_LIFEFLAG.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=FACT_CURR_KEY_DATES_SENT.OFFENDER_BOOKING_SK(+) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=AT_COURT_CASE.OFFENDER_BOOKING_SK(+) ) AND ( AT_CELL.ESTABLISHMENT_SK=AT_ESTABLISHMENT.ESTABLISHMENT_SK ) AND ( AT_CELL.UNIT_4_SK=AT_OFFENDER_BOOKING.LIVING_UNIT_SK ) AND ( AT_COURT_CASE.COURT_CASE_SK=AT_FACT_SENTENCE.COURT_CASE_SK(+) ) AND ( AT_ESTABLISHMENT.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username from context_) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username from context_) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.ESTABLISHMENT_SK=AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK ) AND ( AT_ESTABLISHMENT_TAP.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_ADMISSION.OFFENDER_BOOKING_SK(+) ) AND ( ( AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK in ((SELECT establishment_code from prompt_)) Or 'All' in ((SELECT establishment_code from prompt_)) ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND ( AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y' ) AND AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK IN ( (SELECT establishment_code from prompt_),(SELECT establishment_code from prompt_),(SELECT establishment_code from prompt_),(SELECT establishment_code from prompt_),(SELECT establishment_code from prompt_),(SELECT establishment_code from prompt_),(SELECT establishment_code from prompt_),(SELECT establishment_code from prompt_),(SELECT establishment_code from prompt_),(SELECT establishment_code from prompt_),(SELECT establishment_code from prompt_),(SELECT establishment_code from prompt_) ) )), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3375896/DP1",
+      "name": "BCS",
+      "description": "ONR - Ad-hoc Reports",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT OFFENDER.OFFENDER_ID_DISPLAY, ASSESSMENT_BCS_SCREENING.CURRENT_ACCT, ASSESSMENT_BCS_CASEID.BCS_PART1_COMP_DATE, ASSESSMENT_BCS_SECTION8.MENTAL_HEALTH_SERVICES, ASSESSMENT_BCS_SCREENING.RESTRAINING_ORDER, ASSESSMENT_BCS_SCREENING.VULNERABILITY, ASSESSMENT_BCS_SECTION11.TEMPER_CONTROL, ASSESSMENT_BCS_SECTION11.IMPULSIVITY FROM OFFENDER, ASSESSMENT, ASSESSMENT_BCS_SCREENING, ASSESSMENT_BCS_CASEID, ASSESSMENT_BCS_SECTION8, ASSESSMENT_BCS_SECTION11, REP_OFFENDER_HISTORY, BCS_PART_STATUS WHERE (OFFENDER.OFFENDER_ID = ASSESSMENT.OFFENDER_ID (+)) AND (OFFENDER.OFFENDER_ID = REP_OFFENDER_HISTORY.OFFENDER_ID (+)) AND (ASSESSMENT.ASSESSMENT_ID = ASSESSMENT_BCS_CASEID.ASSESSMENT_ID AND ASSESSMENT.ASSESSMENT_TYPE_ELM = 'TR_BCS') AND (ASSESSMENT_BCS_CASEID.ASSESSMENT_ID = ASSESSMENT_BCS_SCREENING.ASSESSMENT_ID) AND (ASSESSMENT_BCS_CASEID.ASSESSMENT_ID = ASSESSMENT_BCS_SECTION8.ASSESSMENT_ID) AND (ASSESSMENT_BCS_CASEID.ASSESSMENT_ID = ASSESSMENT_BCS_SECTION11.ASSESSMENT_ID) AND (BCS_PART_STATUS.BCS_PART_STATUS_CODE (+) = ASSESSMENT_BCS_CASEID.BCS_PART1_STATUS) AND (SUBSTR(OFFENDER.OFFENDER_ID_DISPLAY, 1, 10) = TAGMIS_CASELOAD_SECURITY('VQL10O', OFFENDER.OFFENDER_ID_DISPLAY)) AND (REP_OFFENDER_HISTORY.PHYSICAL_LOCATION IN ('Styal (HMP)') AND BCS_PART_STATUS.DESCRIPTION = 'Complete' AND (REP_OFFENDER_HISTORY.LATEST_OWNERSHIP_RANK = 1))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, CURRENT_ACCT, BCS_PART1_COMP_DATE, MENTAL_HEALTH_SERVICES, RESTRAINING_ORDER, VULNERABILITY, TEMPER_CONTROL, IMPULSIVITY FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP1.DO264",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "CURRENT_ACCT",
+            "type": "double",
+            "display": "Current Acct",
+            "legacyId": "DP1.DO12c2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "BCS_PART1_COMP_DATE",
+            "type": "date",
+            "display": "BCS Part1 Completion Date",
+            "legacyId": "DP1.DO1251",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "MENTAL_HEALTH_SERVICES",
+            "type": "double",
+            "display": "Mental Health Services",
+            "legacyId": "DP1.DO1347",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "RESTRAINING_ORDER",
+            "type": "double",
+            "display": "Restraining Order",
+            "legacyId": "DP1.DO12bb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "VULNERABILITY",
+            "type": "double",
+            "display": "Vulnerability",
+            "legacyId": "DP1.DO12c1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "TEMPER_CONTROL",
+            "type": "double",
+            "display": "Temper Control",
+            "legacyId": "DP1.DO1353",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "IMPULSIVITY",
+            "type": "double",
+            "display": "Impulsivity",
+            "legacyId": "DP1.DO1354",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375368/DP2",
+      "name": "Offences",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, CASE WHEN AT_DIM_OFFENCE.OFFENCE_SK > 0 THEN (AT_DIM_OFFENCE.OFFENCE_CODE_NK) ELSE '-' END AS OFFENCE_CJIT_CODE, AT_DIM_OFFENCE.OFFENCE_NAME FROM BODIMIS.DIM_OFFENCE AT_DIM_OFFENCE, BODIMIS.FACT_COURT_CHARGE AT_FACT_COURT_CHARGE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_COURT_CASE AT_COURT_CASE WHERE (AT_FACT_COURT_CHARGE.OFFENCE_SK = AT_DIM_OFFENCE.OFFENCE_SK (+)) AND (AT_COURT_CASE.COURT_CASE_SK = AT_FACT_COURT_CHARGE.COURT_CASE_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_COURT_CASE.OFFENDER_BOOKING_SK (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_COURT_CASE.OFFENDER_BOOKING_SK IS NULL OR AT_COURT_CASE.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND ((AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK IN ((SELECT establishment_code FROM prompt_)) OR 'All' IN ((SELECT establishment_code FROM prompt_))) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND CASE WHEN AT_DIM_OFFENCE.OFFENCE_SK > 0 THEN (AT_DIM_OFFENCE.OFFENCE_CODE_NK) ELSE '-' END IN ('PU86117', 'PH97009', 'CJ01015', 'PH97004', 'PH97001', 'CD98068', 'CD98076', 'CD98069', 'CD98071', 'CD98048', 'CD98067', 'CD98011', 'CD98012', 'CD98009', 'CD98050', 'CD98053', 'CD98035', 'CD98036', 'PH97007', 'PH97008', 'PH97006', 'PU86116', 'PU86149', 'PU86134', 'PU86107', 'CD71015', 'CD71017', 'CD71003', 'CD71016', 'CD71015A', 'CD71003A', 'CD71015C', 'CD71003C', 'CD71016C', 'AT01018', 'CD98003', 'CD98004', 'CD98005', 'CD98006', 'CD98009', 'CD98011', 'CD98012', 'CD98028', 'CD98031', 'CD98035', 'CD98036', 'CD98041', 'CD98042', 'CD98043', 'CD98044', 'CD98048', 'CD98053', 'CD98067', 'CD98069', 'CD98070', 'CD98071', 'CD98073', 'CD98076', 'CH84001', 'CH84002', 'CH84003', 'CH84003A', 'CH84004', 'CH84005', 'CH84006', 'CJ15005', 'CJ91015-034N', 'OF61102', 'CL67010', 'COML002', 'COML017', 'COML017N', 'COML020', 'COML020A', 'COML020C', 'COML022', 'COML023', 'COML025', 'COML025A', 'COML025C', 'COML025N', 'COML026', 'COML026A', 'CY33049', 'CY33050', 'DD91022', 'DD91024', 'DV04002', 'EX83027', 'EX83029', 'EX83030', 'FG03001', 'FI68059', 'FI68059C', 'FI68061', 'FI68062', 'FI68063', 'FI68064', 'FI68065', 'HC57001', 'IL29001', 'MS15003', 'OF61000-003N', 'OF61003', 'OF61014', 'OF61016', 'OF61016A', 'OF61017', 'OF61017A', 'OF61017C', 'OF61018', 'OF61019', 'OF61022', 'OF61049', 'OF61050', 'OF61051', 'OF61060', 'OF61063', 'OF61073', 'OF61074', 'OF61076', 'OF61095', 'OF61128', 'OF61130', 'OF61131', 'OF61131A', 'PH97001', 'PH97002', 'PH97003', 'PH97003A', 'PH97007', 'PH97008', 'PH97009', 'RT88001', 'RT88025', 'RT88028', 'RT88043', 'RT88337', 'RT88338', 'RT88526', 'RT88527', 'RT88531', 'RT88564', 'RT88565', 'SC07005', 'SC15004', 'TH68091', 'TH68164', 'XX0108', 'OF61016', 'DV04001', 'OF61127', 'RT88501', 'RT88502'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, OFFENCE_CJIT_CODE, OFFENCE_NAME FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENCE_CJIT_CODE",
+            "type": "string",
+            "display": "Offence CJIT Code",
+            "legacyId": "DP2.DO49",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "OFFENCE_NAME",
+            "type": "string",
+            "display": "Offence Name",
+            "legacyId": "DP2.DO4b",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "621.RS",
+      "name": "Details",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP0_DO10129",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP0_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP0_DO107CE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP0_DO565",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_MAX_BCS_PART1",
+            "display": "Latest BCS Part 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Max([BCS Part1 Completion Date]) In ([NOMiS Number])"
+          },
+          {
+            "name": "$ref:V_BR12_CURRENT_ACCT_SCORE",
+            "display": "BR12 Current ACCT",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_Max_ACTT] = 1;1;0)"
+          },
+          {
+            "name": "$ref:V_B8_6_MENTAL_HEALTH_SCORE",
+            "display": "B8.6 Mental health",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_Max_B8.6_Mental_Health] = 1;1;0)"
+          },
+          {
+            "name": "$ref:V_RESTRAINING_ORDER_HARASS_S57",
+            "display": "BR2 Restraining Order Or Harrassment or Stalking",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_BR2_Restraining_Order_Score]+[v_Harass-Stalking_Score V2 - CONCAT] >0;1;0)"
+          },
+          {
+            "name": "$ref:V_BR11_VULNERABILITY_SCORE",
+            "display": "BR11 Vulnerability",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_Max_Vulnerability] = 1;1;0)"
+          },
+          {
+            "name": "$ref:V_B11_TEMPER_AND_OR_IMPULSIV37",
+            "display": "B11 Temper AND OR Impulsivity Score",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_Temper_Control_Score]+[v_Impulsivity_Score] >0;1;0)"
+          },
+          {
+            "name": "$ref:V_ARSON_VIOL_PERS_SCORE_V2_C33",
+            "display": "Arson or Violence against person offence",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_Max_Concat_ Arson_&_Viol_Pers_Score] = \"1\" Or [v_Max_Concat_ Arson_&_Viol_Pers_Score] = \"1, 0\";1;0)"
+          },
+          {
+            "name": "$ref:V_SENTENCE_QS_SCORE",
+            "display": "Sentence Questions",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(([v_Sentence_Length_Score]+[v_Release_Date_In_Past]+[v_Sentence_Staus_Score])>0;1;0)"
+          },
+          {
+            "name": "$ref:ASSESSED_OR_UNASSESSED_",
+            "display": "Assessed, Unassessed or Unsentenced?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Assessed or Unassessed?]"
+          },
+          {
+            "name": "$ref:V_COMPLEXITY_SCORE_V3",
+            "display": "Complexity Score",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_Assessed or Unassessed?] = \"Unassessed\";\"Unassessed\";\n(If([v_Assessed or Unassessed?] = \"Unsentenced\";\"Unsentenced\";[v_Complexity_Score])))"
+          },
+          {
+            "name": "$ref:V_COMPLEXITY_SCORE_BAND_V3",
+            "display": "Complexity Score Band",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_Complexity_Score v3] = \"Unassessed\";\"Unassessed\";\n(If([v_Complexity_Score v3]= \"Unsentenced\"; \"Unsentenced\";[v_Complexity_Score_Band])))"
+          }
+        ]
+      }
+    },
+    {
+      "id": "709.RS",
+      "name": "Summary",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP0_DO10129",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP0_DO10129",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Expected table name but got None. Line 1, Col: 3476.\n  hen AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE \u001b[4mFrom\u001b[0m --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENT]",
+      "entityId": "FuCnJmDOLw8AO_4BAHDLFV8bACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_MAX_BCS_PART1 :: Error: Invalid expression / Unexpected token. Line 1, Col: 29.\n  MAX(BCS_PART1_COMP_DATE) IN \u001b[4m,\u001b[0mNOMIS_NUMBER,",
+      "entityId": "FuCnJmDOLw8AO_4BAHDLFV8bACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_ARSON_VIOL_PERS_SCORE_V2_C33 :: Error: =If([v_Max_Concat_ Arson_&_Viol_Pers_Score] = \"1\" Or [v_Max_Concat_ Arson_&_Viol_Pers_Score] = \"1, 0\";1;0) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "FuCnJmDOLw8AO_4BAHDLFV8bACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields (comments -- in query)",
+      "entityId": "3375368/DP0",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP0_DO10129 does not have corresponding dataset schema field",
+      "entityId": "621.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP0_DO1007B does not have corresponding dataset schema field",
+      "entityId": "621.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP0_DO107CE does not have corresponding dataset schema field",
+      "entityId": "621.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP0_DO565 does not have corresponding dataset schema field",
+      "entityId": "621.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_MAX_BCS_PART1 does not have corresponding dataset schema field",
+      "entityId": "621.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_BR12_CURRENT_ACCT_SCORE does not have corresponding dataset schema field",
+      "entityId": "621.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_B8_6_MENTAL_HEALTH_SCORE does not have corresponding dataset schema field",
+      "entityId": "621.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_RESTRAINING_ORDER_HARASS_S57 does not have corresponding dataset schema field",
+      "entityId": "621.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_BR11_VULNERABILITY_SCORE does not have corresponding dataset schema field",
+      "entityId": "621.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_B11_TEMPER_AND_OR_IMPULSIV37 does not have corresponding dataset schema field",
+      "entityId": "621.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ARSON_VIOL_PERS_SCORE_V2_C33 does not have corresponding dataset schema field",
+      "entityId": "621.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_SENTENCE_QS_SCORE does not have corresponding dataset schema field",
+      "entityId": "621.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field ASSESSED_OR_UNASSESSED_ does not have corresponding dataset schema field",
+      "entityId": "621.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COMPLEXITY_SCORE_V3 does not have corresponding dataset schema field",
+      "entityId": "621.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COMPLEXITY_SCORE_BAND_V3 does not have corresponding dataset schema field",
+      "entityId": "621.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP0_DO10129 does not have corresponding dataset schema field",
+      "entityId": "709.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP0_DO10129 does not have corresponding dataset schema field",
+      "entityId": "709.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3375368/DP0",
+      "entityType": "dataset"
+    }
+  ]
+}

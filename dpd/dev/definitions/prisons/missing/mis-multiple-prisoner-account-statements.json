@@ -1,0 +1,610 @@
+{
+  "id": "okefFh0AApUWZxkAQASEcEPmy5E",
+  "name": "MIS Multiple Prisoner Account Statements",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "FIN0022 v00.00.25"
+    ]
+  },
+  "description": "Is for multiple prisoners; either all in the establishment or a smaller group selected by wing. It shows a list of all the prisoners' spending transactions for the week (from seven days prior to the run date to one day prior to the run date.) Also displayed are the balances of the prisoners' Private Cash and Saving accounts.<br/><br/>FIN0022 - v00.00.25",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376115/DPa",
+      "name": "Spend Transactions",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_CELL.UNIT_1_DESCRIPTION, AT_CELL.UNIT_4_SHORT_DESCRIPTION, CASE WHEN AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_DATE_SK=AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_BUSINESS_DATE_SK THEN AT_FACT_OFFENDER_TRANSACTION.TXN_ENTRY_TIME ELSE trunc(AT_FACT_OFFENDER_TRANSACTION.TXN_ENTRY_TIME)-1/86400 END, AT_DIM_TRANSACTION_TYPE.DESCRIPTION, sum(decode(( AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE ),'CR',( AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT ),0)), sum(decode(( AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_CODE ),'DR',( AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_AMOUNT ),0)), trunc(sysdate-1), trunc(sysdate-7) FROM BODIMIS.FACT_OFFENDER_TRANSACTION AT_FACT_OFFENDER_TRANSACTION, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_CELL AT_CELL, BODIMIS.DIM_TRANSACTION_TYPE AT_DIM_TRANSACTION_TYPE, BODIMIS.DIM_TXN_POSTING_TYPE AT_DIM_TXN_POSTING_TYPE, BODIMIS.DIM_DATE AT_BUSINESS_DATE, BODIMIS.DIM_ACCOUNT_CODE AT_DIM_ACCOUNT_CODE_TXN WHERE ( AT_DIM_TRANSACTION_TYPE.TRANSACTION_TYPE_SK=AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_TYPE_SK ) AND ( AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_POSTING_TYPE_SK=AT_DIM_TXN_POSTING_TYPE.TRANSACTION_POSTING_TYPE_SK ) AND ( AT_FACT_OFFENDER_TRANSACTION.ACCOUNT_CODE_SK=AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE_SK ) AND ( AT_OFFENDER_BOOKING.ALIAS_OFFENDER_SK=AT_FACT_OFFENDER_TRANSACTION.ALIAS_OFFENDER_SK and AT_OFFENDER_BOOKING.BOOKING_SEQ=1 ) AND ( AT_BUSINESS_DATE.DATE_SK=AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_BUSINESS_DATE_SK ) AND ( AT_CELL.ESTABLISHMENT_SK=AT_ESTABLISHMENT.ESTABLISHMENT_SK ) AND ( AT_CELL.UNIT_4_SK=AT_OFFENDER_BOOKING.LIVING_UNIT_SK ) AND ( AT_ESTABLISHMENT.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( ( AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,Not_Persistent,User:70) */ ) ) AND ( case when 'All' in (SELECT WING FROM prompt_ /*= #Prompt('Wing (All for all)','A','Cell\\Unit Description 1',multi,free,Not_Persistent,User:80) */ ) then 'All' else AT_CELL.UNIT_1_DESCRIPTION end in @Variable('Wing (All for all)') ) AND AT_BUSINESS_DATE.DAY_DATE BETWEEN trunc(sysdate-7) AND trunc(sysdate-1) AND ( AT_DIM_ACCOUNT_CODE_TXN.ACCOUNT_CODE = 2102 ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND ( AT_OFFENDER_BOOKING.IN_OUT = 'IN' ) ) GROUP BY AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_CELL.UNIT_1_DESCRIPTION, AT_CELL.UNIT_4_SHORT_DESCRIPTION, CASE WHEN AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_ENTRY_DATE_SK=AT_FACT_OFFENDER_TRANSACTION.TRANSACTION_BUSINESS_DATE_SK THEN AT_FACT_OFFENDER_TRANSACTION.TXN_ENTRY_TIME ELSE trunc(AT_FACT_OFFENDER_TRANSACTION.TXN_ENTRY_TIME)-1/86400 END, AT_DIM_TRANSACTION_TYPE.DESCRIPTION, trunc(sysdate-1), trunc(sysdate-7)), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,Not_Persistent,User:70)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "wing",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Wing (All for all)",
+          "description": "@Prompt('Wing (All for all)','A','Cell\\Unit Description 1',multi,free,Not_Persistent,User:80)",
+          "mandatory": "true",
+          "referenceType": "wing"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3376115/DP19",
+      "name": "Wing Section",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_CELL.UNIT_1_DESCRIPTION, AT_CELL.UNIT_4_SHORT_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_CELL AT_CELL WHERE ( AT_CELL.ESTABLISHMENT_SK=AT_ESTABLISHMENT.ESTABLISHMENT_SK ) AND ( AT_CELL.UNIT_4_SK=AT_OFFENDER_BOOKING.LIVING_UNIT_SK ) AND ( AT_ESTABLISHMENT.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( ( case when 'All' in (SELECT WING FROM prompt_ /*= #Prompt('Wing (All for all)','A','Cell\\Unit Description 1',multi,free,Not_Persistent,User:80) */ ) then 'All' else AT_CELL.UNIT_1_DESCRIPTION end in @Variable('Wing (All for all)') ) AND AT_CELL.UNIT_1_DESCRIPTION <> '-' AND ( AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,Not_Persistent,User:70) */ ) ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND ( AT_OFFENDER_BOOKING.IN_OUT = 'IN' ) )), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "wing",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Wing (All for all)",
+          "description": "@Prompt('Wing (All for all)','A','Cell\\Unit Description 1',multi,free,Not_Persistent,User:80)",
+          "mandatory": "true",
+          "referenceType": "wing"
+        },
+        {
+          "index": 1,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,Not_Persistent,User:70)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3376115/DP1a",
+      "name": "Balance",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_CELL.UNIT_1_DESCRIPTION, AT_CELL.UNIT_4_SHORT_DESCRIPTION, sum(coalesce(case when AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE_SK is not null then AT_FACT_OFF_ACC_HIST_BALANCE.GROSS_BALANCE end, 0)), sum(coalesce(case when AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE_SK is not null then AT_FACT_OFF_ACC_HIST_BALANCE.HOLD_BALANCE end, 0)), trunc(sysdate-1), AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE, AT_HIST_BALANCE_DATES.DAY_DATE, trunc(sysdate-7), sum(decode(( AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE ),'2102',( AT_FACT_OFF_ACC_HIST_BALANCE.GROSS_BALANCE ),0)) FROM BODIMIS.FACT_OFF_ACC_HIST_BALANCE AT_FACT_OFF_ACC_HIST_BALANCE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_CELL AT_CELL, BODIMIS.DIM_ACCOUNT_CODE AT_DIM_ACCOUNT_CODE_ACCOUNTS, BODIMIS.DIM_DATE AT_HIST_BALANCE_DATES WHERE ( AT_HIST_BALANCE_DATES.DATE_SK=AT_FACT_OFF_ACC_HIST_BALANCE.BALANCE_DATE_SK ) AND ( AT_FACT_OFF_ACC_HIST_BALANCE.ACCOUNT_CODE_SK=AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE_SK ) AND ( AT_OFFENDER_BOOKING.ALIAS_OFFENDER_SK=AT_FACT_OFF_ACC_HIST_BALANCE.ALIAS_OFFENDER_SK and AT_OFFENDER_BOOKING.BOOKING_SEQ=1 ) AND ( AT_CELL.ESTABLISHMENT_SK=AT_ESTABLISHMENT.ESTABLISHMENT_SK ) AND ( AT_CELL.UNIT_4_SK=AT_OFFENDER_BOOKING.LIVING_UNIT_SK ) AND ( AT_ESTABLISHMENT.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /*= #Variable('BOUSER') */ )) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( ( AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT ESTABLISHMENT_CODE FROM prompt_ /*= #Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,Not_Persistent,User:70) */ ) ) AND ( case when 'All' in (SELECT WING FROM prompt_ /*= #Prompt('Wing (All for all)','A','Cell\\Unit Description 1',multi,free,Not_Persistent,User:80) */ ) then 'All' else AT_CELL.UNIT_1_DESCRIPTION end in @Variable('Wing (All for all)') ) AND ( AT_HIST_BALANCE_DATES.DAY_DATE = trunc(sysdate-1) OR AT_HIST_BALANCE_DATES.DAY_DATE = trunc(sysdate-7) ) AND ( AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE in (2101, 2102, 2103) ) AND ( AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' ) AND ( AT_OFFENDER_BOOKING.IN_OUT = 'IN' ) ) GROUP BY AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_CELL.UNIT_1_DESCRIPTION, AT_CELL.UNIT_4_SHORT_DESCRIPTION, trunc(sysdate-1), AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE, AT_HIST_BALANCE_DATES.DAY_DATE, trunc(sysdate-7)), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,Not_Persistent,User:70)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        },
+        {
+          "index": 1,
+          "name": "wing",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Wing (All for all)",
+          "description": "@Prompt('Wing (All for all)','A','Cell\\Unit Description 1',multi,free,Not_Persistent,User:80)",
+          "mandatory": "true",
+          "referenceType": "wing"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3376115/DP17",
+      "name": "MIS Load",
+      "description": "MIS Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP17.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "135055.RS",
+      "name": "By NOMS Number",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376115/DPa",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DPA_DO604",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DPA_DO604",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DPA_DO7",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DPA_DO11C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DPA_DO11D",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_RUNNING_BALANCE",
+            "display": "Balance",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Opening Balance] + (RunningSum([Credit Amount]-[Debit Amount];FORCE_COL;([NOMS Number])))+0"
+          },
+          {
+            "name": "$ref:V_HEADER_TEXT",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=\"Spend Account Transactions \"+\"From \"+[v_Today Minus 7]+\" To \"+[v_Yesterday's Date]"
+          },
+          {
+            "name": "$ref:V_OPENING_BALANCE_TEXT",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Concatenation(\"Opening Spend Balance as at \";[v_Today Minus 7])"
+          },
+          {
+            "name": "$ref:V_OPENING_BALANCE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([Sum of Spend Account Opening-Balance]) Where ([Account Balance Date]=[Balance].[Seven Days Ago]) In Section"
+          },
+          {
+            "name": "$ref:V_CLOSING_BALANCE_TEXT",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Concatenation(\"Closing Spend Balance at \";[v_Yesterday's Date])"
+          },
+          {
+            "name": "$ref:V_RUNNING_BALANCE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Opening Balance] + (RunningSum([Credit Amount]-[Debit Amount];FORCE_COL;([NOMS Number])))+0"
+          }
+        ]
+      }
+    },
+    {
+      "id": "135337.RS",
+      "name": "By Cell Location",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376115/DPa",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DPA_DO604",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DPA_DO604",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DPA_DO7",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DPA_DO11C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DPA_DO11D",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_RUNNING_BALANCE",
+            "display": "Balance",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Opening Balance] + (RunningSum([Credit Amount]-[Debit Amount];FORCE_COL;([NOMS Number])))+0"
+          },
+          {
+            "name": "$ref:V_HEADER_TEXT",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=\"Spend Account Transactions \"+\"From \"+[v_Today Minus 7]+\" To \"+[v_Yesterday's Date]"
+          },
+          {
+            "name": "$ref:V_OPENING_BALANCE_TEXT",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Concatenation(\"Opening Spend Balance as at \";[v_Today Minus 7])"
+          },
+          {
+            "name": "$ref:V_OPENING_BALANCE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([Sum of Spend Account Opening-Balance]) Where ([Account Balance Date]=[Balance].[Seven Days Ago]) In Section"
+          },
+          {
+            "name": "$ref:V_CLOSING_BALANCE_TEXT",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Concatenation(\"Closing Spend Balance at \";[v_Yesterday's Date])"
+          },
+          {
+            "name": "$ref:V_RUNNING_BALANCE",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[v_Opening Balance] + (RunningSum([Credit Amount]-[Debit Amount];FORCE_COL;([NOMS Number])))+0"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "resolveEmbeddedVariables did not resolve all variables",
+      "entityId": "okefFh0AApUWZxkAQASEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Aliases'>. Line 1, Col: 2675.\n  multi,free,Not_Persistent,User:80) */ ) then 'All' else AT_CELL.UNIT_1_DESCRIPTION end in @Variable(\u001b[4m'Wing (All for all)'\u001b[0m) ) AND AT_BUSINESS_DATE.DAY_DATE BETWEEN trunc(sysdate-7) AND trunc(sysdate-1) AND ( AT_DIM_ACCOUNT]",
+      "entityId": "okefFh0AApUWZxkAQASEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_RUNNING_BALANCE :: Error: =[v_Opening Balance] + (RunningSum([Credit Amount]-[Debit Amount];FORCE_COL;([NOMS Number])))+0 ==> Error: Expected end of input but \"+\" found.\n at undefined:1:22",
+      "entityId": "okefFh0AApUWZxkAQASEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_HEADER_TEXT :: Error: =\"Spend Account Transactions \"+\"From \"+[v_Today Minus 7]+\" To \"+[v_Yesterday's Date] ==> Error: Expected end of input but \"+\" found.\n at undefined:1:64",
+      "entityId": "okefFh0AApUWZxkAQASEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_OPENING_BALANCE :: Error: =Sum([Sum of Spend Account Opening-Balance]) Where ([Account Balance Date]=[Balance].[Seven Days Ago]) In Section ==> Error: Expected end of input but \"I\" found.\n at undefined:1:104",
+      "entityId": "okefFh0AApUWZxkAQASEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_CLOSING_BALANCE_TEXT :: Error: =Concatenation(\"Closing Spend Balance at \";[v_Yesterday's Date]) ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "okefFh0AApUWZxkAQASEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "resolveEmbeddedVariables did not resolve all variables",
+      "entityId": "okefFh0AApUWZxkAQASEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Aliases'>. Line 1, Col: 1097.\n  multi,free,Not_Persistent,User:80) */ ) then 'All' else AT_CELL.UNIT_1_DESCRIPTION end in @Variable(\u001b[4m'Wing (All for all)'\u001b[0m) ) AND AT_CELL.UNIT_1_DESCRIPTION <> '-' AND ( AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT EST]",
+      "entityId": "okefFh0AApUWZxkAQASEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "resolveEmbeddedVariables did not resolve all variables",
+      "entityId": "okefFh0AApUWZxkAQASEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Aliases'>. Line 1, Col: 2270.\n  multi,free,Not_Persistent,User:80) */ ) then 'All' else AT_CELL.UNIT_1_DESCRIPTION end in @Variable(\u001b[4m'Wing (All for all)'\u001b[0m) ) AND ( AT_HIST_BALANCE_DATES.DAY_DATE = trunc(sysdate-1) OR AT_HIST_BALANCE_DATES.DAY_DATE = trun]",
+      "entityId": "okefFh0AApUWZxkAQASEcEPmy5E",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields",
+      "entityId": "3376115/DPa",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields",
+      "entityId": "3376115/DP19",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields",
+      "entityId": "3376115/DP1a",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DPA_DO604 does not have corresponding dataset schema field",
+      "entityId": "135055.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DPA_DO604 does not have corresponding dataset schema field",
+      "entityId": "135055.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DPA_DO7 does not have corresponding dataset schema field",
+      "entityId": "135055.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DPA_DO11C does not have corresponding dataset schema field",
+      "entityId": "135055.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DPA_DO11D does not have corresponding dataset schema field",
+      "entityId": "135055.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_RUNNING_BALANCE does not have corresponding dataset schema field",
+      "entityId": "135055.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_HEADER_TEXT does not have corresponding dataset schema field",
+      "entityId": "135055.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OPENING_BALANCE_TEXT does not have corresponding dataset schema field",
+      "entityId": "135055.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OPENING_BALANCE does not have corresponding dataset schema field",
+      "entityId": "135055.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_CLOSING_BALANCE_TEXT does not have corresponding dataset schema field",
+      "entityId": "135055.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_RUNNING_BALANCE does not have corresponding dataset schema field",
+      "entityId": "135055.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DPA_DO604 does not have corresponding dataset schema field",
+      "entityId": "135337.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DPA_DO604 does not have corresponding dataset schema field",
+      "entityId": "135337.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DPA_DO7 does not have corresponding dataset schema field",
+      "entityId": "135337.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DPA_DO11C does not have corresponding dataset schema field",
+      "entityId": "135337.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DPA_DO11D does not have corresponding dataset schema field",
+      "entityId": "135337.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_RUNNING_BALANCE does not have corresponding dataset schema field",
+      "entityId": "135337.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_HEADER_TEXT does not have corresponding dataset schema field",
+      "entityId": "135337.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OPENING_BALANCE_TEXT does not have corresponding dataset schema field",
+      "entityId": "135337.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_OPENING_BALANCE does not have corresponding dataset schema field",
+      "entityId": "135337.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_CLOSING_BALANCE_TEXT does not have corresponding dataset schema field",
+      "entityId": "135337.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_RUNNING_BALANCE does not have corresponding dataset schema field",
+      "entityId": "135337.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3376115/DPa",
+      "entityType": "dataset"
+    }
+  ]
+}

@@ -1,0 +1,248 @@
+{
+  "id": "okqk.VYACBy8CSMANwiEcDcgiHI",
+  "name": "ORS Allowable Spends Sentenced Canteen Report",
+  "description": "The Allowable Spends Sentenced Canteen Report will overprint onto pre-printed canteen order forms, provided by DHL, prior to their distribution to prisoners as required. The pre-printed section of the form will detail the items that prisoners can purchase from the canteen and the overprinted information will inform the prisoner how much they have to spend for that week. The report will display all Sentenced prisoners for a chosen establishment and/or wing.<br/>FIN0041 - v5 Last Modified: 14/06/2022",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "FIN0041 v5.0 Allowable Spends"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376816/DPd",
+      "name": "Canteen Report",
+      "description": "OR - Finance",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, 5, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS LOCATION, AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, SUBSTR(AT_OFFENDER.FIRST_NAME, 1, 1) || CASE WHEN AT_OFFENDER.MIDDLE_NAME IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME, 1, 1) || CASE WHEN AT_OFFENDER.MIDDLE_NAME_2 IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME_2, 1, 1) END END AS INITIALS, COALESCE(DT_IEP_BAND_LAST.DESCRIPTION, 'Missing') AS IEP_LEVEL, SUM(CASE WHEN AT_OFFENDER_SUB_ACCOUNTS.BALANCE < ((CASE DT_IEP_BAND_LAST.IEP_LEVEL WHEN 'ENH' THEN 2000 WHEN 'STD' THEN 2000 WHEN 'ENT' THEN 2000 WHEN 'BAS' THEN 2000 WHEN 'EN2' THEN 2000 WHEN 'EN3' THEN 2000 ELSE 0 END) * 1) THEN AT_OFFENDER_SUB_ACCOUNTS.BALANCE ELSE ((CASE DT_IEP_BAND_LAST.IEP_LEVEL WHEN 'ENH' THEN 2000 WHEN 'STD' THEN 2000 WHEN 'ENT' THEN 2000 WHEN 'BAS' THEN 2000 WHEN 'EN2' THEN 2000 WHEN 'EN3' THEN 2000 ELSE 0 END) * 1) END) AS ALLOWABLE_SPENDS, TO_CHAR(CURRENT_TIMESTAMP, 'dd/mm/yyyy') AS BALANCE_DATE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, (SELECT iep_level, description, agy_loc_id, offender_book_id, iep_date FROM (SELECT iep.iep_level, rc.description, iep.agy_loc_id, iep.offender_book_id, iep.iep_date, ROW_NUMBER() OVER (PARTITION BY iep.offender_book_id ORDER BY iep.iep_time DESC, iep.iep_level_seq DESC) AS row_seq_filter FROM oms_owner.offender_iep_levels iep LEFT OUTER JOIN oms_owner.reference_codes rc ON iep.iep_level = rc.code AND rc.domain = 'IEP_LEVEL') WHERE row_seq_filter = 1) DT_IEP_BAND_LAST, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.IMPRISONMENT_STATUSES AT_IMPRISON_STATUSES_SEQ, OMS_OWNER.OFFENDER_SUB_ACCOUNTS AT_OFFENDER_SUB_ACCOUNTS, OMS_OWNER.LIVING_UNITS AT_WING_CANTEEN, OMS_OWNER.OFFENDER_IMPRISON_STATUSES AT_OFFENDER_IMPRISON_STS WHERE (AT_OFFENDER_SUB_ACCOUNTS.OFFENDER_ID (+) = AT_OFFENDER_BOOKING.ROOT_OFFENDER_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (DT_IEP_BAND_LAST.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID = AT_WING_CANTEEN.LIVING_UNIT_ID) AND (AT_OFFENDER_IMPRISON_STS.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_IMPRISON_STATUSES_SEQ.IMPRISONMENT_STATUS = AT_OFFENDER_IMPRISON_STS.IMPRISONMENT_STATUS) AND (AT_OFFENDER_IMPRISON_STS.LATEST_STATUS = 'Y') AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER.OFFENDER_ID_DISPLAY IN ('All') OR 'All' IN ('All')) AND (AT_WING_CANTEEN.AGY_LOC_ID || '-' || AT_WING_CANTEEN.LEVEL_1_CODE IN ('All') OR 'All' IN ('All')) AND AT_OFFENDER_SUB_ACCOUNTS.TRUST_ACCOUNT_CODE = 2102 AND AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' AND AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O' AND (NOT AT_IMPRISON_STATUSES_SEQ.IMPRISONMENT_STATUS IN ('RX', 'TRL', 'S35MHA', 'S36MHA', 'SEC43', 'A_CFINE', 'CIV_RMD', 'BOBC', 'CIVIL', 'CIVIL_CON', 'CIVIL_DT', 'DEPORT', ' DET', 'EXTRAD', 'S48MHA', 'UNFIT', 'YOC_CONT', 'YO_CFINE', 'UNKNOWN') OR AT_IMPRISON_STATUSES_SEQ.IMPRISONMENT_STATUS IS NULL) AND AT_OFFENDER_SUB_ACCOUNTS.CASELOAD_ID = (SELECT establishment_code FROM prompt_)) GROUP BY SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, 5, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)), AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, SUBSTR(AT_OFFENDER.FIRST_NAME, 1, 1) || CASE WHEN AT_OFFENDER.MIDDLE_NAME IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME, 1, 1) || CASE WHEN AT_OFFENDER.MIDDLE_NAME_2 IS NULL THEN NULL ELSE SUBSTR(AT_OFFENDER.MIDDLE_NAME_2, 1, 1) END END, COALESCE(DT_IEP_BAND_LAST.DESCRIPTION, 'Missing'), TO_CHAR(CURRENT_TIMESTAMP, 'dd/mm/yyyy')), dataset_ AS (SELECT LOCATION, OFFENDER_ID_DISPLAY, LAST_NAME, INITIALS, IEP_LEVEL, ALLOWABLE_SPENDS, BALANCE_DATE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOCATION",
+            "type": "string",
+            "display": "Location",
+            "legacyId": "DPd.DO1051f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS No.",
+            "legacyId": "DPd.DO10520",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DPd.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "INITIALS",
+            "type": "string",
+            "display": "Initials",
+            "legacyId": "DPd.DO10614",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "IEP Level",
+            "legacyId": "DPd.DO10521",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ALLOWABLE_SPENDS",
+            "type": "double",
+            "display": "Allowable Spends",
+            "legacyId": "DPd.DO520",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "BALANCE_DATE",
+            "type": "string",
+            "display": "Balance Date",
+            "legacyId": "DPd.DO4712",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "38240.RS",
+      "name": "Front Page",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376816/DPd",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:LOCATION",
+            "display": "Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPd.DO1051f"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS No.",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPd.DO10520"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPd.DO10045"
+          }
+        ]
+      }
+    },
+    {
+      "id": "38405.RS",
+      "name": "Canteen Order Form",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376816/DPd",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:LOCATION",
+            "display": "Location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPd.DO1051f"
+          },
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS No.",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPd.DO10520"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPd.DO10045"
+          },
+          {
+            "name": "$ref:INITIALS",
+            "display": "Initials",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPd.DO10614"
+          },
+          {
+            "name": "$ref:IEP_LEVEL",
+            "display": "IEP Level",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPd.DO10521"
+          },
+          {
+            "name": "$ref:ALLOWABLE_SPENDS",
+            "display": "Allowable Spends",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPd.DO520"
+          },
+          {
+            "name": "$ref:BALANCE_DATE",
+            "display": "Balance Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPd.DO4712"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

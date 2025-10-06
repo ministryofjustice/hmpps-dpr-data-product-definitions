@@ -1,0 +1,963 @@
+{
+  "id": "klaolsAADGJiaV4A38UAISgWcQA",
+  "name": "ORS TV Deductions Report",
+  "description": "This report shows details of all prisoners with active tv deduction payments, including their transaction amounts to assist with tracking payments for those Prisoners sharing a cell.<br/>FIN0068 - v00.00.03 Last Modified: 06/09/2019",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "FIN0068 v00.00.03"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376816/DPe",
+      "name": "Core Details",
+      "description": "Finance",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.LAST_NAME, DT_CURRENT_OFFENDER_IEP_LEVEL.IEP_LEVEL, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID) + 2, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS UNIT_DESCRIPTION_4_SHORT, AT_AGENCY_INTERNAL_LOCATION_L4.CAPACITY, AT_AGENCY_INTERNAL_LOCATION_L4.NO_OF_OCCUPANT FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, (SELECT offender_book_id, iep_date, iep_time, agy_loc_id, iep_level FROM (SELECT offender_book_id, iep_date, iep_time, agy_loc_id, iep_level, ROW_NUMBER() OVER (PARTITION BY offender_book_id ORDER BY iep_time DESC, iep_level_seq DESC) AS row_seq_filter FROM oms_owner.offender_iep_levels) WHERE row_seq_filter = 1) DT_CURRENT_OFFENDER_IEP_LEVEL, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID) AND (DT_CURRENT_OFFENDER_IEP_LEVEL.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID) AND (AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID) AND (WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_)) AND ((AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FIRST_NAME, LAST_NAME, IEP_LEVEL, UNIT_DESCRIPTION_4_SHORT, CAPACITY, NO_OF_OCCUPANT, START_DATE AS V_SCHED_START_DATE, END_DATE AS V_SCHED_END_DATE, PAYMENT_AMOUNT AS V_SCHED_WEEKLY_AMOUNT, TRANSACTIONS.TXN_ENTRY_DATE AS V_TRANS_DATE, TRANSACTIONS.TXN_ENTRY_AMOUNT AS V_TRANS_AMOUNT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DPe.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Given Name 1",
+            "legacyId": "DPe.DO11066",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DPe.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "Current IEP Band",
+            "legacyId": "DPe.DO1049c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "UNIT_DESCRIPTION_4_SHORT",
+            "type": "string",
+            "display": "Unit Description 4 Short",
+            "legacyId": "DPe.DO10427",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "CAPACITY",
+            "type": "double",
+            "display": "Unit Description 4 Capacity",
+            "legacyId": "DPe.DO11095",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "NO_OF_OCCUPANT",
+            "type": "double",
+            "display": "Current Cell Occupants",
+            "legacyId": "DPe.DO11096",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "V_SCHED_START_DATE",
+            "type": "string",
+            "display": "V_SCHED_START_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 8,
+            "name": "V_SCHED_END_DATE",
+            "type": "string",
+            "display": "V_SCHED_END_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 9,
+            "name": "V_SCHED_WEEKLY_AMOUNT",
+            "type": "string",
+            "display": "V_SCHED_WEEKLY_AMOUNT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 10,
+            "name": "V_TRANS_DATE",
+            "type": "string",
+            "display": "V_TRANS_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 11,
+            "name": "V_TRANS_AMOUNT",
+            "type": "string",
+            "display": "V_TRANS_AMOUNT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376816/DP5",
+      "name": "Payment Schedule",
+      "description": "Finance",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFF_DEDUCTIONS.START_DATE, AT_OFF_DEDUCTIONS.END_DATE, AT_OFF_DEDUCTIONS.PAYMENT_AMOUNT FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.OFFENDER_PAYMENT_PROFILES AT_OFF_DEDUCTIONS, CASELOADS AT_DED_CASELOAD WHERE (AT_OFF_DEDUCTIONS.OFFENDER_ID = AT_OFFENDER.ROOT_OFFENDER_ID) AND (AT_DED_CASELOAD.CASELOAD_ID = AT_OFF_DEDUCTIONS.CASELOAD_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_OFF_DEDUCTIONS.TXN_TYPE IN ('TELE') AND AT_DED_CASELOAD.CASELOAD_ID = (SELECT establishment_code FROM prompt_) AND AT_OFF_DEDUCTIONS.START_DATE < TO_DATE('18-07-2019 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND (AT_OFF_DEDUCTIONS.END_DATE >= TO_DATE('01-07-2019 00:00:00', 'DD-MM-YYYY HH24:MI:SS') OR AT_OFF_DEDUCTIONS.END_DATE IS NULL))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, START_DATE, END_DATE, PAYMENT_AMOUNT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP5.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "START_DATE",
+            "type": "date",
+            "display": "Start Date",
+            "legacyId": "DP5.DO4786",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "END_DATE",
+            "type": "date",
+            "display": "End Date",
+            "legacyId": "DP5.DO4787",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "PAYMENT_AMOUNT",
+            "type": "double",
+            "display": "Weekly Amount",
+            "legacyId": "DP5.DO4788",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376816/DP1",
+      "name": "Transactions",
+      "description": "Finance",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER_TRANSACTIONS.TXN_ENTRY_AMOUNT, AT_OFFENDER_TRANSACTIONS.TXN_ENTRY_DATE, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.LAST_NAME, AT_USER_TXN_CASELOADS.CASELOAD_ID FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, USER_ACCESSIBLE_CASELOADS AT_USER_TXN_CASELOADS, OMS_OWNER.OFFENDER_TRANSACTIONS AT_OFFENDER_TRANSACTIONS, OMS_OWNER.TRANSACTION_TYPES AT_TRANSACTION_TYPES WHERE (AT_OFFENDER_TRANSACTIONS.OFFENDER_ID = AT_OFFENDER_BOOKING.ROOT_OFFENDER_ID) AND (AT_USER_TXN_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_USER_TXN_CASELOADS.CASELOAD_ID = AT_OFFENDER_TRANSACTIONS.CASELOAD_ID) AND (AT_TRANSACTION_TYPES.TXN_TYPE = AT_OFFENDER_TRANSACTIONS.TXN_TYPE) AND (AT_TRANSACTION_TYPES.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_TRANSACTION_TYPES.TXN_TYPE IN ('TELE') AND AT_OFFENDER_TRANSACTIONS.TXN_ENTRY_DATE BETWEEN TO_DATE('01-07-2019 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('18-07-2019 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_USER_TXN_CASELOADS.CASELOAD_ID = (SELECT establishment_code FROM prompt_))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, TXN_ENTRY_AMOUNT, TXN_ENTRY_DATE, FIRST_NAME, LAST_NAME, CASELOAD_ID, START_DATE AS V_SCHED_START_DATE, END_DATE AS V_SCHED_END_DATE, PAYMENT_AMOUNT AS V_SCHED_WEEKLY_AMOUNT, TRANSACTIONS.TXN_ENTRY_DATE AS V_TRANS_DATE, TRANSACTIONS.TXN_ENTRY_AMOUNT AS V_TRANS_AMOUNT, MOVEMENT_DATE_ AS V_MOVEMENT_DATE, MOVEMENT_REASON_DESCRIPTION AS V_MOVEMENT_REASON FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP1.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "TXN_ENTRY_AMOUNT",
+            "type": "double",
+            "display": "Transaction Amount",
+            "legacyId": "DP1.DO3e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "TXN_ENTRY_DATE",
+            "type": "date",
+            "display": "Transaction Date",
+            "legacyId": "DP1.DO3f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Given Name 1",
+            "legacyId": "DP1.DO11066",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP1.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "CASELOAD_ID",
+            "type": "string",
+            "display": "Transaction Caseload ID",
+            "legacyId": "DP1.DO474f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "V_SCHED_START_DATE",
+            "type": "string",
+            "display": "V_SCHED_START_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 7,
+            "name": "V_SCHED_END_DATE",
+            "type": "string",
+            "display": "V_SCHED_END_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 8,
+            "name": "V_SCHED_WEEKLY_AMOUNT",
+            "type": "string",
+            "display": "V_SCHED_WEEKLY_AMOUNT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 9,
+            "name": "V_TRANS_DATE",
+            "type": "string",
+            "display": "V_TRANS_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 10,
+            "name": "V_TRANS_AMOUNT",
+            "type": "string",
+            "display": "V_TRANS_AMOUNT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 11,
+            "name": "V_MOVEMENT_DATE",
+            "type": "string",
+            "display": "V_MOVEMENT_DATE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 12,
+            "name": "V_MOVEMENT_REASON",
+            "type": "string",
+            "display": "V_MOVEMENT_REASON",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376816/DP15",
+      "name": "Not at Estab",
+      "description": "Finance",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER_TRANSACTIONS.TXN_ENTRY_AMOUNT, AT_OFFENDER_TRANSACTIONS.TXN_ENTRY_DATE, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.LAST_NAME, TRUNC(AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_DATE) AS MOVEMENT_DATE_, AT_MOV_TYPE_DESC.DESCRIPTION, AT_MOVEMENT_REASONS.DESCRIPTION AS MOVEMENT_REASON_DESCRIPTION, AT_MOV_LOC_FROM_OFFND_LOCTION.AGY_LOC_ID FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_MOV_TYPE_DESC, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, USER_ACCESSIBLE_CASELOADS AT_USER_TXN_CASELOADS, OMS_OWNER.AGENCY_LOCATIONS AT_MOV_LOC_FROM_OFFND_LOCTION, OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS AT_OFFENDER_EXTERNAL_MOVEMENTS, OMS_OWNER.OFFENDER_TRANSACTIONS AT_OFFENDER_TRANSACTIONS, OMS_OWNER.MOVEMENT_REASONS AT_MOVEMENT_REASONS, OMS_OWNER.TRANSACTION_TYPES AT_TRANSACTION_TYPES WHERE (AT_OFFENDER_TRANSACTIONS.OFFENDER_ID = AT_OFFENDER_BOOKING.ROOT_OFFENDER_ID) AND (AT_USER_TXN_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_USER_TXN_CASELOADS.CASELOAD_ID = AT_OFFENDER_TRANSACTIONS.CASELOAD_ID) AND (AT_TRANSACTION_TYPES.TXN_TYPE = AT_OFFENDER_TRANSACTIONS.TXN_TYPE) AND (AT_TRANSACTION_TYPES.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_EXTERNAL_MOVEMENTS.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_TYPE = AT_MOVEMENT_REASONS.MOVEMENT_TYPE AND AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_REASON_CODE = AT_MOVEMENT_REASONS.MOVEMENT_REASON_CODE) AND (AT_MOV_TYPE_DESC.CODE (+) = AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_TYPE) AND (AT_MOV_TYPE_DESC.DOMAIN (+) = ('MOVE_TYPE')) AND (AT_OFFENDER_EXTERNAL_MOVEMENTS.FROM_AGY_LOC_ID = AT_MOV_LOC_FROM_OFFND_LOCTION.AGY_LOC_ID (+)) AND (AT_MOV_LOC_FROM_OFFND_LOCTION.AGENCY_LOCATION_TYPE = 'INST') AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_TRANSACTION_TYPES.TXN_TYPE IN ('TELE') AND AT_OFFENDER_TRANSACTIONS.TXN_ENTRY_DATE BETWEEN TO_DATE('01-07-2019 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('18-07-2019 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TRUNC(AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_DATE) BETWEEN TO_DATE('01-07-2019 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('18-07-2019 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_USER_TXN_CASELOADS.CASELOAD_ID = (SELECT establishment_code FROM prompt_) AND AT_MOV_LOC_FROM_OFFND_LOCTION.AGY_LOC_ID IN ((SELECT establishment_code FROM prompt_)) AND NOT AT_MOV_TYPE_DESC.DESCRIPTION IN ('Admission', 'Community Report In', 'Intake', 'Intermittant Custody', 'Temporary Absence', 'Administrative'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, TXN_ENTRY_AMOUNT, TXN_ENTRY_DATE, FIRST_NAME, LAST_NAME, MOVEMENT_DATE_, DESCRIPTION, MOVEMENT_REASON_DESCRIPTION, AGY_LOC_ID FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP15.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "TXN_ENTRY_AMOUNT",
+            "type": "double",
+            "display": "Transaction Amount",
+            "legacyId": "DP15.DO3e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "TXN_ENTRY_DATE",
+            "type": "date",
+            "display": "Transaction Date",
+            "legacyId": "DP15.DO3f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Given Name 1",
+            "legacyId": "DP15.DO11066",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "LAST_NAME",
+            "type": "string",
+            "display": "Last Name",
+            "legacyId": "DP15.DO10045",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "MOVEMENT_DATE_",
+            "type": "date",
+            "display": "Movement Date (external)",
+            "legacyId": "DP15.DO1059c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Movement Type  (external)",
+            "legacyId": "DP15.DO10599",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "MOVEMENT_REASON_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Reason Description",
+            "legacyId": "DP15.DO1083b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Movement From Establishment Code",
+            "legacyId": "DP15.DO10d82",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "175421.RS",
+      "name": "TV Deductions",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376816/DPe",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (V_TRANS_COUNT <> 1 AND V_SCHED_START_DATE IS NOT NULL AND CORE_DETAILS_LAST_NAME IS NOT NULL))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO11066"
+          },
+          {
+            "name": "$ref:IEP_LEVEL",
+            "display": "Current IEP Band",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO1049c"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO10427"
+          },
+          {
+            "name": "$ref:CAPACITY",
+            "display": "Unit Description 4 Capacity",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO11095"
+          },
+          {
+            "name": "$ref:NO_OF_OCCUPANT",
+            "display": "Current Cell Occupants",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO11096"
+          },
+          {
+            "name": "$ref:V_SCHED_START_DATE",
+            "display": "Payment Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Start Date]"
+          },
+          {
+            "name": "$ref:V_SCHED_END_DATE",
+            "display": "Payment End Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[End Date]"
+          },
+          {
+            "name": "$ref:V_SCHED_WEEKLY_AMOUNT",
+            "display": "Weekly Amount",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Weekly Amount]"
+          },
+          {
+            "name": "$ref:V_TRANS_DATE",
+            "display": "Transaction Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Transactions].[Transaction Date]"
+          },
+          {
+            "name": "$ref:V_TRANS_AMOUNT",
+            "display": "Transaction Amount",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Transactions].[Transaction Amount]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "174247.RS",
+      "name": "No Transactions",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376816/DPe",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (V_TRANS_COUNT = 1 AND V_SCHED_START_DATE IS NOT NULL AND CORE_DETAILS_LAST_NAME IS NOT NULL))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO11066"
+          },
+          {
+            "name": "$ref:IEP_LEVEL",
+            "display": "Current IEP Band",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO1049c"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO10427"
+          },
+          {
+            "name": "$ref:CAPACITY",
+            "display": "Unit Description 4 Capacity",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO11095"
+          },
+          {
+            "name": "$ref:NO_OF_OCCUPANT",
+            "display": "Current Cell Occupants",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO11096"
+          },
+          {
+            "name": "$ref:V_SCHED_START_DATE",
+            "display": "Payment Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Start Date]"
+          },
+          {
+            "name": "$ref:V_SCHED_END_DATE",
+            "display": "Payment End Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[End Date]"
+          },
+          {
+            "name": "$ref:V_SCHED_WEEKLY_AMOUNT",
+            "display": "Weekly Amount",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Weekly Amount]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "174399.RS",
+      "name": "Not at Est.",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376816/DP1",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (CORE_DETAILS_LAST_NAME IS NULL AND V_TRANS_AMOUNT IS NOT NULL))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1.DO11066"
+          },
+          {
+            "name": "$ref:V_SCHED_START_DATE",
+            "display": "Payment Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Start Date]"
+          },
+          {
+            "name": "$ref:V_SCHED_END_DATE",
+            "display": "Payment End Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[End Date]"
+          },
+          {
+            "name": "$ref:V_SCHED_WEEKLY_AMOUNT",
+            "display": "Weekly Amount",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Weekly Amount]"
+          },
+          {
+            "name": "$ref:V_TRANS_DATE",
+            "display": "Transaction Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Transactions].[Transaction Date]"
+          },
+          {
+            "name": "$ref:V_TRANS_AMOUNT",
+            "display": "Transaction Amount",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Transactions].[Transaction Amount]"
+          },
+          {
+            "name": "$ref:V_MOVEMENT_DATE",
+            "display": "Movement Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Movement Date (external)]"
+          },
+          {
+            "name": "$ref:V_MOVEMENT_REASON",
+            "display": "Movement Reason",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Movement Reason Description]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "175531.RS",
+      "name": "No Current Schedule",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376816/DPe",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (CORE_DETAILS_LAST_NAME IS NOT NULL AND V_SCHED_START_DATE IS NULL))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:OFFENDER_ID_DISPLAY",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DPe.DO10044"
+          },
+          {
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO10045"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO11066"
+          },
+          {
+            "name": "$ref:IEP_LEVEL",
+            "display": "Current IEP Band",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO1049c"
+          },
+          {
+            "name": "$ref:UNIT_DESCRIPTION_4_SHORT",
+            "display": "Unit Description 4 Short",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO10427"
+          },
+          {
+            "name": "$ref:CAPACITY",
+            "display": "Unit Description 4 Capacity",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO11095"
+          },
+          {
+            "name": "$ref:NO_OF_OCCUPANT",
+            "display": "Current Cell Occupants",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DPe.DO11096"
+          },
+          {
+            "name": "$ref:V_SCHED_START_DATE",
+            "display": "Payment Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Start Date]"
+          },
+          {
+            "name": "$ref:V_SCHED_END_DATE",
+            "display": "Payment End Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[End Date]"
+          },
+          {
+            "name": "$ref:V_SCHED_WEEKLY_AMOUNT",
+            "display": "Weekly Amount",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Weekly Amount]"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_SCHED_START_DATE :: ReferenceError: error is not defined",
+      "entityId": "klaolsAADGJiaV4A38UAISgWcQA",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_SCHED_END_DATE :: ReferenceError: error is not defined",
+      "entityId": "klaolsAADGJiaV4A38UAISgWcQA",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_SCHED_WEEKLY_AMOUNT :: ReferenceError: error is not defined",
+      "entityId": "klaolsAADGJiaV4A38UAISgWcQA",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_SCHED_START_DATE :: ReferenceError: error is not defined",
+      "entityId": "klaolsAADGJiaV4A38UAISgWcQA",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_SCHED_END_DATE :: ReferenceError: error is not defined",
+      "entityId": "klaolsAADGJiaV4A38UAISgWcQA",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_SCHED_START_DATE :: ReferenceError: error is not defined",
+      "entityId": "klaolsAADGJiaV4A38UAISgWcQA",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_SCHED_END_DATE :: ReferenceError: error is not defined",
+      "entityId": "klaolsAADGJiaV4A38UAISgWcQA",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_MOVEMENT_REASON :: ReferenceError: error is not defined",
+      "entityId": "klaolsAADGJiaV4A38UAISgWcQA",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_SCHED_START_DATE :: ReferenceError: error is not defined",
+      "entityId": "klaolsAADGJiaV4A38UAISgWcQA",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_SCHED_END_DATE :: ReferenceError: error is not defined",
+      "entityId": "klaolsAADGJiaV4A38UAISgWcQA",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_MOVEMENT_DATE :: ReferenceError: error is not defined",
+      "entityId": "klaolsAADGJiaV4A38UAISgWcQA",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_MOVEMENT_REASON :: ReferenceError: error is not defined",
+      "entityId": "klaolsAADGJiaV4A38UAISgWcQA",
+      "entityType": "dpd"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00904: \"TRANSACTIONS\".\"TXN_ENTRY_AMOUNT\": invalid identifier\nHelp: https://docs.oracle.com/error-help/db/ora-00904/",
+      "entityId": "3376816/DPe",
+      "entityType": "dataset"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00904: \"MOVEMENT_REASON_DESCRIPTION\": invalid identifier\nHelp: https://docs.oracle.com/error-help/db/ora-00904/",
+      "entityId": "3376816/DP1",
+      "entityType": "dataset"
+    }
+  ]
+}

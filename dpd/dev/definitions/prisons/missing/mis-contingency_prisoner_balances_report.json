@@ -1,0 +1,400 @@
+{
+  "id": "oklsblUADqeKScAAY7eEcEP6o7w",
+  "name": "MIS Contingency_Prisoner_Balances_Report",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "CON0007 v00.00.04 LSRIT027"
+    ]
+  },
+  "description": "This is a contingency report that  lists all balances for all current prisoners (including those out of prison) for today's date and Caseload Id. Below the current prisoners' balances is a summary of any balances held for any non-current prisoners. Totals of all prisoner monies held by the prison are provided, split by current and non-current.<br/>CON0007 - v00.00.04",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376115/DP2",
+      "name": "Current",
+      "description": "MIS - Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT * AS ACCOUNT_CASELOAD_ID FROM (SELECT AT_CASELOADS_OFF_HIST_BAL.CASELOAD_ID, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_HIST_BALANCE_DATES.DAY_DATE, SUM(CASE WHEN (AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE) = '2102' THEN (AT_FACT_OFF_ACC_HIST_BALANCE.CURRENT_BALANCE) ELSE 0 END), SUM(CASE WHEN (AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE) = '2101' THEN (AT_FACT_OFF_ACC_HIST_BALANCE.CURRENT_BALANCE) ELSE 0 END), SUM(CASE WHEN (AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE) = '2103' THEN (AT_FACT_OFF_ACC_HIST_BALANCE.CURRENT_BALANCE) ELSE 0 END) FROM BODIMIS.FACT_OFF_ACC_HIST_BALANCE AT_FACT_OFF_ACC_HIST_BALANCE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.CASELOADS AT_CASELOADS_OFF_HIST_BAL, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_HIST_BALANCE_DATES, BODIMIS.DIM_ACCOUNT_CODE AT_DIM_ACCOUNT_CODE_ACCOUNTS WHERE (AT_HIST_BALANCE_DATES.DATE_SK = AT_FACT_OFF_ACC_HIST_BALANCE.BALANCE_DATE_SK) AND (AT_FACT_OFF_ACC_HIST_BALANCE.ACCOUNT_CODE_SK = AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE_SK (+)) AND (AT_FACT_OFF_ACC_HIST_BALANCE.OFFENDER_BOOKING_SK = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_FACT_OFF_ACC_HIST_BALANCE.CASELOAD_ID = AT_CASELOADS_OFF_HIST_BAL.CASELOAD_ID) AND (AT_CASELOADS_OFF_HIST_BAL.CASELOAD_TYPE = 'INST') AND (AT_CASELOADS_OFF_HIST_BAL.TRUST_ACCOUNTS_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (((AT_CASELOADS_OFF_HIST_BAL.CASELOAD_ID) = SUBSTR((SELECT username FROM context_ /* = #Variable('BOUSER') */), 1, 3)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_HIST_BALANCE_DATES.DAY_DATE = TO_DATE(TO_CHAR(CURRENT_TIMESTAMP, 'DD/MM/YYYY'), 'DD/MM/YYYY') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK IN (SELECT SAC.CASELOAD_ID FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC WHERE SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = SUBSTR((SELECT username FROM context_ /* = #Variable('BOUSER') */), 1, 3)))) GROUP BY AT_CASELOADS_OFF_HIST_BAL.CASELOAD_ID, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_HIST_BALANCE_DATES.DAY_DATE) _query0 FULL OUTER JOIN (SELECT AT_CASELOADS_OFF_HIST_BAL.CASELOAD_ID, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_HIST_BALANCE_DATES.DAY_DATE, SUM(COALESCE(AT_FACT_OFF_ACC_HIST_BALANCE.HOLD_BALANCE, 0)) FROM BODIMIS.FACT_OFF_ACC_HIST_BALANCE AT_FACT_OFF_ACC_HIST_BALANCE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.CASELOADS AT_CASELOADS_OFF_HIST_BAL, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_HIST_BALANCE_DATES WHERE (AT_HIST_BALANCE_DATES.DATE_SK = AT_FACT_OFF_ACC_HIST_BALANCE.BALANCE_DATE_SK) AND (AT_FACT_OFF_ACC_HIST_BALANCE.OFFENDER_BOOKING_SK = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_FACT_OFF_ACC_HIST_BALANCE.CASELOAD_ID = AT_CASELOADS_OFF_HIST_BAL.CASELOAD_ID) AND (AT_CASELOADS_OFF_HIST_BAL.CASELOAD_TYPE = 'INST') AND (AT_CASELOADS_OFF_HIST_BAL.TRUST_ACCOUNTS_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (((AT_CASELOADS_OFF_HIST_BAL.CASELOAD_ID) = SUBSTR((SELECT username FROM context_ /* = #Variable('BOUSER') */), 1, 3)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_HIST_BALANCE_DATES.DAY_DATE = TO_DATE(TO_CHAR(CURRENT_TIMESTAMP, 'DD/MM/YYYY'), 'DD/MM/YYYY') AND (AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK IN (SELECT SAC.CASELOAD_ID FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC WHERE SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = SUBSTR((SELECT username FROM context_ /* = #Variable('BOUSER') */), 1, 3)))) GROUP BY AT_CASELOADS_OFF_HIST_BAL.CASELOAD_ID, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_HIST_BALANCE_DATES.DAY_DATE) _query1 ON _query0.OFFENDER_ID_DISPLAY = _query1.OFFENDER_ID_DISPLAY), dataset_ AS (SELECT ACCOUNT_CASELOAD_ID, SUM(CURRENT.SUM_OF_PRIVATE_CASH_ACCOUNT_AVAILABLE_OPENING_BALANCE || CURRENT.SUM_OF_SPEND_ACCOUNT_OPENING_BALANCE || CURRENT.SUM_OF_SAVINGS_ACCOUNT_OPENING_BALANCE || CURRENT.SUM_OF_PRIVATE_CASH_ACCOUNT_HOLDING_OPENING_BALANCE) AS V_CURR_BALANCE_INC_UNAVAIL, SUM(CURRENT.SUM_OF_PRIVATE_CASH_ACCOUNT_AVAILABLE_OPENING_BALANCE || CURRENT.SUM_OF_SPEND_ACCOUNT_OPENING_BALANCE || CURRENT.SUM_OF_SAVINGS_ACCOUNT_OPENING_BALANCE) AS V_CURR_BALANCE_AVAIL, SUM(ALL_PRISONERS.SUM_OF_PRIVATE_CASH_ACCOUNT_HOLDING_OPENING_BALANCE) || V_ALL_BALANCE_AVAIL AS V_ALL_BALANCE_INC_UNAVAIL, SUM(ALL_PRISONERS.SUM_OF_PRIVATE_CASH_ACCOUNT_AVAILABLE_OPENING_BALANCE || ALL_PRISONERS.SUM_OF_SPEND_ACCOUNT_OPENING_BALANCE || ALL_PRISONERS.SUM_OF_SAVINGS_ACCOUNT_OPENING_BALANCE) AS V_ALL_BALANCE_AVAIL FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ACCOUNT_CASELOAD_ID",
+            "type": "string",
+            "display": "Account Caseload ID",
+            "legacyId": "DP2.DO3d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "V_CURR_BALANCE_INC_UNAVAIL",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP2.DO10076",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 2,
+            "name": "V_CURR_BALANCE_AVAIL",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP2.DO1007b",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 3,
+            "name": "V_ALL_BALANCE_INC_UNAVAIL",
+            "type": "date",
+            "display": "Account Balance Date",
+            "legacyId": "DP2.DO33",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 4,
+            "name": "V_ALL_BALANCE_AVAIL",
+            "type": "double",
+            "display": "Sum of Spend Account Opening-Balance",
+            "legacyId": "DP2.DO5e",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376115/DP5",
+      "name": "All Prisoners",
+      "description": "MIS - Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT * AS ACCOUNT_CASELOAD_ID FROM (SELECT AT_CASELOADS_OFF_HIST_BAL.CASELOAD_ID, AT_HIST_BALANCE_DATES.DAY_DATE, SUM(CASE WHEN (AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE) = '2101' THEN (AT_FACT_OFF_ACC_HIST_BALANCE.CURRENT_BALANCE) ELSE 0 END), SUM(CASE WHEN (AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE) = '2102' THEN (AT_FACT_OFF_ACC_HIST_BALANCE.CURRENT_BALANCE) ELSE 0 END), SUM(CASE WHEN (AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE) = '2103' THEN (AT_FACT_OFF_ACC_HIST_BALANCE.CURRENT_BALANCE) ELSE 0 END) FROM BODIMIS.FACT_OFF_ACC_HIST_BALANCE AT_FACT_OFF_ACC_HIST_BALANCE, BODIMIS.CASELOADS AT_CASELOADS_OFF_HIST_BAL, BODIMIS.DIM_DATE AT_HIST_BALANCE_DATES, BODIMIS.DIM_ACCOUNT_CODE AT_DIM_ACCOUNT_CODE_ACCOUNTS WHERE (AT_HIST_BALANCE_DATES.DATE_SK = AT_FACT_OFF_ACC_HIST_BALANCE.BALANCE_DATE_SK) AND (AT_FACT_OFF_ACC_HIST_BALANCE.ACCOUNT_CODE_SK = AT_DIM_ACCOUNT_CODE_ACCOUNTS.ACCOUNT_CODE_SK (+)) AND (AT_FACT_OFF_ACC_HIST_BALANCE.CASELOAD_ID = AT_CASELOADS_OFF_HIST_BAL.CASELOAD_ID) AND (AT_CASELOADS_OFF_HIST_BAL.CASELOAD_TYPE = 'INST') AND (AT_CASELOADS_OFF_HIST_BAL.TRUST_ACCOUNTS_FLAG = 'Y') AND (((AT_CASELOADS_OFF_HIST_BAL.CASELOAD_ID) = SUBSTR((SELECT username FROM context_ /* = #Variable('BOUSER') */), 1, 3)) AND AT_HIST_BALANCE_DATES.DAY_DATE = TO_DATE(TO_CHAR(CURRENT_TIMESTAMP, 'DD/MM/YYYY'), 'DD/MM/YYYY')) GROUP BY AT_CASELOADS_OFF_HIST_BAL.CASELOAD_ID, AT_HIST_BALANCE_DATES.DAY_DATE) _query0 FULL OUTER JOIN (SELECT AT_CASELOADS_OFF_HIST_BAL.CASELOAD_ID, AT_HIST_BALANCE_DATES.DAY_DATE, SUM(COALESCE(AT_FACT_OFF_ACC_HIST_BALANCE.HOLD_BALANCE, 0)) FROM BODIMIS.FACT_OFF_ACC_HIST_BALANCE AT_FACT_OFF_ACC_HIST_BALANCE, BODIMIS.CASELOADS AT_CASELOADS_OFF_HIST_BAL, BODIMIS.DIM_DATE AT_HIST_BALANCE_DATES WHERE (AT_HIST_BALANCE_DATES.DATE_SK = AT_FACT_OFF_ACC_HIST_BALANCE.BALANCE_DATE_SK) AND (AT_FACT_OFF_ACC_HIST_BALANCE.CASELOAD_ID = AT_CASELOADS_OFF_HIST_BAL.CASELOAD_ID) AND (AT_CASELOADS_OFF_HIST_BAL.CASELOAD_TYPE = 'INST') AND (AT_CASELOADS_OFF_HIST_BAL.TRUST_ACCOUNTS_FLAG = 'Y') AND (((AT_CASELOADS_OFF_HIST_BAL.CASELOAD_ID) = SUBSTR((SELECT username FROM context_ /* = #Variable('BOUSER') */), 1, 3)) AND AT_HIST_BALANCE_DATES.DAY_DATE = TO_DATE(TO_CHAR(CURRENT_TIMESTAMP, 'DD/MM/YYYY'), 'DD/MM/YYYY')) GROUP BY AT_CASELOADS_OFF_HIST_BAL.CASELOAD_ID, AT_HIST_BALANCE_DATES.DAY_DATE) _query1 ON _query0.OFFENDER_ID_DISPLAY = _query1.OFFENDER_ID_DISPLAY), dataset_ AS (SELECT ACCOUNT_CASELOAD_ID FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ACCOUNT_CASELOAD_ID",
+            "type": "string",
+            "display": "Account Caseload ID",
+            "legacyId": "DP5.DO3d",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376115/DP7",
+      "name": "MIS Load",
+      "description": "MIS - Finance",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DP7.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "136606.RS",
+      "name": "By NOMS Number",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376115/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:V_CURR_BALANCE_INC_UNAVAIL",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:V_CURR_BALANCE_AVAIL",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:DP2_DO5F",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_ALL_BALANCE_AVAIL",
+            "display": "Sum of Spend Account Opening-Balance",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO5e"
+          },
+          {
+            "name": "$ref:DP2_DO60",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO6A",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_CURR_BALANCE_INC_UNAVAIL",
+            "display": "Balance Including Holding Balance",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([Current].[Sum of Private Cash Account Available Opening-Balance]+[Current].[Sum of Spend Account Opening-Balance]+[Current].[Sum of Savings Account Opening-Balance]+[Current].[Sum of Private Cash Account Holding Opening-Balance])"
+          },
+          {
+            "name": "$ref:V_CURR_BALANCE_AVAIL",
+            "display": "Total Available Balance",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([Current].[Sum of Private Cash Account Available Opening-Balance]+[Current].[Sum of Spend Account Opening-Balance]+[Current].[Sum of Savings Account Opening-Balance])"
+          },
+          {
+            "name": "$ref:V_ALL_BALANCE_INC_UNAVAIL",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([All Prisoners].[Sum of Private Cash Account Holding Opening-Balance])+[v_All_Balance_Avail]"
+          },
+          {
+            "name": "$ref:V_ALL_BALANCE_AVAIL",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([All Prisoners].[Sum of Private Cash Account Available Opening-Balance]+[All Prisoners].[Sum of Spend Account Opening-Balance]+[All Prisoners].[Sum of Savings Account Opening-Balance])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "136396.RS",
+      "name": "By Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376115/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:V_CURR_BALANCE_INC_UNAVAIL",
+            "display": "NOMS Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO10076"
+          },
+          {
+            "name": "$ref:V_CURR_BALANCE_AVAIL",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO1007b"
+          },
+          {
+            "name": "$ref:DP2_DO5F",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_ALL_BALANCE_AVAIL",
+            "display": "Sum of Spend Account Opening-Balance",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO5e"
+          },
+          {
+            "name": "$ref:DP2_DO60",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP2_DO6A",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_CURR_BALANCE_INC_UNAVAIL",
+            "display": "Balance Including Holding Balance",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([Current].[Sum of Private Cash Account Available Opening-Balance]+[Current].[Sum of Spend Account Opening-Balance]+[Current].[Sum of Savings Account Opening-Balance]+[Current].[Sum of Private Cash Account Holding Opening-Balance])"
+          },
+          {
+            "name": "$ref:V_CURR_BALANCE_AVAIL",
+            "display": "Total Available Balance",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([Current].[Sum of Private Cash Account Available Opening-Balance]+[Current].[Sum of Spend Account Opening-Balance]+[Current].[Sum of Savings Account Opening-Balance])"
+          },
+          {
+            "name": "$ref:V_ALL_BALANCE_INC_UNAVAIL",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([All Prisoners].[Sum of Private Cash Account Holding Opening-Balance])+[v_All_Balance_Avail]"
+          },
+          {
+            "name": "$ref:V_ALL_BALANCE_AVAIL",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([All Prisoners].[Sum of Private Cash Account Available Opening-Balance]+[All Prisoners].[Sum of Spend Account Opening-Balance]+[All Prisoners].[Sum of Savings Account Opening-Balance])"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO5F does not have corresponding dataset schema field",
+      "entityId": "136606.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO60 does not have corresponding dataset schema field",
+      "entityId": "136606.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO6A does not have corresponding dataset schema field",
+      "entityId": "136606.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO5F does not have corresponding dataset schema field",
+      "entityId": "136396.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO60 does not have corresponding dataset schema field",
+      "entityId": "136396.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP2_DO6A does not have corresponding dataset schema field",
+      "entityId": "136396.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3376115/DP2",
+      "entityType": "dataset"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3376115/DP5",
+      "entityType": "dataset"
+    }
+  ]
+}

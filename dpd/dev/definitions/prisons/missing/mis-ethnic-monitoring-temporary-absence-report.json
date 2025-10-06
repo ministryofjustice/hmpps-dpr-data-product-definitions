@@ -1,0 +1,285 @@
+{
+  "id": "okZTBVQADNJ5HR0AOheD8K7B948",
+  "name": "MIS Ethnic Monitoring Temporary Absence Report",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "MOV0006 - v00.00.07  LSRIT039"
+    ]
+  },
+  "description": "This crosstab report shows temporarily released prisoners by ethnic origin code. Percentages are given on the overall population.<br/>MOV0006 - v00.01.01 Last Modified: 03/09/12",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP2",
+      "name": "Crosstab",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS ETHNIC_CODE, COUNT(AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY || AT_FACT_MOV_EXT.MOVEMENT_SEQ) AS COUNT_OF_EXTERNAL_MOVEMENTS, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_DESCRIPTION, AT_ESTABLISHMENT_EXT_MOV_FROM.AREA_DESCRIPTION FROM BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_FROM, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV WHERE (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (CASE WHEN AT_FACT_MOV_EXT.FROM_LOCATION_TYPE = 'Establishment' THEN AT_FACT_MOV_EXT.FROM_LOCATION_SK END = AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_SK (+)) AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_DIM_DATE_EXT_MOV.DAY_DATE BETWEEN TO_DATE('03-07-2017 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('06-07-2017 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_FACT_MOV_EXT.TYPE IN ('Temporary Absence', 'Temporary Absence / Home Leave') AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK IN ((SELECT establishment_code FROM prompt_)) OR 'All' IN ((SELECT establishment_code FROM prompt_))) AND (AT_ESTABLISHMENT_EXT_MOV_FROM.AREA_DESCRIPTION IN ('All') OR 'All' IN ('All')) AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'OUT' AND (AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK IN (SELECT SAC.CASELOAD_ID FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC WHERE SAC.USERNAME = (SELECT username FROM context_))) AND AT_FACT_MOV_EXT.REASON_CODE <> 'EL') GROUP BY CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_DESCRIPTION, AT_ESTABLISHMENT_EXT_MOV_FROM.AREA_DESCRIPTION), dataset_ AS (SELECT ETHNIC_CODE, COUNT_OF_EXTERNAL_MOVEMENTS, ESTABLISHMENT_DESCRIPTION, AREA_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ETHNIC_CODE",
+            "type": "string",
+            "display": "Ethnic Code",
+            "legacyId": "DP2.DO9b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "COUNT_OF_EXTERNAL_MOVEMENTS",
+            "type": "double",
+            "display": "Count of External Movements",
+            "legacyId": "DP2.DO673",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Location From Description (External)",
+            "legacyId": "DP2.DO15d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "AREA_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Area From Description (External)",
+            "legacyId": "DP2.DO701",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP4",
+      "name": "Ethnic Code",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'W3' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'A4' ELSE AT_DIM_ETHNICITY_CODES.CODE END AS PHYSICAL_DETAILS_ETHNIC_CODE, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION END AS ETHNIC_DESCRIPTION FROM BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES), dataset_ AS (SELECT PHYSICAL_DETAILS_ETHNIC_CODE, ETHNIC_DESCRIPTION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "PHYSICAL_DETAILS_ETHNIC_CODE",
+            "type": "string",
+            "display": "Physical Details.Ethnic Code",
+            "legacyId": "DP4.DO9b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ETHNIC_DESCRIPTION",
+            "type": "string",
+            "display": "Ethnic Description",
+            "legacyId": "DP4.DO9d",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP5",
+      "name": "MIS Load",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP5.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "118874.RS",
+      "name": "By Area & Establishment",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_EXTERNAL_MOVEMENTS",
+            "display": "Count of External Movements",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO673"
+          },
+          {
+            "name": "$ref:PHYSICAL_DETAILS_ETHNIC_CODE",
+            "display": "Physical Details.Ethnic Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP4.DO9b"
+          },
+          {
+            "name": "$ref:COUNT_OF_EXTERNAL_MOVEMENTS",
+            "display": "Count of External Movements",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO673"
+          },
+          {
+            "name": "$ref:COUNT_OF_EXTERNAL_MOVEMENTS",
+            "display": "Count of External Movements",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO673"
+          },
+          {
+            "name": "$ref:AREA_DESCRIPTION",
+            "display": "Movement Area From Description (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO701"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Movement Location From Description (External)",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO15d"
+          },
+          {
+            "name": "$ref:COUNT_OF_EXTERNAL_MOVEMENTS",
+            "display": "Count of External Movements",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO673"
+          },
+          {
+            "name": "$ref:COUNT_OF_EXTERNAL_MOVEMENTS",
+            "display": "Count of External Movements",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO673"
+          },
+          {
+            "name": "$ref:COUNT_OF_EXTERNAL_MOVEMENTS",
+            "display": "Count of External Movements",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO673"
+          }
+        ]
+      }
+    },
+    {
+      "id": "118619.RS",
+      "name": "Ethnic Code Breakdown",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP4",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ETHNIC_DESCRIPTION",
+            "display": "Ethnic Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP4.DO9d"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "instance.report[0].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "okZTBVQADNJ5HR0AOheD8K7B948",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report field PHYSICAL_DETAILS_ETHNIC_CODE does not have corresponding dataset schema field",
+      "entityId": "118874.RS",
+      "entityType": "variant"
+    }
+  ]
+}

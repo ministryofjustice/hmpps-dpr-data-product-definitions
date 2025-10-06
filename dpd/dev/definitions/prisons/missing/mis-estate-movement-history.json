@@ -1,0 +1,296 @@
+{
+  "id": "olDsPDcAA9VJIMUAhP_E63FUM7c",
+  "name": "MIS Estate Movement History",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": []
+  },
+  "description": "HQ9013 v1.0 This report returns the number of receptions (of all types) and discharges (of all types) in a date range for each estabishment. A subset of receptions is shown which provides the number of receptions for those new to custody (i.e. admissions but not returns) or new to an establishment (transfer-ins). There may be problems with this data for 'double discharges' e.g. where a prisoner has gone to court and been freed by the court and a second outward movement is input into Nomis to record the release from custody.",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP2",
+      "name": "Receptions",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT COUNT(AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY || AT_FACT_MOV_EXT.MOVEMENT_SEQ) AS COUNT_OF_EXTERNAL_MOVEMENTS, AT_FACT_MOV_EXT.TYPE, AT_FACT_MOV_EXT.REASON_CODE, AT_FACT_MOV_EXT.REASON, AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_DESCRIPTION FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_TO, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.DIM_DATE AT_DOB WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_SK (+) = AT_FACT_MOV_EXT.TO_LOCATION_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_DIM_DATE_EXT_MOV.DAY_DATE BETWEEN (SELECT START_DATE FROM prompt_ /* = #prompt('Movement Start Date','D','External Movements\\Movement Date Only (External)',Mono,Free,Not_Persistent,,User:0) */) AND (SELECT END_DATE FROM prompt_ /* = #prompt('Movement End Date','D','External Movements\\Movement Date Only (External)',Mono,Free,Not_Persistent,,User:1) */) AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'IN' AND FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE <> '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) >= 18) GROUP BY AT_FACT_MOV_EXT.TYPE, AT_FACT_MOV_EXT.REASON_CODE, AT_FACT_MOV_EXT.REASON, AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT_EXT_MOV_TO.ESTABLISHMENT_DESCRIPTION), dataset_ AS (SELECT COUNT_OF_EXTERNAL_MOVEMENTS, TYPE, REASON_CODE, REASON, ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Movement Start Date",
+          "description": "@prompt('Movement Start Date','D','External Movements\\Movement Date Only (External)',Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Movement End Date",
+          "description": "@prompt('Movement End Date','D','External Movements\\Movement Date Only (External)',Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "COUNT_OF_EXTERNAL_MOVEMENTS",
+            "type": "double",
+            "display": "Count of External Movements",
+            "legacyId": "DP2.DO673",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "TYPE",
+            "type": "string",
+            "display": "Movement Type (External)",
+            "legacyId": "DP2.DO3ec",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "REASON_CODE",
+            "type": "string",
+            "display": "Movement Reason Code (External)",
+            "legacyId": "DP2.DO3fc",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "REASON",
+            "type": "string",
+            "display": "Movement Description (External)",
+            "legacyId": "DP2.DO15b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Movement Location To Code (External)",
+            "legacyId": "DP2.DO400",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Location To Description (External)",
+            "legacyId": "DP2.DO15e",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP3",
+      "name": "MIS Load End Date",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT TRUNC(BODIMIS.ETL_LOAD_LOG.LOAD_END_DATETIME) AS LOAD_END_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT LOAD_END_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOAD_END_DATE",
+            "type": "date",
+            "display": "Load End Date",
+            "legacyId": "DP3.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP5",
+      "name": "All Establishments",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT WHERE (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y')), dataset_ AS (SELECT ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP5.DO139",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP5.DO129",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP6",
+      "name": "Discharges",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT COUNT(AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY || AT_FACT_MOV_EXT.MOVEMENT_SEQ) AS COUNT_OF_EXTERNAL_MOVEMENTS, AT_FACT_MOV_EXT.TYPE, AT_FACT_MOV_EXT.REASON_CODE, AT_FACT_MOV_EXT.REASON, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_DESCRIPTION FROM BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_MOVEMENT_EXTERNAL AT_FACT_MOV_EXT, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_EXT_MOV_FROM, BODIMIS.DIM_DATE AT_DIM_DATE_EXT_MOV, BODIMIS.DIM_DATE AT_DOB WHERE (AT_OFFENDER_BOOKING.BIRTH_DATE_SK = AT_DOB.DATE_SK) AND (AT_FACT_MOV_EXT.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_DIM_DATE_EXT_MOV.DATE_SK = AT_FACT_MOV_EXT.DATE_SK) AND (AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_SK (+) = AT_FACT_MOV_EXT.FROM_LOCATION_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND (CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6 OR CSL.ENDYEAR = '2999'))) AND (AT_DIM_DATE_EXT_MOV.DAY_DATE BETWEEN (SELECT START_DATE FROM prompt_ /* = #prompt('Movement Start Date','D','External Movements\\Movement Date Only (External)',Mono,Free,Not_Persistent,,User:0) */) AND (SELECT END_DATE FROM prompt_ /* = #prompt('Movement End Date','D','External Movements\\Movement Date Only (External)',Mono,Free,Not_Persistent,,User:1) */) AND AT_FACT_MOV_EXT.DIRECTION_CODE = 'OUT' AND FLOOR((MONTHS_BETWEEN((TRUNC(CURRENT_TIMESTAMP)), (CASE WHEN AT_DOB.DAY_DATE <> '31/12/9000' THEN AT_DOB.DAY_DATE END))) / 12) >= 18) GROUP BY AT_FACT_MOV_EXT.TYPE, AT_FACT_MOV_EXT.REASON_CODE, AT_FACT_MOV_EXT.REASON, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT_EXT_MOV_FROM.ESTABLISHMENT_DESCRIPTION), dataset_ AS (SELECT COUNT_OF_EXTERNAL_MOVEMENTS, TYPE, REASON_CODE, REASON, ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Movement Start Date",
+          "description": "@prompt('Movement Start Date','D','External Movements\\Movement Date Only (External)',Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Movement End Date",
+          "description": "@prompt('Movement End Date','D','External Movements\\Movement Date Only (External)',Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "COUNT_OF_EXTERNAL_MOVEMENTS",
+            "type": "double",
+            "display": "Count of External Movements",
+            "legacyId": "DP6.DO673",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "TYPE",
+            "type": "string",
+            "display": "Movement Type (External)",
+            "legacyId": "DP6.DO3ec",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "REASON_CODE",
+            "type": "string",
+            "display": "Movement Reason Code (External)",
+            "legacyId": "DP6.DO3fc",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "REASON",
+            "type": "string",
+            "display": "Movement Description (External)",
+            "legacyId": "DP6.DO15b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Movement Location From Code (External)",
+            "legacyId": "DP6.DO3ff",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Movement Location From Description (External)",
+            "legacyId": "DP6.DO15d",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "105407.RS",
+      "name": "Estate Movement History",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE MOVEMENT_LOCATION_TO_DESCRIP33 NOT(IN ('TRANSFER','GHOST HOLDING ESTABLISHMENT','East Mids/ Yorks and Humber/North East','Inter Prison Escorts','National Operations Unit','North West /West Midlands /Wales','South West / South East','London /East of England')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_EXTERNAL_MOVEMENTS",
+            "display": "Count of External Movements",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO673"
+          },
+          {
+            "name": "$ref:COUNT_OF_EXTERNAL_MOVEMENTS",
+            "display": "Count of External Movements",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP6.DO673"
+          },
+          {
+            "name": "$ref:COUNT_OF_EXTERNAL_MOVEMENTS",
+            "display": "Count of External Movements",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP6.DO673"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

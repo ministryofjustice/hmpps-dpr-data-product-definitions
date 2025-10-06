@@ -1,0 +1,884 @@
+{
+  "id": "ok_RKMIACUdzKyUAnf_FFfm0mx8",
+  "name": "MIS CSRA National ",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "HQ9004"
+    ]
+  },
+  "description": "Provides a national overview of CSRA figures for use by HQ Staff. Also shows a breakdown by Area/Establishment.<br/>HQ9004 v1.0 ",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP3",
+      "name": "MIS Load Date",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP3.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP5",
+      "name": "CSRA National",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_ESTABLISHMENT.AREA_DESCRIPTION, AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_DIM_OFFENDER_ASSESSMENTS.CURRENT_CSRA_LEVEL, COUNT(DISTINCT (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY)) AS COUNT_OF_OFFENDERS FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_ASSESSMENT AT_DIM_OFFENDER_ASSESSMENTS, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_CELL AT_CELL WHERE (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_DIM_OFFENDER_ASSESSMENTS.OFFENDER_BOOKING_SK (+)) AND ((AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O') AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT.AREA_DESCRIPTION IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Area (All for all)','A','Establishment\\Establishment Area',multi,free,Not_Persistent,User:68) */) OR 'All' IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #Prompt('Establishment Area (All for all)','A','Establishment\\Establishment Area',multi,free,Not_Persistent,User:68) */))) GROUP BY AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_ESTABLISHMENT.AREA_DESCRIPTION, AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_DIM_OFFENDER_ASSESSMENTS.CURRENT_CSRA_LEVEL), dataset_ AS (SELECT ESTABLISHMENT_DESCRIPTION, AREA_DESCRIPTION, ESTABLISHMENT_CODE_NK, CURRENT_CSRA_LEVEL, COUNT_OF_OFFENDERS, CASE WHEN CURRENT_CSRA_LEVEL IS NULL THEN 'No CSRA Entered' ELSE CURRENT_CSRA_LEVEL END AS V_CSRA FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Area (All for all)','A','Establishment\\Establishment Area',multi,free,Not_Persistent,User:68)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP5.DO129",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "AREA_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Area",
+            "legacyId": "DP5.DOc7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP5.DO139",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "CURRENT_CSRA_LEVEL",
+            "type": "string",
+            "display": "CSRA - Current Level",
+            "legacyId": "DP5.DO831",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "COUNT_OF_OFFENDERS",
+            "type": "double",
+            "display": "Count of Offenders",
+            "legacyId": "DP5.DO655",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "V_CSRA",
+            "type": "string",
+            "display": "V_CSRA",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "215561.RS",
+      "name": "Summary",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP5",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO655"
+          },
+          {
+            "name": "$ref:AREA_DESCRIPTION",
+            "display": "Establishment Area",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DOc7"
+          },
+          {
+            "name": "$ref:V_CSRA",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([CSRA - Current Level]);\"No CSRA Entered\";[CSRA - Current Level])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "216010.RS",
+      "name": "Eastern",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP5",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ESTABLISHMENT_AREA IN ('Eastern'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO655"
+          },
+          {
+            "name": "$ref:V_CSRA",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([CSRA - Current Level]);\"No CSRA Entered\";[CSRA - Current Level])"
+          },
+          {
+            "name": "$ref:AREA_DESCRIPTION",
+            "display": "Establishment Area",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DOc7"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO129"
+          }
+        ]
+      }
+    },
+    {
+      "id": "216159.RS",
+      "name": "East Midlands",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP5",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ESTABLISHMENT_AREA IN ('East Midlands'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO655"
+          },
+          {
+            "name": "$ref:V_CSRA",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([CSRA - Current Level]);\"No CSRA Entered\";[CSRA - Current Level])"
+          },
+          {
+            "name": "$ref:AREA_DESCRIPTION",
+            "display": "Establishment Area",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DOc7"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO129"
+          }
+        ]
+      }
+    },
+    {
+      "id": "216219.RS",
+      "name": "Kent & Sussex",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP5",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ESTABLISHMENT_AREA IN ('Kent and Sussex'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO655"
+          },
+          {
+            "name": "$ref:V_CSRA",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([CSRA - Current Level]);\"No CSRA Entered\";[CSRA - Current Level])"
+          },
+          {
+            "name": "$ref:AREA_DESCRIPTION",
+            "display": "Establishment Area",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DOc7"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO129"
+          }
+        ]
+      }
+    },
+    {
+      "id": "216261.RS",
+      "name": "London",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP5",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ESTABLISHMENT_AREA IN ('London'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO655"
+          },
+          {
+            "name": "$ref:V_CSRA",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([CSRA - Current Level]);\"No CSRA Entered\";[CSRA - Current Level])"
+          },
+          {
+            "name": "$ref:AREA_DESCRIPTION",
+            "display": "Establishment Area",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DOc7"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO129"
+          }
+        ]
+      }
+    },
+    {
+      "id": "216305.RS",
+      "name": "North East",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP5",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ESTABLISHMENT_AREA IN ('North East'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO655"
+          },
+          {
+            "name": "$ref:V_CSRA",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([CSRA - Current Level]);\"No CSRA Entered\";[CSRA - Current Level])"
+          },
+          {
+            "name": "$ref:AREA_DESCRIPTION",
+            "display": "Establishment Area",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DOc7"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO129"
+          }
+        ]
+      }
+    },
+    {
+      "id": "216347.RS",
+      "name": "North West",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP5",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ESTABLISHMENT_AREA IN ('North West'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO655"
+          },
+          {
+            "name": "$ref:V_CSRA",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([CSRA - Current Level]);\"No CSRA Entered\";[CSRA - Current Level])"
+          },
+          {
+            "name": "$ref:AREA_DESCRIPTION",
+            "display": "Establishment Area",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DOc7"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO129"
+          }
+        ]
+      }
+    },
+    {
+      "id": "216391.RS",
+      "name": "South Central",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP5",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ESTABLISHMENT_AREA IN ('South Central'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO655"
+          },
+          {
+            "name": "$ref:V_CSRA",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([CSRA - Current Level]);\"No CSRA Entered\";[CSRA - Current Level])"
+          },
+          {
+            "name": "$ref:AREA_DESCRIPTION",
+            "display": "Establishment Area",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DOc7"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO129"
+          }
+        ]
+      }
+    },
+    {
+      "id": "216433.RS",
+      "name": "South West",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP5",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ESTABLISHMENT_AREA IN ('South West'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO655"
+          },
+          {
+            "name": "$ref:V_CSRA",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([CSRA - Current Level]);\"No CSRA Entered\";[CSRA - Current Level])"
+          },
+          {
+            "name": "$ref:AREA_DESCRIPTION",
+            "display": "Establishment Area",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DOc7"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO129"
+          }
+        ]
+      }
+    },
+    {
+      "id": "216475.RS",
+      "name": "Wales",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP5",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ESTABLISHMENT_AREA IN ('Wales'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO655"
+          },
+          {
+            "name": "$ref:V_CSRA",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([CSRA - Current Level]);\"No CSRA Entered\";[CSRA - Current Level])"
+          },
+          {
+            "name": "$ref:AREA_DESCRIPTION",
+            "display": "Establishment Area",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DOc7"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO129"
+          }
+        ]
+      }
+    },
+    {
+      "id": "216517.RS",
+      "name": "West Midlands",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP5",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ESTABLISHMENT_AREA IN ('West Midlands'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO655"
+          },
+          {
+            "name": "$ref:V_CSRA",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([CSRA - Current Level]);\"No CSRA Entered\";[CSRA - Current Level])"
+          },
+          {
+            "name": "$ref:AREA_DESCRIPTION",
+            "display": "Establishment Area",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DOc7"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO129"
+          }
+        ]
+      }
+    },
+    {
+      "id": "216569.RS",
+      "name": "York & Humb",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP5",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ESTABLISHMENT_AREA IN ('Yorkshire & Humberside'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:COUNT_OF_OFFENDERS",
+            "display": "Count of Offenders",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP5.DO655"
+          },
+          {
+            "name": "$ref:V_CSRA",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([CSRA - Current Level]);\"No CSRA Entered\";[CSRA - Current Level])"
+          },
+          {
+            "name": "$ref:AREA_DESCRIPTION",
+            "display": "Establishment Area",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DOc7"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO129"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "instance.report[1].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "ok_RKMIACUdzKyUAnf_FFfm0mx8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[2].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "ok_RKMIACUdzKyUAnf_FFfm0mx8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[3].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "ok_RKMIACUdzKyUAnf_FFfm0mx8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[4].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "ok_RKMIACUdzKyUAnf_FFfm0mx8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[5].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "ok_RKMIACUdzKyUAnf_FFfm0mx8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[6].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "ok_RKMIACUdzKyUAnf_FFfm0mx8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[7].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "ok_RKMIACUdzKyUAnf_FFfm0mx8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[8].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "ok_RKMIACUdzKyUAnf_FFfm0mx8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[9].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "ok_RKMIACUdzKyUAnf_FFfm0mx8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[10].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "ok_RKMIACUdzKyUAnf_FFfm0mx8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[11].specification.template is not one of enum values: list,list-section,list-tab,summary,summary-section,parent-child,parent-child-section",
+      "entityId": "ok_RKMIACUdzKyUAnf_FFfm0mx8",
+      "entityType": "dpd"
+    }
+  ]
+}

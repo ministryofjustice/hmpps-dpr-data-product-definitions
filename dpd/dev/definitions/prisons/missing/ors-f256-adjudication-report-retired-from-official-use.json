@@ -1,0 +1,919 @@
+{
+  "id": "ok1nfCAACXHEO34ARBCD8K7BXe8",
+  "name": "ORS F256 Adjudication Report Retired from Official Use",
+  "description": "ADJ0002 - v00.00.01 Last Modified 05/07/11<br/>This report is composed of two tabs. The first tab provides information regarding an offenders adjudication history. This includes the number of previous findings of guilt, the last offence charged with and outstanding suspended sentences.<br/>The second tab displays all proved charges for an offender.<br/>IMPORTANT - This report was retired from official use but will remain available as an information gathering tool for staff while a review takes place.",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ADJ0002 v00.00.01 LSRT29"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375850/DP6",
+      "name": "Previous Findings Of Guilt",
+      "description": "Incidents",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, COUNT(AT_OIC_HEARING_RESULTS.FINDING_CODE) AS COUNT_OF_GUILTY_VERDICTS, DT_IEP_BAND_LAST.IEP_LEVEL, TRIM((AT_OFFENDER.TITLE) || ' ' || (AT_OFFENDER.FIRST_NAME) || ' ' || (AT_OFFENDER.LAST_NAME)) AS FULL_NAME FROM OMS_OWNER.OFFENDERS AT_OFFENDER, (SELECT iep_level, description, agy_loc_id, offender_book_id, iep_date FROM (SELECT iep.iep_level, rc.description, iep.agy_loc_id, iep.offender_book_id, iep.iep_date, ROW_NUMBER() OVER (PARTITION BY iep.offender_book_id ORDER BY iep.iep_time DESC, iep.iep_level_seq DESC) AS row_seq_filter FROM oms_owner.offender_iep_levels iep LEFT OUTER JOIN oms_owner.reference_codes rc ON iep.iep_level = rc.code AND rc.domain = 'IEP_LEVEL') WHERE row_seq_filter = 1) DT_IEP_BAND_LAST, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.OIC_HEARING_RESULTS AT_OIC_HEARING_RESULTS, OMS_OWNER.AGENCY_INCIDENT_CHARGES AT_AGENCY_INCIDENT_CHARGES, OMS_OWNER.AGENCY_INCIDENT_PARTIES AT_AGENCY_INCIDENT_PARTIES WHERE (AT_AGENCY_INCIDENT_PARTIES.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_PARTIES.PARTY_SEQ = AT_AGENCY_INCIDENT_CHARGES.PARTY_SEQ) AND (AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID = AT_OIC_HEARING_RESULTS.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_CHARGES.CHARGE_SEQ = AT_OIC_HEARING_RESULTS.CHARGE_SEQ) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (DT_IEP_BAND_LAST.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OIC_HEARING_RESULTS.FINDING_CODE IN ('PROVED')) AND (AT_OFFENDER.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('Enter NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0) */) AND AT_OIC_HEARING_RESULTS.FINDING_CODE IN ('PROVED')) GROUP BY AT_OFFENDER.OFFENDER_ID_DISPLAY, DT_IEP_BAND_LAST.IEP_LEVEL, TRIM((AT_OFFENDER.TITLE) || ' ' || (AT_OFFENDER.FIRST_NAME) || ' ' || (AT_OFFENDER.LAST_NAME))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, COUNT_OF_GUILTY_VERDICTS, IEP_LEVEL, FULL_NAME FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number:",
+          "description": "@prompt('Enter NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP6.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "COUNT_OF_GUILTY_VERDICTS",
+            "type": "double",
+            "display": "Count of Guilty Verdicts",
+            "legacyId": "DP6.DO631",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "IEP_LEVEL",
+            "type": "string",
+            "display": "IEP Level",
+            "legacyId": "DP6.DO10715",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "FULL_NAME",
+            "type": "string",
+            "display": "Full Name",
+            "legacyId": "DP6.DO10047",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375850/DP7",
+      "name": "Guilty Findings At Current Establishment",
+      "description": "Incidents",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_AGENCY_INCIDENTS.AGY_LOC_ID, COUNT(AT_OIC_HEARING_RESULTS.FINDING_CODE) AS COUNT_OF_GUILTY_VERDICTS FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_INCIDENTS AT_AGENCY_INCIDENTS, OMS_OWNER.OIC_HEARING_RESULTS AT_OIC_HEARING_RESULTS, OMS_OWNER.AGENCY_INCIDENT_CHARGES AT_AGENCY_INCIDENT_CHARGES, OMS_OWNER.AGENCY_INCIDENT_PARTIES AT_AGENCY_INCIDENT_PARTIES WHERE (AT_AGENCY_INCIDENT_PARTIES.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_AGENCY_INCIDENTS.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID) AND (AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_PARTIES.PARTY_SEQ = AT_AGENCY_INCIDENT_CHARGES.PARTY_SEQ) AND (AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID = AT_OIC_HEARING_RESULTS.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_CHARGES.CHARGE_SEQ = AT_OIC_HEARING_RESULTS.CHARGE_SEQ) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OIC_HEARING_RESULTS.FINDING_CODE IN ('PROVED')) AND (AT_OFFENDER.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('Enter NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0) */) AND AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' AND AT_OFFENDER_BOOKING.AGY_LOC_ID = AT_AGENCY_INCIDENTS.AGY_LOC_ID) GROUP BY AT_AGENCY_INCIDENTS.AGY_LOC_ID), dataset_ AS (SELECT AGY_LOC_ID, COUNT_OF_GUILTY_VERDICTS FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number:",
+          "description": "@prompt('Enter NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Report Establishment",
+            "legacyId": "DP7.DO619",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "COUNT_OF_GUILTY_VERDICTS",
+            "type": "double",
+            "display": "Count of Guilty Verdicts",
+            "legacyId": "DP7.DO631",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375850/DPd",
+      "name": "No Of Reports For Similar Offences",
+      "description": "Incidents",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT COUNT(AT_AGENCY_INCIDENT_CHARGES.OIC_CHARGE_ID) AS COUNT_OF_CHARGE_IDS FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_INCIDENT_CHARGES AT_AGENCY_INCIDENT_CHARGES, OMS_OWNER.OIC_HEARING_RESULTS AT_OIC_HEARING_RESULTS, OMS_OWNER.AGENCY_INCIDENT_PARTIES AT_AGENCY_INCIDENT_PARTIES WHERE (AT_AGENCY_INCIDENT_PARTIES.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_PARTIES.PARTY_SEQ = AT_AGENCY_INCIDENT_CHARGES.PARTY_SEQ) AND (AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID = AT_OIC_HEARING_RESULTS.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_CHARGES.CHARGE_SEQ = AT_OIC_HEARING_RESULTS.CHARGE_SEQ) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_AGENCY_INCIDENT_CHARGES.OIC_CHARGE_ID <> (SELECT OFFENCE_ID FROM prompt_ /* = #prompt('Enter Offence ID:','A',,Mono,Free,Not_Persistent,,User:1) */) AND AT_OFFENDER.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('Enter NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0) */) AND AT_OIC_HEARING_RESULTS.FINDING_CODE = 'PROVED' AND AT_AGENCY_INCIDENT_CHARGES.CHARGED_OIC_OFFENCE_ID IN (SELECT AT_AGENCY_INCIDENT_CHARGES.CHARGED_OIC_OFFENCE_ID FROM OMS_OWNER.AGENCY_INCIDENT_CHARGES AT_AGENCY_INCIDENT_CHARGES WHERE AT_AGENCY_INCIDENT_CHARGES.OIC_CHARGE_ID = (SELECT OFFENCE_ID FROM prompt_ /* = #prompt('Enter Offence ID:','A',,Mono,Free,Not_Persistent,,User:1) */)))), dataset_ AS (SELECT COUNT_OF_CHARGE_IDS FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "offence_id",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter Offence ID:",
+          "description": "@prompt('Enter Offence ID:','A',,Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number:",
+          "description": "@prompt('Enter NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "COUNT_OF_CHARGE_IDS",
+            "type": "double",
+            "display": "Count of Charge IDs",
+            "legacyId": "DPd.DO64c",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375850/DPc",
+      "name": "Last Report",
+      "description": "Incidents",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_AGENCY_INCIDENTS.AGENCY_INCIDENT_ID, AT_AGENCY_INCIDENTS.INCIDENT_DATE, AT_AGENCY_INCIDENTS.REPORT_DATE, AT_AGENCY_INCIDENT_CHARGES.OIC_CHARGE_ID, AT_OFFENDER_OIC_SANCTIONS.OIC_SANCTION_CODE, AT_OFFENDER_OIC_SANCTIONS.COMMENT_TEXT, AT_OFFENDER_OIC_SANCTIONS.STATUS, AT_AGENCY_INCIDENTS.INCIDENT_DETAILS, AT_OFFENDER_OIC_SANCTIONS.SANCTION_MONTHS, AT_OFFENDER_OIC_SANCTIONS.SANCTION_DAYS, AT_OFFENDER_OIC_SANCTIONS.COMPENSATION_AMOUNT, AT_OFFENDER_OIC_SANCTIONS.EFFECTIVE_DATE, AT_OIC_HEARINGS2.HEARING_DATE, AT_OIC_OFFENCES.DESCRIPTION, AT_OIC_OFFENCES.OIC_OFFENCE_CODE FROM OMS_OWNER.AGENCY_INCIDENTS AT_AGENCY_INCIDENTS, OMS_OWNER.AGENCY_INCIDENT_CHARGES AT_AGENCY_INCIDENT_CHARGES, OMS_OWNER.OFFENDER_OIC_SANCTIONS AT_OFFENDER_OIC_SANCTIONS, OMS_OWNER.OIC_HEARINGS AT_OIC_HEARINGS2, OMS_OWNER.OIC_OFFENCES AT_OIC_OFFENCES, OMS_OWNER.AGENCY_INCIDENT_PARTIES AT_AGENCY_INCIDENT_PARTIES, OMS_OWNER.OIC_HEARING_RESULTS AT_OIC_HEARING_RESULTS WHERE (AT_AGENCY_INCIDENTS.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID) AND (AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_PARTIES.PARTY_SEQ = AT_AGENCY_INCIDENT_CHARGES.PARTY_SEQ) AND (AT_AGENCY_INCIDENT_CHARGES.CHARGED_OIC_OFFENCE_ID = AT_OIC_OFFENCES.OIC_OFFENCE_ID) AND (AT_OFFENDER_OIC_SANCTIONS.OIC_HEARING_ID (+) = AT_OIC_HEARING_RESULTS.OIC_HEARING_ID AND AT_OFFENDER_OIC_SANCTIONS.RESULT_SEQ (+) = AT_OIC_HEARING_RESULTS.RESULT_SEQ) AND (AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID = AT_OIC_HEARING_RESULTS.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_CHARGES.CHARGE_SEQ = AT_OIC_HEARING_RESULTS.CHARGE_SEQ) AND (AT_OIC_HEARING_RESULTS.OIC_HEARING_ID = AT_OIC_HEARINGS2.OIC_HEARING_ID) AND (NOT AT_OFFENDER_OIC_SANCTIONS.OIC_SANCTION_CODE IS NULL AND AT_OIC_HEARINGS2.oic_hearing_id = ANY (SELECT DISTINCT MAX(AT_OIC_HEARINGS2.OIC_HEARING_ID) FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.OIC_HEARINGS AT_OIC_HEARINGS2, OMS_OWNER.OFFENDER_OIC_SANCTIONS AT_OFFENDER_OIC_SANCTIONS, OMS_OWNER.AGENCY_INCIDENT_CHARGES AT_AGENCY_INCIDENT_CHARGES, OMS_OWNER.OIC_HEARING_RESULTS AT_OIC_HEARING_RESULTS, OMS_OWNER.AGENCY_INCIDENT_PARTIES AT_AGENCY_INCIDENT_PARTIES WHERE (AT_AGENCY_INCIDENT_PARTIES.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_PARTIES.PARTY_SEQ = AT_AGENCY_INCIDENT_CHARGES.PARTY_SEQ) AND (AT_OFFENDER_OIC_SANCTIONS.OIC_HEARING_ID (+) = AT_OIC_HEARING_RESULTS.OIC_HEARING_ID AND AT_OFFENDER_OIC_SANCTIONS.RESULT_SEQ (+) = AT_OIC_HEARING_RESULTS.RESULT_SEQ) AND (AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID = AT_OIC_HEARING_RESULTS.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_CHARGES.CHARGE_SEQ = AT_OIC_HEARING_RESULTS.CHARGE_SEQ) AND (AT_OIC_HEARING_RESULTS.OIC_HEARING_ID = AT_OIC_HEARINGS2.OIC_HEARING_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (NOT AT_OFFENDER_OIC_SANCTIONS.OIC_SANCTION_CODE IS NULL AND AT_OFFENDER.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('Enter NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0) */) AND AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID IN (SELECT DISTINCT AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID FROM OMS_OWNER.AGENCY_INCIDENT_CHARGES AT_AGENCY_INCIDENT_CHARGES WHERE AT_AGENCY_INCIDENT_CHARGES.OIC_CHARGE_ID <> (SELECT OFFENCE_ID FROM prompt_ /* = #prompt('Enter Offence ID:','A',,Mono,Free,Not_Persistent,,User:1) */)))))), dataset_ AS (SELECT AGENCY_INCIDENT_ID, INCIDENT_DATE, REPORT_DATE, OIC_CHARGE_ID, OIC_SANCTION_CODE, COMMENT_TEXT, STATUS, INCIDENT_DETAILS, SANCTION_MONTHS, SANCTION_DAYS, COMPENSATION_AMOUNT, EFFECTIVE_DATE, HEARING_DATE, DESCRIPTION, OIC_OFFENCE_CODE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number:",
+          "description": "@prompt('Enter NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "offence_id",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter Offence ID:",
+          "description": "@prompt('Enter Offence ID:','A',,Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "AGENCY_INCIDENT_ID",
+            "type": "double",
+            "display": "Report Number",
+            "legacyId": "DPc.DO617",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "INCIDENT_DATE",
+            "type": "date",
+            "display": "Incident Date",
+            "legacyId": "DPc.DO61a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "REPORT_DATE",
+            "type": "date",
+            "display": "Report Date",
+            "legacyId": "DPc.DO618",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "OIC_CHARGE_ID",
+            "type": "string",
+            "display": "Offences ID",
+            "legacyId": "DPc.DO61f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "OIC_SANCTION_CODE",
+            "type": "string",
+            "display": "Type",
+            "legacyId": "DPc.DO629",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "Comment Text",
+            "legacyId": "DPc.DO62d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "STATUS",
+            "type": "string",
+            "display": "Status",
+            "legacyId": "DPc.DO62e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "INCIDENT_DETAILS",
+            "type": "string",
+            "display": "Report Details",
+            "legacyId": "DPc.DO61b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "SANCTION_MONTHS",
+            "type": "double",
+            "display": "Months",
+            "legacyId": "DPc.DO62b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "SANCTION_DAYS",
+            "type": "double",
+            "display": "Days",
+            "legacyId": "DPc.DO62a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "COMPENSATION_AMOUNT",
+            "type": "double",
+            "display": "Level",
+            "legacyId": "DPc.DO62c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "EFFECTIVE_DATE",
+            "type": "date",
+            "display": "Effective Date",
+            "legacyId": "DPc.DO634",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "HEARING_DATE",
+            "type": "date",
+            "display": "Hearing Date",
+            "legacyId": "DPc.DO623",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Charge Description",
+            "legacyId": "DPc.DO620",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "OIC_OFFENCE_CODE",
+            "type": "string",
+            "display": "Paragraph",
+            "legacyId": "DPc.DO621",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375850/DPa",
+      "name": "Suspended Punishments",
+      "description": "Incidents",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_AGENCY_INCIDENT_CHARGES.OIC_CHARGE_ID, AT_OFFENDER_OIC_SANCTIONS.OIC_SANCTION_CODE, AT_OFFENDER_OIC_SANCTIONS.SANCTION_MONTHS, AT_OFFENDER_OIC_SANCTIONS.SANCTION_DAYS, AT_OFFENDER_OIC_SANCTIONS.COMPENSATION_AMOUNT, AT_OFFENDER_OIC_SANCTIONS.EFFECTIVE_DATE, AT_OFFENDER_OIC_SANCTIONS.COMMENT_TEXT, AT_OFFENDER_OIC_SANCTIONS.CREATE_DATETIME, AT_OIC_OFFENCES.DESCRIPTION, AT_OIC_OFFENCES.OIC_OFFENCE_CODE, CASE WHEN AT_OFFENDER_OIC_SANCTIONS.STATUS = 'SUSPENDED' AND CURRENT_TIMESTAMP < ADD_MONTHS(AT_OFFENDER_OIC_SANCTIONS.EFFECTIVE_DATE, 6) THEN 'Y' ELSE 'N' END AS OUTSTANDING_SUSPENDED_PUNISH37 FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_INCIDENT_CHARGES AT_AGENCY_INCIDENT_CHARGES, OMS_OWNER.OFFENDER_OIC_SANCTIONS AT_OFFENDER_OIC_SANCTIONS, OMS_OWNER.OIC_OFFENCES AT_OIC_OFFENCES, OMS_OWNER.OIC_HEARING_RESULTS AT_OIC_HEARING_RESULTS, OMS_OWNER.AGENCY_INCIDENT_PARTIES AT_AGENCY_INCIDENT_PARTIES WHERE (AT_AGENCY_INCIDENT_PARTIES.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_PARTIES.PARTY_SEQ = AT_AGENCY_INCIDENT_CHARGES.PARTY_SEQ) AND (AT_AGENCY_INCIDENT_CHARGES.CHARGED_OIC_OFFENCE_ID = AT_OIC_OFFENCES.OIC_OFFENCE_ID) AND (AT_OFFENDER_OIC_SANCTIONS.OIC_HEARING_ID (+) = AT_OIC_HEARING_RESULTS.OIC_HEARING_ID AND AT_OFFENDER_OIC_SANCTIONS.RESULT_SEQ (+) = AT_OIC_HEARING_RESULTS.RESULT_SEQ) AND (AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID = AT_OIC_HEARING_RESULTS.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_CHARGES.CHARGE_SEQ = AT_OIC_HEARING_RESULTS.CHARGE_SEQ) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('Enter NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0) */) AND AT_OFFENDER_OIC_SANCTIONS.STATUS = 'SUSPENDED' AND CASE WHEN AT_OFFENDER_OIC_SANCTIONS.STATUS = 'SUSPENDED' AND CURRENT_TIMESTAMP < ADD_MONTHS(AT_OFFENDER_OIC_SANCTIONS.EFFECTIVE_DATE, 6) THEN 'Y' ELSE 'N' END = 'Y')), dataset_ AS (SELECT OIC_CHARGE_ID, OIC_SANCTION_CODE, SANCTION_MONTHS, SANCTION_DAYS, COMPENSATION_AMOUNT, EFFECTIVE_DATE, COMMENT_TEXT, CREATE_DATETIME, DESCRIPTION, OIC_OFFENCE_CODE, OUTSTANDING_SUSPENDED_PUNISH37 FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number:",
+          "description": "@prompt('Enter NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OIC_CHARGE_ID",
+            "type": "string",
+            "display": "Offences ID",
+            "legacyId": "DPa.DO61f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OIC_SANCTION_CODE",
+            "type": "string",
+            "display": "Type",
+            "legacyId": "DPa.DO629",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "SANCTION_MONTHS",
+            "type": "double",
+            "display": "Months",
+            "legacyId": "DPa.DO62b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "SANCTION_DAYS",
+            "type": "double",
+            "display": "Days",
+            "legacyId": "DPa.DO62a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "COMPENSATION_AMOUNT",
+            "type": "double",
+            "display": "Level",
+            "legacyId": "DPa.DO62c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "EFFECTIVE_DATE",
+            "type": "date",
+            "display": "Effective Date",
+            "legacyId": "DPa.DO634",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "Comment Text",
+            "legacyId": "DPa.DO62d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "CREATE_DATETIME",
+            "type": "date",
+            "display": "Award Received Date",
+            "legacyId": "DPa.DO638",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Charge Description",
+            "legacyId": "DPa.DO620",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "OIC_OFFENCE_CODE",
+            "type": "string",
+            "display": "Paragraph",
+            "legacyId": "DPa.DO621",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "OUTSTANDING_SUSPENDED_PUNISH37",
+            "type": "string",
+            "display": "Outstanding Suspended Punishment Flag",
+            "legacyId": "DPa.DO63c",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375850/DPe",
+      "name": "Charged Adjudication History",
+      "description": "Incidents",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID, AT_AGENCY_INCIDENTS.REPORT_DATE, AT_AGENCY_INCIDENTS.INCIDENT_DATE, AT_AGENCY_INCIDENTS.INCIDENT_DETAILS, AT_OIC_HEARINGS2.HEARING_DATE, AT_OIC_HEARING_RESULTS.FINDING_CODE, AT_OFFENDER_OIC_SANCTIONS.OIC_SANCTION_CODE, AT_OFFENDER_OIC_SANCTIONS.SANCTION_MONTHS, AT_OFFENDER_OIC_SANCTIONS.SANCTION_DAYS, AT_OFFENDER_OIC_SANCTIONS.COMPENSATION_AMOUNT, AT_OFFENDER_OIC_SANCTIONS.COMMENT_TEXT, AT_OIC_HEARINGS2.oic_hearing_id, AT_OIC_OFFENCES.DESCRIPTION, AT_AGENCY_INCIDENT_CHARGES.OIC_CHARGE_ID, AT_OFFENDER_OIC_SANCTIONS.STATUS, AT_AGENCY_INCIDENTS.AGY_LOC_ID, AT_OFFENDER_OIC_SANCTIONS.CREATE_DATETIME, AT_OFFENDER_OIC_SANCTIONS.EFFECTIVE_DATE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_INCIDENT_CHARGES AT_AGENCY_INCIDENT_CHARGES, OMS_OWNER.AGENCY_INCIDENTS AT_AGENCY_INCIDENTS, OMS_OWNER.OIC_HEARINGS AT_OIC_HEARINGS2, OMS_OWNER.OIC_HEARING_RESULTS AT_OIC_HEARING_RESULTS, OMS_OWNER.OFFENDER_OIC_SANCTIONS AT_OFFENDER_OIC_SANCTIONS, OMS_OWNER.OIC_OFFENCES AT_OIC_OFFENCES, OMS_OWNER.AGENCY_INCIDENT_PARTIES AT_AGENCY_INCIDENT_PARTIES WHERE (AT_AGENCY_INCIDENT_PARTIES.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_AGENCY_INCIDENTS.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID) AND (AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_PARTIES.PARTY_SEQ = AT_AGENCY_INCIDENT_CHARGES.PARTY_SEQ) AND (AT_AGENCY_INCIDENT_CHARGES.CHARGED_OIC_OFFENCE_ID = AT_OIC_OFFENCES.OIC_OFFENCE_ID) AND (AT_OFFENDER_OIC_SANCTIONS.OIC_HEARING_ID (+) = AT_OIC_HEARING_RESULTS.OIC_HEARING_ID AND AT_OFFENDER_OIC_SANCTIONS.RESULT_SEQ (+) = AT_OIC_HEARING_RESULTS.RESULT_SEQ) AND (AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID = AT_OIC_HEARING_RESULTS.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_CHARGES.CHARGE_SEQ = AT_OIC_HEARING_RESULTS.CHARGE_SEQ) AND (AT_OIC_HEARING_RESULTS.OIC_HEARING_ID = AT_OIC_HEARINGS2.OIC_HEARING_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('Enter NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0) */) AND AT_OIC_HEARING_RESULTS.FINDING_CODE = 'PROVED')), dataset_ AS (SELECT AGENCY_INCIDENT_ID, REPORT_DATE, INCIDENT_DATE, INCIDENT_DETAILS, HEARING_DATE, FINDING_CODE, OIC_SANCTION_CODE, SANCTION_MONTHS, SANCTION_DAYS, COMPENSATION_AMOUNT, COMMENT_TEXT, OIC_HEARING_ID, DESCRIPTION, OIC_CHARGE_ID, STATUS, AGY_LOC_ID, CREATE_DATETIME, EFFECTIVE_DATE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number:",
+          "description": "@prompt('Enter NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "AGENCY_INCIDENT_ID",
+            "type": "double",
+            "display": "Agency Incident ID",
+            "legacyId": "DPe.DO646",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "REPORT_DATE",
+            "type": "date",
+            "display": "Report Date",
+            "legacyId": "DPe.DO618",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "INCIDENT_DATE",
+            "type": "date",
+            "display": "Incident Date",
+            "legacyId": "DPe.DO61a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "INCIDENT_DETAILS",
+            "type": "string",
+            "display": "Report Details",
+            "legacyId": "DPe.DO61b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "HEARING_DATE",
+            "type": "date",
+            "display": "Hearing Date",
+            "legacyId": "DPe.DO623",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "FINDING_CODE",
+            "type": "string",
+            "display": "Finding",
+            "legacyId": "DPe.DO628",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "OIC_SANCTION_CODE",
+            "type": "string",
+            "display": "Type",
+            "legacyId": "DPe.DO629",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "SANCTION_MONTHS",
+            "type": "double",
+            "display": "Months",
+            "legacyId": "DPe.DO62b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "SANCTION_DAYS",
+            "type": "double",
+            "display": "Days",
+            "legacyId": "DPe.DO62a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "COMPENSATION_AMOUNT",
+            "type": "double",
+            "display": "Level",
+            "legacyId": "DPe.DO62c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "COMMENT_TEXT",
+            "type": "string",
+            "display": "Comment Text",
+            "legacyId": "DPe.DO62d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "OIC_HEARING_ID",
+            "type": "double",
+            "display": "Hearing ID",
+            "legacyId": "DPe.DO64a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Charge Description",
+            "legacyId": "DPe.DO620",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "OIC_CHARGE_ID",
+            "type": "string",
+            "display": "Offences ID",
+            "legacyId": "DPe.DO61f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "STATUS",
+            "type": "string",
+            "display": "Status",
+            "legacyId": "DPe.DO62e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Report Establishment",
+            "legacyId": "DPe.DO619",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "CREATE_DATETIME",
+            "type": "date",
+            "display": "Award Received Date",
+            "legacyId": "DPe.DO638",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 17,
+            "name": "EFFECTIVE_DATE",
+            "type": "date",
+            "display": "Effective Date",
+            "legacyId": "DPe.DO634",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375850/DP10",
+      "name": "MDT Offences",
+      "description": "Incidents",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_AGENCY_INCIDENTS.REPORT_DATE, AT_AGENCY_INCIDENTS.AGY_LOC_ID, AT_AGENCY_INCIDENTS.INCIDENT_DETAILS, AT_AGENCY_INCIDENTS.INCIDENT_DATE, AT_OIC_HEARINGS2.HEARING_DATE, AT_OIC_HEARING_RESULTS.PLEA_FINDING_CODE, AT_OIC_HEARING_RESULTS.FINDING_CODE, AT_OFFENDER_OIC_SANCTIONS.OIC_SANCTION_CODE, AT_OFFENDER_OIC_SANCTIONS.SANCTION_MONTHS, AT_OFFENDER_OIC_SANCTIONS.SANCTION_DAYS, AT_OFFENDER_OIC_SANCTIONS.COMPENSATION_AMOUNT, AT_OFFENDER_OIC_SANCTIONS.EFFECTIVE_DATE, AT_AGENCY_INCIDENT_CHARGES.OIC_CHARGE_ID, AT_OIC_OFFENCES.OIC_OFFENCE_CODE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_INCIDENTS AT_AGENCY_INCIDENTS, OMS_OWNER.OIC_HEARINGS AT_OIC_HEARINGS2, OMS_OWNER.OIC_HEARING_RESULTS AT_OIC_HEARING_RESULTS, OMS_OWNER.OFFENDER_OIC_SANCTIONS AT_OFFENDER_OIC_SANCTIONS, OMS_OWNER.AGENCY_INCIDENT_CHARGES AT_AGENCY_INCIDENT_CHARGES, OMS_OWNER.OIC_OFFENCES AT_OIC_OFFENCES, OMS_OWNER.AGENCY_INCIDENT_PARTIES AT_AGENCY_INCIDENT_PARTIES WHERE (AT_AGENCY_INCIDENT_PARTIES.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_AGENCY_INCIDENTS.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID) AND (AT_AGENCY_INCIDENT_PARTIES.AGENCY_INCIDENT_ID = AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_PARTIES.PARTY_SEQ = AT_AGENCY_INCIDENT_CHARGES.PARTY_SEQ) AND (AT_AGENCY_INCIDENT_CHARGES.CHARGED_OIC_OFFENCE_ID = AT_OIC_OFFENCES.OIC_OFFENCE_ID) AND (AT_OFFENDER_OIC_SANCTIONS.OIC_HEARING_ID (+) = AT_OIC_HEARING_RESULTS.OIC_HEARING_ID AND AT_OFFENDER_OIC_SANCTIONS.RESULT_SEQ (+) = AT_OIC_HEARING_RESULTS.RESULT_SEQ) AND (AT_AGENCY_INCIDENT_CHARGES.AGENCY_INCIDENT_ID = AT_OIC_HEARING_RESULTS.AGENCY_INCIDENT_ID AND AT_AGENCY_INCIDENT_CHARGES.CHARGE_SEQ = AT_OIC_HEARING_RESULTS.CHARGE_SEQ) AND (AT_OIC_HEARING_RESULTS.OIC_HEARING_ID = AT_OIC_HEARINGS2.OIC_HEARING_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OIC_OFFENCES.OIC_OFFENCE_CODE IN ('51:9') AND AT_OFFENDER.OFFENDER_ID_DISPLAY = (SELECT PRISONER_NUMBER FROM prompt_ /* = #prompt('Enter NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0) */) AND AT_OIC_HEARING_RESULTS.FINDING_CODE = 'PROVED' AND AT_OIC_OFFENCES.OIC_OFFENCE_CODE IN (SELECT AT_OIC_OFFENCES.OIC_OFFENCE_CODE FROM OMS_OWNER.OIC_OFFENCES AT_OIC_OFFENCES, OMS_OWNER.AGENCY_INCIDENT_CHARGES AT_AGENCY_INCIDENT_CHARGES WHERE (AT_AGENCY_INCIDENT_CHARGES.CHARGED_OIC_OFFENCE_ID = AT_OIC_OFFENCES.OIC_OFFENCE_ID) AND AT_AGENCY_INCIDENT_CHARGES.OIC_CHARGE_ID = (SELECT OFFENCE_ID FROM prompt_ /* = #prompt('Enter Offence ID:','A',,Mono,Free,Not_Persistent,,User:1) */)))), dataset_ AS (SELECT REPORT_DATE, AGY_LOC_ID, INCIDENT_DETAILS, INCIDENT_DATE, HEARING_DATE, PLEA_FINDING_CODE, FINDING_CODE, OIC_SANCTION_CODE, SANCTION_MONTHS, SANCTION_DAYS, COMPENSATION_AMOUNT, EFFECTIVE_DATE, OIC_CHARGE_ID, OIC_OFFENCE_CODE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter NOMS Number:",
+          "description": "@prompt('Enter NOMS Number:','A',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "offence_id",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter Offence ID:",
+          "description": "@prompt('Enter Offence ID:','A',,Mono,Free,Not_Persistent,,User:1)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "REPORT_DATE",
+            "type": "date",
+            "display": "Report Date",
+            "legacyId": "DP10.DO618",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Report Establishment",
+            "legacyId": "DP10.DO619",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "INCIDENT_DETAILS",
+            "type": "string",
+            "display": "Report Details",
+            "legacyId": "DP10.DO61b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "INCIDENT_DATE",
+            "type": "date",
+            "display": "Incident Date",
+            "legacyId": "DP10.DO61a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "HEARING_DATE",
+            "type": "date",
+            "display": "Hearing Date",
+            "legacyId": "DP10.DO623",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "PLEA_FINDING_CODE",
+            "type": "string",
+            "display": "Plea",
+            "legacyId": "DP10.DO627",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "FINDING_CODE",
+            "type": "string",
+            "display": "Finding",
+            "legacyId": "DP10.DO628",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "OIC_SANCTION_CODE",
+            "type": "string",
+            "display": "Type",
+            "legacyId": "DP10.DO629",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "SANCTION_MONTHS",
+            "type": "double",
+            "display": "Months",
+            "legacyId": "DP10.DO62b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "SANCTION_DAYS",
+            "type": "double",
+            "display": "Days",
+            "legacyId": "DP10.DO62a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "COMPENSATION_AMOUNT",
+            "type": "double",
+            "display": "Level",
+            "legacyId": "DP10.DO62c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "EFFECTIVE_DATE",
+            "type": "date",
+            "display": "Effective Date",
+            "legacyId": "DP10.DO634",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "OIC_CHARGE_ID",
+            "type": "string",
+            "display": "Offences ID",
+            "legacyId": "DP10.DO61f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "OIC_OFFENCE_CODE",
+            "type": "string",
+            "display": "Paragraph",
+            "legacyId": "DP10.DO621",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375850/DP12",
+      "name": "Current Pargraph",
+      "description": "Incidents",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OIC_OFFENCES.OIC_OFFENCE_CODE FROM OMS_OWNER.OIC_OFFENCES AT_OIC_OFFENCES, OMS_OWNER.AGENCY_INCIDENT_CHARGES AT_AGENCY_INCIDENT_CHARGES WHERE (AT_AGENCY_INCIDENT_CHARGES.CHARGED_OIC_OFFENCE_ID = AT_OIC_OFFENCES.OIC_OFFENCE_ID) AND AT_AGENCY_INCIDENT_CHARGES.OIC_CHARGE_ID = (SELECT OFFENCE_ID FROM prompt_ /* = #prompt('Enter Offence ID:','A',,Mono,Free,Not_Persistent,,User:0) */)), dataset_ AS (SELECT OIC_OFFENCE_CODE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "offence_id",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter Offence ID:",
+          "description": "@prompt('Enter Offence ID:','A',,Mono,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OIC_OFFENCE_CODE",
+            "type": "string",
+            "display": "Paragraph",
+            "legacyId": "DP12.DO621",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "173267.RS",
+      "name": "F256 Adjudication Report",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375850/DPc",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:FULL_NAME",
+            "display": "Full Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP6.DO10047"
+          },
+          {
+            "name": "$ref:IEP_LEVEL",
+            "display": "IEP Level",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP6.DO10715"
+          }
+        ]
+      }
+    },
+    {
+      "id": "172530.RS",
+      "name": "Charged Adjudication History",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375850/DPe",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:FULL_NAME",
+            "display": "Full Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP6.DO10047"
+          },
+          {
+            "name": "$ref:IEP_LEVEL",
+            "display": "IEP Level",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP6.DO10715"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "schema",
+      "error": "instance.dataset[2].parameters[0].reportFieldType is not one of enum values: null,boolean,int,long,float,double,bytes,string,date,time,datetime,timestamp",
+      "entityId": "ok1nfCAACXHEO34ARBCD8K7BXe8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.dataset[3].parameters[1].reportFieldType is not one of enum values: null,boolean,int,long,float,double,bytes,string,date,time,datetime,timestamp",
+      "entityId": "ok1nfCAACXHEO34ARBCD8K7BXe8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.dataset[6].parameters[1].reportFieldType is not one of enum values: null,boolean,int,long,float,double,bytes,string,date,time,datetime,timestamp",
+      "entityId": "ok1nfCAACXHEO34ARBCD8K7BXe8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.dataset[7].parameters[0].reportFieldType is not one of enum values: null,boolean,int,long,float,double,bytes,string,date,time,datetime,timestamp",
+      "entityId": "ok1nfCAACXHEO34ARBCD8K7BXe8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report field FULL_NAME does not have corresponding dataset schema field",
+      "entityId": "173267.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field IEP_LEVEL does not have corresponding dataset schema field",
+      "entityId": "173267.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field FULL_NAME does not have corresponding dataset schema field",
+      "entityId": "172530.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field IEP_LEVEL does not have corresponding dataset schema field",
+      "entityId": "172530.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00904: \"OFFENCE_ID\": invalid identifier\nHelp: https://docs.oracle.com/error-help/db/ora-00904/",
+      "entityId": "3375850/DPd",
+      "entityType": "dataset"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00904: \"OFFENCE_ID\": invalid identifier\nHelp: https://docs.oracle.com/error-help/db/ora-00904/",
+      "entityId": "3375850/DPc",
+      "entityType": "dataset"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00904: \"OFFENCE_ID\": invalid identifier\nHelp: https://docs.oracle.com/error-help/db/ora-00904/",
+      "entityId": "3375850/DP10",
+      "entityType": "dataset"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00936: missing expression\nHelp: https://docs.oracle.com/error-help/db/ora-00936/",
+      "entityId": "3375850/DP12",
+      "entityType": "dataset"
+    }
+  ]
+}

@@ -1,0 +1,512 @@
+{
+  "id": "FvIAUF7fwAYAoy4AAHAbuF4VACJIAFJ8",
+  "name": "MISONR BCS Section RoSH",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": []
+  },
+  "description": "OAS0026 v1.0 Report to show BCS RoSH answers for the selected establishment.",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP1",
+      "name": "MIS Sentence",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.INITIALS, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION FROM BODIMIS.DIM_CELL AT_DIM_LOCATION, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.LIVING_UNIT_SK = AT_DIM_LOCATION.UNIT_4_SK (+)) AND ((AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, INITIALS, UNIT_4_SHORT_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP1.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP1.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "INITIALS",
+            "type": "string",
+            "display": "Offender Initials",
+            "legacyId": "DP1.DO1012d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "UNIT_4_SHORT_DESCRIPTION",
+            "type": "string",
+            "display": "Prisoner Location",
+            "legacyId": "DP1.DO10a7c",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375896/DP0",
+      "name": "Section RoSH",
+      "description": "Ad-hoc Reports",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT ASSESSMENT.ASSESSMENT_ID, ASSESSMENT_BCS_CASEID.BCS_PART1_COMP_DATE, ASSESSMENT_BCS_CASEID.RECEPTION_DATE, BCS_PART_STATUS.DESCRIPTION, OFFENDER.OFFENDER_ID_DISPLAY, ASSESSMENT_BCS_CASEID.INITIATION_DATE, ASSESSMENT_BCS_SCREENING.SERIOUS_OFFENCE, ASSESSMENT_BCS_SCREENING.RESTRAINING_ORDER, ASSESSMENT_BCS_SCREENING.SIGNIFICANT_EVENTS, ASSESSMENT_BCS_SCREENING.CHILD_CONCERNS, ASSESSMENT_BCS_SCREENING.DOMESTIC_VIOLENCE, ASSESSMENT_BCS_SCREENING.SUICIDE_RISK, ASSESSMENT_BCS_SCREENING.SELF_HARM_RISK, ASSESSMENT_BCS_SCREENING.VULNERABILITY, ASSESSMENT_BCS_SCREENING.CURRENT_ACCT, ASSESSMENT_BCS_SCREENING.ISSUE_TO_BE_ADDRESSED FROM ASSESSMENT, ASSESSMENT_BCS_CASEID, BCS_PART_STATUS, OFFENDER, ASSESSMENT_BCS_SCREENING, REP_OFFENDER_HISTORY, PURPOSE_OF_BCSREASON WHERE (OFFENDER.OFFENDER_ID = ASSESSMENT.OFFENDER_ID (+)) AND (OFFENDER.OFFENDER_ID = REP_OFFENDER_HISTORY.OFFENDER_ID (+)) AND (ASSESSMENT.ASSESSMENT_ID = ASSESSMENT_BCS_CASEID.ASSESSMENT_ID AND ASSESSMENT.ASSESSMENT_TYPE_ELM = 'TR_BCS') AND (PURPOSE_OF_BCSREASON.PURPOSE_OF_BCSREASON_CODE (+) = ASSESSMENT_BCS_CASEID.BCS_PURPOSE) AND (ASSESSMENT_BCS_CASEID.ASSESSMENT_ID = ASSESSMENT_BCS_SCREENING.ASSESSMENT_ID) AND (BCS_PART_STATUS.BCS_PART_STATUS_CODE (+) = ASSESSMENT_BCS_CASEID.BCS_PART1_STATUS) AND (SUBSTR(OFFENDER.OFFENDER_ID_DISPLAY, 1, 10) = TAGMIS_CASELOAD_SECURITY((SELECT username FROM context_ /* = #Variable('BOUSER') */), OFFENDER.OFFENDER_ID_DISPLAY)) AND ((REP_OFFENDER_HISTORY.LATEST_OWNERSHIP_RANK = 1) AND BCS_PART_STATUS.DESCRIPTION = 'Complete' AND REP_OFFENDER_HISTORY.PHYSICAL_LOCATION IN (SELECT LOCATION FROM prompt_ /* = #prompt('Enter value(s) for Physical Location:','A','Offender History\\Physical Location',Multi,Free,Not_Persistent,,User:0) */) AND PURPOSE_OF_BCSREASON.DESCRIPTION IN ('Basic Custody Screening - Start', 'Basic Custody Screening - Review'))), dataset_ AS (SELECT ASSESSMENT_ID, BCS_PART1_COMP_DATE, RECEPTION_DATE, DESCRIPTION, OFFENDER_ID_DISPLAY, INITIATION_DATE, SERIOUS_OFFENCE, RESTRAINING_ORDER, SIGNIFICANT_EVENTS, CHILD_CONCERNS, DOMESTIC_VIOLENCE, SUICIDE_RISK, SELF_HARM_RISK, VULNERABILITY, CURRENT_ACCT, ISSUE_TO_BE_ADDRESSED, SURNAME || ', ' || INITIALS AS V_OFFENDER_SURNAME, CASE WHEN SERIOUS_OFFENCE = 0 THEN 'No' ELSE CASE WHEN SERIOUS_OFFENCE = 1 THEN 'Yes' ELSE 'Not Answered' END END AS V_ROSH_SERIOUS_OFFENCE, CASE WHEN RESTRAINING_ORDER = 0 THEN 'No' ELSE CASE WHEN RESTRAINING_ORDER = 1 THEN 'Yes' ELSE CASE WHEN RESTRAINING_ORDER = 2 THEN 'Further Checks Required' ELSE 'Not Answered' END END END AS V_ROSH_RESTRAINING_ORDER, CASE WHEN CHILD_CONCERNS = 0 THEN 'No' ELSE CASE WHEN CHILD_CONCERNS = 1 THEN 'Yes' ELSE CASE WHEN CHILD_CONCERNS = 2 THEN 'Further Checks Required' ELSE 'Not Answered' END END END AS V_ROSH_CHILD_CONCERNS, CASE WHEN DOMESTIC_VIOLENCE = 0 THEN 'No' ELSE CASE WHEN DOMESTIC_VIOLENCE = 1 THEN 'Yes' ELSE CASE WHEN DOMESTIC_VIOLENCE = 2 THEN 'Further Checks Required' ELSE 'Not Answered' END END END AS V_ROSH_DOMESTIC_VIOLENCE, CASE WHEN VULNERABILITY = 0 THEN 'No' ELSE CASE WHEN VULNERABILITY = 1 THEN 'Yes' ELSE 'Not Answered' END END AS V_ROSH_VULNERABILITY, CASE WHEN CURRENT_ACCT = 0 THEN 'No' ELSE CASE WHEN CURRENT_ACCT = 1 THEN 'Yes' ELSE 'Not Answered' END END AS V_ROSH_CURRENT_ACCT, CASE WHEN ISSUE_TO_BE_ADDRESSED = 0 THEN 'No' ELSE CASE WHEN ISSUE_TO_BE_ADDRESSED = 1 THEN 'Yes' ELSE 'Not Answered' END END AS V_ROSH_ISSUE_TO_BE_ADDRESSED FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "location",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter value(s) for Physical Location:",
+          "description": "@prompt('Enter value(s) for Physical Location:','A','Offender History\\Physical Location',Multi,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ASSESSMENT_ID",
+            "type": "double",
+            "display": "Assessment ID",
+            "legacyId": "DP0.DO5d5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "BCS_PART1_COMP_DATE",
+            "type": "date",
+            "display": "BCS Part1 Completion Date",
+            "legacyId": "DP0.DO1251",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "RECEPTION_DATE",
+            "type": "date",
+            "display": "Reception Date",
+            "legacyId": "DP0.DO121f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "BCS Part1 Status",
+            "legacyId": "DP0.DO1250",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO264",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "INITIATION_DATE",
+            "type": "date",
+            "display": "Initiation Date",
+            "legacyId": "DP0.DO124c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "SERIOUS_OFFENCE",
+            "type": "double",
+            "display": "Serious Offence",
+            "legacyId": "DP0.DO12ba",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "RESTRAINING_ORDER",
+            "type": "double",
+            "display": "Restraining Order",
+            "legacyId": "DP0.DO12bb",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "SIGNIFICANT_EVENTS",
+            "type": "double",
+            "display": "Significant Events",
+            "legacyId": "DP0.DO12bc",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "CHILD_CONCERNS",
+            "type": "double",
+            "display": "Child Concerns",
+            "legacyId": "DP0.DO12bd",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "DOMESTIC_VIOLENCE",
+            "type": "double",
+            "display": "Domestic Violence",
+            "legacyId": "DP0.DO12be",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "SUICIDE_RISK",
+            "type": "double",
+            "display": "Suicide Risk",
+            "legacyId": "DP0.DO12bf",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "SELF_HARM_RISK",
+            "type": "double",
+            "display": "Self Harm Risk",
+            "legacyId": "DP0.DO12c0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "VULNERABILITY",
+            "type": "double",
+            "display": "Vulnerability",
+            "legacyId": "DP0.DO12c1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "CURRENT_ACCT",
+            "type": "double",
+            "display": "Current Acct",
+            "legacyId": "DP0.DO12c2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "ISSUE_TO_BE_ADDRESSED",
+            "type": "double",
+            "display": "Issue To Be Addressed",
+            "legacyId": "DP0.DO12c3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 16,
+            "name": "V_OFFENDER_SURNAME",
+            "type": "string",
+            "display": "V_OFFENDER_SURNAME",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 17,
+            "name": "V_ROSH_SERIOUS_OFFENCE",
+            "type": "string",
+            "display": "V_ROSH_SERIOUS_OFFENCE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 18,
+            "name": "V_ROSH_RESTRAINING_ORDER",
+            "type": "string",
+            "display": "V_ROSH_RESTRAINING_ORDER",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 19,
+            "name": "V_ROSH_CHILD_CONCERNS",
+            "type": "string",
+            "display": "V_ROSH_CHILD_CONCERNS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 20,
+            "name": "V_ROSH_DOMESTIC_VIOLENCE",
+            "type": "string",
+            "display": "V_ROSH_DOMESTIC_VIOLENCE",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 21,
+            "name": "V_ROSH_VULNERABILITY",
+            "type": "string",
+            "display": "V_ROSH_VULNERABILITY",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 22,
+            "name": "V_ROSH_CURRENT_ACCT",
+            "type": "string",
+            "display": "V_ROSH_CURRENT_ACCT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 23,
+            "name": "V_ROSH_ISSUE_TO_BE_ADDRESSED",
+            "type": "string",
+            "display": "V_ROSH_ISSUE_TO_BE_ADDRESSED",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "7.RS",
+      "name": "RoSH Summary",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      },
+      "dataset": "MISSING"
+    },
+    {
+      "id": "1720.RS",
+      "name": "Offender Detail",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375896/DP0",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_MAX_ASSESSMENT_ID_FOR_FILTER IN (1))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ASSESSMENT_ID",
+            "display": "Assessment ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO5d5"
+          },
+          {
+            "name": "$ref:V_OFFENDER_SURNAME",
+            "display": "BR1 To your knowledge, has the offender ever been convicted of any serious offence? Blackmail, Harassment, Stalking, Child neglect/abuse, Abuse of a vulnerable adult, Child pornography (inc possession), Abduction, Death by dangerous driving, Terrorist offences, or Serious organised crime?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Offender Surname]+\", \"+[Offender Initials]"
+          },
+          {
+            "name": "$ref:V_ROSH_SERIOUS_OFFENCE",
+            "display": "BR2 Is offender subject to any restraining orders?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Serious Offence]=0;\"No\";(If([Serious Offence]=1;\"Yes\";\"Not Answered\")))"
+          },
+          {
+            "name": "$ref:V_ROSH_RESTRAINING_ORDER",
+            "display": "BR5 Have there been any significant events in the past?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Restraining Order]=0;\"No\";(If([Restraining Order]=1;\"Yes\";(If([Restraining Order]=2;\"Further Checks Required\";\"Not Answered\")))))"
+          },
+          {
+            "name": "$ref:V_ROSH_SIGNIFICANT_EVENTS",
+            "display": "BR7 Are there any concerns in relation to children?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Significant Events]=0;\"No\";(If([Significant Events]=1;\"Yes\";(If([Significant Events]=2;\"Don't Know\";\"Not Answered\")))))"
+          },
+          {
+            "name": "$ref:V_ROSH_CHILD_CONCERNS",
+            "display": "BR8 Is there evidence the offender is a perpetrator of domestic violence?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Child Concerns]=0;\"No\";(If([Child Concerns]=1;\"Yes\";(If([Child Concerns]=2;\"Further Checks Required\";\"Not Answered\")))))"
+          },
+          {
+            "name": "$ref:V_ROSH_DOMESTIC_VIOLENCE",
+            "display": "BR9 From what you know about this offender have there been or are there currently any concerns about risk of suicide?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Domestic Violence]=0;\"No\";(If([Domestic Violence]=1;\"Yes\";(If([Domestic Violence]=2;\"Further Checks Required\";\"Not Answered\")))))"
+          },
+          {
+            "name": "$ref:V_ROSH_SUICIDE_RISK",
+            "display": "BR10 From what you know about this offender have there been or are there currently any concerns about risk of self harm?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Suicide Risk]=0;\"No\";(If([Suicide Risk]=1;\"Yes\";(If([Suicide Risk]=2;\"Don't Know\";\"Not Answered\")))))"
+          },
+          {
+            "name": "$ref:V_ROSH_SELF_HARM_RISK",
+            "display": "BR11 From what you know about this offender have there been or are there currently any concerns about vulnerability?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Self Harm Risk]=0;\"No\";(If([Self Harm Risk]=1;\"Yes\";(If([Self Harm Risk]=2;\"Don't Know\";\"Not Answered\")))))"
+          },
+          {
+            "name": "$ref:V_ROSH_VULNERABILITY",
+            "display": "BR12 Is there a current ACCT (Assessment, Care in Custody and Teamwork)?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Vulnerability]=0;\"No\";(If([Vulnerability]=1;\"Yes\";\"Not Answered\")))"
+          },
+          {
+            "name": "$ref:V_ROSH_CURRENT_ACCT",
+            "display": "BR13 Is RoSH an issue which needs addressing? \n[For the screener to consider]",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Current Acct]=0;\"No\";(If([Current Acct]=1;\"Yes\";\"Not Answered\")))"
+          },
+          {
+            "name": "$ref:V_ROSH_ISSUE_TO_BE_ADDRESSED",
+            "display": "=Count([NOMS Number])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Issue To Be Addressed]=0;\"No\";(If([Issue To Be Addressed]=1;\"Yes\";\"Not Answered\")))"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_ROSH_SIGNIFICANT_EVENTS :: Error: Error tokenizing ' THEN 'Don't Know' ELSE 'Not Answered' END END EN': Missing ' from 1:179",
+      "entityId": "FvIAUF7fwAYAoy4AAHAbuF4VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_ROSH_SUICIDE_RISK :: Error: Error tokenizing ' THEN 'Don't Know' ELSE 'Not Answered' END END EN': Missing ' from 1:161",
+      "entityId": "FvIAUF7fwAYAoy4AAHAbuF4VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_ROSH_SELF_HARM_RISK :: Error: Error tokenizing ' THEN 'Don't Know' ELSE 'Not Answered' END END EN': Missing ' from 1:167",
+      "entityId": "FvIAUF7fwAYAoy4AAHAbuF4VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[0] requires property \"dataset\"",
+      "entityId": "FvIAUF7fwAYAoy4AAHAbuF4VACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 7.RS does not have corresponding dataset undefined",
+      "entityId": "7.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ROSH_SIGNIFICANT_EVENTS does not have corresponding dataset schema field",
+      "entityId": "1720.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ROSH_SUICIDE_RISK does not have corresponding dataset schema field",
+      "entityId": "1720.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ROSH_SELF_HARM_RISK does not have corresponding dataset schema field",
+      "entityId": "1720.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375896/DP0",
+      "entityType": "dataset"
+    }
+  ]
+}

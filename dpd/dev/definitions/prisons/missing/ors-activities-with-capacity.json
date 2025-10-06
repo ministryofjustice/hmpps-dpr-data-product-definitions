@@ -1,0 +1,431 @@
+{
+  "id": "Fl_jjwFcigAAZZs0AAC3EyDUACJIAGE1",
+  "name": "ORS Activities with Capacity",
+  "description": "Report displays Activities, their Capacity and Vacancies at a selected establishment<br/>ACT0047 - v3.0 Last Modified: 08/08/2023",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACT0047",
+      "Activities"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3377239/DP5",
+      "name": "Current Activities",
+      "description": "OR - Activities",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY, V_OFFENDER_COURSE_EVENTS.DESCRIPTION, V_OFFENDER_COURSE_EVENTS.EVENT_DATE, AT_SLOT_REFERENCE.DESCRIPTION AS SLOT, AT_COURSE_ACTIVITIES.CODE, AT_PROGRAM_SERVICES.DESCRIPTION AS SERVICE_DESCRIPTION FROM V_OFFENDER_COURSE_EVENTS, OMS_OWNER.COURSE_SCHEDULES AT_COURSE_SCHEDULES, OMS_OWNER.OFFENDER_PROGRAM_PROFILES AT_PROGRAM_PROFILES, OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_SLOT_REFERENCE, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.COURSE_ACTIVITIES AT_COURSE_ACTIVITIES, OMS_OWNER.PROGRAM_SERVICES AT_PROGRAM_SERVICES, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = V_OFFENDER_COURSE_EVENTS.OFFENDER_BOOK_ID) AND (V_OFFENDER_COURSE_EVENTS.CRS_SCH_ID = AT_COURSE_SCHEDULES.CRS_SCH_ID AND V_OFFENDER_COURSE_EVENTS.CRS_ACTY_ID = AT_COURSE_SCHEDULES.CRS_ACTY_ID) AND (AT_COURSE_SCHEDULES.CRS_ACTY_ID = AT_COURSE_ACTIVITIES.CRS_ACTY_ID) AND (AT_COURSE_SCHEDULES.SLOT_CATEGORY_CODE = AT_SLOT_REFERENCE.CODE (+)) AND (AT_COURSE_ACTIVITIES.PROGRAM_ID = AT_PROGRAM_SERVICES.PROGRAM_ID) AND (AT_SLOT_REFERENCE.DOMAIN (+) = 'PA_SLOT') AND (AT_PROGRAM_PROFILES.OFF_PRGREF_ID = V_OFFENDER_COURSE_EVENTS.OFF_PRGREF_ID) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (NOT V_OFFENDER_COURSE_EVENTS.EVENT_STATUS IN ('CANC', 'SUS')) AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_) AND (USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_)) AND V_OFFENDER_COURSE_EVENTS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_) AND V_OFFENDER_COURSE_EVENTS.EVENT_DATE >= TRUNC(CURRENT_TIMESTAMP) AND (AT_PROGRAM_PROFILES.OFFENDER_END_DATE IS NULL OR AT_PROGRAM_PROFILES.OFFENDER_END_DATE >= TRUNC(CURRENT_TIMESTAMP)) AND V_OFFENDER_COURSE_EVENTS.EVENT_DATE BETWEEN TO_DATE('27-06-2023 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('01-07-2023 00:00:00', 'DD-MM-YYYY HH24:MI:SS'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, DESCRIPTION, EVENT_DATE, SLOT, CODE, SERVICE_DESCRIPTION, PRISON_ACTIVITIES.CAPACITY AS V_CAPACITY, 'TBD' AS V_AM_SLOT, COUNT(OFFENDER_ID_DISPLAY) OVER (PARTITION BY V_SLOT = 'AM') AS V_COUNT_NOMS_NO_AM, 'TBD' AS V_PM_SLOT, COUNT(OFFENDER_ID_DISPLAY) OVER (PARTITION BY V_SLOT = 'PM') AS V_COUNT_NOMS_NO_PM, CASE WHEN V_SLOT = 'AM' THEN V_VACANCY_AM ELSE ' ' END AS V_VACANCY_AM_DISPLAY, CASE WHEN V_SLOT = 'PM' THEN V_VACANCY_PM ELSE ' ' END AS V_VACANCY_PM_DISPLAY, CASE WHEN V_SLOT = 'ED' THEN V_VACANCY_ED ELSE ' ' END AS V_VACANCY_ED_DISPLAY, 'TBD' AS V_ED_SLOT, COUNT(OFFENDER_ID_DISPLAY) OVER (PARTITION BY V_SLOT = 'ED') AS V_COUNT_NOMS_NO_ED FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP5.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Activity Description",
+            "legacyId": "DP5.DOd6",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "EVENT_DATE",
+            "type": "date",
+            "display": "Event Date",
+            "legacyId": "DP5.DOb9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "SLOT",
+            "type": "string",
+            "display": "Slot",
+            "legacyId": "DP5.DOda",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "CODE",
+            "type": "string",
+            "display": "Activity Code",
+            "legacyId": "DP5.DO458",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "SERVICE_DESCRIPTION",
+            "type": "string",
+            "display": "Service Description",
+            "legacyId": "DP5.DO456",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "V_CAPACITY",
+            "type": "string",
+            "display": "V_CAPACITY",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 7,
+            "name": "V_AM_SLOT",
+            "type": "string",
+            "display": "V_AM_SLOT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 8,
+            "name": "V_COUNT_NOMS_NO_AM",
+            "type": "string",
+            "display": "V_COUNT_NOMS_NO_AM",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 9,
+            "name": "V_PM_SLOT",
+            "type": "string",
+            "display": "V_PM_SLOT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 10,
+            "name": "V_COUNT_NOMS_NO_PM",
+            "type": "string",
+            "display": "V_COUNT_NOMS_NO_PM",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 11,
+            "name": "V_VACANCY_AM_DISPLAY",
+            "type": "string",
+            "display": "V_VACANCY_AM_DISPLAY",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 12,
+            "name": "V_VACANCY_PM_DISPLAY",
+            "type": "string",
+            "display": "V_VACANCY_PM_DISPLAY",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 13,
+            "name": "V_VACANCY_ED_DISPLAY",
+            "type": "string",
+            "display": "V_VACANCY_ED_DISPLAY",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 14,
+            "name": "V_ED_SLOT",
+            "type": "string",
+            "display": "V_ED_SLOT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 15,
+            "name": "V_COUNT_NOMS_NO_ED",
+            "type": "string",
+            "display": "V_COUNT_NOMS_NO_ED",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3377239/DP8",
+      "name": "Capacity",
+      "description": "OR - Activities",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT AT_COURSE_ACTIVITIES.DESCRIPTION, AT_COURSE_ACTIVITIES.CAPACITY, AT_COURSE_ACTIVITIES.CAPACITY - DT_COURSE_VACANCY.RESGISTRATION_COUNT AS VACANCY, AT_COURSE_ACTIVITIES.AGY_LOC_ID, AT_COURSE_ACTIVITIES.CODE FROM OMS_OWNER.COURSE_ACTIVITIES AT_COURSE_ACTIVITIES, (SELECT crs_acty_id, COUNT(*) AS resgistration_count FROM offender_program_profiles WHERE offender_program_status = 'ALLOC' GROUP BY crs_acty_id) DT_COURSE_VACANCY WHERE (AT_COURSE_ACTIVITIES.CRS_ACTY_ID = DT_COURSE_VACANCY.CRS_ACTY_ID (+)) AND (AT_COURSE_ACTIVITIES.AGY_LOC_ID = (SELECT establishment_code FROM prompt_) AND CASE WHEN AT_COURSE_ACTIVITIES.SCHEDULE_END_DATE >= CURRENT_TIMESTAMP OR AT_COURSE_ACTIVITIES.SCHEDULE_END_DATE IS NULL THEN 'Y' ELSE 'N' END = 'Y')), dataset_ AS (SELECT DESCRIPTION, CAPACITY, VACANCY, AGY_LOC_ID, CODE FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Activity Description",
+            "legacyId": "DP8.DO44d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "CAPACITY",
+            "type": "double",
+            "display": "Prison Activities.Capacity",
+            "legacyId": "DP8.DO450",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "VACANCY",
+            "type": "double",
+            "display": "Vacancy",
+            "legacyId": "DP8.DO457",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Activity Establishment Code",
+            "legacyId": "DP8.DO44f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "CODE",
+            "type": "string",
+            "display": "Activity Code",
+            "legacyId": "DP8.DO458",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "166157.RS",
+      "name": "Activities",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3377239/DP5",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE (SERVICE_DESCRIPTION IS NOT NULL))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:SERVICE_DESCRIPTION",
+            "display": "Service Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DO456"
+          },
+          {
+            "name": "$ref:V_CAPACITY",
+            "display": "Capacity",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Prison Activities].[Capacity]"
+          },
+          {
+            "name": "$ref:EVENT_DATE",
+            "display": "Event Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP5.DOb9"
+          },
+          {
+            "name": "$ref:V_AM_SLOT",
+            "display": "AM Slot",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_slot] = \"AM\") Then (DayName([Event Date]) + \" \" + \"AM\") Else \"--\""
+          },
+          {
+            "name": "$ref:V_COUNT_NOMS_NO_AM",
+            "display": "AM Count",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])Where ([v_slot] = \"AM\")"
+          },
+          {
+            "name": "$ref:V_PM_SLOT",
+            "display": "PM Slot",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_slot] = \"PM\") Then (DayName([Event Date]) + \" \" + \"PM\") Else \"--\""
+          },
+          {
+            "name": "$ref:V_COUNT_NOMS_NO_PM",
+            "display": "PM Count",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])Where ([v_slot] = \"PM\")"
+          },
+          {
+            "name": "$ref:V_VACANCY_AM_DISPLAY",
+            "display": "Vacancy AM",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_slot] = \"AM\";[V_Vacancy_AM]; \" \")"
+          },
+          {
+            "name": "$ref:V_VACANCY_PM_DISPLAY",
+            "display": "Vacancy PM",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_slot] = \"PM\";[V_Vacancy_PM]; \" \")"
+          },
+          {
+            "name": "$ref:V_VACANCY_ED_DISPLAY",
+            "display": "Vacancy ED",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_slot] = \"ED\";[V_Vacancy_ED]; \" \")"
+          },
+          {
+            "name": "$ref:V_ED_SLOT",
+            "display": "ED Slot",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_slot] = \"ED\") Then (DayName([Event Date]) + \" \" + \"ED\") Else \"--\""
+          },
+          {
+            "name": "$ref:V_COUNT_NOMS_NO_ED",
+            "display": "ED Count",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number])Where ([v_slot] = \"ED\")"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_AM_SLOT :: Error: =If([v_slot] = \"AM\") Then (DayName([Event Date]) + \" \" + \"AM\") Else \"--\" ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "Fl_jjwFcigAAZZs0AAC3EyDUACJIAGE1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_PM_SLOT :: Error: =If([v_slot] = \"PM\") Then (DayName([Event Date]) + \" \" + \"PM\") Else \"--\" ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "Fl_jjwFcigAAZZs0AAC3EyDUACJIAGE1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_ED_SLOT :: Error: =If([v_slot] = \"ED\") Then (DayName([Event Date]) + \" \" + \"ED\") Else \"--\" ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "Fl_jjwFcigAAZZs0AAC3EyDUACJIAGE1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_AM_SLOT :: Error: =If([v_slot] = \"AM\") Then (DayName([Event Date]) + \" \" + \"AM\") Else \"--\" ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "Fl_jjwFcigAAZZs0AAC3EyDUACJIAGE1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_PM_SLOT :: Error: =If([v_slot] = \"PM\") Then (DayName([Event Date]) + \" \" + \"PM\") Else \"--\" ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "Fl_jjwFcigAAZZs0AAC3EyDUACJIAGE1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_ED_SLOT :: Error: =If([v_slot] = \"ED\") Then (DayName([Event Date]) + \" \" + \"ED\") Else \"--\" ==> Error: Expected expression but \"=\" found.\n at undefined:1:1",
+      "entityId": "Fl_jjwFcigAAZZs0AAC3EyDUACJIAGE1",
+      "entityType": "dpd"
+    },
+    {
+      "type": "sqlQuery",
+      "error": "Error: ORA-00907: missing right parenthesis\nHelp: https://docs.oracle.com/error-help/db/ora-00907/",
+      "entityId": "3377239/DP5",
+      "entityType": "dataset"
+    }
+  ]
+}

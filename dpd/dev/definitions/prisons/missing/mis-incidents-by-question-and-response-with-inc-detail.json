@@ -1,0 +1,353 @@
+{
+  "id": "klbi0agAAxSJH5kA1f8AFE.rcVQ",
+  "name": "MIS Incidents by Question and Response with Inc Detail",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "INC0017 v00.00.01"
+    ]
+  },
+  "description": " This report provides a count of incidents per establishment of pre-determined incident questions and responses between two dates. This is based on HQ0004 but also includes detailed Incident Information.<br/>INC0017 -v00.00.01 - Lat Modified: 17/03/16",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375377/DP2",
+      "name": "All Incidents",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_INCIDENT_ESTABLISHMENT.AREA_DESCRIPTION, AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, COUNT(DISTINCT (AT_INCIDENT.INCIDENT_CASE_ID)) AS NUMBER_OF_INCIDENTS, DT_SELECTED_INCIDENTS.NO_OF_SEL_ANSW_PER_INCIDENT, AT_INCIDENT.INCIDENT_CASE_ID, AT_INCIDENT.INCIDENT_TITLE, AT_INCIDENT.INCIDENT_TEXT, AT_INCIDENT_DATE.DAY_DATE FROM BODIMIS.FACT_INCIDENT AT_INCIDENT, BODIMIS.DIM_ESTABLISHMENT AT_INCIDENT_ESTABLISHMENT, BODIMIS.DIM_INCIDENT_STATUS AT_INCIDENT_STATUS, BODIMIS.DIM_DATE AT_INCIDENT_DATE, (SELECT DT_ANSWERS_PER_INCIDENT.INCIDENT_CASE_ID, DT_ANSWERS_PER_INCIDENT.NO_OF_SEL_ANSW_PER_INCIDENT, DT_NO_OF_ANSWERS_SELECTED.NO_OF_ANSWERS_SELECTED FROM (SELECT AT_INCIDENT_QUESTIONNAIRE.INCIDENT_CASE_ID, COUNT(DISTINCT DT_INC_TYPE_QUEST_ANSW_LOV.INCIDENT_ANSWER_SK) AS NO_OF_SEL_ANSW_PER_INCIDENT FROM (SELECT DISTINCT AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC, AT_INCIDENT_QUESTION.QUE_SEQ, AT_INCIDENT_QUESTION.QUESTION_DESCRIPTION, AT_INCIDENT_ANSWER.INCIDENT_QUESTION_SK, AT_INCIDENT_ANSWER.ANSWER_DESCRIPTION, AT_INCIDENT_ANSWER.ANS_SEQ, AT_INCIDENT_ANSWER.INCIDENT_ANSWER_SK FROM BODIMIS.DIM_INCIDENT_TYPE AT_INCIDENT_TYPE, BODIMIS.DIM_INCIDENT_QUESTION AT_INCIDENT_QUESTION, BODIMIS.DIM_INCIDENT_ANSWER AT_INCIDENT_ANSWER, BODIMIS.FACT_INCIDENT AT_INCIDENT, BODIMIS.FACT_INCIDENT_QUESTIONNAIRE AT_INCIDENT_QUESTIONNAIRE WHERE (AT_INCIDENT_TYPE.INCIDENT_TYPE_SK = AT_INCIDENT.INCIDENT_TYPE_SK) AND (AT_INCIDENT_QUESTIONNAIRE.INCIDENT_CASE_ID = AT_INCIDENT.INCIDENT_CASE_ID) AND (AT_INCIDENT_ANSWER.INCIDENT_QUESTION_SK = AT_INCIDENT_QUESTION.INCIDENT_QUESTION_SK) AND (AT_INCIDENT_ANSWER.INCIDENT_ANSWER_SK = AT_INCIDENT_QUESTIONNAIRE.INCIDENT_ANSWER_SK) /* ************************************************* */ /* ** End of derived table DT_INC_TYPE_QUEST_ANSW_LOV * */ /* ************************************************* */) DT_INC_TYPE_QUEST_ANSW_LOV, BODIMIS.FACT_INCIDENT_QUESTIONNAIRE AT_INCIDENT_QUESTIONNAIRE WHERE (DT_INC_TYPE_QUEST_ANSW_LOV.INCIDENT_ANSWER_SK = AT_INCIDENT_QUESTIONNAIRE.INCIDENT_ANSWER_SK) AND (DT_INC_TYPE_QUEST_ANSW_LOV.INCIDENT_ANSWER_SK IN (1600)) GROUP BY AT_INCIDENT_QUESTIONNAIRE.INCIDENT_CASE_ID /* ********************************************** */ /* ** End of derived table DT_ANSWERS_PER_INCIDENT * */ /* ********************************************** */) DT_ANSWERS_PER_INCIDENT, (SELECT COUNT(DISTINCT DT_INC_TYPE_QUEST_ANSW_LOV.INCIDENT_ANSWER_SK) AS NO_OF_ANSWERS_SELECTED FROM (SELECT DISTINCT AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC, AT_INCIDENT_QUESTION.QUE_SEQ, AT_INCIDENT_QUESTION.QUESTION_DESCRIPTION, AT_INCIDENT_ANSWER.INCIDENT_QUESTION_SK, AT_INCIDENT_ANSWER.ANSWER_DESCRIPTION, AT_INCIDENT_ANSWER.ANS_SEQ, AT_INCIDENT_ANSWER.INCIDENT_ANSWER_SK FROM BODIMIS.DIM_INCIDENT_TYPE AT_INCIDENT_TYPE, BODIMIS.DIM_INCIDENT_QUESTION AT_INCIDENT_QUESTION, BODIMIS.DIM_INCIDENT_ANSWER AT_INCIDENT_ANSWER, BODIMIS.FACT_INCIDENT AT_INCIDENT, BODIMIS.FACT_INCIDENT_QUESTIONNAIRE AT_INCIDENT_QUESTIONNAIRE WHERE (AT_INCIDENT_TYPE.INCIDENT_TYPE_SK = AT_INCIDENT.INCIDENT_TYPE_SK) AND (AT_INCIDENT_QUESTIONNAIRE.INCIDENT_CASE_ID = AT_INCIDENT.INCIDENT_CASE_ID) AND (AT_INCIDENT_ANSWER.INCIDENT_QUESTION_SK = AT_INCIDENT_QUESTION.INCIDENT_QUESTION_SK) AND (AT_INCIDENT_ANSWER.INCIDENT_ANSWER_SK = AT_INCIDENT_QUESTIONNAIRE.INCIDENT_ANSWER_SK) /* ************************************************* */ /* ** End of derived table DT_INC_TYPE_QUEST_ANSW_LOV * */ /* ************************************************* */) DT_INC_TYPE_QUEST_ANSW_LOV WHERE (DT_INC_TYPE_QUEST_ANSW_LOV.INCIDENT_ANSWER_SK IN (1600)) /* ************************************************* */ /* ** End of derived table DT_NO_OF_ANSWERS_SELECTED * */ /* ************************************************* */) DT_NO_OF_ANSWERS_SELECTED WHERE (DT_NO_OF_ANSWERS_SELECTED.NO_OF_ANSWERS_SELECTED = DT_ANSWERS_PER_INCIDENT.NO_OF_SEL_ANSW_PER_INCIDENT) /* ********************************************** */ /* ********************************************** */ /* ** End of derived table DT_SELECTED_INCIDENTS * */ /* ********************************************** */ /* ********************************************** */) DT_SELECTED_INCIDENTS, BODIMIS.DIM_INCIDENT_TYPE AT_INCIDENT_TYPE WHERE (AT_INCIDENT.INCIDENT_STATUS_SK = AT_INCIDENT_STATUS.INCIDENT_STATUS_SK) AND (AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_SK = AT_INCIDENT.ESTABLISHMENT_SK) AND (AT_INCIDENT_DATE.DATE_SK = AT_INCIDENT.INCIDENT_DATE_SK) AND (DT_SELECTED_INCIDENTS.INCIDENT_CASE_ID = AT_INCIDENT.INCIDENT_CASE_ID) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_TYPE.INCIDENT_TYPE_SK = AT_INCIDENT.INCIDENT_TYPE_SK) AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND (AT_INCIDENT_STATUS.INCIDENT_STATUS_ID_NK <> 'DUP') AND ((AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK IN ('All') OR 'All' IN ('All')) AND (AT_INCIDENT_ESTABLISHMENT.AREA_DESCRIPTION IN ('Kent and Sussex') OR 'All' IN ('Kent and Sussex')) AND ((AT_INCIDENT_DATE.DAY_DATE) BETWEEN TO_DATE('01-01-2016 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('10-03-2016 00:00:00', 'DD-MM-YYYY HH24:MI:SS')) AND ((INITCAP(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC)) IN ('Assaults') OR 'All' IN ('Assaults'))) GROUP BY AT_INCIDENT_ESTABLISHMENT.AREA_DESCRIPTION, AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, DT_SELECTED_INCIDENTS.NO_OF_SEL_ANSW_PER_INCIDENT, AT_INCIDENT.INCIDENT_CASE_ID, AT_INCIDENT.INCIDENT_TITLE, AT_INCIDENT.INCIDENT_TEXT, AT_INCIDENT_DATE.DAY_DATE), dataset_ AS (SELECT AREA_DESCRIPTION, ESTABLISHMENT_DESCRIPTION, NUMBER_OF_INCIDENTS, NO_OF_SEL_ANSW_PER_INCIDENT, INCIDENT_CASE_ID, INCIDENT_TITLE, INCIDENT_TEXT, DAY_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "AREA_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Establishment Area",
+            "legacyId": "DP2.DOc7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Establishment Name",
+            "legacyId": "DP2.DO20",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "NUMBER_OF_INCIDENTS",
+            "type": "double",
+            "display": "Number of Incidents",
+            "legacyId": "DP2.DOc9",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "NO_OF_SEL_ANSW_PER_INCIDENT",
+            "type": "double",
+            "display": "No of selected Answers per Incident",
+            "legacyId": "DP2.DO71d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "INCIDENT_CASE_ID",
+            "type": "double",
+            "display": "Incident Case Id",
+            "legacyId": "DP2.DO6ba",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "INCIDENT_TITLE",
+            "type": "string",
+            "display": "Incident Title",
+            "legacyId": "DP2.DO69e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "INCIDENT_TEXT",
+            "type": "string",
+            "display": "Incident Text",
+            "legacyId": "DP2.DO297",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Incident Date (Date Only)",
+            "legacyId": "DP2.DO1b",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DP4",
+      "name": "Selected Questions and Answers",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DT_SELECTED_ANSWERS.INCIDENT_TYPE_DESC, DT_SELECTED_ANSWERS.QUE_SEQ, DT_SELECTED_ANSWERS.QUESTION_DESCRIPTION, DT_SELECTED_ANSWERS.ANSWER_DESCRIPTION FROM ( /********************************************/ /*** Start of derived table DT_SELECTED_ANSWERS **/ /********************************************/ /************************************************************/   /************************************************************/ SELECT DISTINCT * FROM ( /***************************************************/ /** Start of derived table DT_INC_TYPE_QUEST_ANSW_LOV *****/ /***************************************************/ /***************************************************/ /* This derived table is used to create the hierarchy Incident Type/Incident Question/Incident Answer. */      /* 2: To create the following derived tables based on it:  /***************************************************/ SELECT DISTINCT AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC, AT_INCIDENT_QUESTION.QUE_SEQ, AT_INCIDENT_QUESTION.QUESTION_DESCRIPTION, AT_INCIDENT_ANSWER.INCIDENT_QUESTION_SK, AT_INCIDENT_ANSWER.ANSWER_DESCRIPTION, AT_INCIDENT_ANSWER.ANS_SEQ, AT_INCIDENT_ANSWER.INCIDENT_ANSWER_SK FROM BODIMIS.DIM_INCIDENT_TYPE AT_INCIDENT_TYPE, BODIMIS.DIM_INCIDENT_QUESTION AT_INCIDENT_QUESTION, BODIMIS.DIM_INCIDENT_ANSWER AT_INCIDENT_ANSWER -- BODIMIS.FACT_INCIDENT AT_INCIDENT, -- BODIMIS.FACT_INCIDENT_QUESTIONNAIRE AT_INCIDENT_QUESTIONNAIRE WHERE -- ( AT_INCIDENT_TYPE.INCIDENT_TYPE_SK=AT_INCIDENT.INCIDENT_TYPE_SK ) -- AND ( AT_INCIDENT_QUESTIONNAIRE.INCIDENT_CASE_ID=AT_INCIDENT.INCIDENT_CASE_ID ) --AND ( AT_INCIDENT_ANSWER.INCIDENT_QUESTION_SK=AT_INCIDENT_QUESTION.INCIDENT_QUESTION_SK ) -- AND ( AT_INCIDENT_ANSWER.INCIDENT_ANSWER_SK=AT_INCIDENT_QUESTIONNAIRE.INCIDENT_ANSWER_SK ) --amendment for defect 11103 (fact tables removed from this statement and the 3 joins below added) at_incident_type.questionnaire_id= AT_INCIDENT_QUESTION.questionnaire_id and at_incident_question.incident_question_sk=at_incident_answer.incident_question_sk and at_incident_question.questionnaire_que_id=at_incident_answer.questionnaire_que_id /***************************************************/ /*** End of derived table DT_INC_TYPE_QUEST_ANSW_LOV **/ /***************************************************/ ) DT_INC_TYPE_QUEST_ANSW_LOV WHERE ( DT_INC_TYPE_QUEST_ANSW_LOV.INCIDENT_ANSWER_SK IN (1600) ) /********************************************/ /*** End of derived table DT_SELECTED_ANSWERS **/ /********************************************/ ) DT_SELECTED_ANSWERS, BODIMIS.DIM_INCIDENT_TYPE AT_INCIDENT_TYPE WHERE ( ( InitCap(AT_INCIDENT_TYPE.INCIDENT_TYPE_DESC) ) in ('Assaults') Or 'All' in('Assaults') )), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3375377/DP5",
+      "name": "Establishments",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_INCIDENT_ESTABLISHMENT.AREA_DESCRIPTION, AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_INCIDENT_ESTABLISHMENT WHERE ((AT_INCIDENT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK IN ('All') OR 'All' IN ('All')) AND (AT_INCIDENT_ESTABLISHMENT.AREA_DESCRIPTION IN ('Kent and Sussex') OR 'All' IN ('Kent and Sussex')))), dataset_ AS (SELECT AREA_DESCRIPTION, ESTABLISHMENT_DESCRIPTION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "AREA_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Establishment Area",
+            "legacyId": "DP5.DOc7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Incident Establishment Name",
+            "legacyId": "DP5.DO20",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DP3",
+      "name": "MIS Load End",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP3.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "41264.RS",
+      "name": "Incidents by Question and Response",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DP4_DO713",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO714",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO715",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO717",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "144681.RS",
+      "name": "Incidents Numbers by Question and Response",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375377/DP2",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DP4_DO713",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO714",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO715",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP4_DO717",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Expecting ). Line 1, Col: 1329.\n  E AT_INCIDENT_TYPE, BODIMIS.DIM_INCIDENT_QUESTION AT_INCIDENT_QUESTION, BODIMIS.DIM_INCIDENT_ANSWER \u001b[4mAT_INCIDENT_ANSWER\u001b[0m -- BODIMIS.FACT_INCIDENT AT_INCIDENT, -- BODIMIS.FACT_INCIDENT_QUESTIONNAIRE AT_INCIDENT_QUESTIONNA]",
+      "entityId": "klbi0agAAxSJH5kA1f8AFE.rcVQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields (comments -- in query)",
+      "entityId": "3375377/DP4",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO713 does not have corresponding dataset schema field",
+      "entityId": "41264.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO714 does not have corresponding dataset schema field",
+      "entityId": "41264.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO715 does not have corresponding dataset schema field",
+      "entityId": "41264.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO717 does not have corresponding dataset schema field",
+      "entityId": "41264.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO713 does not have corresponding dataset schema field",
+      "entityId": "144681.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO714 does not have corresponding dataset schema field",
+      "entityId": "144681.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO715 does not have corresponding dataset schema field",
+      "entityId": "144681.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP4_DO717 does not have corresponding dataset schema field",
+      "entityId": "144681.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3375377/DP4",
+      "entityType": "dataset"
+    }
+  ]
+}

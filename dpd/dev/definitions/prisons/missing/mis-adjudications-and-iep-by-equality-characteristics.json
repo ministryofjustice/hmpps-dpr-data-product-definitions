@@ -1,0 +1,985 @@
+{
+  "id": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+  "name": "MIS Adjudications and IEP by Equality Characteristics",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "PDD0103 v00.00.01"
+    ]
+  },
+  "description": "Displays a Summary of Adjudications and IEP Levels across protected characteristics of prisoners in a sinlge establishment.<br/>NB: IEP and protected characteristic data shown as it is now, not as it was at the time of adjudication<br/>PDD0103 v00.00.01   Last Updated 26/03/2019               ",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375377/DP4",
+      "name": "Adjudication Details",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT DT_OFFENDER_ADJUDICATION.AGENCY_INCIDENT_ID_NK, DT_OFFENDER_ADJUDICATION.OIC_INCIDENT_ID, DT_OFFENDER_ADJUDICATION.OIC_HEARING_ID_NK, AT_ADJUDICATION_ESTAB.ESTABLISHMENT_CODE_NK, AT_DIM_OIC_OFFENCE_CHARGE.OIC_OFFENCE_CODE, DT_OFFENDER_ADJUDICATION.REPORT_DATE, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.INITIALS, AT_FACT_INCIDENT_CHARGE_RESULT.FINDING_CODE, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, COALESCE(AT_OFFENDER_BOOKING.RELIGION_DESCRIPTION, 'Not Specified') AS RELIGION_DESCRIPTION, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION END AS ETHNIC_DESCRIPTION, COALESCE(AT_OFFENDER_BOOKING.IEP_BAND, '** Incentive Level Missing **') AS IEP_BAND, AT_OFFENDER_BOOKING.SEX_ORIENTATION_DESCRIPTION, AT_OFFENDER_BOOKING.NATIONALITY_DESCRIPTION, CASE WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE IS NULL THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'I' THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'ON' AND NOT BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'PRD', 'RD', 'NR') THEN 'Y' ELSE 'N' END AS DISABILITY_ACTIVE_FLAG FROM BODIMIS.FACT_INCIDENT_CHARGE_RESULT AT_FACT_INCIDENT_CHARGE_RESULT, BODIMIS.DIM_ESTABLISHMENT AT_ADJUDICATION_ESTAB, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OIC_OFFENCE AT_DIM_OIC_OFFENCE_CHARGE, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, (SELECT a.oic_incident_id, c.offender_booking_sk, c.agency_incident_id_nk, c.charge_seq_nk, c.oic_offence_sk, a.oic_hearing_id_nk, a.party_seq_nk, a.establishment_sk, c.report_date, a.oic_hearing_type, a.notification_charge_date_sk FROM bodimis.fact_incident_charge c LEFT OUTER JOIN bodimis.fact_offender_adjudication a ON c.agency_incident_id_nk = a.agency_incident_id_nk AND c.offender_booking_sk = a.offender_booking_sk) DT_OFFENDER_ADJUDICATION, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_OFFENDER_PERSONAL_CARE WHERE (AT_DIM_OIC_OFFENCE_CHARGE.OIC_OFFENCE_SK = DT_OFFENDER_ADJUDICATION.OIC_OFFENCE_SK) AND (DT_OFFENDER_ADJUDICATION.OFFENDER_BOOKING_SK = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_ADJUDICATION_ESTAB.ESTABLISHMENT_SK (+) = DT_OFFENDER_ADJUDICATION.ESTABLISHMENT_SK) AND (DT_OFFENDER_ADJUDICATION.AGENCY_INCIDENT_ID_NK = AT_FACT_INCIDENT_CHARGE_RESULT.AGENCY_INCIDENT_ID (+) AND DT_OFFENDER_ADJUDICATION.OIC_HEARING_ID_NK = AT_FACT_INCIDENT_CHARGE_RESULT.OIC_HEARING_ID_NK (+) AND DT_OFFENDER_ADJUDICATION.OFFENDER_BOOKING_SK = AT_FACT_INCIDENT_CHARGE_RESULT.OFFENDER_BOOKING_SK (+) AND DT_OFFENDER_ADJUDICATION.CHARGE_SEQ_NK = AT_FACT_INCIDENT_CHARGE_RESULT.CHARGE_SEQ (+)) AND (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.DIM_OFFENDER_PERSONAL_CARE.OFFENDER_BOOKING_SK (+)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND DT_OFFENDER_ADJUDICATION.REPORT_DATE BETWEEN TO_DATE('01-04-2019 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('07-04-2019 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_))), dataset_ AS (SELECT AGENCY_INCIDENT_ID_NK, OIC_INCIDENT_ID, OIC_HEARING_ID_NK, ESTABLISHMENT_CODE_NK, OIC_OFFENCE_CODE, REPORT_DATE, SURNAME, INITIALS, FINDING_CODE, OFFENDER_ID_DISPLAY, RELIGION_DESCRIPTION, ETHNIC_DESCRIPTION, IEP_BAND, SEX_ORIENTATION_DESCRIPTION, NATIONALITY_DESCRIPTION, DISABILITY_ACTIVE_FLAG FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "AGENCY_INCIDENT_ID_NK",
+            "type": "double",
+            "display": "Agency Incident ID",
+            "legacyId": "DP4.DO759",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "OIC_INCIDENT_ID",
+            "type": "double",
+            "display": "OIC Incident ID",
+            "legacyId": "DP4.DO75a",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "OIC_HEARING_ID_NK",
+            "type": "double",
+            "display": "OIC Hearing ID",
+            "legacyId": "DP4.DO758",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Adjudication Establishment Code",
+            "legacyId": "DP4.DO6c1",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "OIC_OFFENCE_CODE",
+            "type": "string",
+            "display": "Charge Code",
+            "legacyId": "DP4.DO282",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "REPORT_DATE",
+            "type": "date",
+            "display": "Incident Reported Date",
+            "legacyId": "DP4.DO751",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP4.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "INITIALS",
+            "type": "string",
+            "display": "Offender Initials",
+            "legacyId": "DP4.DO1012d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "FINDING_CODE",
+            "type": "string",
+            "display": "Hearing Finding",
+            "legacyId": "DP4.DO26e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP4.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "RELIGION_DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DP4.DO100b3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "ETHNIC_DESCRIPTION",
+            "type": "string",
+            "display": "Ethnic Description",
+            "legacyId": "DP4.DO1009d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "IEP_BAND",
+            "type": "string",
+            "display": "IEP Band",
+            "legacyId": "DP4.DO100e4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "SEX_ORIENTATION_DESCRIPTION",
+            "type": "string",
+            "display": "Sexual Orientation Description",
+            "legacyId": "DP4.DO10970",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "NATIONALITY_DESCRIPTION",
+            "type": "string",
+            "display": "Nationality Description",
+            "legacyId": "DP4.DO100b5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 15,
+            "name": "DISABILITY_ACTIVE_FLAG",
+            "type": "string",
+            "display": "Disability Active Flag",
+            "legacyId": "DP4.DO10a9d",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP6",
+      "name": "All Prisoners",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, COALESCE(AT_OFFENDER_BOOKING.RELIGION_DESCRIPTION, 'Not Specified') AS RELIGION_DESCRIPTION, AT_OFFENDER_BOOKING.NATIONALITY_DESCRIPTION, AT_OFFENDER_BOOKING.SEX_ORIENTATION_DESCRIPTION, CASE WHEN AT_DIM_ETHNICITY_CODES.CODE = 'MERGE' THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE IS NULL THEN 'Code Missing' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'W8' THEN 'White: Gypsy or Irish Traveller' WHEN AT_DIM_ETHNICITY_CODES.CODE = 'O1' THEN 'Asian/Asian British: Chinese' ELSE AT_DIM_ETHNICITY_CODES.DESCRIPTION END AS ETHNIC_DESCRIPTION, CASE WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE IS NULL THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'I' THEN 'N' WHEN BODIMIS.DIM_OFFENDER_PERSONAL_CARE.TYPE = 'DISAB' AND BODIMIS.DIM_OFFENDER_PERSONAL_CARE.STATUS = 'ON' AND NOT BODIMIS.DIM_OFFENDER_PERSONAL_CARE.CODE IN ('ND', 'PRD', 'RD', 'NR') THEN 'Y' ELSE 'N' END AS DISABILITY_ACTIVE_FLAG, COALESCE(AT_OFFENDER_BOOKING.IEP_BAND, '** Incentive Level Missing **') AS IEP_BAND, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_ETHNICITY_CODES AT_DIM_ETHNICITY_CODES, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_OFFENDER_PERSONAL_CARE WHERE (AT_DIM_ETHNICITY_CODES.CODE (+) = AT_OFFENDER_BOOKING.ETHNICITY_CODE) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.DIM_OFFENDER_PERSONAL_CARE.OFFENDER_BOOKING_SK (+)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, FIRST_NAME, RELIGION_DESCRIPTION, NATIONALITY_DESCRIPTION, SEX_ORIENTATION_DESCRIPTION, ETHNIC_DESCRIPTION, DISABILITY_ACTIVE_FLAG, IEP_BAND, ESTABLISHMENT_CODE_NK, 'TBD' AS V_COUNT_BASIC_ETH, 'TBD' AS V_COUNT_ENTRY_ETH, 'TBD' AS V_COUNT_STANDARD_ETH, 'TBD' AS V_COUNT_ENHANCED_ETH, 'TBD' AS V_COUNT_BASIC_DIS, 'TBD' AS V_COUNT_ENTRY_DIS, 'TBD' AS V_COUNT_STANDARD_DIS, 'TBD' AS V_COUNT_ENHANCED_DIS FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP6.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP6.DO7b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP6.DO80",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "RELIGION_DESCRIPTION",
+            "type": "string",
+            "display": "Religion Description",
+            "legacyId": "DP6.DOb3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "NATIONALITY_DESCRIPTION",
+            "type": "string",
+            "display": "Nationality Description",
+            "legacyId": "DP6.DOb5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "SEX_ORIENTATION_DESCRIPTION",
+            "type": "string",
+            "display": "Sexual Orientation Description",
+            "legacyId": "DP6.DO970",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ETHNIC_DESCRIPTION",
+            "type": "string",
+            "display": "Ethnic Description",
+            "legacyId": "DP6.DO9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "DISABILITY_ACTIVE_FLAG",
+            "type": "string",
+            "display": "Disability Active Flag",
+            "legacyId": "DP6.DOa9d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "IEP_BAND",
+            "type": "string",
+            "display": "IEP Band",
+            "legacyId": "DP6.DOe4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Associated Establishment Code",
+            "legacyId": "DP6.DO7b2",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "V_COUNT_BASIC_ETH",
+            "type": "string",
+            "display": "V_COUNT_BASIC_ETH",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 11,
+            "name": "V_COUNT_ENTRY_ETH",
+            "type": "string",
+            "display": "V_COUNT_ENTRY_ETH",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 12,
+            "name": "V_COUNT_STANDARD_ETH",
+            "type": "string",
+            "display": "V_COUNT_STANDARD_ETH",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 13,
+            "name": "V_COUNT_ENHANCED_ETH",
+            "type": "string",
+            "display": "V_COUNT_ENHANCED_ETH",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 14,
+            "name": "V_COUNT_BASIC_DIS",
+            "type": "string",
+            "display": "V_COUNT_BASIC_DIS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 15,
+            "name": "V_COUNT_ENTRY_DIS",
+            "type": "string",
+            "display": "V_COUNT_ENTRY_DIS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 16,
+            "name": "V_COUNT_STANDARD_DIS",
+            "type": "string",
+            "display": "V_COUNT_STANDARD_DIS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 17,
+            "name": "V_COUNT_ENHANCED_DIS",
+            "type": "string",
+            "display": "V_COUNT_ENHANCED_DIS",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP7",
+      "name": "Activities",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, TRUNC(AT_FACT_OFFENDER_ACTIVITY.START_TIME) AS ACTIVITY_SESSION_DATE, AT_DIM_ACTIVITY_STATUS.DESCRIPTION, AT_DIM_PROGRAMME_TYPE.DESCRIPTION AS ACTIVITY_DESCRIPTION FROM BODIMIS.FACT_OFFENDER_ACTIVITY AT_FACT_OFFENDER_ACTIVITY, BODIMIS.DIM_ESTABLISHMENT AT_ACTIVITY_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_REFERENCE_CODES AT_DIM_ACTIVITY_STATUS, BODIMIS.DIM_PROGRAMME_TYPE AT_DIM_PROGRAMME_TYPE WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_FACT_OFFENDER_ACTIVITY.OFFENDER_BOOKING_SK) AND (AT_DIM_PROGRAMME_TYPE.PROGRAMME_TYPE_SK = AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_TYPE_SK) AND (AT_DIM_ACTIVITY_STATUS.CODE_DOMAIN (+) = 'PS_PA_OC') AND (AT_DIM_ACTIVITY_STATUS.CODE (+) = AT_FACT_OFFENDER_ACTIVITY.STATUS) AND (AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_SK = AT_FACT_OFFENDER_ACTIVITY.ESTABLISHMENT_SK) AND ((AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O') AND (AT_FACT_OFFENDER_ACTIVITY.ALLOCATED_FLAG = 'Y') AND ((AT_DIM_PROGRAMME_TYPE.SCHEDULE_END_DATE IS NULL OR AT_DIM_PROGRAMME_TYPE.SCHEDULE_END_DATE > TRUNC(CURRENT_TIMESTAMP))) AND TRUNC(AT_FACT_OFFENDER_ACTIVITY.START_TIME) BETWEEN TO_DATE('01-04-2019 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND TO_DATE('07-04-2019 00:00:00', 'DD-MM-YYYY HH24:MI:SS') AND AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, ACTIVITY_SESSION_DATE, DESCRIPTION, ACTIVITY_DESCRIPTION, 'TBD' AS V_COUNT_ENTRY_ACT, 'TBD' AS V_COUNT_BASIC_ACT, 'TBD' AS V_COUNT_STANDARD_ACT, 'TBD' AS V_COUNT_ENHANCED_ACT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP7.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP7.DO7b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ACTIVITY_SESSION_DATE",
+            "type": "date",
+            "display": "Activity Session Date",
+            "legacyId": "DP7.DO70c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "Activity Session Status Description",
+            "legacyId": "DP7.DO817",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ACTIVITY_DESCRIPTION",
+            "type": "string",
+            "display": "Activity Description",
+            "legacyId": "DP7.DO64c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "V_COUNT_ENTRY_ACT",
+            "type": "string",
+            "display": "V_COUNT_ENTRY_ACT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 6,
+            "name": "V_COUNT_BASIC_ACT",
+            "type": "string",
+            "display": "V_COUNT_BASIC_ACT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 7,
+            "name": "V_COUNT_STANDARD_ACT",
+            "type": "string",
+            "display": "V_COUNT_STANDARD_ACT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 8,
+            "name": "V_COUNT_ENHANCED_ACT",
+            "type": "string",
+            "display": "V_COUNT_ENHANCED_ACT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375377/DP3",
+      "name": "Load End Date",
+      "description": "MIS Incidents",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP3.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "141455.RS",
+      "name": "Religion",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      },
+      "dataset": "MISSING"
+    },
+    {
+      "id": "141712.RS",
+      "name": "Ethnicity",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP6",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ETHNIC_DESCRIPTION",
+            "display": "Ethnic Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP6.DO9d"
+          },
+          {
+            "name": "$ref:V_COUNT_NOMS_IN_ETH",
+            "display": "Charged Adjudication",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Adjudication Details].[NOMS Number]) In ([Ethnic Description])"
+          },
+          {
+            "name": "$ref:V_COUNT_INCIDENT_PROVED_ETH",
+            "display": "Proved Adjudication",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([v_incident_proved])In([All Prisoners].[Ethnic Description])"
+          },
+          {
+            "name": "$ref:V_COUNT_BASIC_ETH",
+            "display": "Basic IEP",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number]) In ([All Prisoners].[Ethnic Description]) Where ( [v_basic]=1)"
+          },
+          {
+            "name": "$ref:V_COUNT_ENTRY_ETH",
+            "display": "Entry IEP",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number]) In ([All Prisoners].[Ethnic Description]) Where ([v_Entry]=1)"
+          },
+          {
+            "name": "$ref:V_COUNT_STANDARD_ETH",
+            "display": "Standard IEP",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number]) In ([All Prisoners].[Ethnic Description]) Where ([v_Standard]=1)"
+          },
+          {
+            "name": "$ref:V_COUNT_ENHANCED_ETH",
+            "display": "Enhanced IEP",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number]) In ([All Prisoners].[Ethnic Description]) Where ([v_Enhanced]=1)"
+          }
+        ]
+      }
+    },
+    {
+      "id": "141804.RS",
+      "name": "Sexual Orientation",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      },
+      "dataset": "MISSING"
+    },
+    {
+      "id": "141917.RS",
+      "name": "Nationality",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "summary",
+        "field": []
+      },
+      "dataset": "MISSING"
+    },
+    {
+      "id": "142003.RS",
+      "name": "Disability",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP6",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DISABILITY_ACTIVE_FLAG",
+            "display": "Disability Active Flag",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP6.DOa9d"
+          },
+          {
+            "name": "$ref:V_COUNT_NOMS_IN_DIS",
+            "display": "Charged Adjudications",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([Adjudication Details].[NOMS Number]) In ([Disability Active Flag])"
+          },
+          {
+            "name": "$ref:V_COUNT_INCIDENT_PROVED_DIS",
+            "display": "Proved Adjudication",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([v_incident_proved])In([All Prisoners].[Disability Active Flag])"
+          },
+          {
+            "name": "$ref:V_COUNT_BASIC_DIS",
+            "display": "Basic IEP",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number]) In ([All Prisoners].[Disability Active Flag]) Where ( [v_basic]=1)"
+          },
+          {
+            "name": "$ref:V_COUNT_ENTRY_DIS",
+            "display": "Entry IEP",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number]) In ([All Prisoners].[Disability Active Flag]) Where ([v_Entry]=1)"
+          },
+          {
+            "name": "$ref:V_COUNT_STANDARD_DIS",
+            "display": "Standard IEP",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number]) In ([All Prisoners].[Disability Active Flag]) Where ([v_Standard]=1)"
+          },
+          {
+            "name": "$ref:V_COUNT_ENHANCED_DIS",
+            "display": "Enhanced IEP",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number]) In ([All Prisoners].[Disability Active Flag]) Where ([v_Enhanced]=1)"
+          }
+        ]
+      }
+    },
+    {
+      "id": "142388.RS",
+      "name": "Activities",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP7",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE HEARING_FINDING IN ('PROVED'))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ACTIVITY_DESCRIPTION",
+            "display": "Activity Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP7.DO64c"
+          },
+          {
+            "name": "$ref:V_COUNT_ENTRY_ACT",
+            "display": "Entry",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number]) In ([Activity Description]) Where ([v_Entry]=1)"
+          },
+          {
+            "name": "$ref:V_COUNT_BASIC_ACT",
+            "display": "Basic",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number]) In ([Activity Description]) Where ( [v_basic]=1)"
+          },
+          {
+            "name": "$ref:V_COUNT_STANDARD_ACT",
+            "display": "Standard",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number]) In ([Activity Description]) Where ([v_Standard]=1)"
+          },
+          {
+            "name": "$ref:V_COUNT_ENHANCED_ACT",
+            "display": "Enhanced",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([NOMS Number]) In ([Activity Description]) Where ([v_Enhanced]=1)"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_COUNT_BASIC_ETH :: Error: =Count([NOMS Number]) In ([All Prisoners].[Ethnic Description]) Where ( [v_basic]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:65",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_COUNT_ENTRY_ETH :: Error: =Count([NOMS Number]) In ([All Prisoners].[Ethnic Description]) Where ([v_Entry]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:65",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_COUNT_STANDARD_ETH :: Error: =Count([NOMS Number]) In ([All Prisoners].[Ethnic Description]) Where ([v_Standard]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:65",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_COUNT_ENHANCED_ETH :: Error: =Count([NOMS Number]) In ([All Prisoners].[Ethnic Description]) Where ([v_Enhanced]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:65",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_COUNT_BASIC_DIS :: Error: =Count([NOMS Number]) In ([All Prisoners].[Disability Active Flag]) Where ( [v_basic]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:69",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_COUNT_ENTRY_DIS :: Error: =Count([NOMS Number]) In ([All Prisoners].[Disability Active Flag]) Where ([v_Entry]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:69",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_COUNT_STANDARD_DIS :: Error: =Count([NOMS Number]) In ([All Prisoners].[Disability Active Flag]) Where ([v_Standard]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:69",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_COUNT_ENHANCED_DIS :: Error: =Count([NOMS Number]) In ([All Prisoners].[Disability Active Flag]) Where ([v_Enhanced]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:69",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_COUNT_NOMS_IN_ETH :: Error: Invalid expression / Unexpected token. Line 1, Col: 52.\n  COUNT(ADJUDICATION_DETAILS.OFFENDER_ID_DISPLAY) IN \u001b[4m,\u001b[0mETHNIC_DESCRIPTION,",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_COUNT_INCIDENT_PROVED_ETH :: Error: Invalid expression / Unexpected token. Line 1, Col: 29.\n  COUNT(V_INCIDENT_PROVED) IN \u001b[4m,\u001b[0mALL_PRISONERS.ETHNIC_DESCRIPTION,",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_COUNT_BASIC_ETH :: Error: =Count([NOMS Number]) In ([All Prisoners].[Ethnic Description]) Where ( [v_basic]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:65",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_COUNT_ENTRY_ETH :: Error: =Count([NOMS Number]) In ([All Prisoners].[Ethnic Description]) Where ([v_Entry]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:65",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_COUNT_STANDARD_ETH :: Error: =Count([NOMS Number]) In ([All Prisoners].[Ethnic Description]) Where ([v_Standard]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:65",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_COUNT_ENHANCED_ETH :: Error: =Count([NOMS Number]) In ([All Prisoners].[Ethnic Description]) Where ([v_Enhanced]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:65",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_COUNT_NOMS_IN_DIS :: Error: Invalid expression / Unexpected token. Line 1, Col: 52.\n  COUNT(ADJUDICATION_DETAILS.OFFENDER_ID_DISPLAY) IN \u001b[4m,\u001b[0mDISABILITY_ACTIVE_FLAG,",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations unable to append column : V_COUNT_INCIDENT_PROVED_DIS :: Error: Invalid expression / Unexpected token. Line 1, Col: 29.\n  COUNT(V_INCIDENT_PROVED) IN \u001b[4m,\u001b[0mALL_PRISONERS.DISABILITY_ACTIVE_FLAG,",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_COUNT_BASIC_DIS :: Error: =Count([NOMS Number]) In ([All Prisoners].[Disability Active Flag]) Where ( [v_basic]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:69",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_COUNT_ENTRY_DIS :: Error: =Count([NOMS Number]) In ([All Prisoners].[Disability Active Flag]) Where ([v_Entry]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:69",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_COUNT_STANDARD_DIS :: Error: =Count([NOMS Number]) In ([All Prisoners].[Disability Active Flag]) Where ([v_Standard]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:69",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_COUNT_ENHANCED_DIS :: Error: =Count([NOMS Number]) In ([All Prisoners].[Disability Active Flag]) Where ([v_Enhanced]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:69",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_COUNT_ENTRY_ACT :: Error: =Count([NOMS Number]) In ([Activity Description]) Where ([v_Entry]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:51",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_COUNT_BASIC_ACT :: Error: =Count([NOMS Number]) In ([Activity Description]) Where ( [v_basic]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:51",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_COUNT_STANDARD_ACT :: Error: =Count([NOMS Number]) In ([Activity Description]) Where ([v_Standard]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:51",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_COUNT_ENHANCED_ACT :: Error: =Count([NOMS Number]) In ([Activity Description]) Where ([v_Enhanced]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:51",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_COUNT_ENTRY_ACT :: Error: =Count([NOMS Number]) In ([Activity Description]) Where ([v_Entry]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:51",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_COUNT_BASIC_ACT :: Error: =Count([NOMS Number]) In ([Activity Description]) Where ( [v_basic]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:51",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_COUNT_STANDARD_ACT :: Error: =Count([NOMS Number]) In ([Activity Description]) Where ([v_Standard]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:51",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_COUNT_ENHANCED_ACT :: Error: =Count([NOMS Number]) In ([Activity Description]) Where ([v_Enhanced]=1) ==> Error: Expected end of input but \"W\" found.\n at undefined:1:51",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[0] requires property \"dataset\"",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[2] requires property \"dataset\"",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "instance.report[3] requires property \"dataset\"",
+      "entityId": "Fp6FtFwmbAwAp3wAAHD78F4MACJIAFJ8",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 141455.RS does not have corresponding dataset undefined",
+      "entityId": "141455.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS_IN_ETH does not have corresponding dataset schema field",
+      "entityId": "141712.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_INCIDENT_PROVED_ETH does not have corresponding dataset schema field",
+      "entityId": "141712.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 141804.RS does not have corresponding dataset undefined",
+      "entityId": "141804.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report Variant 141917.RS does not have corresponding dataset undefined",
+      "entityId": "141917.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_NOMS_IN_DIS does not have corresponding dataset schema field",
+      "entityId": "142003.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_COUNT_INCIDENT_PROVED_DIS does not have corresponding dataset schema field",
+      "entityId": "142003.RS",
+      "entityType": "variant"
+    }
+  ]
+}

@@ -1,0 +1,450 @@
+{
+  "id": "FvIAUF4XswcAoy4AAHBbCV8VACJIAFJ8",
+  "name": "MISONR BCS Case ID",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": []
+  },
+  "description": "OAS0019 v1.0 Report to show BCS Case ID answers for the selected establishment.",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP1",
+      "name": "MIS Sentence",
+      "description": "MIS Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.INITIALS, AT_DIM_LOCATION.UNIT_4_SHORT_DESCRIPTION FROM BODIMIS.DIM_CELL AT_DIM_LOCATION, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.LIVING_UNIT_SK = AT_DIM_LOCATION.UNIT_4_SK (+)) AND ((AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_)) AND (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, INITIALS, UNIT_4_SHORT_DESCRIPTION FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP1.DO10076",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP1.DO1007b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "INITIALS",
+            "type": "string",
+            "display": "Offender Initials",
+            "legacyId": "DP1.DO1012d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "UNIT_4_SHORT_DESCRIPTION",
+            "type": "string",
+            "display": "Prisoner Location",
+            "legacyId": "DP1.DO10a7c",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3375896/DP0",
+      "name": "BCS Case ID",
+      "description": "Ad-hoc Reports",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT ASSESSMENT.ASSESSMENT_ID, ASSESSMENT_BCS_CASEID.BCS_PART1_COMP_DATE, ASSESSMENT_BCS_CASEID.RECEPTION_DATE, BCS_PART_STATUS.DESCRIPTION, OFFENDER.OFFENDER_ID_DISPLAY, ASSESSMENT_BCS_CASEID.INITIATION_DATE, BCS_ETHNIC_GROUP.DESCRIPTION AS ETHNIC_GROUP, BCS_SPOKEN_LANGUAGE.DESCRIPTION AS PREFERRED_SPOKEN_LANGUAGE, ASSESSMENT_BCS_CASEID.INTERPRETER_REQUIRED, ASSESSMENT_BCS_CASEID.PERSIST_IND, ASSESSMENT_BCS_CASEID.ARMED_FORCES_IND, CARED_FOR.DESCRIPTION AS CARED_FOR, BCS_REP_OFFENCE_LOOKUP.OFFENCE_CAT_DESCRIPTION, BCS_SENTENCE_TYPE.DESCRIPTION AS SENTENCE_TYPE FROM ASSESSMENT, ASSESSMENT_BCS_CASEID, BCS_PART_STATUS, OFFENDER, ETHNIC_GROUP BCS_ETHNIC_GROUP, LANGUAGE BCS_SPOKEN_LANGUAGE, CARED_FOR, REP_OFFENCE_LOOKUP BCS_REP_OFFENCE_LOOKUP, BCS_SENTENCE_TYPE, REP_OFFENDER_HISTORY, PURPOSE_OF_BCSREASON, ASSESSMENT_BCS_SECTION1 WHERE (OFFENDER.OFFENDER_ID = ASSESSMENT.OFFENDER_ID (+)) AND (OFFENDER.OFFENDER_ID = REP_OFFENDER_HISTORY.OFFENDER_ID (+)) AND (ASSESSMENT.ASSESSMENT_ID = ASSESSMENT_BCS_CASEID.ASSESSMENT_ID AND ASSESSMENT.ASSESSMENT_TYPE_ELM = 'TR_BCS') AND (BCS_ETHNIC_GROUP.ETHNIC_GROUP_OPOL_ID (+) = ASSESSMENT_BCS_CASEID.ETHNIC_GROUP_OPOL_ID) AND (BCS_SPOKEN_LANGUAGE.LANGUAGE_OPOL_ID (+) = ASSESSMENT_BCS_CASEID.PREF_SPOKEN_LANGUAGE_OPOL_ID) AND (PURPOSE_OF_BCSREASON.PURPOSE_OF_BCSREASON_CODE (+) = ASSESSMENT_BCS_CASEID.BCS_PURPOSE) AND (ASSESSMENT_BCS_CASEID.ASSESSMENT_ID = ASSESSMENT_BCS_SECTION1.ASSESSMENT_ID) AND (ASSESSMENT_BCS_SECTION1.OFFENCE_JOIN_KEY = BCS_REP_OFFENCE_LOOKUP.OFFENCE_HO_CODE (+)) AND (CARED_FOR.CARED_FOR_CODE (+) = ASSESSMENT_BCS_CASEID.CARED_FOR) AND (BCS_PART_STATUS.BCS_PART_STATUS_CODE (+) = ASSESSMENT_BCS_CASEID.BCS_PART1_STATUS) AND (BCS_SENTENCE_TYPE.BCS_SENTENCE_TYPE_CODE (+) = ASSESSMENT_BCS_CASEID.BCS_SENTENCE_TYPE) AND (SUBSTR(OFFENDER.OFFENDER_ID_DISPLAY, 1, 10) = TAGMIS_CASELOAD_SECURITY((SELECT username FROM context_ /* = #Variable('BOUSER') */), OFFENDER.OFFENDER_ID_DISPLAY)) AND ((REP_OFFENDER_HISTORY.LATEST_OWNERSHIP_RANK = 1) AND BCS_PART_STATUS.DESCRIPTION = 'Complete' AND REP_OFFENDER_HISTORY.PHYSICAL_LOCATION IN (SELECT LOCATION FROM prompt_ /* = #prompt('Enter value(s) for Physical Location:','A','Offender History\\Physical Location',Multi,Free,Not_Persistent,,User:0) */) AND PURPOSE_OF_BCSREASON.DESCRIPTION IN ('Basic Custody Screening - Start', 'Basic Custody Screening - Review'))), dataset_ AS (SELECT ASSESSMENT_ID, BCS_PART1_COMP_DATE, RECEPTION_DATE, DESCRIPTION, OFFENDER_ID_DISPLAY, INITIATION_DATE, ETHNIC_GROUP, PREFERRED_SPOKEN_LANGUAGE, INTERPRETER_REQUIRED, PERSIST_IND, ARMED_FORCES_IND, CARED_FOR, OFFENCE_CAT_DESCRIPTION, SENTENCE_TYPE, COUNTDISTINCT(MIS_SENTENCE.OFFENDER_ID_DISPLAY) OVER (PARTITION BY ASSESSMENT_ID = V_MAX_ASSESSMENT_ID) AS V_CASEID_NOMS_NUMBER, SURNAME || ', ' || INITIALS AS V_OFFENDER_SURNAME, CASE WHEN PREFERRED_SPOKEN_LANGUAGE IS NULL THEN 'Not Answered' ELSE PREFERRED_SPOKEN_LANGUAGE END AS V_CID_PREFERRED_SPOKEN_LANGU31, CASE WHEN INTERPRETER_REQUIRED = 0 THEN 'No' ELSE CASE WHEN INTERPRETER_REQUIRED = 1 THEN 'Yes' ELSE 'Not answered' END END AS V_CID_INTERPRETER_REQUIRED, CASE WHEN PERSIST_IND = 0 THEN 'No' ELSE CASE WHEN PERSIST_IND = 1 THEN 'Yes' ELSE 'Not answered' END END AS V_CID_PERSISTENT_OFFENDER, CASE WHEN ARMED_FORCES_IND = 0 THEN 'No' ELSE CASE WHEN ARMED_FORCES_IND = 1 THEN 'Yes' ELSE 'Not Answered' END END AS V_CID_ARMED_FORCES, CASE WHEN CARED_FOR IS NULL THEN 'Not Answered' ELSE CARED_FOR END AS V_CID_CARED_FOR FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "location",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Enter value(s) for Physical Location:",
+          "description": "@prompt('Enter value(s) for Physical Location:','A','Offender History\\Physical Location',Multi,Free,Not_Persistent,,User:0)",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ASSESSMENT_ID",
+            "type": "double",
+            "display": "Assessment ID",
+            "legacyId": "DP0.DO5d5",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "BCS_PART1_COMP_DATE",
+            "type": "date",
+            "display": "BCS Part1 Completion Date",
+            "legacyId": "DP0.DO1251",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "RECEPTION_DATE",
+            "type": "date",
+            "display": "Reception Date",
+            "legacyId": "DP0.DO121f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DESCRIPTION",
+            "type": "string",
+            "display": "BCS Part1 Status",
+            "legacyId": "DP0.DO1250",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO264",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "INITIATION_DATE",
+            "type": "date",
+            "display": "Initiation Date",
+            "legacyId": "DP0.DO124c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "ETHNIC_GROUP",
+            "type": "string",
+            "display": "Ethnic Group",
+            "legacyId": "DP0.DO1229",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "PREFERRED_SPOKEN_LANGUAGE",
+            "type": "string",
+            "display": "Preferred Spoken Language",
+            "legacyId": "DP0.DO122b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "INTERPRETER_REQUIRED",
+            "type": "double",
+            "display": "Interpreter Required",
+            "legacyId": "DP0.DO122d",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "PERSIST_IND",
+            "type": "double",
+            "display": "Persistent Offender",
+            "legacyId": "DP0.DO122e",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "ARMED_FORCES_IND",
+            "type": "double",
+            "display": "Armed Forces",
+            "legacyId": "DP0.DO122f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 11,
+            "name": "CARED_FOR",
+            "type": "string",
+            "display": "Cared For",
+            "legacyId": "DP0.DO1232",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 12,
+            "name": "OFFENCE_CAT_DESCRIPTION",
+            "type": "string",
+            "display": "Offence Category Description",
+            "legacyId": "DP0.DO12e3",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "SENTENCE_TYPE",
+            "type": "string",
+            "display": "Sentence Type",
+            "legacyId": "DP0.DO1376",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 14,
+            "name": "V_CASEID_NOMS_NUMBER",
+            "type": "string",
+            "display": "V_CASEID_NOMS_NUMBER",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 15,
+            "name": "V_OFFENDER_SURNAME",
+            "type": "string",
+            "display": "V_OFFENDER_SURNAME",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 16,
+            "name": "V_CID_PREFERRED_SPOKEN_LANGU31",
+            "type": "string",
+            "display": "V_CID_PREFERRED_SPOKEN_LANGU31",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 17,
+            "name": "V_CID_INTERPRETER_REQUIRED",
+            "type": "string",
+            "display": "V_CID_INTERPRETER_REQUIRED",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 18,
+            "name": "V_CID_PERSISTENT_OFFENDER",
+            "type": "string",
+            "display": "V_CID_PERSISTENT_OFFENDER",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 19,
+            "name": "V_CID_ARMED_FORCES",
+            "type": "string",
+            "display": "V_CID_ARMED_FORCES",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 20,
+            "name": "V_CID_CARED_FOR",
+            "type": "string",
+            "display": "V_CID_CARED_FOR",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "7.RS",
+      "name": "Case ID Summary",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375896/DP0",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-tab",
+        "field": [
+          {
+            "name": "$ref:OFFENCE_CAT_DESCRIPTION",
+            "display": "Offence Category Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO12e3"
+          },
+          {
+            "name": "$ref:V_CASEID_NOMS_NUMBER",
+            "display": "Offence Category",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([MIS Sentence].[NOMS Number];Distinct) Where ([Assessment ID] = [v_Max Assessment ID])"
+          },
+          {
+            "name": "$ref:V_CASEID_NOMS_NUMBER",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Count([MIS Sentence].[NOMS Number];Distinct) Where ([Assessment ID] = [v_Max Assessment ID])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "1720.RS",
+      "name": "Offender Detail",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375896/DP0",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE V_MAX_ASSESSMENT_ID_FOR_FILTER IN (1))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ASSESSMENT_ID",
+            "display": "Assessment ID",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO5d5"
+          },
+          {
+            "name": "$ref:V_OFFENDER_SURNAME",
+            "display": "Ethnic Group",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Offender Surname]+\", \"+[Offender Initials]"
+          },
+          {
+            "name": "$ref:ETHNIC_GROUP",
+            "display": "Ethnic Group",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1229"
+          },
+          {
+            "name": "$ref:V_CID_PREFERRED_SPOKEN_LANGU31",
+            "display": "Interpreter Required?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Preferred Spoken Language]); \"Not Answered\"; [Preferred Spoken Language])"
+          },
+          {
+            "name": "$ref:V_CID_INTERPRETER_REQUIRED",
+            "display": "Has this offender been identified as a Prolific or other Priority Offender? (Effective September 2004)",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Interpreter Required]=0;\"No\";(If([Interpreter Required]=1;\"Yes\";\"Not answered\")))"
+          },
+          {
+            "name": "$ref:V_CID_PERSISTENT_OFFENDER",
+            "display": "Have they ever been a member of the armed services?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Persistent Offender]=0;\"No\";(If([Persistent Offender]=1;\"Yes\";\"Not answered\")))"
+          },
+          {
+            "name": "$ref:V_CID_ARMED_FORCES",
+            "display": "Has the offender been in the care of local authority children's services at any time?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([Armed Forces]=0;\"No\";(If([Armed Forces]=1;\"Yes\";\"Not Answered\")))"
+          },
+          {
+            "name": "$ref:V_CID_CARED_FOR",
+            "display": "=NameOf([Sentence Type])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Cared For]);\"Not Answered\";[Cared For])"
+          },
+          {
+            "name": "$ref:SENTENCE_TYPE",
+            "display": "Sentence Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1376"
+          },
+          {
+            "name": "$ref:OFFENCE_CAT_DESCRIPTION",
+            "display": "Offence Category Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO12e3"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3375896/DP0",
+      "entityType": "dataset"
+    }
+  ]
+}

@@ -1,0 +1,322 @@
+{
+  "id": "kld.eBcABTqFE.kA61MAISgV_bQ",
+  "name": "MIS ACCT Population Report",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "HQ0012"
+    ]
+  },
+  "description": "Version: 00.00.01 Last Modified: 26/05/16<br/><br/>This report returns national figures of Prisoners with an ACCT Alert against NET population. The report will run for the day previous to the current date. <br/>HQ0012",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3376639/DP2",
+      "name": "Population",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_FACT_VIEW_POPULATION.NET_POPULATION, AT_POPULATION_DATE.DAY_DATE, AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_ESTABLISHMENT.AREA_DESCRIPTION FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.FACT_VIEW_POPULATION AT_FACT_VIEW_POPULATION, BODIMIS.DIM_DATE AT_POPULATION_DATE, (SELECT * FROM dual) DT_DUAL WHERE (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_ESTABLISHMENT.ESTABLISHMENT_SK = AT_FACT_VIEW_POPULATION.ESTABLISHMENT_SK) AND (AT_FACT_VIEW_POPULATION.DATE_SK = AT_POPULATION_DATE.DATE_SK) AND AT_POPULATION_DATE.DAY_DATE = TO_CHAR(TRUNC(CURRENT_TIMESTAMP - 1), 'DD-MON-YYYY')), dataset_ AS (SELECT NET_POPULATION, DAY_DATE, ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION, AREA_DESCRIPTION, CASE WHEN COUNT_OF_OFFENDERS IS NULL THEN 0 ELSE COUNT_OF_OFFENDERS END AS V_ACCT_COUNT, SUM((TO_DATE(ALERT_EFFECTIVE_DATE, 'DD/MM/YYYY') - TO_DATE(V_EXPIRY, 'DD/MM/YYYY'))) AS V_ACCT_DURATION, SUM(NaN) AS V_AVG_DAYS_OPEN, SUM(NET_POPULATION) AS V_TOT_NET_POPULATION FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "NET_POPULATION",
+            "type": "double",
+            "display": "Net Population",
+            "legacyId": "DP2.DO7a4",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Population Date",
+            "legacyId": "DP2.DO7a0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP2.DO139",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP2.DO129",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "AREA_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Area",
+            "legacyId": "DP2.DOc7",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "V_ACCT_COUNT",
+            "type": "string",
+            "display": "V_ACCT_COUNT",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 6,
+            "name": "V_ACCT_DURATION",
+            "type": "string",
+            "display": "V_ACCT_DURATION",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 7,
+            "name": "V_AVG_DAYS_OPEN",
+            "type": "string",
+            "display": "V_AVG_DAYS_OPEN",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 8,
+            "name": "V_TOT_NET_POPULATION",
+            "type": "string",
+            "display": "V_TOT_NET_POPULATION",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP3",
+      "name": "MIS Load Date",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP3.DO4dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP4",
+      "name": "ACCT",
+      "description": "MIS Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT COUNT(DISTINCT (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY)) AS COUNT_OF_OFFENDERS, CASE WHEN AT_ALERT_EFFECT_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EFFECT_DATE.DAY_DATE ELSE NULL END AS ALERT_EFFECTIVE_DATE, CASE WHEN AT_ALERT_EXPIRY_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EXPIRY_DATE.DAY_DATE ELSE NULL END AS ALERT_EXPIRY_DATE, TRUNC(CURRENT_TIMESTAMP) AS TODAY_, AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_ALERT_EFFECT_DATE, BODIMIS.DIM_DATE AT_ALERT_EXPIRY_DATE, BODIMIS.DIM_ALERT AT_ALERT, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT, BODIMIS.DIM_CELL AT_CELL WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK (+)) AND (AT_ALERT.ALERT_SK (+) = AT_OFFENDER_ALERT.ALERT_SK) AND (AT_OFFENDER_ALERT.ALERT_DATE_SK = AT_ALERT_EFFECT_DATE.DATE_SK (+)) AND (AT_OFFENDER_ALERT.ALERT_EXPIRY_DATE_SK = AT_ALERT_EXPIRY_DATE.DATE_SK (+)) AND (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.IN_OUT <> 'TRN' AND (AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O') AND AT_ALERT.ALERT_CODE_NK = 'HA' AND (AT_OFFENDER_ALERT.ALERT_STATUS = 'ACTIVE') AND AT_OFFENDER_BOOKING.LIVING_UNIT_SK >= 1) GROUP BY CASE WHEN AT_ALERT_EFFECT_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EFFECT_DATE.DAY_DATE ELSE NULL END, CASE WHEN AT_ALERT_EXPIRY_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EXPIRY_DATE.DAY_DATE ELSE NULL END, TRUNC(CURRENT_TIMESTAMP), AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY UNION SELECT COUNT(DISTINCT (AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY)) AS COUNT_OF_OFFENDERS, CASE WHEN AT_ALERT_EFFECT_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EFFECT_DATE.DAY_DATE ELSE NULL END AS ALERT_EFFECTIVE_DATE, CASE WHEN AT_ALERT_EXPIRY_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EXPIRY_DATE.DAY_DATE ELSE NULL END AS ALERT_EXPIRY_DATE, TRUNC(CURRENT_TIMESTAMP) AS TODAY_, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_DESCRIPTION, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY FROM BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_DATE AT_ALERT_EFFECT_DATE, BODIMIS.DIM_DATE AT_ALERT_EXPIRY_DATE, BODIMIS.DIM_ALERT AT_ALERT, BODIMIS.FACT_OFFENDER_ALERT AT_OFFENDER_ALERT, BODIMIS.FACT_BED_ASSIGNMENT_HISTORY AT_BED_ASSIGNMENT_HISTORY WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_OFFENDER_ALERT.OFFENDER_BOOKING_SK (+)) AND (AT_ALERT.ALERT_SK (+) = AT_OFFENDER_ALERT.ALERT_SK) AND (AT_OFFENDER_ALERT.ALERT_DATE_SK = AT_ALERT_EFFECT_DATE.DATE_SK (+)) AND (AT_OFFENDER_ALERT.ALERT_EXPIRY_DATE_SK = AT_ALERT_EXPIRY_DATE.DATE_SK (+)) AND (AT_BED_ASSIGNMENT_HISTORY.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER('DPRWS') AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.ESTABLISHMENT_SK = AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK) AND (AT_ESTABLISHMENT_TAP.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.IN_OUT <> 'TRN' AND (AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O') AND AT_ALERT.ALERT_CODE_NK = 'HA' AND (AT_OFFENDER_ALERT.ALERT_STATUS = 'ACTIVE') AND AT_BED_ASSIGNMENT_HISTORY.LIVING_UNIT_SK < 1) GROUP BY CASE WHEN AT_ALERT_EFFECT_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EFFECT_DATE.DAY_DATE ELSE NULL END, CASE WHEN AT_ALERT_EXPIRY_DATE.DAY_DATE < '31/12/9000' THEN AT_ALERT_EXPIRY_DATE.DAY_DATE ELSE NULL END, TRUNC(CURRENT_TIMESTAMP), AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK, AT_ESTABLISHMENT_TAP.ESTABLISHMENT_DESCRIPTION, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY), dataset_ AS (SELECT COUNT_OF_OFFENDERS, ALERT_EFFECTIVE_DATE, ALERT_EXPIRY_DATE, TODAY_, ESTABLISHMENT_CODE_NK, ESTABLISHMENT_DESCRIPTION, OFFENDER_ID_DISPLAY FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "COUNT_OF_OFFENDERS",
+            "type": "double",
+            "display": "Count of Offenders",
+            "legacyId": "DP4.DO655",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ALERT_EFFECTIVE_DATE",
+            "type": "date",
+            "display": "Alert Effective Date",
+            "legacyId": "DP4.DO95",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "ALERT_EXPIRY_DATE",
+            "type": "date",
+            "display": "Alert Expiry Date",
+            "legacyId": "DP4.DO96",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "TODAY_",
+            "type": "date",
+            "display": "Today (Date Only)",
+            "legacyId": "DP4.DO4cd",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "ESTABLISHMENT_CODE_NK",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP4.DO139",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "ESTABLISHMENT_DESCRIPTION",
+            "type": "string",
+            "display": "Establishment Name",
+            "legacyId": "DP4.DO129",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 6,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP4.DO76",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "214316.RS",
+      "name": "By Establishment",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP2",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_ WHERE ESTABLISHMENT_CODE NOT(IN ('G5','R1','R2','R3','R4')))"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:NET_POPULATION",
+            "display": "Net Population",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DO7a4"
+          },
+          {
+            "name": "$ref:V_ACCT_COUNT",
+            "display": "Net Population",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Count of Offenders]);0;[Count of Offenders])"
+          },
+          {
+            "name": "$ref:V_ACCT_DURATION",
+            "display": "Total Prisoners with ACCT",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum(DaysBetween([Alert Effective Date];[v_Expiry]))"
+          },
+          {
+            "name": "$ref:V_AVG_DAYS_OPEN",
+            "display": "% Prisoners on ACCT",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([v_ACCT_Duration]/[Count of Offenders])"
+          },
+          {
+            "name": "$ref:V_TOT_NET_POPULATION",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=Sum([Net Population])"
+          },
+          {
+            "name": "$ref:V_ACCT_COUNT",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Count of Offenders]);0;[Count of Offenders])"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_ACCT_COUNT :: ReferenceError: error is not defined",
+      "entityId": "kld.eBcABTqFE.kA61MAISgV_bQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::resolveCTEs parse error for : $ref:V_ACCT_DURATION :: ReferenceError: error is not defined",
+      "entityId": "kld.eBcABTqFE.kA61MAISgV_bQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_ACCT_COUNT :: ReferenceError: error is not defined",
+      "entityId": "kld.eBcABTqFE.kA61MAISgV_bQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "dataset::injectCalculations parse error for : $ref:V_ACCT_DURATION :: ReferenceError: error is not defined",
+      "entityId": "kld.eBcABTqFE.kA61MAISgV_bQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "athenQuery",
+      "error": "Error: Error: Query failed: GENERIC_USER_ERROR: Failed To Get Query Passthrough Schema",
+      "entityId": "3376639/DP2",
+      "entityType": "dataset"
+    }
+  ]
+}

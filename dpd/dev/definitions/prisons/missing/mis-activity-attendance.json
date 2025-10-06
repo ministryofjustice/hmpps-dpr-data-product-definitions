@@ -1,0 +1,1180 @@
+{
+  "id": "kllNLTsAChaFOLoBPP8AFE.rcVQ",
+  "name": "MIS Activity Attendance",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "ACT0021",
+      "Activity",
+      "Attendance"
+    ]
+  },
+  "description": "The report returns a list of prisoners, currently in the establishment and their activity attendance status for a date range. The data is shown over 4 tabs: All Attendance by Activity Service Description, by Surname and by Attendance Status. 4th tab also displays attendance comments and If a Case Note Warning entry has been issued.  5th tab display details of the Warning types. The report can be displayed by individual Wing or by all Wings.<br/>ACT0021 - v2.0Last Modified: 13/02/2023",
+  "datasource": [
+    {
+      "id": "bodmis",
+      "name": "BODMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "bodmis"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "3375368/DP9",
+      "name": "Activities",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_CELL.UNIT_1_CODE, AT_CELL.UNIT_4_SHORT_DESCRIPTION, nvl(AT_OFFENDER_BOOKING.IEP_BAND,'** Incentive Level Missing **'), AT_DIM_PROGRAMME_SERVICE.DESCRIPTION, AT_DIM_PROGRAMME_TYPE.DESCRIPTION, AT_FACT_OFFENDER_ACTIVITY.SUSPENDED_FLAG, TRUNC(AT_FACT_OFFENDER_ACTIVITY.START_TIME), nvl(AT_FACT_OFFENDER_ACTIVITY.SLOT_CATEGORY_CODE,'No Slot'), DT_CURRENT_RELEASE_DATE.CURR_RELEASE_DATE, AT_FACT_OFFENDER_ACTIVITY.COMMENT_TEXT, AT_DIM_ACTIVITY_STATUS.DESCRIPTION, AT_FACT_OFFENDER_ACTIVITY.SLOT_CATEGORY_CODE FROM BODIMIS.FACT_OFFENDER_ACTIVITY AT_FACT_OFFENDER_ACTIVITY, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_ESTABLISHMENT AT_ACTIVITY_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_CELL AT_CELL, BODIMIS.DIM_PROGRAMME_SERVICE AT_DIM_PROGRAMME_SERVICE, BODIMIS.DIM_PROGRAMME_TYPE AT_DIM_PROGRAMME_TYPE, (   Select AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK as OFFENDER_BOOKING_SK, case when AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE From --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_DATE AT_RELEASE_DATE where --AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK=AT_FACT_SENTENCE.OFFENDER_BOOKING_SK(+) AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK=AT_RELEASE_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' --and AT_RELEASE_DATE.DAY_DATE !='31/12/9000' ) DT_CURRENT_RELEASE_DATE, BODIMIS.DIM_REFERENCE_CODES AT_DIM_ACTIVITY_STATUS WHERE ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_CURRENT_RELEASE_DATE.OFFENDER_BOOKING_SK(+) ) AND ( AT_CELL.ESTABLISHMENT_SK=AT_ESTABLISHMENT.ESTABLISHMENT_SK ) AND ( AT_CELL.UNIT_4_SK=AT_OFFENDER_BOOKING.LIVING_UNIT_SK ) AND ( AT_ESTABLISHMENT.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username from context_) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=AT_FACT_OFFENDER_ACTIVITY.OFFENDER_BOOKING_SK ) AND ( AT_DIM_PROGRAMME_TYPE.PROGRAMME_TYPE_SK=AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_TYPE_SK ) AND ( AT_DIM_ACTIVITY_STATUS.CODE_DOMAIN(+)='PS_PA_OC' ) AND ( AT_DIM_ACTIVITY_STATUS.CODE(+)=AT_FACT_OFFENDER_ACTIVITY.STATUS ) AND ( AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_SK=AT_FACT_OFFENDER_ACTIVITY.ESTABLISHMENT_SK ) AND ( AT_DIM_PROGRAMME_SERVICE.PROGRAMME_SERVICE_SK=AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_SERVICE_SK ) AND ( ( AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O' ) AND ( AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND='Y' ) AND ( case when 'All' in ('All') then 'All' else AT_CELL.UNIT_1_DESCRIPTION end in ('All') ) AND ( AT_FACT_OFFENDER_ACTIVITY.ALLOCATED_FLAG = 'Y' ) AND AT_OFFENDER_BOOKING.LIVING_UNIT_SK >= 1 AND AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code from prompt_) AND AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code from prompt_) AND ( (AT_DIM_PROGRAMME_TYPE.SCHEDULE_END_DATE IS NULL OR AT_DIM_PROGRAMME_TYPE.SCHEDULE_END_DATE > trunc(sysdate)) ) AND TRUNC(AT_FACT_OFFENDER_ACTIVITY.START_TIME) BETWEEN '14-02-2023 00:00:00' AND '14-02-2023 00:00:00' ) UNION SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, '-', '-', nvl(AT_OFFENDER_BOOKING.IEP_BAND,'** Incentive Level Missing **'), AT_DIM_PROGRAMME_SERVICE.DESCRIPTION, AT_DIM_PROGRAMME_TYPE.DESCRIPTION, AT_FACT_OFFENDER_ACTIVITY.SUSPENDED_FLAG, TRUNC(AT_FACT_OFFENDER_ACTIVITY.START_TIME), nvl(AT_FACT_OFFENDER_ACTIVITY.SLOT_CATEGORY_CODE,'No Slot'), DT_CURRENT_RELEASE_DATE.CURR_RELEASE_DATE, AT_FACT_OFFENDER_ACTIVITY.COMMENT_TEXT, AT_DIM_ACTIVITY_STATUS.DESCRIPTION, AT_FACT_OFFENDER_ACTIVITY.SLOT_CATEGORY_CODE FROM BODIMIS.FACT_OFFENDER_ACTIVITY AT_FACT_OFFENDER_ACTIVITY, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT_TAP, BODIMIS.DIM_ESTABLISHMENT AT_ACTIVITY_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.DIM_PROGRAMME_SERVICE AT_DIM_PROGRAMME_SERVICE, BODIMIS.DIM_PROGRAMME_TYPE AT_DIM_PROGRAMME_TYPE, (   Select AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK as OFFENDER_BOOKING_SK, case when AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE From --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENTENCE, BODIMIS.DIM_DATE AT_RELEASE_DATE where --AT_FACT_OFFENDER_SENTENCE.OFFENDER_BOOKING_SK=AT_FACT_SENTENCE.OFFENDER_BOOKING_SK(+) AT_FACT_OFFENDER_SENTENCE.RELEASE_CALCULATED_DATE_SK=AT_RELEASE_DATE.DATE_SK(+) and AT_FACT_OFFENDER_SENTENCE.SENTENCE_CURRENT_FLAG='Y' --and AT_RELEASE_DATE.DAY_DATE !='31/12/9000' ) DT_CURRENT_RELEASE_DATE, BODIMIS.DIM_REFERENCE_CODES AT_DIM_ACTIVITY_STATUS, BODIMIS.DIM_CELL AT_CELL WHERE ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=DT_CURRENT_RELEASE_DATE.OFFENDER_BOOKING_SK(+) ) AND ( AT_CELL.UNIT_4_SK=AT_OFFENDER_BOOKING.LIVING_UNIT_SK ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID=CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username from context_) AND CSL.ENDYEAR >= to_char(sysdate,'YYYY')-6 ) ) AND ( AT_OFFENDER_BOOKING.ESTABLISHMENT_SK=AT_ESTABLISHMENT_TAP.ESTABLISHMENT_SK ) AND ( AT_ESTABLISHMENT_TAP.ACTIVE_FLAG='Y' ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK=AT_FACT_OFFENDER_ACTIVITY.OFFENDER_BOOKING_SK ) AND ( AT_DIM_PROGRAMME_TYPE.PROGRAMME_TYPE_SK=AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_TYPE_SK ) AND ( AT_DIM_ACTIVITY_STATUS.CODE_DOMAIN(+)='PS_PA_OC' ) AND ( AT_DIM_ACTIVITY_STATUS.CODE(+)=AT_FACT_OFFENDER_ACTIVITY.STATUS ) AND ( AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_SK=AT_FACT_OFFENDER_ACTIVITY.ESTABLISHMENT_SK ) AND ( AT_DIM_PROGRAMME_SERVICE.PROGRAMME_SERVICE_SK=AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_SERVICE_SK ) AND ( ( AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O' ) AND ( AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND='Y' ) AND ( case when 'All' in ('All') then 'All' else AT_CELL.UNIT_1_DESCRIPTION end in ('All') ) AND ( AT_FACT_OFFENDER_ACTIVITY.ALLOCATED_FLAG = 'Y' ) AND AT_OFFENDER_BOOKING.LIVING_UNIT_SK < 1 AND AT_ESTABLISHMENT_TAP.ESTABLISHMENT_CODE_NK = (SELECT establishment_code from prompt_) AND AT_ACTIVITY_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code from prompt_) AND ( (AT_DIM_PROGRAMME_TYPE.SCHEDULE_END_DATE IS NULL OR AT_DIM_PROGRAMME_TYPE.SCHEDULE_END_DATE > trunc(sysdate)) ) AND TRUNC(AT_FACT_OFFENDER_ACTIVITY.START_TIME) BETWEEN '14-02-2023 00:00:00' AND '14-02-2023 00:00:00' )), dataset_ AS (SELECT FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": []
+      }
+    },
+    {
+      "id": "3375368/DP17",
+      "name": "MIS Load",
+      "description": "MIS - Sentence",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "BUSINESS_DATE",
+            "type": "date",
+            "display": "Latest Business Date Available",
+            "legacyId": "DP17.DO104dd",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376639/DP1b",
+      "name": "Case Notes",
+      "description": "MIS - Demographics",
+      "datasource": "bodmis",
+      "query": "dataset_base_ AS (SELECT AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_OFFENDER_BOOKING.SURNAME, AT_OFFENDER_BOOKING.FIRST_NAME, AT_CASE_NOTE_CONTACT_DATE.DAY_DATE, AT_CASE_NOTE_SUB_TYPE.CODE, AT_FACT_OFFENDER_CASE_NOTE.CREATE_TIME FROM BODIMIS.FACT_OFFENDER_ACTIVITY AT_FACT_OFFENDER_ACTIVITY, BODIMIS.DIM_DATE AT_CASE_NOTE_CONTACT_DATE, BODIMIS.DIM_REFERENCE_CODES AT_CASE_NOTE_SUB_TYPE, BODIMIS.DIM_ESTABLISHMENT AT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_OFFENDER_CASE_NOTE AT_FACT_OFFENDER_CASE_NOTE, BODIMIS.DIM_CELL AT_CELL, BODIMIS.DIM_PROGRAMME_TYPE AT_DIM_PROGRAMME_TYPE WHERE (AT_CELL.ESTABLISHMENT_SK = AT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (AT_CELL.UNIT_4_SK = AT_OFFENDER_BOOKING.LIVING_UNIT_SK) AND (AT_ESTABLISHMENT.ACTIVE_FLAG = 'Y') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = (SELECT username FROM context_) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = AT_FACT_OFFENDER_ACTIVITY.OFFENDER_BOOKING_SK) AND (AT_DIM_PROGRAMME_TYPE.PROGRAMME_TYPE_SK = AT_FACT_OFFENDER_ACTIVITY.PROGRAMME_TYPE_SK) AND (AT_CASE_NOTE_CONTACT_DATE.DATE_SK = AT_FACT_OFFENDER_CASE_NOTE.CONTACT_DATE_SK) AND (AT_CASE_NOTE_SUB_TYPE.REFERENCE_CODE_SK = AT_FACT_OFFENDER_CASE_NOTE.CASE_NOTE_SUB_TYPE_CODE_SK) AND (AT_CASE_NOTE_SUB_TYPE.CODE_DOMAIN = 'TASK_SUBTYPE') AND (AT_FACT_OFFENDER_CASE_NOTE.OFFENDER_BOOKING_SK (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK) AND (AT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK = (SELECT establishment_code FROM prompt_) AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (AT_OFFENDER_BOOKING.BOOKING_STATUS = 'O') AND (AT_OFFENDER_BOOKING.MIS_CURRENT_RECORD_IND = 'Y') AND (CASE WHEN 'All' IN ('All') THEN 'All' ELSE AT_CELL.UNIT_1_DESCRIPTION END IN ('All')) AND (AT_FACT_OFFENDER_ACTIVITY.ALLOCATED_FLAG = 'Y') AND ((AT_DIM_PROGRAMME_TYPE.SCHEDULE_END_DATE IS NULL OR AT_DIM_PROGRAMME_TYPE.SCHEDULE_END_DATE > TRUNC(CURRENT_TIMESTAMP))) AND AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY IN ('A0011CD', 'A0067CK', 'A0078DN', 'A0099CX', 'A0105AX', 'A0115CF', 'A0365EM', 'A0373ED', 'A0432AW', 'A0470DJ', 'A0479EV', 'A0485AY', 'A0492EA', 'A0492EV', 'A0594EL', 'A0761EX', 'A0786DV', 'A0793EN', 'A0806DD', 'A0899EN', 'A0914AV', 'A0923EX', 'A0944EC', 'A0954AX', 'A0981AW', 'A0999EH', 'A1004AT', 'A1014EX', 'A1016EX', 'A1065CG', 'A1072EX', 'A1107DW', 'A1158EF', 'A1176DX', 'A1216EX', 'A1290AY', 'A1327EH', 'A1368EV', 'A1425EX', 'A1445CG', 'A1459CX', 'A1519EX', 'A1529EX', 'A1533CR', 'A1580AH', 'A1637CA', 'A1654AZ', 'A1664EX', 'A1726CZ', 'A1773CA', 'A1774EX', 'A1789EJ', 'A1836DR', 'A1848DL', 'A1933EX', 'A1935ER', 'A1946CA', 'A1948EV', 'A1956EX', 'A1974EW', 'A2021DX', 'A2027EV', 'A2078EX', 'A2134DD', 'A2140AG', 'A2143AG', 'A2185AF', 'A2188EX', 'A2235AR', 'A2238EQ', 'A2257AT', 'A2270AQ', 'A2326DD', 'A2341EN', 'A2349DJ', 'A2362AR', 'A2381EW', 'A2382EW', 'A2411EH', 'A2419AV', 'A2438AN', 'A2495AR', 'A2509AP', 'A2517AZ', 'A2519AR', 'A2537AT', 'A2550DY', 'A2588CN', 'A2601AR', 'A2620AN', 'A2671AR', 'A2672CA', 'A2685DZ', 'A2700AQ', 'A2720CD', 'A2727EN', 'A2730EN', 'A2763AH', 'A2830EH', 'A2835CH', 'A2838AY', 'A2863ET', 'A2877DC', 'A2877DV', 'A2901ET', 'A2939EX', 'A2943EX', 'A2958EX', 'A2977DN', 'A3004DG', 'A3020AY', 'A3025CX', 'A3053EW', 'A3067EW', 'A3067EX', 'A3154CD', 'A3178EW', 'A3189AL', 'A3233EW', 'A3236EH', 'A3240CF', 'A3244CK', 'A3248EX', 'A3251EM', 'A3268AR', 'A3278AR', 'A3345EM', 'A3433AR', 'A3444EN', 'A3467EA', 'A3485AP', 'A3493CC', 'A3524AZ', 'A3549CN', 'A3562EV', 'A3575EX', 'A3581AN', 'A3586EX', 'A3618AN', 'A3622AR', 'A3691EX', 'A3704ET', 'A3704EW', 'A3709CA', 'A3718CK', 'A3779EX', 'A3797EQ', 'A3802AR', 'A3816CJ', 'A3816CN', 'A3820EP', 'A3860DF', 'A3866AR', 'A3867DQ', 'A3873EX', 'A3878EJ', 'A3881EW', 'A3887AR', 'A3916DW', 'A3930AW', 'A3965AV', 'A3970CD', 'A3979EW', 'A3986DR', 'A3987ED', 'A3998EL', 'A4013AR', 'A4022AR', 'A4025DT', 'A4033ER', 'A4035DN', 'A4106CK', 'A4109EX', 'A4122EG', 'A4165EV', 'A4166EV', 'A4168DP', 'A4209AR', 'A4247CZ', 'A4269EN', 'A4272EN', 'A4302EX', 'A4337CT', 'A4377AY', 'A4386DJ', 'A4395AL', 'A4441EV', 'A4462CD', 'A4523AN', 'A4539EX', 'A4575CL', 'A4581AN', 'A4584EW', 'A4607DA', 'A4643AX', 'A4674AZ', 'A4676DV', 'A4681DH', 'A4703EX', 'A4739CY', 'A4755AP', 'A4816ER', 'A4899EX', 'A4923CA', 'A4931AW', 'A4942EN', 'A4998ET', 'A5023EQ', 'A5050EX', 'A5065CF', 'A5083EV', 'A5084CG', 'A5085DD', 'A5094AR', 'A5101EW', 'A5151DX', 'A5185EW', 'A5194EX', 'A5211DA', 'A5212CA', 'A5216EW', 'A5225CM', 'A5243AT', 'A5300AX', 'A5340CK', 'A5365ET', 'A5418EF', 'A5442EX', 'A5451ED', 'A5460DA', 'A5463EW', 'A5473AX', 'A5521DJ', 'A5567EV', 'A5583CN', 'A5595EX', 'A5610EX', 'A5666EX', 'A5701AX', 'A5732EW', 'A5733EW', 'A5755EA', 'A5785DD', 'A5821EX', 'A5844CR', 'A5855CP', 'A5871CV', 'A5883EX', 'A5896EX', 'A6009EX', 'A6038EX', 'A6060EX', 'A6077DD', 'A6093DR', 'A6098AT', 'A6123DT', 'A6131EW', 'A6133EW', 'A6141EX', 'A6150EV', 'A6162CG', 'A6183AR', 'A6261AY', 'A6263EX', 'A6266EX', 'A6272DG', 'A6312ET', 'A6339ER', 'A6347DP', 'A6355CN', 'A6361EX', 'A6370AQ', 'A6370DA', 'A6385EP', 'A6390EX', 'A6393DE', 'A6480EW', 'A6484DA', 'A6486DD', 'A6491DR', 'A6503EF', 'A6528AT', 'A6596EX', 'A6597EX', 'A6614AV', 'A6622DP', 'A6735EX', 'A6771DT', 'A6803DW', 'A6831EX', 'A6846AR', 'A6860EX', 'A6861EX', 'A6862EX', 'A6866EX', 'A6888EW', 'A6943EW', 'A6946EW', 'A6948EW', 'A6970EX', 'A6972EX', 'A6994AN', 'A7015CH', 'A7042EX', 'A7043AR', 'A7051CE', 'A7052DZ', 'A7070DP', 'A7090ET', 'A7125AT', 'A7164ED', 'A7166AC', 'A7171AN', 'A7203ER', 'A7250EQ', 'A7261EW', 'A7269EX', 'A7276EX', 'A7288EX', 'A7304EX', 'A7305EW', 'A7357EW', 'A7371DJ', 'A7376EX', 'A7427CA', 'A7439EW', 'A7440EW', 'A7443EW', 'A7444EW', 'A7448CR', 'A7481EJ', 'A7498EX', 'A7513EX', 'A7514EX', 'A7515EX', 'A7516EX', 'A7517DZ', 'A7528EX', 'A7532CZ', 'A7542ED', 'A7561AR', 'A7571DA', 'A7587EX', 'A7626EW', 'A7651ET', 'A7653EX', 'A7682EX', 'A7751AC', 'A7794CN', 'A7797CA', 'A7830CF', 'A7856DX', 'A7857EA', 'A7889CR', 'A7934EJ', 'A7950ET', 'A8001AT', 'A8017DC', 'A8036EK', 'A8107DR', 'A8166EP', 'A8171AV', 'A8188AN', 'A8219AG', 'A8239ED', 'A8330AT', 'A8356EW', 'A8361EW', 'A8363DX', 'A8378CC', 'A8487EW', 'A8494EW', 'A8549DM', 'A8595AN', 'A8606CV', 'A8635CH', 'A8684DW', 'A8741ED', 'A8750CT', 'A8779DX', 'A8779EP', 'A8807ET', 'A8826EW', 'A8849AN', 'A8893CA', 'A8929EG', 'A8953AX', 'A8970AX', 'A9050AW', 'A9069CD', 'A9149CD', 'A9184AG', 'A9185CC', 'A9196CV', 'A9243EW', 'A9246DM', 'A9257EQ', 'A9260EV', 'A9272EN', 'A9339ED', 'A9368EE', 'A9370ET', 'A9467DC', 'A9481EQ', 'A9544EM', 'A9586CW', 'A9632EW', 'A9712DX', 'A9726CR', 'A9728EP', 'A9732DY', 'A9821AY', 'A9825EQ', 'A9834AX', 'A9851EW', 'A9880DR', 'A9891CA', 'A9928CH', 'A9940EJ', 'A9945ED', 'A9979DJ') AND AT_CASE_NOTE_CONTACT_DATE.DAY_DATE IN (TO_DATE('14-02-2023 00:00:00', 'DD-MM-YYYY HH24:MI:SS')) AND AT_CASE_NOTE_SUB_TYPE.CODE IN ('IEP_WARN', 'WORKWARN', 'NEG_GEN', 'BEHAVEWARN'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, SURNAME, FIRST_NAME, DAY_DATE, CODE, CREATE_TIME FROM dataset_base_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "(SELECT establishment_code from prompt_)",
+          "mandatory": "true",
+          "referenceType": "establishment"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP1b.DO76",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "SURNAME",
+            "type": "string",
+            "display": "Offender Surname",
+            "legacyId": "DP1b.DO7b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "Offender Given Name 1",
+            "legacyId": "DP1b.DO80",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "DAY_DATE",
+            "type": "date",
+            "display": "Case Note Contact Date",
+            "legacyId": "DP1b.DOae0",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "CODE",
+            "type": "string",
+            "display": "Case Note Sub Type Code",
+            "legacyId": "DP1b.DOa8c",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "CREATE_TIME",
+            "type": "date",
+            "display": "Case Note Create Date/Time",
+            "legacyId": "DP1b.DOa92",
+            "legacySqlClass": "column"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "208193.RS",
+      "name": "Attendance by Service Desc.",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DP9_DO10650",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_ACTIVITY_DESCRIPTION_WORDCAP",
+            "display": "=NameOf([Activity Service Description])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([Activity Description])"
+          },
+          {
+            "name": "$ref:DP9_DO1081E",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10076",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO104C2",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_ACTIVITY_NOT_RECORDED",
+            "display": "Cell",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Activity Session Status Description]);\"Not Recorded\";[Activity Session Status Description])"
+          },
+          {
+            "name": "$ref:DP9_DO10707",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_ACCT",
+            "display": "Susp?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Alerts].[ACCT]"
+          },
+          {
+            "name": "$ref:V_RELEASEDATE",
+            "display": "ACCT?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Release Date (Current)]);\"-\";[Release Date (Current)])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "209765.RS",
+      "name": "Attendance by Surname",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "filter": {
+        "name": "prefilter_",
+        "query": "prefilter_ AS (SELECT * FROM dataset_)"
+      },
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DP9_DO10650",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_ACTIVITY_DESCRIPTION_WORDCAP",
+            "display": "=NameOf([Activity Service Description])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([Activity Description])"
+          },
+          {
+            "name": "$ref:DP9_DO1081E",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10076",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO104C2",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_ACTIVITY_NOT_RECORDED",
+            "display": "Cell",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Activity Session Status Description]);\"Not Recorded\";[Activity Session Status Description])"
+          },
+          {
+            "name": "$ref:DP9_DO10707",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_ACCT",
+            "display": "Susp?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Alerts].[ACCT]"
+          },
+          {
+            "name": "$ref:V_RELEASEDATE",
+            "display": "ACCT?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Release Date (Current)]);\"-\";[Release Date (Current)])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "209826.RS",
+      "name": "By Attendance Status",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DP9_DO10650",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_ACTIVITY_DESCRIPTION_WORDCAP",
+            "display": "=NameOf([Activity Service Description])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([Activity Description])"
+          },
+          {
+            "name": "$ref:DP9_DO1081E",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10076",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO104C2",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_ACTIVITY_NOT_RECORDED",
+            "display": "Cell",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Activity Session Status Description]);\"Not Recorded\";[Activity Session Status Description])"
+          },
+          {
+            "name": "$ref:DP9_DO10707",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_ACCT",
+            "display": "Susp?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Alerts].[ACCT]"
+          },
+          {
+            "name": "$ref:V_RELEASEDATE",
+            "display": "ACCT?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Release Date (Current)]);\"-\";[Release Date (Current)])"
+          }
+        ]
+      }
+    },
+    {
+      "id": "210649.RS",
+      "name": "Attendance without Sections",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:DP9_DO10650",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_ACTIVITY_DESCRIPTION_WORDCAP",
+            "display": "=NameOf([Activity Service Description])",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([Activity Description])"
+          },
+          {
+            "name": "$ref:V_SESSION_DATE",
+            "display": "Activity Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Activity Session Date]"
+          },
+          {
+            "name": "$ref:DP9_DO1081E",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10076",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO104C2",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_ACTIVITY_NOT_RECORDED",
+            "display": "Cell",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Activity Session Status Description]);\"Not Recorded\";[Activity Session Status Description])"
+          },
+          {
+            "name": "$ref:DP9_DO10707",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_ACCT",
+            "display": "Susp?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[Alerts].[ACCT]"
+          },
+          {
+            "name": "$ref:V_RELEASEDATE",
+            "display": "ACCT?",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Release Date (Current)]);\"-\";[Release Date (Current)])"
+          },
+          {
+            "name": "$ref:DP9_DO1080C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "209554.RS",
+      "name": "Attendance Trends",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3375368/DP9",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DP9_DO1070C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10A63",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10650",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_ACTIVITY_DESCRIPTION_WORDCAP",
+            "display": "Activity Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=WordCap([Activity Description])"
+          },
+          {
+            "name": "$ref:DP9_DO10076",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO1007B",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:DP9_DO10080",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_ACTIVITY_NOT_RECORDED",
+            "display": "Status Description",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If(IsNull([Activity Session Status Description]);\"Not Recorded\";[Activity Session Status Description])"
+          },
+          {
+            "name": "$ref:DP9_DO1080C",
+            "display": "",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": ""
+          },
+          {
+            "name": "$ref:V_WARNINGS_FLAG",
+            "display": "Warning issued? If 'Y' see Warnings tab",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If([v_Count_Warnings]>0;\"Y\";\"N\")"
+          }
+        ]
+      }
+    },
+    {
+      "id": "210033.RS",
+      "name": "Warnings",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "3376639/DP1b",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list-section",
+        "field": [
+          {
+            "name": "$ref:DAY_DATE",
+            "display": "Case Note Contact Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP1b.DOae0"
+          },
+          {
+            "name": "$ref:CREATE_TIME",
+            "display": "Case Note Create Date/Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1b.DOa92"
+          },
+          {
+            "name": "$ref:SURNAME",
+            "display": "Offender Surname",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1b.DO7b"
+          },
+          {
+            "name": "$ref:FIRST_NAME",
+            "display": "Offender Given Name 1",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1b.DO80"
+          },
+          {
+            "name": "$ref:CODE",
+            "display": "Case Note Sub Type Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP1b.DOa8c"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "enhanced",
+      "error": "dataset::fixSqlFormatting sql is not valid [Expected table name but got None. Line 1, Col: 1150.\n  hen AT_RELEASE_DATE.DAY_DATE <> '31/12/9000' Then AT_RELEASE_DATE.DAY_DATE end as CURR_RELEASE_DATE \u001b[4mFrom\u001b[0m --BODIMIS.FACT_CASE_SENTENCE AT_FACT_SENTENCE, BODIMIS.FACT_OFFENDER_SENTENCE AT_FACT_OFFENDER_SENT]",
+      "entityId": "kllNLTsAChaFOLoBPP8AFE.rcVQ",
+      "entityType": "dpd"
+    },
+    {
+      "type": "enhanced",
+      "error": "missing query plan statement",
+      "entityId": "3375368/DP18",
+      "entityType": "dpd"
+    },
+    {
+      "type": "schema",
+      "error": "Dataset does not have any schema fields (comments -- in query)",
+      "entityId": "3375368/DP9",
+      "entityType": "dataset"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10650 does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ACTIVITY_DESCRIPTION_WORDCAP does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1081E does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10076 does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1007B does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10080 does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO104C2 does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ACTIVITY_NOT_RECORDED does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10707 does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ACCT does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_RELEASEDATE does not have corresponding dataset schema field",
+      "entityId": "208193.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10650 does not have corresponding dataset schema field",
+      "entityId": "209765.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ACTIVITY_DESCRIPTION_WORDCAP does not have corresponding dataset schema field",
+      "entityId": "209765.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1081E does not have corresponding dataset schema field",
+      "entityId": "209765.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10076 does not have corresponding dataset schema field",
+      "entityId": "209765.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1007B does not have corresponding dataset schema field",
+      "entityId": "209765.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10080 does not have corresponding dataset schema field",
+      "entityId": "209765.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO104C2 does not have corresponding dataset schema field",
+      "entityId": "209765.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ACTIVITY_NOT_RECORDED does not have corresponding dataset schema field",
+      "entityId": "209765.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10707 does not have corresponding dataset schema field",
+      "entityId": "209765.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ACCT does not have corresponding dataset schema field",
+      "entityId": "209765.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_RELEASEDATE does not have corresponding dataset schema field",
+      "entityId": "209765.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10650 does not have corresponding dataset schema field",
+      "entityId": "209826.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ACTIVITY_DESCRIPTION_WORDCAP does not have corresponding dataset schema field",
+      "entityId": "209826.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1081E does not have corresponding dataset schema field",
+      "entityId": "209826.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10076 does not have corresponding dataset schema field",
+      "entityId": "209826.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1007B does not have corresponding dataset schema field",
+      "entityId": "209826.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10080 does not have corresponding dataset schema field",
+      "entityId": "209826.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO104C2 does not have corresponding dataset schema field",
+      "entityId": "209826.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ACTIVITY_NOT_RECORDED does not have corresponding dataset schema field",
+      "entityId": "209826.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10707 does not have corresponding dataset schema field",
+      "entityId": "209826.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ACCT does not have corresponding dataset schema field",
+      "entityId": "209826.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_RELEASEDATE does not have corresponding dataset schema field",
+      "entityId": "209826.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10650 does not have corresponding dataset schema field",
+      "entityId": "210649.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ACTIVITY_DESCRIPTION_WORDCAP does not have corresponding dataset schema field",
+      "entityId": "210649.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_SESSION_DATE does not have corresponding dataset schema field",
+      "entityId": "210649.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1081E does not have corresponding dataset schema field",
+      "entityId": "210649.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10076 does not have corresponding dataset schema field",
+      "entityId": "210649.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1007B does not have corresponding dataset schema field",
+      "entityId": "210649.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10080 does not have corresponding dataset schema field",
+      "entityId": "210649.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO104C2 does not have corresponding dataset schema field",
+      "entityId": "210649.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ACTIVITY_NOT_RECORDED does not have corresponding dataset schema field",
+      "entityId": "210649.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10707 does not have corresponding dataset schema field",
+      "entityId": "210649.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ACCT does not have corresponding dataset schema field",
+      "entityId": "210649.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_RELEASEDATE does not have corresponding dataset schema field",
+      "entityId": "210649.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1080C does not have corresponding dataset schema field",
+      "entityId": "210649.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1070C does not have corresponding dataset schema field",
+      "entityId": "209554.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10A63 does not have corresponding dataset schema field",
+      "entityId": "209554.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10650 does not have corresponding dataset schema field",
+      "entityId": "209554.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ACTIVITY_DESCRIPTION_WORDCAP does not have corresponding dataset schema field",
+      "entityId": "209554.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10076 does not have corresponding dataset schema field",
+      "entityId": "209554.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1007B does not have corresponding dataset schema field",
+      "entityId": "209554.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO10080 does not have corresponding dataset schema field",
+      "entityId": "209554.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_ACTIVITY_NOT_RECORDED does not have corresponding dataset schema field",
+      "entityId": "209554.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field DP9_DO1080C does not have corresponding dataset schema field",
+      "entityId": "209554.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "schema",
+      "error": "Report field V_WARNINGS_FLAG does not have corresponding dataset schema field",
+      "entityId": "209554.RS",
+      "entityType": "variant"
+    },
+    {
+      "type": "athenQuery",
+      "error": "unable to generate test sql",
+      "entityId": "3375368/DP9",
+      "entityType": "dataset"
+    }
+  ]
+}
