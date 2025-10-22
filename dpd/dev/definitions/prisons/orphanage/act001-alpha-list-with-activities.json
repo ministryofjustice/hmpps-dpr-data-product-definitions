@@ -1,0 +1,536 @@
+{
+  "id": "act001-alpha-list-with-activities",
+  "name": "Alpha List with Activities ACT001 / ACT0027",
+  "description": "The report has been requested to assist in the suitable stock selection and library attendance of prisoners. Other establishment users may also find this report beneficial as it lists all Prisoners in an establishment along with their Personal details and current Activity Description(s)",
+  "metadata": {
+    "author": "Zahoor Hussain",
+    "owner": "Claire Morgan",
+    "version": "1.0.0"
+  },
+  "datasource": [
+    {
+      "id": "athena_redshift",
+      "name": "athena_redshift_federated",
+      "database": "datamart",
+      "catalog": "redshift_datamart",
+      "connection": "federated",
+      "dialect": "redshift/4"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "waitlist-applications-pending-approved",
+      "name": "Applications",
+      "datasource": "athena_redshift",
+      "query": "SELECT aa.prisoner_number, pr.name, aa.start_date, aa.end_date, aa.prison_pay_band_id, dm.last_name, dm.first_name, dm.living_unit_id, dm.ethnicity_code, dm.ethnicity, dm.nationality_code, dm.nationality, dm.religion_code, dm.religion, dm.primary_language, dm.gender, sched.activity_id, sched.description FROM datamart.prisons.activities_allocation aa  INNER Join datamart.prisoner_prisoner dm on aa.prisoner_number = dm.number  inner join datamart.prisons.activities_activity_schedule as sched on aa.activity_schedule_id = sched.activity_schedule_id  inner join datamart.establishment_establishment as pr on pr.id = dm.establishment_id where prisoner_status = 'ACTIVE' AND (dm.living_unit_id IS NOT NULL) AND  (dm.establishment_id = (SELECT establishment_id FROM prompt_))",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_id",
+          "filterType": "autocomplete",
+          "referenceType": "establishment",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "",
+          "mandatory": "true"
+        }],
+      "schema": {
+        "field": [
+          {
+            "name": "prisoner_number",
+            "type": "string",
+            "display": "NOMIS Number"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "start_date",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "end_date",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "prison_pay_band_id",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "last_name",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "first_name",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "living_unit_id",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "ethnicity_code",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "ethnicity",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "nationality_code",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "nationality",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "religion_code",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "religion",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "primary_language",
+            "type": "string",
+            "display": ""
+          },
+	{
+            "name": "age",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "gender",
+            "type": "string",
+            "display": ""
+          },
+	{
+            "name": "activity_id",
+            "type": "string",
+            "display": ""
+          },{
+            "name": "description",
+            "type": "string",
+            "display": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "nationalities",
+      "name": "nationalities",
+      "datasource": "athena_redshift",
+      "query": "SELECT profile_code, description FROM datamart.prisons.nomis_profile_codes where profile_type = 'NAT'",
+      "schema": {
+        "field": [
+          {
+            "name": "profile_code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "activities",
+      "name": "activities",
+      "datasource": "athena_redshift",
+      "query": "select activity_id as id, summary from datamart.prisons.activities_activity order by summary",
+      "schema": {
+        "field": [
+          {
+            "name": "id",
+            "type": "string"
+          },
+          {
+            "name": "summary",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ethnicities",
+      "name": "ethnicities",
+      "datasource": "athena_redshift",
+      "query": "select code, description from prisons.nomis_reference_codes where domain = 'ETHNICITY' and active_flag = 'Y' order by list_seq",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "stats-basic",
+      "name": "Basic Statistics",
+      "description": "Basic Statistics",
+      "datasource": "athena_redshift",
+      "query": "SELECT dm.establishment_id, ac.name as activity, dm.religion, count(dm.religion) as religion_count, dm.nationality, count(dm.nationality) as nationality_count, dm.ethnicity, count(dm.ethnicity) as ethnicity_count FROM datamart.prisons.activities_allocation alloc JOIN datamart.prisoner_prisoner dm ON alloc.prisoner_number = dm.number JOIN datamart.prisons.activities_activity_schedule sched ON sched.activity_schedule_id = alloc.activity_schedule_id JOIN datamart.prisons.activities_activity aa on sched.activity_id = aa.activity_id JOIN datamart.prisons.activities_activity_category ac on aa.activity_category_id = ac.activity_category_id AND dm.establishment_id = (SELECT establishment_code from prompt_) GROUP BY GROUPING SETS ( (establishment_id, activity, religion), (establishment_id, activity, nationality), (establishment_id, activity, ethnicity) ) ORDER BY establishment_id,activity, religion,nationality,ethnicity",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "establishment_code",
+          "filterType": "autocomplete",
+          "referenceType": "establishment",
+          "reportFieldType": "string",
+          "display": "Establishment",
+          "description": "",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "ESTABLISHMENT_ID",
+            "type": "string",
+            "display": "Establishment Id"
+          },
+          {
+            "index": 1,
+            "name": "ACTIVITY",
+            "type": "string",
+            "display": "Activity"
+          },
+          {
+            "index": 2,
+            "name": "RELIGION",
+            "type": "string",
+            "display": "Religion"
+          },
+          {
+            "index": 3,
+            "name": "RELIGION_COUNT",
+            "type": "double",
+            "display": "Religion Count"
+          },
+          {
+            "index": 4,
+            "name": "NATIONALITY",
+            "type": "string",
+            "display": "Nationality"
+          },
+          {
+            "index": 5,
+            "name": "NATIONALITY_COUNT",
+            "type": "double",
+            "display": "Nationality Count"
+          },
+          {
+            "index": 6,
+            "name": "ETHNICITY",
+            "type": "string",
+            "display": "Ethnicity"
+          },
+          {
+            "index": 7,
+            "name": "ETHNICITY_COUNT",
+            "type": "double",
+            "display": "Ethnicity Count"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "activities-in-progress",
+      "name": "List of activities",
+      "description": "A list of activities sortable by wing",
+      "classification": "Official",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "$ref:waitlist-applications-pending-approved",
+      "feature": [
+        {
+          "type": "share|save|email|print|download"
+        }
+      ],
+"metadata" : {
+      "hints" : ["interactive"]
+    },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:prisoner_number",
+            "display": "Prison Number",
+            "formula": "",
+            "visible": "mandatory",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:last_name",
+            "display": "Name",
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prisoner_number}',${first_name} ${last_name},TRUE)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:living_unit_id",
+            "display": "Cell",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:age",
+            "display": "Age",
+            "formula": "",
+            "visible": "false",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:description",
+            "display": "Activity",
+            "formula": "make_url('https://activities-${env}.prison.service.justice.gov.uk/activities/allocation-dashboard/${activity_id}',${description},TRUE)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+"filter": {
+  "type": "multiselect",
+            "interactive": true,
+              "dynamicoptions": {
+                "returnAsStaticOptions": true,
+                "maximumOptions": 1000,
+                "dataset": "$ref:activities",
+                "name": "id",
+		"display": "summary"
+		}
+	}
+          },
+          {
+            "name": "$ref:start_date",
+            "display": "Start Date",
+            "formula": "format_date(${start_date}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+            "interactive": true,
+              "type": "daterange",
+              "default": ""
+            }
+	},
+	{
+            "name": "$ref:ethnicity_code",
+            "display": "Ethnicity",
+            "formula": "${ethnicity}",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+"filter": {
+  "type": "multiselect",
+            "interactive": true,
+              "dynamicoptions": {
+                "returnAsStaticOptions": true,
+                "maximumOptions": 100,
+                "dataset": "$ref:ethnicities",
+                "name": "code",
+		"display": "description"
+		}
+	}
+	},{
+            "name": "$ref:nationality_code",
+            "display": "Nationality",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+"filter": {
+  "type": "multiselect",
+              "dynamicoptions": {
+                "returnAsStaticOptions": true,
+                "maximumOptions": 100,
+                "dataset": "$ref:nationalities",
+                "name": "profile_code",
+		"display": "description"
+		}
+          }
+          }, {
+            "name": "$ref:primary_language",
+            "display": "Primary Language",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    }
+  ],
+  "dashboard": [{
+    "id": "stats-basic",
+    "name": "Basic Statistics",
+    "description": "Basic Statistics",
+    "dataset": "stats-basic",
+    "section": [
+      {
+        "id": "stats-basic",
+        "display": "Basic Stats",
+        "visualisation": [
+          {
+            "id": "total-religion",
+            "type": "list",
+            "display": "Activity by Religion",
+            "column": {
+              "key": [
+                {
+                  "id": "$ref:ACTIVITY",
+                  "display": "Activity"
+                },
+                {
+                  "id": "$ref:RELIGION",
+                  "display": "Religion"
+                }
+              ],
+              "measure": [
+                {
+                  "id": "$ref:ACTIVITY",
+                  "display": "Activity"
+                },
+                {
+                  "id": "$ref:RELIGION",
+                  "display": "Religion"
+                },
+                {
+                  "id": "$ref:RELIGION_COUNT",
+                  "display": "Count"
+                }
+              ],
+              "expectNull": false
+            }
+          },
+          {
+            "id": "total-nationality",
+            "type": "list",
+            "display": "Activity by Nationality",
+            "column": {
+              "key": [
+                {
+                  "id": "$ref:ACTIVITY",
+                  "display": "Activity"
+                },
+                {
+                  "id": "$ref:NATIONALITY",
+                  "display": "Nationality"
+                }
+              ],
+              "measure": [
+                {
+                  "id": "$ref:ACTIVITY",
+                  "display": "Activity"
+                },
+                {
+                  "id": "$ref:NATIONALITY",
+                  "display": "Nationality"
+                },
+                {
+                  "id": "$ref:NATIONALITY_COUNT",
+                  "display": "Count"
+                }
+              ],
+              "expectNull": false
+            }
+          },
+          {
+            "id": "total-ethnicity",
+            "type": "list",
+            "display": "Activity by Ethnicity",
+            "column": {
+              "key": [
+                {
+                  "id": "$ref:ACTIVITY",
+                  "display": "Activity"
+                },
+                {
+                  "id": "$ref:ETHNICITY",
+                  "display": "Ethnicity"
+                }
+              ],
+              "measure": [
+                {
+                  "id": "$ref:ACTIVITY",
+                  "display": "Activity"
+                },
+                {
+                  "id": "$ref:ETHNICITY",
+                  "display": "Ethnicity"
+                },
+                {
+                  "id": "$ref:ETHNICITY_COUNT",
+                  "display": "Count"
+                }
+              ],
+              "expectNull": false
+            }
+          }
+        ]
+      },
+      {
+        "id": "debug",
+        "display": "Debug",
+        "visualisation": [
+          {
+            "id": "all-data",
+            "type": "list",
+            "display": "All data",
+            "column": {
+              "measure": [],
+              "expectNull": false
+            }
+          }
+        ]
+      }
+    ]
+  }]
+}
