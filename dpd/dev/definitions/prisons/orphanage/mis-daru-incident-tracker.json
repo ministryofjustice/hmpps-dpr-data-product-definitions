@@ -25,45 +25,96 @@
       "name": "Incidents",
       "description": "MIS Incidents",
       "datasource": "dps_inc_reporting",
-      "query": "SELECT location, status, COUNT(id) as TOTAL FROM report WHERE date(incident_date_and_time) >= (SELECT START_DATE from prompt_) and date(incident_date_and_time) <= (SELECT END_DATE from prompt_) GROUP BY GROUPING SETS ( (location, status), (location), (status) ) ORDER BY location,status",
-      "parameters": [
+      "query":"",
+      "multiphaseQuery": [
         {
           "index": 0,
-          "name": "start_date",
-          "filterType": "date",
-          "reportFieldType": "date",
-          "display": "Enter Start Date:",
-          "description": "",
-          "mandatory": "true"
+          "datasource": {
+            "id": "nomis",
+            "name": "NOMIS",
+            "database": "DIGITAL_PRISON_REPORTING",
+            "catalog": "nomis",
+            "connection": "federated",
+            "dialect": "oracle/11g"
+          },
+          "query": "SELECT AGENCY_LOCATIONS.agy_loc_id as establishment_code, AGENCY_LOCATIONS.description as establishment_name FROM OMS_OWNER.AGENCY_LOCATIONS"
         },
         {
           "index": 1,
-          "name": "end_date",
-          "filterType": "date",
-          "reportFieldType": "date",
-          "display": "Enter End Date:",
-          "description": "",
-          "mandatory": "true"
-        }],
+          "datasource": {
+            "id": "athena_dps_inc_reporting",
+            "name": "athena_dps_inc_reporting",
+            "database": "public",
+            "catalog": "dps_inc_reporting",
+            "connection": "federated",
+            "dialect": "postgres/19"
+          },
+          "query": "SELECT location, status, COUNT(id) as TOTAL FROM report WHERE date(incident_date_and_time) >= (SELECT START_DATE from prompt_) and date(incident_date_and_time) <= (SELECT END_DATE from prompt_) GROUP BY GROUPING SETS ( (location, status), (location), (status) ) ORDER BY location,status",
+          "parameters": [
+            {
+              "index": 0,
+              "name": "start_date",
+              "filterType": "date",
+              "reportFieldType": "date",
+              "display": "Enter Incident Date (Start)",
+              "description": "",
+              "mandatory": "true"
+            },
+            {
+              "index": 1,
+              "name": "end_date",
+              "filterType": "date",
+              "reportFieldType": "date",
+              "display": "Enter Incident Date (End)",
+              "description": "",
+              "mandatory": "true"
+            }
+          ]
+
+        },
+        {
+          "index": 2,
+          "datasource": {
+            "id": "athena",
+            "name": "athena",
+            "database": "reports",
+            "catalog": "AwsDataCatalog",
+            "connection": "awsdatacatalog"
+          },
+          "query": "SELECT LOCATION, ESTABLISHMENT_NAME, STATUS, TOTAL from AwsDataCatalog.reports.${table[1]} JOIN AwsDataCatalog.reports.${table[0]} on AwsDataCatalog.reports.${table[1]}.LOCATION=AwsDataCatalog.reports.${table[0]}.establishment_code"
+        }
+      ],
       "schema": {
         "field": [
           {
             "index": 0,
             "name": "LOCATION",
             "type": "string",
-            "display": "Location"
+            "display": "LOCATION"
           },
           {
             "index": 1,
-            "name": "STATUS",
+            "name": "ESTABLISHMENT_NAME",
             "type": "string",
-            "display": "Status"
+            "display": "Name"
           },
           {
             "index": 2,
-            "name": "TOTAL",
-            "type": "double",
-            "display": "Number of Incidents"
+            "name": "STATUS",
+            "type": "string",
+            "display": "STATUS"
+          },
+          {
+            "index": 3,
+            "name": "total",
+            "type": "string",
+            "display": "Total"
+          },
+          {
+            "index": 4,
+            "name": "establishment_code",
+            "type": "string",
+            "display": "Establishment Code"
           }
         ]
       }
@@ -166,7 +217,7 @@
                   "display": "Total Incidents"
                 }
               ],
-              "expectNull": true
+              "expectNull": false
             }
           },
           {
@@ -190,7 +241,7 @@
                   "display": "Total Incidents"
                 }
               ],
-              "expectNull": true
+              "expectNull": false
             }
           }
         ]
