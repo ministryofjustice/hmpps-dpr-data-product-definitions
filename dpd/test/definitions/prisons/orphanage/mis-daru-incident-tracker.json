@@ -1,0 +1,245 @@
+{
+  "id": "Foyj_lrJgwcAhVIAAHALRl8AACJIAFJ8",
+  "name": "MIS DARU Incident Tracker",
+  "description": "The report is used by the Data Analysis and Reporting Unit (DARU) to monitor, assure and report against the volume and quality of Incidents data.<br/>INC0022 - v00.00.01  Last Modified: 24/05/18",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "INC0022  v00.00.01",
+      "DPS", "Incident Reporting"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "dps_inc_reporting",
+      "name": "DPS Incident Reporting",
+      "database": "public",
+      "catalog": "dps_inc_reporting",
+      "connection": "federated",
+      "dialect": "postgres/19"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "inc0022-1",
+      "name": "Incidents",
+      "description": "MIS Incidents",
+      "datasource": "dps_inc_reporting",
+      "query":"",
+      "multiphaseQuery": [
+        {
+          "index": 0,
+          "datasource": {
+            "id": "nomis",
+            "name": "NOMIS",
+            "database": "DIGITAL_PRISON_REPORTING",
+            "catalog": "nomis",
+            "connection": "federated",
+            "dialect": "oracle/11g"
+          },
+          "query": "SELECT AGENCY_LOCATIONS.agy_loc_id as establishment_code, AGENCY_LOCATIONS.description as establishment_name FROM OMS_OWNER.AGENCY_LOCATIONS"
+        },
+        {
+          "index": 1,
+          "datasource": {
+            "id": "athena_dps_inc_reporting",
+            "name": "athena_dps_inc_reporting",
+            "database": "public",
+            "catalog": "dps_inc_reporting",
+            "connection": "federated",
+            "dialect": "postgres/19"
+          },
+          "query": "SELECT location, status, COUNT(id) as TOTAL FROM report WHERE date(incident_date_and_time) >= (SELECT START_DATE from prompt_) and date(incident_date_and_time) <= (SELECT END_DATE from prompt_) GROUP BY GROUPING SETS ( (location, status), (location), (status) ) ORDER BY location,status",
+          "parameters": [
+            {
+              "index": 0,
+              "name": "start_date",
+              "filterType": "date",
+              "reportFieldType": "date",
+              "display": "Enter Incident Date (Start)",
+              "description": "",
+              "mandatory": "true"
+            },
+            {
+              "index": 1,
+              "name": "end_date",
+              "filterType": "date",
+              "reportFieldType": "date",
+              "display": "Enter Incident Date (End)",
+              "description": "",
+              "mandatory": "true"
+            }
+          ]
+
+        },
+        {
+          "index": 2,
+          "datasource": {
+            "id": "athena",
+            "name": "athena",
+            "database": "reports",
+            "catalog": "AwsDataCatalog",
+            "connection": "awsdatacatalog"
+          },
+          "query": "SELECT LOCATION, ESTABLISHMENT_NAME, STATUS, TOTAL from AwsDataCatalog.reports.${table[1]} JOIN AwsDataCatalog.reports.${table[0]} on AwsDataCatalog.reports.${table[1]}.LOCATION=AwsDataCatalog.reports.${table[0]}.establishment_code"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOCATION",
+            "type": "string",
+            "display": "LOCATION"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_NAME",
+            "type": "string",
+            "display": "Name"
+          },
+          {
+            "index": 2,
+            "name": "STATUS",
+            "type": "string",
+            "display": "STATUS"
+          },
+          {
+            "index": 3,
+            "name": "TOTAL",
+            "type": "string",
+            "display": "Total"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "116773.RS",
+      "name": "Incident Tracker",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "inc0022-1",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:LOCATION",
+            "display": "Incident Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP2.DO20"
+          },
+          {
+            "name": "$ref:STATUS",
+            "display": "Incident Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO20"
+          },
+          {
+            "name": "$ref:TOTAL",
+            "display": "Number of Incidents",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DOc9"
+          }
+        ]
+      }
+    }
+  ],
+  "dashboard": [{
+    "id": "incident-status-location",
+    "name": "Incident Status/Location Breakdown",
+    "description": "Incident Status/Location Breakdown",
+    "dataset": "inc0022-1",
+    "section": [
+      {
+        "id": "status-breakdown",
+        "display": "Status breakdown",
+        "visualisation": [
+          {
+            "id": "total-incidents",
+            "type": "list",
+            "display": "Total Incidents By Status",
+            "column": {
+              "key": [
+                {
+                  "id": "$ref:STATUS",
+                  "display": "Status"
+                }
+              ],
+              "measure": [
+                {
+                  "id": "$ref:STATUS",
+                  "display": "Status"
+                },
+                {
+                  "id": "$ref:TOTAL",
+                  "display": "Total Incidents"
+                }
+              ],
+              "expectNull": false
+            }
+          },
+          {
+            "id": "incidents-by-location",
+            "type": "list",
+            "display": "Total Incidents By Location",
+            "column": {
+              "key": [
+                {
+                  "id": "$ref:LOCATION",
+                  "display": "Location"
+                }
+              ],
+              "measure": [
+                {
+                  "id": "$ref:LOCATION",
+                  "display": "Location"
+                },
+                {
+                  "id": "$ref:TOTAL",
+                  "display": "Total Incidents"
+                }
+              ],
+              "expectNull": false
+            }
+          }
+        ]
+      }
+    ]
+  }]
+}
