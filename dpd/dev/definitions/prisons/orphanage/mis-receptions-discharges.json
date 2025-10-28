@@ -1,0 +1,655 @@
+{
+  "id": "dpd-receptions-discharges",
+  "name": "Receptions & Discharges for a date range",
+  "description": "Reports associated with prisoner external movements, using datamart",
+  "metadata": {
+    "author": "Zahoor Hussain",
+    "owner": "Michael Clarke",
+    "version": "1.0.4",
+    "tags": [
+      "MOV0012"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "datamart",
+      "name": "datamart"
+    },
+    {
+      "id": "redshift_datamart",
+      "name": "redshift_datamart",
+      "database": "datamart",
+      "catalog": "redshift_datamart",
+      "connection": "federated",
+      "dialect": "redshift/4"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "receptions-discharges",
+      "name": "receptions-discharges",
+      "datasource": "redshift_datamart",
+      "query": "with alerts_ as ( SELECT code, prisoner_id FROM datamart.prisoner_alert where code in ('OIOM','OPPO') ), movements_ as ( SELECT DISTINCT prisoners.id as prisoner_id, prisoners.number AS prisoner_number, prisoners.establishment_id, prisoners.name AS name, prisoners.date_of_birth as date_of_birth, prisoners.nationality as nationality, prisoners.birth_place, prisoners.religion_code, sentence.effective_sentence_length, status.legal_status, movements.time AS movement_datetime, movements.direction, movements.type as movement_type, movements.origin, movements.origin_code, movements.destination, movements.destination_code, movements.reason FROM datamart.movement_movement as movements JOIN datamart.prisoner_prisoner as prisoners ON movements.prisoner = prisoners.id JOIN datamart.prisoner_sentence as sentence ON sentence.prisoner_id = prisoners.id JOIN datamart.prisoner_status as status ON status.id = prisoners.id ) SELECT prisoner_number, establishment_id, name, date_of_birth, nationality, birth_place, religion_code, effective_sentence_length, legal_status, movement_datetime, direction, movement_type, origin, origin_code, destination, destination_code, reason, case when alerts.code = 'OIOM' then 'Y' else 'N' end as alert_OIOM, case when alerts.code = 'OPPO' then 'Y' else 'N' end as alert_OPPO FROM movements_ LEFT OUTER JOIN alerts_ as alerts ON movements_.prisoner_id = alerts.prisoner_id",
+      "schema": {
+        "field": [
+          {
+            "name": "prisoner_number",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "establishment_id",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "date_of_birth",
+            "type": "date",
+            "display": ""
+          },
+          {
+            "name": "nationality",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "birth_place",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "religion_code",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "effective_sentence_length",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "legal_status",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "movement_datetime",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "direction",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "movement_type",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "origin",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "origin_code",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "destination",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "destination_code",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "reason",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "alert_OIOM",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "alert_OPPO",
+            "type": "string",
+            "display": ""
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "caseload",
+      "type": "row-level",
+      "action": ["(origin_code='${caseload}' AND lower(direction)='out') OR (destination_code='${caseload}' AND lower(direction)='in')"],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": ["${caseload}"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": ["${role}", "ROLE_PRISONS_REPORTING_USER"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "receptions-discharges",
+      "name": "Receptions and Discharges",
+      "description": "Receptions and Discharges over a date range",
+      "classification": "OFFICIAL",
+      "version": "1.2.5",
+      "render": "HTML",
+      "dataset": "$ref:receptions-discharges",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:establishment_id",
+            "display": "Establishment",
+            "formula": "",
+            "visible": "false",
+            "sortable": false,
+            "defaultsort": false,
+            "filter": {
+              "type": "caseloads",
+              "default": "OUT"
+            }
+          },
+          {
+            "name": "$ref:prisoner_number",
+            "display": "Prison Number",
+            "formula": "",
+            "visible": "mandatory",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:name",
+            "display": "Name",
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prison_number}',${name},TRUE)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:date_of_birth",
+            "display": "DOB",
+            "formula": "format_date(${date}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:nationality",
+            "display": "Nationality",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:birth_place",
+            "display": "Birth Country",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:effective_sentence_length",
+            "display": "Sent Length",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:legal_status",
+            "display": "Legal Status",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:religion_code",
+            "display": "Religion Code",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:movement_type",
+            "display": "Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:reason",
+            "display": "Reason",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:origin",
+            "display": "From",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:movement_datetime",
+            "display": "Date",
+            "formula": "format_date(${movement_datetime}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "filter": {
+              "type": "daterange",
+              "default": "today(-1,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:destination",
+            "display": "To",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:alert_OPPO",
+            "display": "PPO",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:alert_OIOM",
+            "display": "OIOM",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:direction",
+            "display": "Direction",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "radio",
+              "interactive": true,
+              "staticoptions": [
+                {
+                  "name": "IN",
+                  "display": "In"
+                },
+                {
+                  "name": "OUT",
+                  "display": "Out"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "all-movements",
+      "name": "All Movements",
+      "description": "All Movements",
+      "classification": "OFFICIAL",
+      "version": "1.2.5",
+      "render": "HTML",
+      "dataset": "$ref:receptions-discharges",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:direction",
+            "display": "In/Out",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:establishment_id",
+            "display": "Establishment",
+            "formula": "",
+            "visible": "false",
+            "sortable": false,
+            "defaultsort": false,
+            "filter": {
+              "type": "caseloads",
+              "default": "OUT"
+            }
+          },
+          {
+            "name": "$ref:prisoner_number",
+            "display": "Prison Number",
+            "formula": "",
+            "visible": "mandatory",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:name",
+            "display": "Name",
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prison_number}',${name},TRUE)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:date_of_birth",
+            "display": "DOB",
+            "formula": "format_date(${date}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:nationality",
+            "display": "Nationality",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:birth_place",
+            "display": "Birth Country",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:effective_sentence_length",
+            "display": "Sent Length",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:legal_status",
+            "display": "Legal Status",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:religion_code",
+            "display": "Religion Code",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:movement_type",
+            "display": "Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:reason",
+            "display": "Reason",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:origin",
+            "display": "From",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:destination",
+            "display": "To",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:movement_datetime",
+            "display": "Date",
+            "formula": "format_date(${movement_datetime}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "filter": {
+              "type": "daterange",
+              "default": "today(-1,months) - today()"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "receptions-discharges-by-surname",
+      "name": "Receptions / Discharges By Surname",
+      "description": "Receptions / Discharges By Surname, Receptions direction = IN, Discharges direction = OUT",
+      "classification": "OFFICIAL",
+      "version": "1.2.5",
+      "render": "HTML",
+      "dataset": "$ref:receptions-discharges",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:establishment_id",
+            "display": "Establishment",
+            "formula": "",
+            "visible": "false",
+            "sortable": false,
+            "defaultsort": false,
+            "filter": {
+              "type": "caseloads",
+              "default": "OUT"
+            }
+          },
+          {
+            "name": "$ref:prisoner_number",
+            "display": "Prison Number",
+            "formula": "",
+            "visible": "mandatory",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:name",
+            "display": "Name",
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prison_number}',${name},TRUE)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "sortdirection": "asc"
+          },
+          {
+            "name": "$ref:date_of_birth",
+            "display": "DOB",
+            "formula": "format_date(${date}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:nationality",
+            "display": "Nationality",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:birth_place",
+            "display": "Birth Country",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:effective_sentence_length",
+            "display": "Sent Length",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:legal_status",
+            "display": "Legal Status",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:religion_code",
+            "display": "Religion Code",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:movement_type",
+            "display": "Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:reason",
+            "display": "Reason",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:origin",
+            "display": "From",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:movement_datetime",
+            "display": "Date",
+            "formula": "format_date(${movement_datetime}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "daterange",
+              "default": "today(-1,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:destination",
+            "display": "To",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:alert_OPPO",
+            "display": "PPO",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:alert_OIOM",
+            "display": "OIOM",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:direction",
+            "display": "Direction",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "radio",
+              "interactive": true,
+              "default": "IN",
+              "staticoptions": [
+                {
+                  "name": "IN",
+                  "display": "In"
+                },
+                {
+                  "name": "OUT",
+                  "display": "Out"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
