@@ -1,9 +1,10 @@
+
 {
-  "id": "Foyj_lrJgwcAhVIAAHALRl8AACJIAFJ8",
+  "id": "inc002",
   "name": "MIS DARU Incident Tracker",
   "description": "The report is used by the Data Analysis and Reporting Unit (DARU) to monitor, assure and report against the volume and quality of Incidents data.<br/>INC0022 - v00.00.01  Last Modified: 24/05/18",
   "metadata": {
-    "version": "1.0.0",
+    "version": "1.1.0",
     "tags": [
       "INC0022  v00.00.01",
       "DPS", "Incident Reporting"
@@ -49,7 +50,7 @@
             "connection": "federated",
             "dialect": "postgres/19"
           },
-          "query": "SELECT location, status, COUNT(id) as TOTAL FROM report WHERE date(incident_date_and_time) >= (SELECT START_DATE from prompt_) and date(incident_date_and_time) <= (SELECT END_DATE from prompt_) GROUP BY GROUPING SETS ( (location, status), (location), (status) ) ORDER BY location,status",
+          "query": "SELECT location, status, COUNT(id) as TOTAL FROM report WHERE date(incident_date_and_time) >= (SELECT START_DATE from prompt_) and date(incident_date_and_time) <= (SELECT END_DATE from prompt_) GROUP BY GROUPING SETS ( (location, status), (location), (status) ) ORDER BY location",
           "parameters": [
             {
               "index": 0,
@@ -81,7 +82,7 @@
             "catalog": "AwsDataCatalog",
             "connection": "awsdatacatalog"
           },
-          "query": "SELECT LOCATION, ESTABLISHMENT_NAME, STATUS, TOTAL from AwsDataCatalog.reports.${table[1]} JOIN AwsDataCatalog.reports.${table[0]} on AwsDataCatalog.reports.${table[1]}.LOCATION=AwsDataCatalog.reports.${table[0]}.establishment_code"
+          "query": "SELECT LOCATION, ESTABLISHMENT_NAME, STATUS, TOTAL from AwsDataCatalog.reports.${table[1]} LEFT JOIN AwsDataCatalog.reports.${table[0]} on AwsDataCatalog.reports.${table[1]}.LOCATION=AwsDataCatalog.reports.${table[0]}.establishment_code"
         }
       ],
       "schema": {
@@ -211,7 +212,7 @@
                   "display": "Total Incidents"
                 }
               ],
-              "expectNull": false
+              "expectNull": true
             }
           },
           {
@@ -227,8 +228,39 @@
               ],
               "measure": [
                 {
+                  "id": "$ref:ESTABLISHMENT_NAME",
+                  "display": "Name"
+                },
+                {
+                  "id": "$ref:TOTAL",
+                  "display": "Total Incidents"
+                }
+              ],
+              "expectNull": true
+            }
+          },
+          {
+            "id": "incidents-by-location-status",
+            "type": "list",
+            "display": "Total Incidents By Location & Status",
+            "column": {
+              "key": [
+                {
                   "id": "$ref:LOCATION",
                   "display": "Location"
+                },                {
+                  "id": "$ref:STATUS",
+                  "display": "Status"
+                }
+              ],
+              "measure": [
+                {
+                  "id": "$ref:ESTABLISHMENT_NAME",
+                  "display": "Name"
+                },
+                {
+                  "id": "$ref:STATUS",
+                  "display": "Status"
                 },
                 {
                   "id": "$ref:TOTAL",
@@ -236,6 +268,21 @@
                 }
               ],
               "expectNull": false
+            }
+          }
+        ]
+      },
+      {
+        "id": "debug",
+        "display": "Debug",
+        "visualisation": [
+          {
+            "id": "all-data",
+            "type": "list",
+            "display": "All data",
+            "column": {
+              "measure": [],
+              "expectNull": true
             }
           }
         ]
