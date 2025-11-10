@@ -1,0 +1,682 @@
+{
+  "id": "dps-veterans-in-custody-report",
+  "name": "DPS report on veterans in custody across the prison estate",
+  "description": "This report lists the veterans currently in custody across the prison estate, including their status and relevant details.",
+  "metadata": {
+    "version": "1.0.0"
+  },
+  "datasource": [
+    {
+      "id": "datamart",
+      "name": "datamart"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "dps-veterans-in-custody",
+      "name": "Veterans in Custody",
+      "description": "Veterans",
+      "datasource": "datamart",
+      "query": "SELECT offr.offender_id_display AS PRISONER_NUMBER, offr.birth_date AS DOB, date_diff('year', offr.birth_date, current_date) - CASE WHEN TO_CHAR(current_date, 'MMDD') < TO_CHAR(birth_date, 'MMDD') THEN 1 ELSE 0 END AS AGE, off_gen.description AS GENDER, off_eth.description AS ETHNICITY, CASE WHEN off_eth.code IN ('W2','W1','W9','W8','W10','W3') THEN 'White' WHEN off_eth.code IN ('O2','A4','O1','M9','M2','B9','B1','A3','A1','O9','M3','M1','B2','A9','A2') THEN 'BAME' WHEN off_eth.code = 'NS' THEN 'Not Stated' END AS GROUPED_ETHNICITY, off_loc.description AS PRISON, CASE WHEN off_loc.agy_loc_id IN ('AGI','BZI','DHI','DWI','ESI','EWI','FHI','LNI','NHI','PFI','SDI','STI') THEN 'Female' ELSE off_reg.description END AS REGION, CASE WHEN off_mr.military_seq IS NOT NULL THEN 'Y' ELSE 'N' END AS HAS_MILITARY_RECORD, CASE WHEN off_al.alert_code IS NOT NULL THEN 'Y' ELSE 'N' END AS HAS_VETERAN_FLAG FROM datamart.prisons.nomis_offenders offr INNER JOIN datamart.prisons.nomis_offender_bookings off_bk ON offr.offender_id = off_bk.offender_id AND off_bk.active_flag = 'Y' INNER JOIN datamart.prisons.nomis_agency_locations off_loc ON off_bk.agy_loc_id = off_loc.agy_loc_id AND off_loc.agency_location_type = 'INST' LEFT JOIN datamart.prisons.nomis_offender_military_records off_mr ON off_bk.offender_book_id = off_mr.offender_book_id LEFT JOIN datamart.prisons.nomis_offender_alerts off_al ON off_al.offender_book_id = off_bk.offender_book_id AND off_al.alert_status = 'ACTIVE' AND off_al.alert_code = 'F1' LEFT JOIN datamart.prisons.nomis_reference_codes off_gen ON off_gen.code = offr.sex_code AND off_gen.domain = 'SEX' LEFT JOIN datamart.prisons.nomis_reference_codes off_eth ON offr.race_code = off_eth.code AND off_eth.domain = 'ETHNICITY' LEFT JOIN datamart.prisons.nomis_areas off_reg ON off_loc.noms_region_code = off_reg.area_code",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "PRISONER_NUMBER",
+            "type": "string",
+            "display": "Prisoner Number"
+          },
+          {
+            "index": 1,
+            "name": "DOB",
+            "type": "string",
+            "display": "Date of Birth"
+          },
+          {
+            "index": 2,
+            "name": "AGE",
+            "type": "string",
+            "display": "Age"
+          },
+          {
+            "index": 3,
+            "name": "GENDER",
+            "type": "string",
+            "display": "Gender"
+          },
+          {
+            "index": 4,
+            "name": "ETHNICITY",
+            "type": "string",
+            "display": "Ethnicity"
+          },
+          {
+            "index": 5,
+            "name": "GROUPED_ETHNICITY",
+            "type": "string",
+            "display": "Grouped Ethnicity"
+          },
+          {
+            "index": 6,
+            "name": "PRISON",
+            "type": "string",
+            "display": "Establishment"
+          },
+          {
+            "index": 7,
+            "name": "REGION",
+            "type": "string",
+            "display": "Region (Male only)/Female Estate"
+          },
+          {
+            "index": 8,
+            "name": "HAS_MILITARY_RECORD",
+            "type": "string",
+            "display": "Has Military Record"
+          },
+          {
+            "index": 9,
+            "name": "HAS_VETERAN_FLAG",
+            "type": "string",
+            "display": "Has Veteran Alert Flag"
+          }
+        ]
+      }
+    },
+    {
+     "id": "dps-veterans-in-custody-establishment-summary",
+      "name": "Establishment Summary of Veterans in Custody",
+      "description": "Veterans",
+      "datasource": "datamart",
+      "query": "with dataset_base_ as (SELECT offr.offender_id_display AS PRISONER_NUMBER, offr.birth_date AS DOB, date_diff('year', offr.birth_date, current_date) - CASE WHEN TO_CHAR(current_date, 'MMDD') < TO_CHAR(birth_date, 'MMDD') THEN 1 ELSE 0 END AS AGE, off_gen.description AS GENDER, off_eth.description AS ETHNICITY, CASE WHEN off_eth.code IN ('W2','W1','W9','W8','W10','W3') THEN 'White' WHEN off_eth.code IN ('O2','A4','O1','M9','M2','B9','B1','A3','A1','O9','M3','M1','B2','A9','A2') THEN 'BAME' WHEN off_eth.code = 'NS' THEN 'Not Stated' END AS GROUPED_ETHNICITY, off_loc.description AS PRISON, CASE WHEN off_loc.agy_loc_id IN ('AGI','BZI','DHI','DWI','ESI','EWI','FHI','LNI','NHI','PFI','SDI','STI') THEN 'Female' ELSE off_reg.description END AS REGION, CASE WHEN off_mr.military_seq IS NOT NULL THEN 'Y' ELSE 'N' END AS HAS_MILITARY_RECORD, CASE WHEN off_al.alert_code IS NOT NULL THEN 'Y' ELSE 'N' END AS HAS_VETERAN_FLAG FROM datamart.prisons.nomis_offenders offr INNER JOIN datamart.prisons.nomis_offender_bookings off_bk ON offr.offender_id = off_bk.offender_id AND off_bk.active_flag = 'Y' INNER JOIN datamart.prisons.nomis_agency_locations off_loc ON off_bk.agy_loc_id = off_loc.agy_loc_id AND off_loc.agency_location_type = 'INST' LEFT JOIN datamart.prisons.nomis_offender_military_records off_mr ON off_bk.offender_book_id = off_mr.offender_book_id LEFT JOIN datamart.prisons.nomis_offender_alerts off_al ON off_al.offender_book_id = off_bk.offender_book_id AND off_al.alert_status = 'ACTIVE' AND off_al.alert_code = 'F1' LEFT JOIN datamart.prisons.nomis_reference_codes off_gen ON off_gen.code = offr.sex_code AND off_gen.domain = 'SEX' LEFT JOIN datamart.prisons.nomis_reference_codes off_eth ON offr.race_code = off_eth.code AND off_eth.domain = 'ETHNICITY' LEFT JOIN datamart.prisons.nomis_areas off_reg ON off_loc.noms_region_code = off_reg.area_code) SELECT PRISON, REGION, COUNT(*) AS total_population, COUNT(CASE WHEN HAS_MILITARY_RECORD = 'Y' OR HAS_VETERAN_FLAG = 'Y' THEN 1 END) AS total_veterans, COUNT(CASE WHEN HAS_MILITARY_RECORD = 'Y' THEN 1 END) AS total_veterans_with_record, COUNT(CASE WHEN HAS_VETERAN_FLAG = 'Y' THEN 1 END) AS total_veterans_with_alert, ROUND(COUNT(CASE WHEN HAS_MILITARY_RECORD = 'Y' OR HAS_VETERAN_FLAG = 'Y' THEN 1 END) * 100.0 / COUNT(*), 2) AS percentage_veterans, COUNT(CASE WHEN AGE < 25 THEN 1 END) AS population_under_25, COUNT(CASE WHEN (HAS_MILITARY_RECORD = 'Y' OR HAS_VETERAN_FLAG = 'Y') AND AGE < 25 THEN 1 END) AS veterans_under_25, ROUND(COUNT(CASE WHEN (HAS_MILITARY_RECORD = 'Y' OR HAS_VETERAN_FLAG = 'Y') AND AGE < 25 THEN 1 END) * 100.0 / COUNT(*), 2) AS percentage_veterans_under_25, COUNT(CASE WHEN AGE >= 25 AND AGE <= 29 THEN 1 END) AS population_25_to_29, COUNT(CASE WHEN (HAS_MILITARY_RECORD = 'Y' OR HAS_VETERAN_FLAG = 'Y') AND AGE >= 25 AND AGE <= 29 THEN 1 END) AS veterans_25_to_29, ROUND(COUNT(CASE WHEN (HAS_MILITARY_RECORD = 'Y' OR HAS_VETERAN_FLAG = 'Y') AND AGE >= 25 AND AGE <= 29 THEN 1 END) * 100.0 / COUNT(*), 2) AS percentage_veterans_25_to_29, COUNT(CASE WHEN AGE >= 30 AND AGE <= 39 THEN 1 END) AS population_30_to_39, COUNT(CASE WHEN (HAS_MILITARY_RECORD = 'Y' OR HAS_VETERAN_FLAG = 'Y') AND AGE >= 30 AND AGE <= 39 THEN 1 END) AS veterans_30_to_39, ROUND(COUNT(CASE WHEN (HAS_MILITARY_RECORD = 'Y' OR HAS_VETERAN_FLAG = 'Y') AND AGE >= 30 AND AGE <= 39 THEN 1 END) * 100.0 / COUNT(*), 2) AS percentage_veterans_30_to_39, COUNT(CASE WHEN AGE >= 40 AND AGE <= 49 THEN 1 END) AS population_40_to_49, COUNT(CASE WHEN (HAS_MILITARY_RECORD = 'Y' OR HAS_VETERAN_FLAG = 'Y') AND AGE >= 40 AND AGE <= 49 THEN 1 END) AS veterans_40_to_49, ROUND(COUNT(CASE WHEN (HAS_MILITARY_RECORD = 'Y' OR HAS_VETERAN_FLAG = 'Y') AND AGE >= 40 AND AGE <= 49 THEN 1 END) * 100.0 / COUNT(*), 2) AS percentage_veterans_40_to_49, COUNT(CASE WHEN AGE >= 50 THEN 1 END) AS population_over_50, COUNT(CASE WHEN (HAS_MILITARY_RECORD = 'Y' OR HAS_VETERAN_FLAG = 'Y') AND AGE >= 50 THEN 1 END) AS veterans_over_50, ROUND(COUNT(CASE WHEN (HAS_MILITARY_RECORD = 'Y' OR HAS_VETERAN_FLAG = 'Y') AND AGE >= 50 THEN 1 END) * 100.0 / COUNT(*), 2) AS percentage_veterans_over_50, COUNT(CASE WHEN GROUPED_ETHNICITY = 'BAME' THEN 1 END) AS population_bame, COUNT(CASE WHEN (HAS_MILITARY_RECORD = 'Y' OR HAS_VETERAN_FLAG = 'Y') AND GROUPED_ETHNICITY = 'BAME' THEN 1 END) AS veterans_bame, ROUND(COUNT(CASE WHEN (HAS_MILITARY_RECORD = 'Y' OR HAS_VETERAN_FLAG = 'Y') AND GROUPED_ETHNICITY = 'BAME' THEN 1 END) * 100.0 / COUNT(*), 2) AS percentage_veterans_bame, COUNT(CASE WHEN GROUPED_ETHNICITY = 'White' THEN 1 END) AS population_white, COUNT(CASE WHEN (HAS_MILITARY_RECORD = 'Y' OR HAS_VETERAN_FLAG = 'Y') AND GROUPED_ETHNICITY = 'White' THEN 1 END) AS veterans_white, ROUND(COUNT(CASE WHEN (HAS_MILITARY_RECORD = 'Y' OR HAS_VETERAN_FLAG = 'Y') AND GROUPED_ETHNICITY = 'White' THEN 1 END) * 100.0 / COUNT(*), 2) AS percentage_veterans_white, COUNT(CASE WHEN GROUPED_ETHNICITY = 'Not Stated' THEN 1 END) AS population_not_stated, COUNT(CASE WHEN (HAS_MILITARY_RECORD = 'Y' OR HAS_VETERAN_FLAG = 'Y') AND GROUPED_ETHNICITY = 'Not Stated' THEN 1 END) AS veterans_not_stated, ROUND(COUNT(CASE WHEN (HAS_MILITARY_RECORD = 'Y' OR HAS_VETERAN_FLAG = 'Y') AND GROUPED_ETHNICITY = 'Not Stated' THEN 1 END) * 100.0 / COUNT(*), 2) AS percentage_veterans_not_stated FROM dataset_base_ GROUP BY PRISON, REGION ORDER BY PRISON ASC",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "PRISON",
+            "type": "string",
+            "display": "Establishment"
+          },
+          {
+            "index": 1,
+            "name": "REGION",
+            "type": "string",
+            "display": "Region (Male only)/Female Estate"
+          },
+           {
+            "index": 2,
+            "name": "total_population",
+            "type": "string",
+            "display": "Total Population"
+          },
+          {
+            "index": 3,
+            "name": "total_veterans",
+            "type": "string",
+            "display": "Total Veterans"
+          },
+          {
+            "index": 4,
+            "name": "total_veterans_with_record",
+            "type": "string",
+            "display": "Total Veterans with Record"
+          },
+          {
+            "index": 5,
+            "name": "total_veterans_with_alert",
+            "type": "string",
+            "display": "Total Veterans with Alert"
+          },
+          {
+            "index": 6,
+            "name": "percentage_veterans",
+            "type": "string",
+            "display": "Percentage Veterans"
+          },
+          {
+            "index": 7,
+            "name": "population_under_25",
+            "type": "string",
+            "display": "Population Under 25"
+          },
+          {
+            "index": 8,
+            "name": "veterans_under_25",
+            "type": "string",
+            "display": "Veterans Under 25"
+          },
+          {
+            "index": 9,
+            "name": "percentage_veterans_under_25",
+            "type": "string",
+            "display": "Percentage Veterans Under 25"
+          },
+          {
+            "index": 10,
+            "name": "population_25_to_29",
+            "type": "string",
+            "display": "Population 25 to 29"
+          },
+          {
+            "index": 11,
+            "name": "veterans_25_to_29",
+            "type": "string",
+            "display": "Veterans 25 to 29"
+          },
+          {
+            "index": 12,
+            "name": "percentage_veterans_25_to_29",
+            "type": "string",
+            "display": "Percentage Veterans 25 to 29"
+          },
+          {
+            "index": 13,
+            "name": "population_30_to_39",
+            "type": "string",
+            "display": "Population 30 to 39"
+          },
+          {
+            "index": 14,
+            "name": "veterans_30_to_39",
+            "type": "string",
+            "display": "Veterans 30 to 39"
+          },
+          {
+            "index": 15,
+            "name": "percentage_veterans_30_to_39",
+            "type": "string",
+            "display": "Percentage Veterans 30 to 39"
+          },
+          {
+            "index": 16,
+            "name": "population_40_to_49",
+            "type": "string",
+            "display": "Population 40 to 49"
+          },
+          {
+            "index": 17,
+            "name": "veterans_40_to_49",
+            "type": "string",
+            "display": "Veterans 40 to 49"
+          },
+          {
+            "index": 18,
+            "name": "percentage_veterans_40_to_49",
+            "type": "string",
+            "display": "Percentage Veterans 40 to 49"
+          },
+          {
+            "index": 19,
+            "name": "population_over_50",
+            "type": "string",
+            "display": "Population Over 50"
+          },
+          {
+            "index": 20,
+            "name": "veterans_over_50",
+            "type": "string",
+            "display": "Veterans Over 50"
+          },
+          {
+            "index": 21,
+            "name": "percentage_veterans_over_50",
+            "type": "string",
+            "display": "Percentage Veterans Over 50"
+          },
+          {
+            "index": 22,
+            "name": "population_bame",
+            "type": "string",
+            "display": "Population BAME"
+          },
+          {
+            "index": 23,
+            "name": "veterans_bame",
+            "type": "string",
+            "display": "Veterans BAME"
+          },
+          {
+            "index": 24,
+            "name": "percentage_veterans_bame",
+            "type": "string",
+            "display": "Percentage Veterans BAME"
+          },
+          {
+            "index": 25,
+            "name": "population_white",
+            "type": "string",
+            "display": "Population White"
+          },
+          {
+            "index": 26,
+            "name": "veterans_white",
+            "type": "string",
+            "display": "Veterans White"
+          },
+          {
+            "index": 27,
+            "name": "percentage_veterans_white",
+            "type": "string",
+            "display": "Percentage Veterans White"
+          },
+          {
+            "index": 28,
+            "name": "population_not_stated",
+            "type": "string",
+            "display": "Population Not Stated"
+          },
+          {
+            "index": 29,
+            "name": "veterans_not_stated",
+            "type": "string",
+            "display": "Veterans Not Stated"
+          },
+          {
+            "index": 30,
+            "name": "percentage_veterans_not_stated",
+            "type": "string",
+            "display": "Percentage Veterans Not Stated"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "dps-veterans-in-custody-by-establishment",
+      "name": "Veterans in Custody",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "$ref:dps-veterans-in-custody",
+      "feature": [
+        {
+          "type": "share|save|email|print|download"
+        }
+      ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:PRISON",
+            "display": "Establishment",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:REGION",
+            "display": "Region (Male only)/Female Estate",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:PRISONER_NUMBER",
+            "display": "Prisoner Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:DOB",
+            "display": "Date of Birth",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:AGE",
+            "display": "Age",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:GENDER",
+            "display": "Gender",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:ETHNICITY",
+            "display": "Ethnicity",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:GROUPED_ETHNICITY",
+            "display": "Grouped Ethnicity",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:HAS_MILITARY_RECORD",
+            "display": "Has Military Record",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:HAS_VETERAN_FLAG",
+            "display": "Has Veteran Flag",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "dps-veterans-in-custody-establishment-summary",
+      "name": "Veterans in Custody - Establishment Summary",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "$ref:dps-veterans-in-custody-establishment-summary",
+      "feature": [
+        {
+          "type": "share|save|email|print|download"
+        }
+      ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:PRISON",
+            "display": "Establishment",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:REGION",
+            "display": "Region (Male only)/Female Estate",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:total_population",
+            "display": "Total Population",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:total_veterans",
+            "display": "Total Veterans",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:total_veterans_with_record",
+            "display": "Total Veterans with Record",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:total_veterans_with_alert",
+            "display": "Total Veterans with Alert",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:percentage_veterans",
+            "display": "Percentage of Veterans",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:population_under_25",
+            "display": "Population Under 25",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:veterans_under_25",
+            "display": "Veterans Under 25",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:percentage_veterans_under_25",
+            "display": "Percentage of Veterans Under 25",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:population_25_to_29",
+            "display": "Population Aged 25 to 29",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:veterans_25_to_29",
+            "display": "Veterans Aged 25 to 29",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:percentage_veterans_25_to_29",
+            "display": "Percentage of Veterans Aged 25 to 29",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:population_30_to_39",
+            "display": "Population Aged 30 to 39",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:veterans_30_to_39",
+            "display": "Veterans Aged 30 to 39",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:percentage_veterans_30_to_39",
+            "display": "Percentage of Veterans Aged 30 to 39e",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:population_40_to_49",
+            "display": "Population Aged 40 to 49",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:veterans_40_to_49",
+            "display": "Veterans Aged 40 to 49",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:percentage_veterans_40_to_49",
+            "display": "Percentage of Veterans Aged 40 to 49",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:population_over_50",
+            "display": "Population Aged 50 and Over",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:veterans_over_50",
+            "display": "Veterans Aged 50 and Over",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:percentage_veterans_over_50",
+            "display": "Percentage of Veterans Aged 50 and Over",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:population_bame",
+            "display": "Population BAME",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:veterans_bame",
+            "display": "Veterans BAME",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:percentage_veterans_bame",
+            "display": "Percentage of Veterans BAME",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:population_white",
+            "display": "Population White",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:veterans_white",
+            "display": "Veterans White",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:percentage_veterans_white",
+            "display": "Percentage of Veterans White",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:population_not_stated",
+            "display": "Population Not Stated",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:veterans_not_stated",
+            "display": "Veterans Not Stated",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:percentage_veterans_not_stated",
+            "display": "Percentage of Veterans Not Stated",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}
