@@ -1,0 +1,251 @@
+{
+  "id": "residential-location-reports",
+  "name": "Residential location reports",
+  "description": "Reports on residential locations",
+  "metadata": {
+    "author": "Michael Willis",
+    "version": "1.0.0",
+    "owner": "Move a prisoner team"
+  },
+  "datasource": [
+    {
+      "id": "dps_locations",
+      "name": "DPS Residential locations",
+      "database": "public",
+      "catalog": "dps_locations",
+      "connection": "federated",
+      "dialect": "postgres/19"
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "MANAGE_RES_LOCATIONS_OP_CAP",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseloads",
+      "type": "row-level",
+      "action": ["prison_id IN (${caseloads})"],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": ["${caseloads}"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "dataset": [
+    {
+      "id": "cell-details",
+      "name": "List of cell details",
+      "datasource": "dps_locations",
+      "query": "select l.id, l.prison_id, concat(l.prison_id, '-', l.path_hierarchy) as path_hierarchy, initcap(l.local_name) as local_name, l.cell_mark,\n       (CHAR_LENGTH(l.path_hierarchy) - CHAR_LENGTH(REPLACE(l.path_hierarchy, '-', ''))) / CHAR_LENGTH('-') +1 as level,\n       c.certified_normal_accommodation,\n       c.working_capacity,\n       c.max_capacity,\n       initcap(l.location_type) as location_type,\n       initcap(l.status) as status,\n       (select string_agg( distinct INITCAP(replace(uf.used_for, '_', ' ')), ',') from cell_used_for uf where l.id = uf.location_id) used_for,\n       (select string_agg( distinct INITCAP(replace(sc.specialist_cell_type, '_', ' ')), ',') from specialist_cell sc where l.id = sc.location_id) specialist_types\nfrom public.location l left join public.capacity c on l.capacity_id = c.id\nwhere l.location_type_discriminator IN ('RESIDENTIAL', 'CELL')",
+      "schema": {
+        "field": [
+          {
+            "name": "id",
+            "type": "string"
+          },
+          {
+            "name": "prison_id",
+            "type": "string"
+          },
+          {
+            "name": "path_hierarchy",
+            "type": "string"
+          },
+          {
+            "name": "local_name",
+            "type": "string"
+          },
+          {
+            "name": "cell_mark",
+            "type": "string"
+          },
+          {
+            "name": "level",
+            "type": "int"
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "filter": {
+              "type": "multiselect",
+              "mandatory": true,
+              "default": "Active",
+              "staticoptions": [
+                {
+                  "name": "Active",
+                  "display": "Active"
+                },
+                {
+                  "name": "Inactive",
+                  "display": "Inactive"
+                },
+                {
+                  "name": "Draft",
+                  "display": "Draft"
+                }
+              ]
+            }
+          },
+          {
+            "name": "certified_normal_accommodation",
+            "type": "int"
+          },
+          {
+            "name": "working_capacity",
+            "type": "int"
+          },
+          {
+            "name": "max_capacity",
+            "type": "int"
+          },
+          {
+            "name": "location_type",
+            "type": "string"
+          },
+          {
+            "name": "used_for",
+            "type": "string"
+          },
+          {
+            "name": "specialist_types",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ],
+  "report": [
+    {
+      "id": "cell-details",
+      "name": "List of cell details",
+      "description": "Details each cell and its capacity and attributes",
+      "version": "1.0.0",
+      "dataset": "$ref:cell-details",
+      "policy": [],
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:prison_id",
+            "display": "Prison ID",
+            "sortable": false,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type" : "caseloads",
+              "mandatory": false
+            }
+          },
+          {
+            "name": "$ref:path_hierarchy",
+            "display": "Location path",
+            "formula": "make_url('https://locations-inside-prison-${env}.hmpps.service.justice.gov.uk/view-and-update-locations/${prison_id}/${id}',${path_hierarchy},TRUE)",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": true
+          },
+          {
+            "name": "$ref:local_name",
+            "display": "Local name",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:cell_mark",
+            "display": "Door mark",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:level",
+            "display": "Level",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:certified_normal_accommodation",
+            "display": "CNA",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:working_capacity",
+            "display": "Working capacity",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:max_capacity",
+            "display": "Max capacity",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:location_type",
+            "display": "Location type",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:used_for",
+            "display": "Used for",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "wordwrap": "break-words"
+          },
+          {
+            "name": "$ref:specialist_types",
+            "display": "Specialist",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "wordwrap": "break-words"
+          },
+          {
+            "name": "$ref:status",
+            "display": "Status",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          }
+        ]
+      },
+      "destination": []
+    }
+  ]
+}

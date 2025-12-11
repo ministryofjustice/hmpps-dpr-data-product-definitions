@@ -1,0 +1,307 @@
+{
+  "id": "incident-report",
+  "name": "Incident report summary",
+  "description": "List of all incidents filtered by dates, types, status and locations.",
+  "metadata": {
+    "author": "Michael Willis",
+    "version": "1.0.0",
+    "owner": "Managing Safety"
+  },
+  "datasource": [
+    {
+      "id": "dps_inc_reporting",
+      "name": "DPS Incident Reporting",
+      "database": "public",
+      "catalog": "dps_inc_reporting",
+      "connection": "federated",
+      "dialect": "postgres/19"
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "INCIDENT_REPORTS__RO",
+                "INCIDENT_REPORTS__RW",
+                "INCIDENT_REPORTS__APPROVE"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseloads",
+      "type": "row-level",
+      "action": ["location IN (${caseloads})"],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": ["${caseloads}"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "dataset": [
+    {
+      "id": "summary",
+      "name": "Incident report summary",
+      "datasource": "dps_inc_reporting",
+      "query": "SELECT id, report_reference, ctf.code as type, ctf.description as type_description, status, constant_status.description as status_description, incident_date_and_time, reported_at, reported_by, title, r.description, location, modified_at\nFROM public.report r join public.constant_status on r.status = constant_status.code join public.constant_type ct on r.type = ct.code join public.constant_type_family ctf on ctf.code = ct.family_code\nWHERE status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
+      "schema": {
+        "field": [
+          {
+            "name": "id",
+            "type": "string"
+          },
+          {
+            "name": "report_reference",
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "type": "string"
+          },
+          {
+            "name": "type_description",
+            "type": "string"
+          },
+          {
+            "name": "status_description",
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "type": "string"
+          },
+          {
+            "name": "incident_date_and_time",
+            "type": "datetime"
+          },
+          {
+            "name": "location",
+            "type": "string"
+          },
+          {
+            "name": "reported_at",
+            "type": "datetime"
+          },
+          {
+            "name": "reported_by",
+            "type": "string"
+          },
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "modified_at",
+            "type": "datetime"
+          }
+        ]
+      }
+    },
+    {
+      "id": "types",
+      "name": "Incident Types",
+      "datasource": "dps_inc_reporting",
+      "query": "SELECT code, description FROM public.constant_type_family",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Type code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Type description",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "status",
+      "name": "Incident Status",
+      "datasource": "dps_inc_reporting",
+      "query": "SELECT code, description FROM public.constant_status where code NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Status code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Status description",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ],
+  "report": [
+    {
+      "id": "summary",
+      "name": "Incident report summary",
+      "description": "List of all incidents filtered by dates, types, status and locations.",
+      "version": "1.0.0",
+      "dataset": "$ref:summary",
+      "policy": [],
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:report_reference",
+            "display": "Report Reference",
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports/${id}',${report_reference},TRUE)",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:location",
+            "display": "Location of incident",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type" : "caseloads",
+              "mandatory": false
+            }
+          },
+          {
+            "name": "$ref:type",
+            "display": "Type code",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "interactive": true,
+            "dynamicoptions": {
+              "maximumOptions": 60,
+              "returnAsStaticOptions": true,
+              "dataset": "types",
+              "name": "code",
+              "display": "description"
+            }
+          },
+          {
+            "name": "$ref:type_description",
+            "display": "Incident type",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:status",
+            "display": "Status code",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "interactive": true,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 10,
+                "returnAsStaticOptions": true,
+                "dataset": "status",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "$ref:status_description",
+            "display": "Incident status",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:incident_date_and_time",
+            "display": "Occurrence at",
+            "formula": "format_date(${incident_date_and_time}, 'dd/MM/yyyy HH:mm')",
+            "sortable": true,
+            "type": "datetime",
+            "visible": "true",
+            "defaultsort": true,
+            "sortdirection": "desc",
+            "filter": {
+              "mandatory": false,
+              "type": "daterange",
+              "default": "today(-1,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:reported_at",
+            "formula": "format_date(${reported_at}, 'dd/MM/yyyy')",
+            "display": "Reported on",
+            "sortable": true,
+            "type": "date",
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:title",
+            "display": "Incident title",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:description",
+            "display": "Incident description",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "wordwrap": "break-words"
+          },
+          {
+            "name": "$ref:reported_by",
+            "display": "Reported by",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "text"
+            }
+          },
+          {
+            "name": "$ref:modified_at",
+            "display": "Last Updated",
+            "formula": "format_date(${modified_at}, 'dd/MM/yyyy HH:mm')",
+            "type": "date",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          }
+        ]
+      },
+      "destination": []
+    }
+  ]
+}

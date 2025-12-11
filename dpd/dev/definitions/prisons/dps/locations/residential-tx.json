@@ -1,0 +1,240 @@
+{
+  "id": "transactions",
+  "name": "Location transaction reports",
+  "description": "Reports detailing transactions made to internal locations",
+  "metadata": {
+    "author": "Michael Willis",
+    "version": "1.0.0",
+    "owner": "Move a prisoner team"
+  },
+  "datasource": [
+    {
+      "id": "dps_locations",
+      "name": "DPS Residential locations",
+      "database": "public",
+      "catalog": "dps_locations",
+      "connection": "federated",
+      "dialect": "postgres/19"
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "MANAGE_RES_LOCATIONS_OP_CAP",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseloads",
+      "type": "row-level",
+      "action": ["prison_id IN (${caseloads})"],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": ["${caseloads}"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "dataset": [
+    {
+      "id": "residential",
+      "name": "Residential location transactions",
+      "datasource": "dps_locations",
+      "query": "select tx.prison_id,\n       (case p.resi_location_service_active when true then 'Y' else 'N' end) as service_active,\n       tx.tx_start_time,\n       tx.transaction_type,\n       (CASE tx.transaction_type\n            WHEN 'LOCATION_CREATE' THEN 'Created residential location'\n            WHEN 'LOCATION_UPDATE' THEN 'Updated residential location'\n            WHEN 'LOCATION_CREATE_NON_RESI' THEN 'Created non-residential location'\n            WHEN 'LOCATION_UPDATE_NON_RESI' THEN 'Updated non-residential location'\n            WHEN 'CAPACITY_CHANGE' THEN 'Capacity change'\n            WHEN 'CELL_TYPE_CHANGES' THEN 'Cell type change'\n            WHEN 'DEACTIVATION' THEN 'Deactivation'\n            WHEN 'PERMANENT_DEACTIVATION' THEN 'Permanent deactivation'\n            WHEN 'REACTIVATION' THEN 'Reactivation'\n            WHEN 'CELL_CONVERTION_TO_ROOM' THEN 'Cell conversion to room'\n            WHEN 'ROOM_CONVERTION_TO_CELL' THEN 'Room conversion to cell'\n            WHEN 'SIGNED_OP_CAP' THEN 'Signed operational capacity'\n            WHEN 'RESI_SERVICE_ACTIVATION' THEN 'Residential service activation'\n            WHEN 'SYNC' THEN 'NOMIS sync (Residential)'\n            WHEN 'SYNC_NON_RESIDENTIAL' THEN 'NOMIS sync (Non-Residential)'\n            WHEN 'DELETE' THEN 'Locations deleted'\n            WHEN 'APPROVAL_PROCESS_ACTIVATION' THEN 'Certification approval activated'\n            WHEN 'PENDING_CELL_CHANGE' THEN 'Pending cell change'\n            WHEN 'REQUEST_CERTIFICATION_APPROVAL' THEN 'Request certification approval'\n            WHEN 'APPROVE_CERTIFICATION_REQUEST' THEN 'Approve request'\n            WHEN 'REJECT_CERTIFICATION_REQUEST' THEN 'Reject request'\n            WHEN 'WITHDRAW_CERTIFICATION_REQUEST' THEN 'Withdraw request'\n            ELSE 'Unknown transaction type' END)                             as transaction_description,\n       tx.transaction_detail,\n       tx.transaction_invoked_by,\n       (select COUNT(distinct location_id)\n        FROM location_history lh\n        where lh.linked_transaction_id = tx.id)                                 number_locations_affected,\n       (SELECT STRING_AGG(distinct l.path_hierarchy, ', ')\n        FROM location_history lh\n                 join location l on l.id = lh.location_id\n        where lh.linked_transaction_id = tx.id)                                 locations_affected\nfrom linked_transaction tx\n         left join prison_configuration p on p.prison_id = tx.prison_id",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_id",
+            "type": "string"
+          },
+          {
+            "name": "service_active",
+            "type": "string",
+            "filter": {
+              "type": "radio",
+              "mandatory": true,
+              "default": "Y",
+              "staticoptions": [
+                {
+                  "name": "Y",
+                  "display": "Active"
+                },
+                {
+                  "name": "N",
+                  "display": "Inactive"
+                }
+              ]
+            }
+          },
+          {
+            "name": "tx_start_time",
+            "type": "datetime"
+          },
+          {
+            "name": "transaction_type",
+            "type": "string",
+            "filter": {
+              "type": "multiselect",
+              "mandatory": true,
+              "default": "LOCATION_CREATE,LOCATION_UPDATE,CAPACITY_CHANGE,CELL_TYPE_CHANGES,DEACTIVATION,PERMANENT_DEACTIVATION,REACTIVATION,CELL_CONVERTION_TO_ROOM,ROOM_CONVERTION_TO_CELL,SIGNED_OP_CAP,RESI_SERVICE_ACTIVATION",
+              "staticoptions": [
+                {"name": "LOCATION_CREATE", "display": "Created residential location"},
+                {"name": "LOCATION_UPDATE", "display": "Updated residential location"},
+                {"name": "LOCATION_CREATE_NON_RESI", "display": "Created non-residential location"},
+                {"name": "LOCATION_UPDATE_NON_RESI", "display": "Updated non-residential location"},
+                {"name": "CAPACITY_CHANGE", "display": "Capacity change"},
+                {"name": "CELL_TYPE_CHANGES", "display": "Cell type change"},
+                {"name": "DEACTIVATION", "display": "Deactivation"},
+                {"name": "PERMANENT_DEACTIVATION", "display": "Permanent deactivation"},
+                {"name": "REACTIVATION", "display": "Reactivation"},
+                {"name": "CELL_CONVERTION_TO_ROOM", "display": "Cell conversion to room"},
+                {"name": "ROOM_CONVERTION_TO_CELL", "display": "Room conversion to cell"},
+                {"name": "SIGNED_OP_CAP", "display": "Signed operational capacity"},
+                {"name": "RESI_SERVICE_ACTIVATION", "display": "Residential service activation"},
+                {"name": "APPROVAL_PROCESS_ACTIVATION", "display": "Certification approval activation"},
+                {"name": "PENDING_CELL_CHANGE", "display": "Certification approval activation"},
+                {"name": "REQUEST_CERTIFICATION_APPROVAL", "display": "Request certification approval"},
+                {"name": "APPROVE_CERTIFICATION_REQUEST", "display": "Approve request"},
+                {"name": "REJECT_CERTIFICATION_REQUEST", "display": "Reject request"},
+                {"name": "WITHDRAW_CERTIFICATION_REQUEST", "display": "Withdraw request"},
+                {"name": "SYNC", "display": "NOMIS sync (Residential)"},
+                {"name": "SYNC_NON_RESIDENTIAL", "display": "NOMIS sync (Non-Residential)"},
+                {"name": "DELETE", "display": "Locations deleted"}
+              ]
+            }
+          },
+          {
+            "name": "transaction_description",
+            "type": "string"
+          },
+          {
+            "name": "transaction_detail",
+            "type": "string"
+          },
+          {
+              "name": "transaction_invoked_by",
+              "type": "string"
+          },
+          {
+            "name": "number_locations_affected",
+            "type": "int"
+          },
+          {
+            "name": "locations_affected",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ],
+  "report": [
+    {
+      "id": "residential",
+      "name": "Residential location transactions",
+      "description": "Details each transaction that has occurred in a residential location",
+      "version": "1.0.0",
+      "dataset": "$ref:residential",
+      "policy": [],
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:prison_id",
+            "display": "Prison ID",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type" : "caseloads",
+              "mandatory": false
+            }
+          },
+          {
+            "name": "$ref:service_active",
+            "display": "Service active",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:transaction_type",
+            "display": "Transaction type",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:transaction_description",
+            "display": "Transaction description",
+            "sortable": false,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:tx_start_time",
+            "display": "Transaction time",
+            "formula": "format_date(${tx_start_time}, 'dd/MM/yyyy HH:mm')",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": true,
+            "filter": {
+              "type": "daterange",
+              "default": "today(-3,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:transaction_detail",
+            "display": "Details",
+            "sortable": false,
+            "visible": "true"
+          },
+          {
+            "name": "$ref:transaction_invoked_by",
+            "display": "Staff username",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:number_locations_affected",
+            "display": "# locations affected",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:locations_affected",
+            "display": "Locations affected",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false
+          }
+        ]
+      },
+      "destination": []
+    }
+  ]
+}
