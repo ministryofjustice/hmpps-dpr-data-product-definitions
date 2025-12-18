@@ -9,12 +9,12 @@
   },
   "datasource": [
     {
-      "id": "dps_inc_reporting",
-      "name": "DPS Incident Reporting",
-      "database": "public",
-      "catalog": "dps_inc_reporting",
+      "id": "athena_redshift",
+      "name": "athena_redshift_federated",
+      "database": "datamart",
+      "catalog": "redshift_datamart",
       "connection": "federated",
-      "dialect": "postgres/19"
+      "dialect": "redshift/4"
     }
   ],
   "policy": [
@@ -40,7 +40,7 @@
     {
       "id": "caseloads",
       "type": "row-level",
-      "action": ["location IN (${caseloads})"],
+      "action": ["prison_id IN (${caseloads})"],
       "rule": [
         {
           "effect": "permit",
@@ -57,8 +57,28 @@
     {
       "id": "summary",
       "name": "Incident report summary",
-      "datasource": "dps_inc_reporting",
-      "query": "SELECT id, report_reference, ctf.code as type, ctf.description as type_description, status, constant_status.description as status_description, incident_date_and_time, reported_at, reported_by, title, r.description, location, modified_at\nFROM public.report r join public.constant_status on r.status = constant_status.code join public.constant_type ct on r.type = ct.code join public.constant_type_family ctf on ctf.code = ct.family_code\nWHERE status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
+      "datasource": "athena_redshift",
+      "query": "SELECT r.id,\n       report_reference,\n       ctf.code                    as type,\n       ctf.description             as type_description,\n       r.status,\n       cs.description as status_description,\n       incident_date_and_time,\n       reported_at,\n       reported_by,\n       r.title,\n       r.description,\n       location                    as prison_id,\n       modified_at,\n       el.description as prison_name,\n       el.noms_region_code         as region_code,\n       area.description            as region_name\nFROM prisons.incidentreporting_report r\n         join prisons.incidentreporting_constant_status cs on r.status = cs.code\n         join prisons.incidentreporting_constant_type ct on r.type = ct.code\n         join prisons.incidentreporting_constant_type_family ctf on ctf.code = ct.family_code\n         join prisons.nomis_agency_locations el on el.agy_loc_id = r.location and el.agency_location_type = 'INST'\n         join prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = el.noms_region_code\nWHERE r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE') and date(r.incident_date_and_time) >= (SELECT START_DATE from prompt_) and date(r.incident_date_and_time) <= (SELECT END_DATE from prompt_)",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Incident Date (Start)",
+          "description": "",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Enter Incident Date (End)",
+          "description": "",
+          "mandatory": "true"
+        }
+      ],
       "schema": {
         "field": [
           {
@@ -90,7 +110,19 @@
             "type": "datetime"
           },
           {
-            "name": "location",
+            "name": "prison_id",
+            "type": "string"
+          },
+          {
+            "name": "prison_name",
+            "type": "string"
+          },
+          {
+            "name": "region_code",
+            "type": "string"
+          },
+          {
+            "name": "region_name",
             "type": "string"
           },
           {
@@ -119,8 +151,8 @@
     {
       "id": "types",
       "name": "Incident Types",
-      "datasource": "dps_inc_reporting",
-      "query": "SELECT code, description FROM public.constant_type_family",
+      "datasource": "athena_redshift",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_type_family",
       "schema": {
         "field": [
           {
@@ -139,8 +171,8 @@
     {
       "id": "status",
       "name": "Incident Status",
-      "datasource": "dps_inc_reporting",
-      "query": "SELECT code, description FROM public.constant_status where code NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
+      "datasource": "athena_redshift",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_status where code NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
       "schema": {
         "field": [
           {
@@ -151,6 +183,46 @@
           {
             "name": "description",
             "display": "Status description",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "regionCodes",
+      "name": "Region Codes",
+      "datasource": "athena_redshift",
+      "query": "select area_code as code, description from prisons.nomis_areas where area_class = 'REGION' and active_flag = 'Y' order by description",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Description",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisons",
+      "name": "Prisons",
+      "datasource": "athena_redshift",
+      "query": "select agy_loc_id prison_id, initcap(description) prison_name FROM prisons.nomis_agency_locations al \nwhere al.agency_location_type = 'INST'\nand al.active_flag = 'Y'\norder by description",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_id",
+            "display": "Prison Id",
+            "type": "string"
+          },
+          {
+            "name": "prison_name",
+            "display": "Prison name",
             "type": "string"
           }
         ]
@@ -183,29 +255,71 @@
             "defaultsort": false
           },
           {
-            "name": "$ref:location",
-            "display": "Location of incident",
+            "name": "$ref:prison_id",
+            "display": "Prison",
             "sortable": true,
-            "visible": "true",
+            "visible": "false",
             "defaultsort": false,
             "filter": {
-              "type" : "caseloads",
-              "mandatory": false
+              "type": "multiselect",
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 140,
+                "returnAsStaticOptions": true,
+                "dataset": "prisons",
+                "name": "prison_id",
+                "display": "prison_name"
+              }
             }
           },
           {
+            "name": "$ref:prison_name",
+            "display": "Prison name",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:region_code",
+            "display": "Region",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 140,
+                "returnAsStaticOptions": true,
+                "dataset": "regionCodes",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "$ref:region_name",
+            "display": "Region name",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
             "name": "$ref:type",
-            "display": "Type code",
+            "display": "Type",
             "sortable": false,
             "visible": "false",
             "defaultsort": false,
-            "interactive": true,
-            "dynamicoptions": {
-              "maximumOptions": 60,
-              "returnAsStaticOptions": true,
-              "dataset": "types",
-              "name": "code",
-              "display": "description"
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 60,
+                "returnAsStaticOptions": true,
+                "dataset": "types",
+                "name": "code",
+                "display": "description"
+              }
             }
           },
           {
@@ -217,11 +331,10 @@
           },
           {
             "name": "$ref:status",
-            "display": "Status code",
+            "display": "Status",
             "sortable": false,
             "visible": "false",
             "defaultsort": false,
-            "interactive": true,
             "filter": {
               "type": "multiselect",
               "mandatory": false,
@@ -249,12 +362,7 @@
             "type": "datetime",
             "visible": "true",
             "defaultsort": true,
-            "sortdirection": "desc",
-            "filter": {
-              "mandatory": false,
-              "type": "daterange",
-              "default": "today(-1,months) - today()"
-            }
+            "sortdirection": "desc"
           },
           {
             "name": "$ref:reported_at",

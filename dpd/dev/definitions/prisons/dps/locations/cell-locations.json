@@ -58,21 +58,9 @@
       "name": "List of cell details",
       "datasource": "dps_locations",
       "query": "",
-      "This i": [
+      "multiphaseQuery": [
         {
           "index": 0,
-          "datasource": {
-            "id": "nomis",
-            "name": "NOMIS",
-            "database": "DIGITAL_PRISON_REPORTING",
-            "catalog": "nomis",
-            "connection": "federated",
-            "dialect": "oracle/11g"
-          },
-          "query": "select o.FIRST_NAME, o.LAST_NAME, o.OFFENDER_ID_DISPLAY as prisoner_number,\nob.agy_loc_id prison_id,\nal.description path_hierarchy\nFROM nomis.OMS_OWNER.OFFENDER_BOOKINGS ob \njoin nomis.OMS_OWNER.OFFENDERS o on ob.OFFENDER_ID = o.OFFENDER_ID and ob.BOOKING_SEQ  = 1 and ob.ACTIVE_FLAG = 'Y'\njoin nomis.OMS_OWNER.AGENCY_INTERNAL_LOCATIONS al on al.INTERNAL_LOCATION_ID = ob.LIVING_UNIT_ID"
-        },
-        {
-          "index": 1,
           "datasource": {
             "id": "dps_locations",
             "name": "DPS Residential locations",
@@ -84,6 +72,18 @@
           "query": "select l.id, l.prison_id, concat(l.prison_id, '-', l.path_hierarchy) as path_hierarchy, initcap(l.local_name) as local_name, l.cell_mark,\n       (CHAR_LENGTH(l.path_hierarchy) - CHAR_LENGTH(REPLACE(l.path_hierarchy, '-', ''))) / CHAR_LENGTH('-') +1 as level,\n       c.certified_normal_accommodation,\n       c.working_capacity,\n       c.max_capacity,\n       initcap(l.location_type) as location_type,\n       initcap(l.status) as status,\n       (select string_agg( distinct INITCAP(replace(uf.used_for, '_', ' ')), ',') from cell_used_for uf where l.id = uf.location_id) used_for,\n       (select string_agg( distinct INITCAP(replace(sc.specialist_cell_type, '_', ' ')), ',') from specialist_cell sc where l.id = sc.location_id) specialist_types\nfrom public.location l left join public.capacity c on l.capacity_id = c.id\nwhere l.location_type_discriminator IN ('RESIDENTIAL', 'CELL')"
         },
         {
+          "index": 1,
+          "datasource": {
+            "id": "nomis",
+            "name": "NOMIS",
+            "database": "DIGITAL_PRISON_REPORTING",
+            "catalog": "nomis",
+            "connection": "federated",
+            "dialect": "oracle/11g"
+          },
+          "query": "select o.FIRST_NAME, o.LAST_NAME, o.OFFENDER_ID_DISPLAY as prisoner_number,\nob.agy_loc_id prison_id,\nal.description path_hierarchy\nFROM OMS_OWNER.OFFENDER_BOOKINGS ob \njoin OMS_OWNER.OFFENDERS o on ob.OFFENDER_ID = o.OFFENDER_ID and ob.BOOKING_SEQ  = 1 and ob.ACTIVE_FLAG = 'Y'\njoin OMS_OWNER.AGENCY_INTERNAL_LOCATIONS al on al.INTERNAL_LOCATION_ID = ob.LIVING_UNIT_ID"
+        },
+        {
           "index": 2,
           "datasource": {
             "id": "athena",
@@ -92,7 +92,7 @@
             "catalog": "AwsDataCatalog",
             "connection": "awsdatacatalog"
           },
-          "query": "SELECT id, prison_id, path_hierarchy, local_name, cell_mark, level, status, certified_normal_accommodation, working_capacity, max_capacity, location_type, used_for, specialist_types, first_name, last_name, prisoner_number from AwsDataCatalog.reports.${table[1]} LEFT JOIN AwsDataCatalog.reports.${table[0]} on AwsDataCatalog.reports.${table[0]}.path_hierarchy=AwsDataCatalog.reports.${table[1]}.path_hierarchy"
+          "query": "SELECT id, AwsDataCatalog.reports.${table[0]}.prison_id, AwsDataCatalog.reports.${table[0]}.path_hierarchy, local_name, cell_mark, level, status, certified_normal_accommodation, working_capacity, max_capacity, location_type, used_for, specialist_types, first_name, last_name, prisoner_number from AwsDataCatalog.reports.${table[0]} LEFT JOIN AwsDataCatalog.reports.${table[1]} on AwsDataCatalog.reports.${table[0]}.path_hierarchy=AwsDataCatalog.reports.${table[1]}.path_hierarchy"
         }
       ],
       "schema": {
