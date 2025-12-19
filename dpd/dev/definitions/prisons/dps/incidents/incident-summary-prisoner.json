@@ -1,0 +1,258 @@
+{
+  "id": "prisoner-summary",
+  "name": "Prisoner summary count of incidents",
+  "description": "Summary of occurrences of incidents by prisoner.",
+  "metadata": {
+    "author": "Michael Willis",
+    "version": "1.0.0",
+    "owner": "Managing Safety"
+  },
+  "datasource": [
+    {
+      "id": "athena_redshift",
+      "name": "athena_redshift_federated",
+      "database": "datamart",
+      "catalog": "redshift_datamart",
+      "connection": "federated",
+      "dialect": "redshift/4"
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "INCIDENT_REPORTS__RO",
+                "INCIDENT_REPORTS__RW",
+                "INCIDENT_REPORTS__APPROVE"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseloads",
+      "type": "row-level",
+      "action": ["location IN (${caseloads})"],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": ["${caseloads}"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "dataset": [
+    {
+      "id": "prisoner-summary",
+      "name": "Prisoner summary of incidents",
+      "datasource": "athena_redshift",
+      "query": "select pi.prisoner_number,\n       pi.first_name                                               as first_name,\n       pi.last_name                                                as last_name,\n       ob.agy_loc_id                                               as location,\n       el.description                                              as prison_name,\n       al.description                                              as cell_location,\n       sum(case when ctf.code = 'ASSAULT' then 1 else 0 end)       as assault_count,\n       sum(case when ctf.code = 'SELF_HARM' then 1 else 0 end)     as self_harm_count,\n       sum(case when ctf.code = 'FIND' then 1 else 0 end)          as finds_count,\n       sum(case when ctf.code = 'DISORDER' then 1 else 0 end)      as disorder_count,\n       sum(case when ctf.code = 'DRUGS' then 1 else 0 end)         as drugs_count,\n       sum(case when ctf.code = 'MISCELLANEOUS' then 1 else 0 end) as misc_count,\n       count(*)                                                    as total_incidents\nfrom prisons.nomis_OFFENDER_BOOKINGS ob\n         JOIN prisons.nomis_OFFENDERS o\n              ON o.OFFENDER_ID = ob.OFFENDER_ID AND ob.BOOKING_SEQ = 1 AND ob.ACTIVE_FLAG = 'Y'\n         join prisons.incidentreporting_prisoner_involvement pi on pi.prisoner_number = o.OFFENDER_ID_DISPLAY\n         join prisons.nomis_AGENCY_INTERNAL_LOCATIONS al on ob.LIVING_UNIT_ID = al.INTERNAL_LOCATION_ID\n         join prisons.nomis_agency_locations el on el.agy_loc_id = ob.agy_loc_id\n         join prisons.incidentreporting_report r on r.id = pi.report_id\n         join prisons.incidentreporting_constant_type ct on r.type = ct.code\n         join prisons.incidentreporting_constant_type_family ctf on ctf.code = ct.family_code\nWHERE r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')\nGROUP BY pi.prisoner_number, pi.last_name, pi.first_name, ob.agy_loc_id, el.description, al.description",
+      "schema": {
+        "field": [
+          {
+            "name": "prisoner_number",
+            "type": "string"
+          },
+          {
+            "name": "first_name",
+            "type": "string"
+          },
+          {
+            "name": "last_name",
+            "type": "string"
+          },
+          {
+            "name": "cell_location",
+            "type": "string"
+          },
+          {
+            "name": "location",
+            "type": "string"
+          },
+          {
+            "name": "prison_name",
+            "type": "string"
+          },
+          {
+            "name": "assault_count",
+            "type": "long"
+          },
+          {
+            "name": "self_harm_count",
+            "type": "long"
+          },
+          {
+            "name": "finds_count",
+            "type": "long"
+          },
+          {
+            "name": "disorder_count",
+            "type": "long"
+          },
+          {
+            "name": "drugs_count",
+            "type": "long"
+          },
+          {
+            "name": "misc_count",
+            "type": "long"
+          },
+          {
+            "name": "total_incidents",
+            "type": "long"
+          }
+        ]
+      }
+    },
+    {
+      "id": "types",
+      "name": "Incident Types",
+      "datasource": "athena_redshift",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_type_family",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Type code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Type description",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ],
+  "report": [
+    {
+      "id": "prisoner-summary",
+      "name": "Prisoner summary of incidents",
+      "description": "Count of incidents per prisoner for self harm, assaults and others",
+      "version": "1.0.0",
+      "dataset": "$ref:prisoner-summary",
+      "policy": [],
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:prisoner_number",
+            "display": "Prisoner number",
+            "sortable": true,
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prisoner_number}',${prisoner_number},TRUE)",
+            "visible": "true",
+            "defaultsort": true,
+            "filter": {
+              "type": "text"
+            }
+          },
+          {
+            "name": "$ref:last_name",
+            "formula": "${last_name}, ${first_name}",
+            "display": "Name",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:location",
+            "display": "Current location",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:cell_location",
+            "display": "Cell location",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:prison_name",
+            "display": "Prison name",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:assault_count",
+            "display": "Assaults",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?searchID=${prisoner_number}&typeFamily=ASSAULT',${assault_count},TRUE)"
+          },
+          {
+            "name": "$ref:self_harm_count",
+            "display": "Self harm",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?searchID=${prisoner_number}&typeFamily=SELF_HARM',${self_harm_count},TRUE)"
+          },
+          {
+            "name": "$ref:finds_count",
+            "display": "Finds",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?searchID=${prisoner_number}&typeFamily=FIND',${finds_count},TRUE)"
+          },
+          {
+            "name": "$ref:disorder_count",
+            "display": "Disorder",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?searchID=${prisoner_number}&typeFamily=DISORDER',${disorder_count},TRUE)"
+          },
+          {
+            "name": "$ref:drugs_count",
+            "display": "Drugs",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?searchID=${prisoner_number}&typeFamily=DRUGS',${drugs_count},TRUE)"
+          },
+          {
+            "name": "$ref:misc_count",
+            "display": "Miscellaneous",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?searchID=${prisoner_number}&typeFamily=MISCELLANEOUS',${misc_count},TRUE)"
+          },
+          {
+            "name": "$ref:total_incidents",
+            "display": "Total incidents",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?searchID=${prisoner_number}',${total_incidents},TRUE)"
+          }
+        ]
+      },
+      "destination": []
+    }
+  ]
+}

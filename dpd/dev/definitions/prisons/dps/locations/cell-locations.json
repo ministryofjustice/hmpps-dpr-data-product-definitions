@@ -28,24 +28,8 @@
             {
               "match": [
                 "${role}",
-                "MANAGE_RES_LOCATIONS_OP_CAP",
-                "ROLE_PRISONS_REPORTING_USER"
+                "MANAGE_RES_LOCATIONS_OP_CAP"
               ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "caseloads",
-      "type": "row-level",
-      "action": ["prison_id IN (${caseloads})"],
-      "rule": [
-        {
-          "effect": "permit",
-          "condition": [
-            {
-              "exists": ["${caseloads}"]
             }
           ]
         }
@@ -69,7 +53,7 @@
             "connection": "federated",
             "dialect": "postgres/19"
           },
-          "query": "select l.id, l.prison_id, concat(l.prison_id, '-', l.path_hierarchy) as path_hierarchy, initcap(l.local_name) as local_name, l.cell_mark,\n       (CHAR_LENGTH(l.path_hierarchy) - CHAR_LENGTH(REPLACE(l.path_hierarchy, '-', ''))) / CHAR_LENGTH('-') +1 as level,\n       c.certified_normal_accommodation,\n       c.working_capacity,\n       c.max_capacity,\n       initcap(l.location_type) as location_type,\n       initcap(l.status) as status,\n       (select string_agg( distinct INITCAP(replace(uf.used_for, '_', ' ')), ',') from cell_used_for uf where l.id = uf.location_id) used_for,\n       (select string_agg( distinct INITCAP(replace(sc.specialist_cell_type, '_', ' ')), ',') from specialist_cell sc where l.id = sc.location_id) specialist_types\nfrom public.location l left join public.capacity c on l.capacity_id = c.id\nwhere l.location_type_discriminator IN ('RESIDENTIAL', 'CELL')"
+          "query": "select l.id, l.prison_id, concat(l.prison_id, '-', l.path_hierarchy) as path_hierarchy, initcap(l.local_name) as local_name, l.cell_mark,\n       (CHAR_LENGTH(l.path_hierarchy) - CHAR_LENGTH(REPLACE(l.path_hierarchy, '-', ''))) / CHAR_LENGTH('-') +1 as level,\n       c.certified_normal_accommodation,\n       c.working_capacity,\n       c.max_capacity,\n       initcap(l.location_type) as location_type,\n       initcap(l.status) as status,\n       (select string_agg( distinct INITCAP(replace(uf.used_for, '_', ' ')), ',') from cell_used_for uf where l.id = uf.location_id) used_for,\n       (select string_agg( distinct INITCAP(replace(sc.specialist_cell_type, '_', ' ')), ',') from specialist_cell sc where l.id = sc.location_id) specialist_types\nfrom public.location l left join public.capacity c on l.capacity_id = c.id\nwhere l.location_type_discriminator = 'CELL' and l.status <> 'ARCHIVED'"
         },
         {
           "index": 1,
@@ -81,10 +65,22 @@
             "connection": "federated",
             "dialect": "oracle/11g"
           },
-          "query": "select o.FIRST_NAME, o.LAST_NAME, o.OFFENDER_ID_DISPLAY as prisoner_number,\nob.agy_loc_id prison_id,\nal.description path_hierarchy\nFROM OMS_OWNER.OFFENDER_BOOKINGS ob \njoin OMS_OWNER.OFFENDERS o on ob.OFFENDER_ID = o.OFFENDER_ID and ob.BOOKING_SEQ  = 1 and ob.ACTIVE_FLAG = 'Y'\njoin OMS_OWNER.AGENCY_INTERNAL_LOCATIONS al on al.INTERNAL_LOCATION_ID = ob.LIVING_UNIT_ID"
+          "query": "SELECT al.agy_loc_id  AS prison_id,\n       al.description AS path_hierarchy,\n       count(*)       as num_of_occupants\nFROM oms_owner.agency_internal_locations al\n         JOIN oms_owner.offender_bookings ob on ob.booking_seq = 1\n    AND ob.active_flag = 'Y' and ob.living_unit_id = al.internal_location_id\nGROUP BY al.agy_loc_id, al.description"
         },
         {
           "index": 2,
+          "datasource": {
+            "id": "nomis",
+            "name": "NOMIS",
+            "database": "DIGITAL_PRISON_REPORTING",
+            "catalog": "nomis",
+            "connection": "federated",
+            "dialect": "oracle/11g"
+          },
+          "query": "SELECT al.agy_loc_id AS prison_id, al.description AS prison_name FROM oms_owner.agency_locations al where al.agency_location_type = 'INST' and al.active_flag = 'Y'"
+        },
+        {
+          "index": 3,
           "datasource": {
             "id": "athena",
             "name": "athena",
@@ -92,7 +88,7 @@
             "catalog": "AwsDataCatalog",
             "connection": "awsdatacatalog"
           },
-          "query": "SELECT id, AwsDataCatalog.reports.${table[0]}.prison_id, AwsDataCatalog.reports.${table[0]}.path_hierarchy, local_name, cell_mark, level, status, certified_normal_accommodation, working_capacity, max_capacity, location_type, used_for, specialist_types, first_name, last_name, prisoner_number from AwsDataCatalog.reports.${table[0]} LEFT JOIN AwsDataCatalog.reports.${table[1]} on AwsDataCatalog.reports.${table[0]}.path_hierarchy=AwsDataCatalog.reports.${table[1]}.path_hierarchy"
+          "query": "SELECT id,\n       l.prison_id,\n       a.prison_name,  l.path_hierarchy,\n       local_name,\n       cell_mark,\n       level,\n       status,\n       certified_normal_accommodation,\n       working_capacity,\n       max_capacity,\n       COALESCE(num_of_occupants, 0) as num_of_occupants,\n       (case when working_capacity = 0 then max_capacity else working_capacity end) - COALESCE(num_of_occupants, 0) as spaces_available,\n       (case when COALESCE(num_of_occupants, 0) - coalesce(certified_normal_accommodation,0) > 0 then 'Y' else 'N' end) as crowded,\n       (case when COALESCE(num_of_occupants, 0) - coalesce(certified_normal_accommodation,0) > 0 then COALESCE(num_of_occupants, 0) - coalesce(certified_normal_accommodation,0) else null end) as amount_over_capacity,\n       location_type,\n       used_for,\n       specialist_types\nfrom AwsDataCatalog.reports.${table[0]} l join AwsDataCatalog.reports.${table[2]} a on a.prison_id = l.prison_id left join AwsDataCatalog.reports.${table[1]} p on p.path_hierarchy = l.path_hierarchy"
         }
       ],
       "schema": {
@@ -103,6 +99,10 @@
           },
           {
             "name": "prison_id",
+            "type": "string"
+          },
+          {
+            "name": "prison_name",
             "type": "string"
           },
           {
@@ -123,26 +123,7 @@
           },
           {
             "name": "status",
-            "type": "string",
-            "filter": {
-              "type": "multiselect",
-              "mandatory": true,
-              "default": "Active",
-              "staticoptions": [
-                {
-                  "name": "Active",
-                  "display": "Active"
-                },
-                {
-                  "name": "Inactive",
-                  "display": "Inactive"
-                },
-                {
-                  "name": "Draft",
-                  "display": "Draft"
-                }
-              ]
-            }
+            "type": "string"
           },
           {
             "name": "certified_normal_accommodation",
@@ -157,6 +138,22 @@
             "type": "int"
           },
           {
+            "name": "num_of_occupants",
+            "type": "int"
+          },
+          {
+            "name": "spaces_available",
+            "type": "int"
+          },
+          {
+            "name": "crowded",
+            "type": "string"
+          },
+          {
+            "name": "amount_over_capacity",
+            "type": "int"
+          },
+          {
             "name": "location_type",
             "type": "string"
           },
@@ -167,17 +164,25 @@
           {
             "name": "specialist_types",
             "type": "string"
-          },
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisons",
+      "name": "Prisons",
+      "datasource": "athena_redshift",
+      "query": "select agy_loc_id prison_id, initcap(description) prison_name FROM prisons.nomis_agency_locations al \nwhere al.agency_location_type = 'INST'\nand al.active_flag = 'Y'\norder by description",
+      "schema": {
+        "field": [
           {
-            "name": "first_name",
+            "name": "prison_id",
+            "display": "Prison Id",
             "type": "string"
           },
           {
-            "name": "last_name",
-            "type": "string"
-          },
-          {
-            "name": "prisoner_number",
+            "name": "prison_name",
+            "display": "Prison name",
             "type": "string"
           }
         ]
@@ -205,12 +210,26 @@
             "name": "$ref:prison_id",
             "display": "Prison ID",
             "sortable": false,
-            "visible": "true",
+            "visible": "false",
             "defaultsort": false,
             "filter": {
-              "type" : "caseloads",
-              "mandatory": false
+              "type": "multiselect",
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 140,
+                "returnAsStaticOptions": true,
+                "dataset": "prisons",
+                "name": "prison_id",
+                "display": "prison_name"
+              }
             }
+          },
+          {
+            "name": "$ref:prison_name",
+            "display": "Prison Name",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
           },
           {
             "name": "$ref:path_hierarchy",
@@ -218,13 +237,14 @@
             "formula": "make_url('https://locations-inside-prison-${env}.hmpps.service.justice.gov.uk/view-and-update-locations/${prison_id}/${id}',${path_hierarchy},TRUE)",
             "sortable": true,
             "visible": "true",
-            "defaultsort": true
+            "defaultsort": true,
+            "sortorder": "ascending"
           },
           {
             "name": "$ref:local_name",
             "display": "Local name",
             "sortable": true,
-            "visible": "true",
+            "visible": "false",
             "defaultsort": false
           },
           {
@@ -263,6 +283,41 @@
             "defaultsort": false
           },
           {
+            "name": "$ref:num_of_occupants",
+            "display": "Num occupants",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:spaces_available",
+            "display": "Spaces",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:crowded",
+            "display": "Over-crowded",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "radio",
+              "mandatory": false,
+              "staticoptions": [
+                {
+                  "name": "Y",
+                  "display": "Yes"
+                },
+                {
+                  "name": "N",
+                  "display": "No"
+                }
+              ]
+            }
+          },
+          {
             "name": "$ref:location_type",
             "display": "Location type",
             "sortable": true,
@@ -273,7 +328,7 @@
             "name": "$ref:used_for",
             "display": "Used for",
             "sortable": true,
-            "visible": "true",
+            "visible": "false",
             "defaultsort": false,
             "wordwrap": "break-words"
           },
@@ -281,7 +336,7 @@
             "name": "$ref:specialist_types",
             "display": "Specialist",
             "sortable": true,
-            "visible": "true",
+            "visible": "false",
             "defaultsort": false,
             "wordwrap": "break-words"
           },
@@ -290,14 +345,26 @@
             "display": "Status",
             "sortable": true,
             "visible": "false",
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:prisoner_number",
-            "display": "Prisoner number",
-            "sortable": true,
-            "visible": "true",
-            "defaultsort": false
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": true,
+              "default": "Active",
+              "staticoptions": [
+                {
+                  "name": "Active",
+                  "display": "Active"
+                },
+                {
+                  "name": "Inactive",
+                  "display": "Inactive"
+                },
+                {
+                  "name": "Draft",
+                  "display": "Draft"
+                }
+              ]
+            }
           }
         ]
       },
