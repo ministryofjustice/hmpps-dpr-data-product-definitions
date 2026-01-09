@@ -31,6 +31,7 @@ folders.forEach((folder) => {
 })
 
 if (Object.keys(fileMap).length > 0) {
+  console.error('The following files have non unique entries for variant ids - these will be printed as `"<variant_id>": <numTimes>`')
   console.error(JSON.stringify(fileMap, undefined, 2))
   process.exit(1)
 }
