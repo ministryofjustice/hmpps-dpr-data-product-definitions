@@ -1,0 +1,308 @@
+
+{
+  "id": "mpc-002",
+  "name": "Total number of reallocations per prison",
+	"description": "This report presents data on Reallocations per Prison, surfacing the individuals with the highest levels of reallocation activity recorded in the system to the top of the table. The primary purpose is to help identify offenders experiencing unusually high numbers of reallocations, which may help highlight operational pressures or cases requiring further review. <p><p> What the Table Shows<p> <p> Total <p> <p> This column represents the total number of reallocations recorded for each prisoner, aggregated across all available years in the dataset. \n \n This value is the sum of all reallocation events associated with a unique case at a single prison – they may have moved to other prisons or leave the system – this won’t be shown in the table. \n \n The table is sortable, and by default it displays offenders in descending order, so those with the greatest number of reallocations appear at the top. <p> \n Filtering and Time Windows \n You can adjust the display to show: \n \n Specific year ranges, enabling comparison between recent activity and historical patterns. \n",
+  "metadata": {
+    "version": "1.1.0",
+    "tags": [
+      "ACT001  v00.00.01",
+      "DPS", "MPC"
+    ],
+	"JIRA": "https://dsdmoj.atlassian.net/browse/DPR2-2476"
+  },
+  "datasource": [
+      {
+        "id": "datamart",
+        "name": "datamart"
+      }
+  ],
+  "dataset": [
+    {
+      "id": "allocation-by-prison",
+      "name": "allocation",
+      "description": "Allocation averages",
+      "datasource": "dps_mpc",
+      "query":"WITH PAllocation AS ( select prison as prison_caseload,nomis_offender_id, extract(year from primary_pom_allocated_at) as years, count(*) as cnt from prisons.managepomcases_allocation_history_versions where event = 1 group by prison_caseload, nomis_offender_id, extract(year from primary_pom_allocated_at) ) Select *, ( select SUM(cnt) from PAllocation T WHERE T.nomis_offender_id = piv.nomis_offender_id AND T.prison_caseload = piv.prison_caseload ) as Total from PAllocation PIVOT ( SUM(cnt) FOR years IN (2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026) ) AS piv",
+      "schema": {
+		  
+        "field": [
+            {
+              "index": 0,
+              "name": "prison_caseload",
+              "type": "string"
+            },
+          {
+            "index": 1,
+            "name": "nomis_offender_id",
+            "type": "string",
+            "display": "NOMS ID"
+          },
+          {
+            "index": 2,
+            "name": "2019",
+            "type": "string",
+            "display": "2019"
+          },
+          {
+            "index": 4,
+            "name": "2020",
+            "type": "string",
+            "display": "2020"
+          },
+          {
+            "index": 4,
+            "name": "2021",
+            "type": "string",
+            "display": "2021"
+          },
+          {
+            "index": 4,
+            "name": "2022",
+            "type": "string",
+            "display": "2022"
+          },
+          {
+            "index": 4,
+            "name": "2023",
+            "type": "string",
+            "display": "2023"
+          },
+          {
+            "index": 4,
+            "name": "2024",
+            "type": "string",
+            "display": "2024"
+          },          {
+            "index": 4,
+            "name": "2025",
+            "type": "string",
+            "display": "2025"
+          },
+          {
+            "index": 4,
+            "name": "2026",
+            "type": "string",
+            "display": "2026"
+          },
+          {
+            "index": 4,
+            "name": "Total",
+            "type": "string",
+            "display": "Total"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisons",
+      "name": "prisons",
+      "datasource": "datamart",
+      "query": "SELECT prison_id,name AS prison_name FROM establishment.prison WHERE active = TRUE ORDER by name",
+      "schema": {
+        "field": [
+            {
+              "name": "prison_id",
+              "type": "string"
+            },
+          {
+            "name": "prison_name",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}", "ROLE_PRISONS_REPORTING_USER", "ROLE_ALLOC_MGR"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseload",
+      "type": "row-level",
+      "action": [
+        "(prison_caseload='${caseload}')"
+      ],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": [
+                "${caseload}"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+      {
+        "id": "mpc-by-prison",
+        "name": "Total number of reallocations per prison",
+		"description": "This report presents data on Reallocations per Prison, surfacing the individuals with the highest levels of reallocation activity recorded in the system to the top of the table. The primary purpose is to help identify offenders experiencing unusually high numbers of reallocations, which may help highlight operational pressures or cases requiring further review. <p><p> What the Table Shows<p> <p> Total <p> <p> This column represents the total number of reallocations recorded for each prisoner, aggregated across all available years in the dataset. \n \n This value is the sum of all reallocation events associated with a unique case at a single prison – they may have moved to other prisons or leave the system – this won’t be shown in the table. \n \n The table is sortable, and by default it displays offenders in descending order, so those with the greatest number of reallocations appear at the top. <p> \n Filtering and Time Windows \n You can adjust the display to show: \n \n Specific year ranges, enabling comparison between recent activity and historical patterns. \n",
+        "classification": "Official",
+        "version": "1.0.0",
+        "render": "HTML",
+        "dataset": "$ref:allocation-by-prison",
+        "feature": [
+          {
+            "type": "share|save|email|print|download"
+          }
+        ],
+  	  "metadata" : {
+        	"hints" : ["interactive"]
+     	 },
+        "specification": {
+          "template": "list",
+          "field": [
+            {
+              "name": "$ref:nomis_offender_id",
+            	"formula": "make_url('https://${env}.moic.service.justice.gov.uk/prisons/${prison_caseload}/prisoners/${nomis_offender_id}/allocation/history',${nomis_offender_id},TRUE)",
+              "visible": "true",
+              "sortable": false,
+              "defaultsort": false
+            },
+            {
+              "name": "$ref:2019",
+              "formula": "default_value(${2019},-)",
+              "visible": "true",
+              "sortable": false,
+              "defaultsort": false
+            },
+			{
+				"name": "$ref:2020",
+              "formula": "default_value(${2020},-)",
+              "visible": "true",
+              "sortable": false,
+              "defaultsort": false
+            },
+			{
+				"name": "$ref:2021",
+              "formula": "default_value(${2021},-)",
+              "visible": "true",
+              "sortable": false,
+              "defaultsort": false
+            },
+			{
+				"name": "$ref:2022",
+              "formula": "default_value(${2022},-)",
+              "visible": "true",
+              "sortable": false,
+              "defaultsort": false
+            },
+            {
+				"name": "$ref:2023",
+              "formula": "default_value(${2023},-)",
+              "visible": "true",
+              "sortable": false,
+              "defaultsort": false
+            },
+            {
+				"name": "$ref:2024",
+              "formula": "default_value(${2024},-)",
+              "visible": "true",
+              "sortable": false,
+              "defaultsort": false
+            },
+            {
+				"name": "$ref:2025",
+              "formula": "default_value(${2025},-)",
+              "visible": "true",
+              "sortable": false,
+              "defaultsort": false
+            },
+            {
+				"name": "$ref:2026",
+              "formula": "default_value(${2026},-)",
+              "visible": "true",
+              "sortable": false,
+              "defaultsort": false
+            },
+            {
+				"name": "$ref:Total",
+              "visible": "true",
+              "sortable": true,
+              "defaultsort": true,
+			  "sortdirection": "desc"		  
+            }
+          ]
+        }
+      }
+	  
+	  
+  ],
+  "dashboard": [
+	  {
+	      "id": "reallocation-breakdown",
+	      "name": "Reallocation Averages Breakdown",
+	      "description": "Reallocation Averages Breakdown",
+	      "dataset": "allocation-by-year",
+	      "section": [
+	        {
+	          "id": "activity-status-bar",
+	          "display": "Reallocation breakdown bar",
+	          "visualisation": [
+	            {
+	              "id": "bar",
+	              "type": "bar",
+	              "display": "Average by prison line",
+	  			"option": {
+	  		    	  "horizontal" : false
+	  		  	},
+	              "column": {
+	                "key": [
+	                  {
+	  					"id": "$ref:prison",
+	  					"display": "Prison"
+	                  },
+  	                  {
+  	  					"id": "$ref:years",
+  	  					"display": "Years"
+  	                  }
+	                ],
+	                "measure": [
+	  				  {
+	  					  "id": "$ref:realloc",
+	  					  "display": "Realloc"
+	  				  }
+	                ],
+	                "expectNull": false
+	              }
+	            }
+	          ]
+	        },
+	        {
+	          "id": "debug",
+	          "display": "Debug",
+	          "visualisation": [
+	            {
+	              "id": "all-data",
+	              "type": "list",
+	              "display": "All data",
+	              "column": {
+	                "measure": [],
+	                "expectNull": true
+	              }
+	            }
+	          ]
+	        }
+	      ]
+	    }
+
+  ]
+}
