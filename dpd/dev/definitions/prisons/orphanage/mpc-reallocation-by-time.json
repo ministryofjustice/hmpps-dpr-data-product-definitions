@@ -23,7 +23,7 @@
       "name": "allocation",
       "description": "Reallocation by year",
       "datasource": "dps_mpc",
-      "query":"with AllocationHistory as ( select prison, extract(year from primary_pom_allocated_at) as years, count(*) as realloc from prisons.managepomcases_allocation_history_versions WHERE event = 1 group by prison, extract(year from primary_pom_allocated_at) order by years) select prison, establishment.prison.name, years, realloc, avg(realloc) over (partition by prison order by years asc rows 5 preceding) as moving_avg from AllocationHistory left join establishment.prison on AllocationHistory.prison = establishment.prison.prison_id group by prison, establishment.prison.name, years, realloc",
+      "query":"with AllocationHistory as ( select prison, extract(year from primary_pom_allocated_at) as years, count(*) as realloc from prisons.managepomcases_allocation_history_versions WHERE event = 1 group by prison, extract(year from primary_pom_allocated_at) order by years) select prison, establishment.prison.name, years as ts, realloc, avg(realloc) over (partition by prison order by ts asc rows 5 preceding) as moving_avg from AllocationHistory left join establishment.prison on AllocationHistory.prison = establishment.prison.prison_id group by prison, establishment.prison.name, ts, realloc",
       "schema": {
         "field": [
           {
@@ -51,7 +51,7 @@
           },
           {
             "index": 2,
-            "name": "years",
+            "name": "ts",
             "type": "string",
             "display": "Years"
           },
@@ -147,13 +147,28 @@
           ]
         }
       ]
+    },
+    {
+      "id": "caseloads",
+      "type": "row-level",
+      "action": ["prison in (${caseloads})"],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": ["${caseloads}"]
+            }
+          ]
+        }
+      ]
     }
   ],
   "report": [
       {
         "id": "mpc-allocations-per-prison-per-year",
         "name": "Average number of reallocations per prison by year",
-        "description": "Average number of reallocations by year",
+        "description": "This report shows the number of reallocations recorded at each prison for every year in the dataset. It helps you see how activity changes over time., <P>, What the table shows, <P>, Prison: the establishment where the reallocations took place. , <P>, Year: the calendar year the data relates to. , <P>, Number of reallocations: the total count for that year. , <P>, Average: the average number of reallocations per year over the selected time period.",
         "classification": "Official",
         "version": "1.0.0",
         "render": "HTML",
@@ -175,20 +190,14 @@
               "visible": "true",
               "sortable": false,
               "defaultsort": false,
-  				"filter": {
-    			  	"type": "multiselect",
-              		"interactive": true,
-                	"dynamicoptions": {
-                  	"returnAsStaticOptions": true,
-                  	"maximumOptions": 100,
-                  	"dataset": "$ref:prisons",
-                  	"name": "prison_id",
-  					"display": "prison_name"
-  				}
-  			}
+			  "filter" : {
+			    "type" : "caseloads",
+			    "mandatory": "false",
+				"interactive": "true"
+			  }
             },
             {
-              "name": "$ref:years",
+              "name": "$ref:ts",
               "formula": "",
               "visible": "true",
               "sortable": false,
@@ -253,7 +262,7 @@
       {
         "id": "mpc-by-month",
         "name": "Average number of reallocations by month",
-        "description": "Average number of reallocations by month",
+        "description": "This report shows how many reallocations were recorded in each calendar month. It helps you spot monthly patterns or changes in activity over time. <P> What the table shows <P> Month: each row represents a single month in the selected time period. <P> Number of reallocations: the total count for that month. <P> Average: the average number of reallocations per month across the selected period.",
         "classification": "Official",
         "version": "1.0.0",
         "render": "HTML",
@@ -315,62 +324,6 @@
 	  
   ],
   "dashboard": [
-	  {
-	      "id": "reallocation-breakdown",
-	      "name": "Reallocation Averages Breakdown",
-	      "description": "Reallocation Averages Breakdown",
-	      "dataset": "allocation-by-year",
-	      "section": [
-	        {
-	          "id": "activity-status-bar",
-	          "display": "Reallocation breakdown bar",
-	          "visualisation": [
-	            {
-	              "id": "bar",
-	              "type": "bar",
-	              "display": "Average by prison line",
-	  			"option": {
-	  		    	  "horizontal" : false
-	  		  	},
-	              "column": {
-	                "key": [
-	                  {
-	  					"id": "$ref:prison",
-	  					"display": "Prison"
-	                  },
-  	                  {
-  	  					"id": "$ref:years",
-  	  					"display": "Years"
-  	                  }
-	                ],
-	                "measure": [
-	  				  {
-	  					  "id": "$ref:realloc",
-	  					  "display": "Realloc"
-	  				  }
-	                ],
-	                "expectNull": false
-	              }
-	            }
-	          ]
-	        },
-	        {
-	          "id": "debug",
-	          "display": "Debug",
-	          "visualisation": [
-	            {
-	              "id": "all-data",
-	              "type": "list",
-	              "display": "All data",
-	              "column": {
-	                "measure": [],
-	                "expectNull": true
-	              }
-	            }
-	          ]
-	        }
-	      ]
-	    }
 
   ]
 }
