@@ -23,7 +23,7 @@
       "name": "allocation",
       "description": "",
       "datasource": "dps_mpc",
-      "query":"WITH PAllocation AS ( select prison as prison_caseload,nomis_offender_id, extract(year from primary_pom_allocated_at) as years, count(*) as cnt from prisons.managepomcases_allocation_history_versions where event = 1 group by prison_caseload, nomis_offender_id, extract(year from primary_pom_allocated_at) ) Select *, ( select SUM(cnt) from PAllocation T WHERE T.nomis_offender_id = piv.nomis_offender_id AND T.prison_caseload = piv.prison_caseload ) as Total from PAllocation PIVOT ( SUM(cnt) FOR years IN (2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026) ) AS piv",
+      "query":"WITH pallocation AS ( SELECT   prison AS prison_caseload, nomis_offender_id, Extract(year FROM primary_pom_allocated_at) AS years, Count(*)                                AS cnt FROM     prisons.managepomcases_allocation_history_versions WHERE    event = 1 GROUP BY prison_caseload, nomis_offender_id, Extract(year FROM primary_pom_allocated_at) ) SELECT *, ( SELECT Sum(cnt) FROM   pallocation T WHERE  t.nomis_offender_id = piv.nomis_offender_id AND    t.prison_caseload = piv.prison_caseload ) AS total FROM   pallocation PIVOT ( Sum(cnt) FOR years IN (2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026) ) AS piv",
       "schema": {
 		  
         "field": [
@@ -93,24 +93,6 @@
           }
         ]
       }
-    },
-    {
-      "id": "prisons",
-      "name": "prisons",
-      "datasource": "datamart",
-      "query": "SELECT prison_id,name AS prison_name FROM establishment.prison WHERE active = TRUE ORDER by name",
-      "schema": {
-        "field": [
-            {
-              "name": "prison_id",
-              "type": "string"
-            },
-          {
-            "name": "prison_name",
-            "type": "string"
-          }
-        ]
-      }
     }
   ],
   "policy": [
@@ -123,7 +105,7 @@
           "condition": [
             {
               "match": [
-                "${role}", "ROLE_PRISONS_REPORTING_USER", "ROLE_ALLOC_MGR"
+                "${role}", "ROLE_ALLOC_MGR"
               ]
             }
           ]
