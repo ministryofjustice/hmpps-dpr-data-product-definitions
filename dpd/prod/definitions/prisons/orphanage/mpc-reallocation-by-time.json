@@ -1,0 +1,321 @@
+
+{
+  "id": "mpc-001",
+  "name": "Average number of reallocations per case",
+  "description": "Average number of reallocations per case",
+  "metadata": {
+    "version": "1.1.0",
+    "tags": [
+      "DPS", "MPC"
+    ],
+	  "JIRA": "https://dsdmoj.atlassian.net/browse/DPR2-2476"
+  },
+  "datasource": [
+      {
+        "id": "datamart",
+        "name": "datamart"
+      }
+  ],
+  "dataset": [
+    {
+      "id": "allocation-by-year",
+      "name": "allocation",
+      "description": "Reallocation by year",
+      "datasource": "dps_mpc",
+      "query":"with AllocationHistory as ( select prison, extract(year from primary_pom_allocated_at) as years, count(*) as realloc from prisons.managepomcases_allocation_history_versions WHERE event = 1 group by prison, extract(year from primary_pom_allocated_at) order by years) select prison, description AS name, years, realloc, avg(realloc) over (partition by prison order by years asc rows 5 preceding) as moving_avg from AllocationHistory left join prisons.nomis_agency_locations on AllocationHistory.prison = nomis_agency_locations.agy_loc_id group by prison, name, years, realloc order by prison,years",
+      "schema": {
+        "field": [
+          {
+            "index": 1,
+            "name": "prison",
+            "type": "string",
+            "display": "Prison"
+          },
+          {
+            "index": 2,
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "index": 2,
+            "name": "years",
+            "type": "string",
+            "display": "Years"
+          },
+          {
+            "index": 3,
+            "name": "realloc",
+            "type": "string",
+            "display": "Number of reallocations"
+          },
+
+          {
+            "index": 4,
+            "name": "moving_avg",
+            "type": "string",
+            "display": "Average"
+          }
+        ]
+      }
+    },
+    {
+      "id": "allocation-by-month",
+      "name": "allocation",
+      "description": "Reallocation by month",
+      "datasource": "dps_mpc",
+      "query":"with AllocationHistory as ( select prison, TRUNC(DATE_TRUNC('month',primary_pom_allocated_at)) as months, count(*) as realloc from prisons.managepomcases_allocation_history_versions where event = 1 group by prison, TRUNC(DATE_TRUNC('month',primary_pom_allocated_at)) order by months ) select prison, description as name, months, realloc, avg(realloc) over (partition by prison order by months asc rows 12 preceding) as moving_avg from AllocationHistory LEFT JOIN prisons.nomis_agency_locations on AllocationHistory.prison = nomis_agency_locations.agy_loc_id group by prison, name, months, realloc order by prison, months",
+      "schema": {
+        "field": [
+          {
+            "index": 1,
+            "name": "prison",
+            "type": "string",
+            "display": "Prison",
+            "mandatory":"false"
+          },
+          {
+            "index": 2,
+            "name": "name",
+            "type": "string",
+            "display": "Name"
+          },
+          {
+            "index": 2,
+            "name": "months",
+            "type": "string",
+            "display": "Months"
+          },
+          {
+            "index": 3,
+            "name": "realloc",
+            "type": "string",
+            "display": "Number of Reallocations"
+          },
+          {
+            "index": 4,
+            "name": "moving_avg",
+            "type": "string",
+            "display": "Average"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisons",
+      "name": "prisons",
+      "datasource": "datamart",
+      "query": "select agy_loc_id as prison_id,description as prison_name from prisons.nomis_agency_locations where active_flag = 'Y' and agency_location_type = 'INST' order by description",
+      "schema": {
+        "field": [
+            {
+              "name": "prison_id",
+              "type": "string"
+            },
+          {
+            "name": "prison_name",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}", "ROLE_ALLOC_MGR"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseloads",
+      "type": "row-level",
+      "action": ["prison in (${caseloads})"],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": ["${caseloads}"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+      {
+        "id": "mpc-allocations-per-prison-per-year",
+        "name": "Average number of reallocations per prison by year",
+        "description": "This report shows the number of reallocations recorded at each prison for every year in the dataset. It helps you see how activity changes over time. <P>What the table shows,<P>Prison: the establishment where the reallocations took place.<P>Year: the calendar year the data relates to. <P> Number of reallocations: the total count for that year.<P>Average: the average number of reallocations per year over the selected time period.",
+        "classification": "Official",
+        "version": "1.0.0",
+        "render": "HTML",
+        "dataset": "$ref:allocation-by-year",
+        "feature": [
+          {
+            "type": "share|save|email|print|download"
+          }
+        ],
+  	    "metadata" : {
+        	"hints" : ["interactive"]
+     	  },
+        "specification": {
+          "template": "list",
+          "field": [
+            {
+              "name": "$ref:prison",
+			        "formula": "${name}",
+              "visible": "true",
+              "sortable": false,
+              "defaultsort": false,
+  				    "filter": {
+    			  	    "type": "multiselect",
+              		"interactive": true,
+                	"dynamicoptions": {
+                  	"returnAsStaticOptions": true,
+                  	"maximumOptions": 150,
+                  	"dataset": "$ref:prisons",
+                  	"name": "prison_id",
+  					        "display": "prison_name"
+  				        }
+  			      }
+            },
+            {
+              "name": "$ref:years",
+              "formula": "",
+              "visible": "true",
+              "sortable": false,
+              "defaultsort": false,
+              "filter": {
+                "type": "multiselect",
+  			        "interactive": "true",
+              	"staticoptions": [
+                	{
+                  	  	"name": "2019",
+                  		"display": "2019"
+                	},
+                	{
+                  	  	"name": "2020",
+                  		"display": "2020"
+                	},
+                	{
+                  	  	"name": "2021",
+                  		"display": "2021"
+                	},
+                	{
+                  	  	"name": "2022",
+                  		"display": "2022"
+                	},
+                	{
+                  	  	"name": "2023",
+                 	 	"display": "2023"
+                	},
+                	{
+                  	  	"name": "2024",
+                  		"display": "2024"
+                	},
+                	{
+                  	  	"name": "2025",
+                  		"display": "2025"
+                	},
+                	{
+                 	   	"name": "2026",
+                  	 	"display": "2026"
+                	}
+              	]
+              }
+
+            },
+			      {
+				      "name": "$ref:realloc",
+              "formula": "",
+              "visible": "true",
+              "sortable": false,
+              "defaultsort": false
+            },
+            {
+				      "name": "$ref:moving_avg",
+              "formula": "",
+              "visible": "true",
+              "sortable": false,
+              "defaultsort": false
+            }
+          ]
+        }
+      },
+      {
+        "id": "mpc-by-month",
+        "name": "Average number of reallocations by month",
+        "description": "This report shows how many reallocations were recorded in each calendar month. It helps you spot monthly patterns or changes in activity over time.<P>What the table shows<P>Month: each row represents a single month in the selected time period.<P> Number of reallocations: the total count for that month. <P> Average: the average number of reallocations per month across the selected period.",
+        "classification": "Official",
+        "version": "1.0.0",
+        "render": "HTML",
+        "dataset": "$ref:allocation-by-month",
+        "feature": [
+          {
+            "type": "share|save|email|print|download"
+          }
+        ],
+  	    "metadata" : {
+        	"hints" : ["interactive"]
+     	  },
+        "specification": {
+          "template": "list",
+          "field": [
+            {
+              "name": "$ref:prison",
+			        "formula": "${name}",
+              "visible": "true",
+              "sortable": false,
+              "defaultsort": false,
+				      "filter": {
+  			  		  "type": "multiselect",
+            		"interactive": true,
+              		"dynamicoptions": {
+                		"returnAsStaticOptions": true,
+						        "maximumOptions": 150,
+                		"dataset": "$ref:prisons",
+                		"name": "prison_id",
+						        "display": "prison_name"
+					        }
+				      }        
+            },
+            {
+              "name": "$ref:months",
+              "formula": "",
+              "visible": "true",
+              "sortable": false,
+              "defaultsort": false
+            },
+			      {
+				      "name": "$ref:realloc",
+              "formula": "",
+              "visible": "true",
+              "sortable": false,
+              "defaultsort": false
+            },
+            {
+				      "name": "$ref:moving_avg",
+              "formula": "",
+              "visible": "true",
+              "sortable": false,
+              "defaultsort": false
+            }
+          ]
+        }
+      }
+  ],
+  "dashboard": [
+
+  ]
+}
