@@ -1,0 +1,241 @@
+
+{
+  "id": "activities-004",
+  "name": "Waitlist Active Averages By All Establishment",
+  "description": "The report will be used by the Activities team to look at the average wait time by establishment",
+  "metadata": {
+    "version": "1.1.0",
+    "tags": [
+      "ACT001  v00.00.01",
+      "DPS", "Activities Reporting"
+    ],
+	"JIRA": "https://dsdmoj.atlassian.net/browse/DPR2-2272"
+  },
+  "datasource": [
+    {
+        "id": "datamart",
+        "name": "datamart"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "waitlist",
+      "name": "Waitlist",
+      "description": "Waitlist averages",
+      "datasource": "datamart",
+      "query":"SELECT p.name AS pc,ac.name as activity_category,a.description AS activity_name,status,requested_by, COUNT(a.description) as activity_count,AVG(DATEDIFF (day,w.application_date,CURRENT_DATE)) AS avg_waittime FROM prisons.activities_waiting_list w JOIN prisons.activities_activity a USING (activity_id) INNER join prisons.activities_activity_category ac USING (activity_category_id) JOIN datamart.establishment.prison p ON w.prison_code = p.prison_id WHERE status NOT IN ('ALLOCATED','REMOVED','DECLINED') AND w.application_date <= CURRENT_DATE  AND (end_date > CURRENT_DATE OR end_date IS NULL) GROUP BY GROUPING SETS ((pc,activity_category,activity_name,status,requested_by),(pc,activity_category),(pc,activity_category,activity_name),(pc),()) ORDER BY pc,activity_category,activity_name,status",
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "pc",
+            "type": "string",
+			"sortable": true,
+            "display": "Prison code"
+          },
+          {
+            "index": 1,
+            "name": "activity_category",
+            "type": "string",
+            "display": "Category"
+          },
+          {
+            "index": 1,
+            "name": "activity_name",
+            "type": "string",
+            "display": "Name"
+          },
+          {
+            "index": 2,
+            "name": "status",
+            "type": "string",
+			"sortable": true,
+            "display": "STATUS"
+          },
+          {
+            "index": 3,
+            "name": "requested_by",
+            "type": "string",
+			"sortable": true,
+            "display": "Requester"
+          },
+          {
+            "index": 4,
+            "name": "activity_count",
+            "type": "string",
+			"sortable": true,
+            "display": "Count"
+          },
+          {
+            "index": 6,
+            "name": "avg_waittime",
+            "type": "string",
+			"sortable": true,
+            "display": "AVG"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisons",
+      "name": "prisons",
+      "datasource": "datamart",
+      "query": "SELECT prison_id,name AS prison_name FROM establishment.prison WHERE active = TRUE ORDER by name",
+      "schema": {
+        "field": [
+            {
+              "name": "prison_id",
+              "type": "string"
+            },
+          {
+            "name": "prison_name",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+  ],
+  "dashboard": [{
+    "id": "waitlist-status-breakdown",
+    "name": "Waitlist Averages Breakdown",
+    "description": "Waitlist Averages Breakdown",
+    "dataset": "waitlist",
+    "section": [
+      {
+        "id": "activity-status-breakdown",
+        "display": "Establishment breakdown",
+        "visualisation": [
+          {
+            "id": "pc",
+            "type": "list",
+            "display": "Average wait list duration by Establishment ",
+            "column": {
+              "key": [
+                {
+					      "id": "$ref:pc",
+					      "display": "Prison Code"
+                }
+              ],
+              "measure": [
+                  {
+                    "id": "$ref:pc",
+                    "display": "Prison Code"
+                  },
+				        {
+					          "id": "$ref:activity_count",
+					          "display": "Activity Count"
+				        },
+				        {
+					        "id": "$ref:avg_waittime",
+					        "display": "Average time (days)"
+				        }
+              ],
+              "filter": [
+                  {
+                    "id": "$ref:activity_category",
+                    "equals": null
+                  },
+                  {
+                    "id": "$ref:activity_name",
+                    "equals": null
+                  },
+                  {
+                    "id": "$ref:status",
+                    "equals": null
+                  },
+                  {
+                    "id": "$ref:requested_by",
+                    "equals": null
+                  }
+              ],
+              "expectNull": false
+            }
+          }
+        ]
+      },
+      {
+        "id": "activity-status-bar",
+        "display": "Establishment breakdown bar",
+        "visualisation": [
+          {
+            "id": "bar",
+            "type": "bar",
+            "display": "Average wait list duration by Establishment bar",
+			      "option": {
+		    	    "horizontal" : true
+		  	    },
+            "column": {
+              "key": [
+                {
+					        "id": "$ref:pc",
+					        "display": "Prison Code"
+                }
+              ],
+              "measure": [
+				       {
+					        "id": "$ref:avg_waittime",
+					        "display": "Average time (days)"
+				        }
+              ],
+              "filter": [
+                  {
+                    "id": "$ref:activity_category",
+                    "equals": null
+                  },
+                  {
+                    "id": "$ref:activity_name",
+                    "equals": null
+                  },
+                  {
+                    "id": "$ref:status",
+                    "equals": null
+                  },
+                  {
+                    "id": "$ref:requested_by",
+                    "equals": null
+                  }
+              ],
+              "expectNull": false
+            }
+          }
+        ]
+      },
+      {
+        "id": "debug",
+        "display": "Debug",
+        "visualisation": [
+          {
+            "id": "all-data",
+            "type": "list",
+            "display": "All data",
+            "column": {
+              "measure": [],
+              "expectNull": true
+            }
+          }
+        ]
+      }
+    ]
+  }]
+}
