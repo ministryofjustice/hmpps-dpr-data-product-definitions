@@ -1,0 +1,296 @@
+{
+  "id": "act002-waitlist-applications",
+  "name": "Activity applications (needs caseload fix)",
+  "description": "All pending applications to review, and approved applications where the prisoner has not been allocated yet.",
+  "metadata": {
+    "author": "David Backholer",
+    "owner": "Claire Morgan",
+    "version": "1.0.0",
+    "status": "Update Cell, filters for status"
+  },
+  "datasource": [
+    {
+      "id": "datamart",
+      "name": "datamart"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "waitlist-applications-pending-approved",
+      "name": "Outstanding Waitlist Applications",
+      "datasource": "datamart",
+      "query": "select wl.prison_code, wl.prisoner_number, dm.name, dm.living_unit_id, wl.activity_id, a.description, CASE WHEN a.end_date IS NULL OR a.end_date > CURRENT_DATE THEN 'LIVE' ELSE 'ARCHIVED' END AS activity_status, cat.activity_category_id, cat.name as category_name, wl.status, wl.application_date, CURRENT_DATE - wl.application_date as number_days From prisons.activities_waiting_list wl Left Join prisons.activities_activity a on wl.activity_id = a.activity_id Left Join prisons.activities_activity_category cat on a.activity_category_id  = cat.activity_category_id Inner Join datamart.prisoner_prisoner dm on wl.prisoner_number = dm.number WHERE (wl.status = 'PENDING' or wl.status = 'APPROVED') AND (dm.living_unit_id IS NOT NULL)",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_code",
+            "type": "string",
+            "display": "Prison"
+          },
+          {
+            "name": "prisoner_number",
+            "type": "string",
+            "display": "NOMIS Number"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "display": "Name"
+          },
+          {
+            "name": "living_unit_id",
+            "type": "string",
+            "display": "Cell"
+          },
+          {
+            "name": "activity_id",
+            "type": "string",
+            "display": "Activity"
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "display": "Activity Name"
+          },
+          {
+            "name": "activity_status",
+            "type": "string",
+            "display": "Activity Status"
+          },
+          {
+            "name": "activity_category_id",
+            "type": "string",
+            "display": "Category ID"
+          },
+          {
+            "name": "category_name",
+            "type": "string",
+            "display": "Category"
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "display": "Application Status"
+          },
+          {
+            "name": "application_date",
+            "type": "date",
+            "display": "Application Date"
+          },
+          {
+            "name": "number_days",
+            "type": "string",
+            "display": "Number of Days"
+          }
+        ]
+      }
+    },
+    {
+      "id": "activity-category-filter",
+      "name": "Activity Category Filter",
+      "datasource": "datamart",
+      "query": "select activity_category_id, name From prisons.activities_activity_category",
+      "schema": {
+        "field": [
+          {
+            "name": "activity_category_id",
+            "type": "string",
+            "display": "Category ID"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "display": "Category Name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prison-code-filter",
+      "name": "Prison Code Filter",
+      "datasource": "datamart",
+      "query": "select distinct prison_code From prisons.activities_waiting_list",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_code",
+            "type": "string",
+            "display": "Prison"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseloads",
+      "type": "row-level",
+      "action": ["prison_code in (${caseloads})"],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": ["${caseloads}"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "waitlist-applications-pending-approved-report",
+      "name": "Pending and approved activity applications",
+      "description": "All pending applications to review, and approved applications where the prisoner has not been allocated yet.",
+      "classification": "Official",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "$ref:waitlist-applications-pending-approved",
+      "feature": [
+        {
+          "type": "share|save|email|print|download"
+        }
+      ],
+      "metadata" : {
+      "hints" : ["interactive"]
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+            {
+              "name": "$ref:prison_code",
+              "display": "Code",
+              "formula": "",
+              "visible": "true",
+              "sortable": false,
+              "defaultsort": false
+            },
+          {
+            "name": "$ref:prisoner_number",
+            "display": "Prison number",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:name",
+            "display": "Prisoner name",
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prisoner_number}',${name},TRUE)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:living_unit_id",
+            "display": "Cell",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:activity_id",
+            "display": "Activity",
+            "formula": "",
+            "visible": "false",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:description",
+            "display": "Activity name",
+            "formula": "make_url('https://activities-${env}.prison.service.justice.gov.uk/activities/allocation-dashboard/${activity_id}#waitlist-tab',${description},TRUE)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+
+          {
+            "name": "$ref:activity_category_id",
+            "display": "Activity category",
+            "formula": "${category_name}",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+				        "index" : 1,
+                        "type": "multiselect",
+			            "interactive": "true",
+                            "dynamicoptions": {
+                            "returnAsStaticOptions": true,
+                            "maximumOptions": 200,
+                            "dataset": "$ref:activity-category-filter",
+                            "name": "activity_category_id",
+                            "display": "name"
+                        }
+            }
+          },
+          {
+            "name": "$ref:status",
+            "display": "Application status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+                    "index" : 2,
+                    "type": "multiselect",
+			        "interactive": "true",
+                     "staticoptions": [
+                        {
+                        "name": "APPROVED",
+                        "display": "Approved"
+                        },
+                        {
+                        "name": "PENDING",
+                        "display": "Pending"
+                        }
+                    ]
+                    }
+          },
+          {
+            "name": "$ref:application_date",
+            "display": "Application date",
+            "formula": "format_date(${application_date}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+                "index" : 0,
+                "type": "daterange",
+			        "interactive": "true",
+                    "default": ""
+                    }
+          },
+          {
+            "name": "$ref:number_days",
+            "display": "Days since application",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true
+          }
+        ]
+      }
+    }
+  ]
+}
