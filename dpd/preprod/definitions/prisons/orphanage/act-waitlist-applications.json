@@ -1,0 +1,526 @@
+{
+  "id": "act002-waitlist-applications-by-caseload",
+  "name": "Activity applications",
+  "description": "All activity applications.",
+  "metadata": {
+    "author": "David Backholer",
+    "owner": "Claire Morgan",
+    "version": "1.0.0",
+    "status": "Update Cell location, active caseloads filter type, policy updates"
+  },
+  "datasource": [
+    {
+      "id": "datamart",
+      "name": "datamart"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "waitlist-applications-pending-approved",
+      "name": "Outstanding Waitlist Applications",
+      "datasource": "datamart",
+      "query": "SELECT wl.prison_code, wl.prisoner_number, dm.name, dm.cell_location, wl.activity_id, a.description, CASE WHEN a.end_date IS NULL OR a.end_date > CURRENT_DATE THEN 'LIVE' ELSE 'ARCHIVED' END AS activity_status, cat.activity_category_id, cat.name as category_name, wl.status, wl.application_date, CURRENT_DATE - wl.application_date as number_days, comments FROM prisons.activities_waiting_list wl LEFT JOIN prisons.activities_activity a on wl.activity_id = a.activity_id LEFT JOIN prisons.activities_activity_category cat on a.activity_category_id  = cat.activity_category_id LEFT JOIN datamart.person.prisoner dm on wl.prisoner_number = dm.prisoner_number WHERE (wl.status = 'PENDING' or wl.status = 'APPROVED') AND (dm.prison_id != 'OUT')",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_code",
+            "type": "string",
+            "display": "Prison"
+          },
+          {
+            "name": "prisoner_number",
+            "type": "string",
+            "display": "NOMIS Number"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "display": "Name"
+          },
+          {
+            "name": "cell_location",
+            "type": "string",
+            "display": "Cell location"
+          },
+          {
+            "name": "activity_id",
+            "type": "string",
+            "display": "Activity"
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "display": "Activity Name"
+          },
+          {
+            "name": "activity_status",
+            "type": "string",
+            "display": "Activity Status"
+          },
+          {
+            "name": "activity_category_id",
+            "type": "string",
+            "display": "Category ID"
+          },
+          {
+            "name": "category_name",
+            "type": "string",
+            "display": "Category"
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "display": "Application Status"
+          },
+          {
+            "name": "application_date",
+            "type": "date",
+            "display": "Application Date"
+          },
+          {
+            "name": "number_days",
+            "type": "string",
+            "display": "Number of Days"
+          },
+          {
+            "name": "comments",
+            "type": "string",
+            "display": "Comments"
+          }
+        ]
+      }
+    },
+    {
+      "id": "waitlist-applications-completed",
+      "name": "Outstanding Waitlist Applications",
+      "datasource": "datamart",
+      "query": "SELECT wl.prison_code, wl.prisoner_number, dm.name, dm.cell_location, wl.activity_id, a.description, CASE WHEN a.end_date IS NULL OR a.end_date > CURRENT_DATE THEN 'LIVE' ELSE 'ARCHIVED' END AS activity_status, cat.activity_category_id, cat.name as category_name, wl.status, wl.application_date, status_updated_time, datediff(days,wl.application_date,to_date(status_updated_time,'YYYY-MM-DD')) as number_days, comments FROM prisons.activities_waiting_list wl LEFT JOIN prisons.activities_activity a on wl.activity_id = a.activity_id LEFT JOIN prisons.activities_activity_category cat on a.activity_category_id  = cat.activity_category_id LEFT JOIN datamart.person.prisoner dm on wl.prisoner_number = dm.prisoner_number WHERE (wl.status = 'REJECTED' or wl.status = 'DECLINED' or wl.status = 'ALLOCATED' ) AND (dm.prison_id != 'OUT')",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_code",
+            "type": "string",
+            "display": "Prison"
+          },
+          {
+            "name": "prisoner_number",
+            "type": "string",
+            "display": "NOMIS Number"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "display": "Name"
+          },
+          {
+            "name": "cell_location",
+            "type": "string",
+            "display": "Cell location"
+          },
+          {
+            "name": "activity_id",
+            "type": "string",
+            "display": "Activity"
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "display": "Activity Name"
+          },
+          {
+            "name": "activity_status",
+            "type": "string",
+            "display": "Activity Status"
+          },
+          {
+            "name": "activity_category_id",
+            "type": "string",
+            "display": "Category ID"
+          },
+          {
+            "name": "category_name",
+            "type": "string",
+            "display": "Category"
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "display": "Application Status"
+          },
+          {
+            "name": "application_date",
+            "type": "date",
+            "display": "Date Applied"
+          },
+          {
+            "name": "status_updated_time",
+            "type": "string",
+            "display": "Status Updated"
+          },
+          {
+            "name": "number_days",
+            "type": "string",
+            "display": "Days"
+          },
+          {
+            "name": "comments",
+            "type": "string",
+            "display": "Comments"
+          }
+        ]
+      }
+    },
+    {
+      "id": "activity-category-filter",
+      "name": "Activity Category Filter",
+      "datasource": "datamart",
+      "query": "select activity_category_id, name From prisons.activities_activity_category",
+      "schema": {
+        "field": [
+          {
+            "name": "activity_category_id",
+            "type": "string",
+            "display": "Category ID"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "display": "Category Name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prison-code-filter",
+      "name": "Prison Code Filter",
+      "datasource": "datamart",
+      "query": "select distinct prison_code From prisons.activities_waiting_list",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_code",
+            "type": "string",
+            "display": "Prison"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseloads",
+      "type": "row-level",
+      "action": [
+        "prison_code = '${caseload}'"
+      ],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": [
+                "${caseload}"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "applications-pending-approved-report",
+      "name": "Pending and approved activity applications",
+      "description": "All pending applications to review, and approved applications where the prisoner has not been allocated yet.",
+      "classification": "Official",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "$ref:waitlist-applications-pending-approved",
+      "feature": [
+        {
+          "type": "share|save|email|print|download"
+        }
+      ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:prisoner_number",
+            "display": "Prison number",
+            "formula": "${prisoner_number}",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:name",
+            "display": "Prisoner name",
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prisoner_number}',${name},TRUE)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:cell_location",
+            "display": "Cell location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:activity_id",
+            "display": "Activity",
+            "formula": "",
+            "visible": "false",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:description",
+            "display": "Activity name",
+            "formula": "make_url('https://activities-${env}.prison.service.justice.gov.uk/activities/allocation-dashboard/${activity_id}#waitlist-tab',${description},TRUE)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:activity_category_id",
+            "display": "Activity category",
+            "formula": "${category_name}",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "index": 1,
+              "type": "multiselect",
+              "interactive": "true",
+              "dynamicoptions": {
+                "returnAsStaticOptions": true,
+                "maximumOptions": 200,
+                "dataset": "$ref:activity-category-filter",
+                "name": "activity_category_id",
+                "display": "name"
+              }
+            }
+          },
+          {
+            "name": "$ref:status",
+            "display": "Application status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "index": 2,
+              "type": "multiselect",
+              "interactive": "true",
+              "staticoptions": [
+                {
+                  "name": "APPROVED",
+                  "display": "Approved"
+                },
+                {
+                  "name": "PENDING",
+                  "display": "Pending"
+                }
+              ]
+            }
+          },
+          {
+            "name": "$ref:application_date",
+            "display": "Application date",
+            "formula": "format_date(${application_date}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "index": 0,
+              "type": "daterange",
+              "interactive": "true",
+              "default": ""
+            }
+          },
+          {
+            "name": "$ref:number_days",
+            "display": "Days since application",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true
+          },
+          {
+            "name": "$ref:comments",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "waitlist-applications-completed-report",
+      "name": "Completed activity applications",
+      "description": "All completed applications where the prisoner has been allocated or rejected.",
+      "classification": "Official",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "$ref:waitlist-applications-completed",
+      "feature": [
+        {
+          "type": "share|save|email|print|download"
+        }
+      ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:prisoner_number",
+            "display": "Prison number",
+            "formula": "${prisoner_number}",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:name",
+            "display": "Prisoner name",
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prisoner_number}',${name},TRUE)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:cell_location",
+            "display": "Cell location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:activity_id",
+            "display": "Activity",
+            "formula": "",
+            "visible": "false",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:description",
+            "display": "Activity name",
+            "formula": "make_url('https://activities-${env}.prison.service.justice.gov.uk/activities/allocation-dashboard/${activity_id}#waitlist-tab',${description},TRUE)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:activity_category_id",
+            "display": "Activity category",
+            "formula": "${category_name}",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "index": 1,
+              "type": "multiselect",
+              "interactive": "true",
+              "dynamicoptions": {
+                "returnAsStaticOptions": true,
+                "maximumOptions": 200,
+                "dataset": "$ref:activity-category-filter",
+                "name": "activity_category_id",
+                "display": "name"
+              }
+            }
+          },
+          {
+            "name": "$ref:status",
+            "display": "Application status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "index": 2,
+              "type": "multiselect",
+              "interactive": "true",
+              "staticoptions": [
+                {
+                  "name": "ALLOCATED",
+                  "display": "Allocated"
+                },
+                {
+                  "name": "DECLINED",
+                  "display": "Declined"
+                },
+                {
+                  "name": "REJECTED",
+                  "display": "Rejected"
+                }
+              ]
+            }
+          },
+          {
+            "name": "$ref:application_date",
+            "display": "Application date",
+            "formula": "format_date(${application_date}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "sortdirection": "desc",
+            "filter": {
+              "index": 0,
+              "type": "daterange",
+              "interactive": "true",
+              "default": ""
+            }
+          },
+          {
+            "name": "$ref:number_days",
+            "display": "Days elapsed",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:comments",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          }
+        ]
+      }
+    }
+  ]
+}
