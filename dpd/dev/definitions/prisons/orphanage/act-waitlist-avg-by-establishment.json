@@ -1,0 +1,200 @@
+{
+  "id": "act004-waitlist-average-by-establishment",
+  "name": "Waitlist Active Averages By Establishment",
+  "description": "The report will be used by the Activities team to look at the average wait time by establishment",
+  "metadata": {
+    "author": "Zahoor Hussain",
+    "owner": "Claire Morgan",
+    "version": "1.1.0",
+    "tags": [
+      "ACT001  v00.00.01",
+      "DPS",
+      "Activities Reporting"
+    ],
+    "JIRA": "https://dsdmoj.atlassian.net/browse/DPR2-2272"
+  },
+  "datasource": [
+    {
+      "id": "datamart",
+      "name": "datamart"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "waitlist",
+      "name": "Waitlist",
+      "description": "Waitlist averages",
+      "datasource": "datamart",
+      "query": "SELECT w.prison_code AS pcode, p.name AS pname,COUNT(distinct w.activity_id) as waitlist_count,COUNT(distinct a.activity_id) as activity_count,COUNT(distinct CASE WHEN (end_date > CURRENT_DATE OR end_date IS NULL) THEN a.activity_id END) as activity_live,COUNT(distinct CASE WHEN (end_date < CURRENT_DATE) THEN a.activity_id END) as activity_archive,AVG(DATEDIFF (day,w.application_date,CURRENT_DATE)) AS avg_waittime FROM prisons.activities_waiting_list w JOIN prisons.activities_activity a USING (prison_code) JOIN datamart.establishment.prison p ON w.prison_code = p.prison_id WHERE status IN ('PENDING','APPROVED') AND start_date < CURRENT_DATE GROUP BY GROUPING SETS ((pname,pcode),()) ORDER BY pcode",
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "pcode",
+            "type": "string",
+            "sortable": true,
+            "display": "Prison code",
+            "filter": {
+              "type": "multiselect",
+              "interactive": true,
+              "dynamicoptions": {
+                "returnAsStaticOptions": true,
+                "maximumOptions": 150,
+                "dataset": "$ref:prisons",
+                "name": "pcode",
+                "display": "prison_name"
+              }
+            }
+          },
+          {
+            "index": 1,
+            "name": "pname",
+            "type": "string",
+            "display": "Category"
+          },
+          {
+            "index": 1,
+            "name": "waitlist_count",
+            "type": "string",
+            "display": "Count"
+          },
+          {
+            "index": 2,
+            "name": "activity_count",
+            "type": "string",
+            "sortable": true,
+            "display": "Total"
+          },
+          {
+            "index": 3,
+            "name": "activity_live",
+            "type": "string",
+            "sortable": true,
+            "display": "Live"
+          },
+          {
+            "index": 4,
+            "name": "activity_archive",
+            "type": "string",
+            "sortable": true,
+            "display": "Count"
+          },
+          {
+            "index": 6,
+            "name": "avg_waittime",
+            "type": "string",
+            "sortable": true,
+            "display": "AVG"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisons",
+      "name": "prisons",
+      "datasource": "datamart",
+      "query": "SELECT prison_id as pcode,name AS prison_name FROM establishment.prison WHERE active = TRUE ORDER by name",
+      "schema": {
+        "field": [
+          {
+            "name": "pcode",
+            "type": "string"
+          },
+          {
+            "name": "prison_name",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER",
+                "ACTIVITY_HUB"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseloads",
+      "type": "row-level",
+      "action": [
+        "pcode in (${caseloads})"
+      ],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": [
+                "${caseloads}"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [],
+  "dashboard": [
+    {
+      "id": "waitlist-status-breakdown",
+      "name": "Waitlist Active Averages By Establishment",
+      "description": "The report will be used by the Activities team to look at the average wait time by establishment",
+      "dataset": "waitlist",
+      "section": [
+        {
+          "id": "activity-status-breakdown",
+          "display": "Establishment breakdown",
+          "visualisation": [
+            {
+              "id": "pc",
+              "type": "list",
+              "display": "Average wait list duration by Establishment ",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:pcode",
+                    "display": "Prison Name"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:pname",
+                    "display": "Prison Name"
+                  },
+                  {
+                    "id": "$ref:activity_live",
+                    "display": "Total Activities"
+                  },
+                  {
+                    "id": "$ref:waitlist_count",
+                    "display": "Activities with Waitlist"
+                  },
+                  {
+                    "id": "$ref:avg_waittime",
+                    "display": "Average waittime (days)"
+                  }
+                ],
+                "filter": [],
+                "expectNull": false
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
