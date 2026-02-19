@@ -1,10 +1,8 @@
 {
   "id": "act003-waitlist-average-by-caseload",
-  "name": "Activity waitlist reports",
-  "description": "The average number of days since current activity applications were first logged.",
+  "name": "Waitlist Active Averages by Activity, Status and Requestor",
+  "description": "The report will be used by the Activities team to look at the avergae wait times for active activities",
   "metadata": {
-    "author": "Zahoor Hussain",
-    "owner": "Claire Morgan",
     "version": "1.1.0",
     "tags": [
       "ACT001  v00.00.01",
@@ -12,8 +10,7 @@
       "Activities Reporting"
     ],
     "JIRA": "https://dsdmoj.atlassian.net/browse/DPR2-2272",
-    "status": "policy updates",
-    "completed": "included comments - applied active caseload"
+    "status": "policy updates"
   },
   "datasource": [
     {
@@ -27,7 +24,7 @@
       "name": "Waitlist",
       "description": "Waitlist averages",
       "datasource": "datamart",
-      "query": "SELECT w.prison_code AS pcode, p.name AS pname,a.description AS activity_name,initcap(status) AS status, CASE WHEN requested_by = 'ACTIVITY_LEADER' THEN 'Activity leader' WHEN requested_by = 'EDUCATION_STAFF' THEN 'Education staff' WHEN requested_by = 'GUIDANCE_STAFF' THEN 'IAG or careers guidance staff' WHEN requested_by = 'MENTAL_HEALTH_STAFF' THEN 'Mental health staff' WHEN requested_by = 'OMU_STAFF' THEN 'Offender Management Unit' WHEN requested_by = 'OTHER' THEN 'Other' WHEN requested_by = 'POM_STAFF' THEN 'Keyworker or POM' WHEN requested_by = 'PRISONER' THEN 'Prisoner' WHEN requested_by = 'RECP_STAFF' THEN 'Reception staff' WHEN requested_by = 'RED_BAND' THEN 'Orderly or Red Band' WHEN requested_by = 'WING_STAFF' THEN 'Wing staff' WHEN requested_by = 'WORKSHOP_STAFF' THEN 'Workshop staff' END AS requested_by,COUNT(a.description) as activity_count,Min(DATEDIFF (day,w.application_date,CURRENT_DATE)) as min_waittime,AVG(DATEDIFF (day,w.application_date,CURRENT_DATE)) AS avg_waittime, Max(DATEDIFF (day,w.application_date,CURRENT_DATE)) as max_waittime FROM prisons.activities_waiting_list w JOIN prisons.activities_activity a USING (activity_id) inner join prisons.activities_activity_category ac USING (activity_category_id) JOIN datamart.establishment.prison p ON w.prison_code = p.prison_id WHERE status NOT IN ('ALLOCATED','REMOVED','DECLINED') AND start_date < CURRENT_DATE AND (end_date > CURRENT_DATE OR end_date IS NULL) GROUP BY GROUPING SETS ((pname,pcode,activity_name,status,requested_by),(pname,pcode,activity_name),(pcode,pname,status),(pname,pcode),()) ORDER BY pcode,activity_name,status",
+      "query": "SELECT w.prison_code AS pcode, p.name AS pname,a.description AS activity_name,status,requested_by, COUNT(a.description) as activity_count,Min(DATEDIFF (day,w.application_date,CURRENT_DATE)) as min_waittime,AVG(DATEDIFF (day,w.application_date,CURRENT_DATE)) AS avg_waittime, Max(DATEDIFF (day,w.application_date,CURRENT_DATE)) as max_waittime FROM prisons.activities_waiting_list w JOIN prisons.activities_activity a USING (activity_id) inner join prisons.activities_activity_category ac USING (activity_category_id) JOIN datamart.establishment.prison p ON w.prison_code = p.prison_id WHERE status NOT IN ('ALLOCATED','REMOVED','DECLINED') AND start_date < CURRENT_DATE AND (end_date > CURRENT_DATE OR end_date IS NULL) GROUP BY GROUPING SETS ((pname,pcode,activity_name,status,requested_by),(pname,pcode,activity_name),(pcode,pname,status),(pname,pcode),()) ORDER BY pcode,activity_name,status",
       "schema": {
         "field": [
           {
@@ -54,17 +51,17 @@
             "name": "status",
             "type": "string",
             "sortable": true,
-            "display": "Application Status",
+            "display": "STATUS",
             "filter": {
               "type": "multiselect",
               "interactive": "true",
               "staticoptions": [
                 {
-                  "name": "Approved",
+                  "name": "APPROVED",
                   "display": "Approved"
                 },
                 {
-                  "name": "Pending",
+                  "name": "PENDING",
                   "display": "Pending"
                 }
               ]
@@ -81,52 +78,24 @@
               "interactive": "true",
               "staticoptions": [
                 {
-                  "name": "Prisoner",
+                  "name": "ACTIVITY_LEADER",
+                  "display": "Activity Leader"
+                },
+                {
+                  "name": "EDUCATION_STAFF",
+                  "display": "Education Staff"
+                },
+                {
+                  "name": "GUIDANCE_STAFF",
+                  "display": "Guidance"
+                },
+                {
+                  "name": "PRISONER",
                   "display": "Prisoner"
                 },
                 {
-                  "name": "IAG or careers guidance staff",
-                  "display": "IAG or careers guidance staff"
-                },
-                {
-                  "name": "Education staff",
-                  "display": "Education staff"
-                },
-                {
-                  "name": "Wing staff",
-                  "display": "Wing staff"
-                },
-                {
-                  "name": "Workshop staff",
-                  "display": "Workshop staff"
-                },
-                {
-                  "name": "Activity leader",
-                  "display": "Activity leader"
-                },
-                {
-                  "name": "Mental health staff",
-                  "display": "Mental health staff"
-                },
-                {
-                  "name": "Offender Management Unit",
-                  "display": "Offender Management Unit"
-                },
-                {
-                  "name": "Keyworker or POM",
-                  "display": "Keyworker or POM"
-                },
-                {
-                  "name": "Reception staff",
-                  "display": "Reception staff"
-                },
-                {
-                  "name": "Orderly or Red Band",
-                  "display": "Orderly or Red Band"
-                },
-                {
-                  "name": "Other",
-                  "display": "Other"
+                  "name": "WING_STAFF",
+                  "display": "Wing"
                 }
               ]
             }
@@ -191,7 +160,7 @@
             {
               "match": [
                 "${role}",
-                "ROLE_ACTIVITY_HUB"
+                "ROLE_PRISONS_REPORTING_USER"
               ]
             }
           ]
@@ -222,18 +191,18 @@
   "dashboard": [
     {
       "id": "waitlist-status-breakdown",
-      "name": "Activity waitlist reports",
-      "description": "",
+      "name": "Waitlist Averages Breakdown",
+      "description": "Waitlist Averages Breakdown",
       "dataset": "waitlist",
       "section": [
         {
           "id": "activity-status-breakdown",
-          "display": "Age of current activity applications",
+          "display": "Establishment breakdown",
           "visualisation": [
             {
               "id": "pc",
               "type": "list",
-              "display": "The average number of days since current activity applications were first logged",
+              "display": "Average wait list duration by Establishment ",
               "column": {
                 "key": [
                   {
@@ -244,19 +213,19 @@
                 "measure": [
                   {
                     "id": "$ref:pname",
-                    "display": "Prison"
+                    "display": "Prison Name"
                   },
                   {
                     "id": "$ref:activity_count",
-                    "display": "Total applications"
+                    "display": "Activity Count"
                   },
                   {
                     "id": "$ref:avg_waittime",
-                    "display": "Average days since application"
+                    "display": "Average time (days)"
                   },
                   {
                     "id": "$ref:max_waittime",
-                    "display": "Oldest application"
+                    "display": "Max time (days)"
                   }
                 ],
                 "filter": [

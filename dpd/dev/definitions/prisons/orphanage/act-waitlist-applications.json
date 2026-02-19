@@ -1,13 +1,12 @@
 {
   "id": "act002-waitlist-applications-by-caseload",
-  "name": "Activity waitlist reports",
-  "description": "",
+  "name": "Activity applications",
+  "description": "All activity applications.",
   "metadata": {
     "author": "David Backholer",
     "owner": "Claire Morgan",
     "version": "1.0.0",
-    "status": "policy updates, created by and updated by, will need staff domain",
-    "completed": "Update Cell location, active caseload, comments field"
+    "status": "Update Cell location, active caseloads filter type, policy updates"
   },
   "datasource": [
     {
@@ -20,7 +19,7 @@
       "id": "waitlist-applications-pending-approved",
       "name": "Outstanding Waitlist Applications",
       "datasource": "datamart",
-      "query": "SELECT wl.prison_code, wl.prisoner_number, dm.name, dm.cell_location, wl.activity_id, a.description, CASE WHEN a.end_date IS NULL OR a.end_date > CURRENT_DATE THEN 'LIVE' ELSE 'ARCHIVED' END AS activity_status, cat.activity_category_id, cat.name as category_name, initcap(wl.status) as status, wl.application_date, CURRENT_DATE - wl.application_date as number_days, comments FROM prisons.activities_waiting_list wl LEFT JOIN prisons.activities_activity a on wl.activity_id = a.activity_id LEFT JOIN prisons.activities_activity_category cat on a.activity_category_id  = cat.activity_category_id LEFT JOIN datamart.person.prisoner dm on wl.prisoner_number = dm.prisoner_number WHERE (wl.status = 'PENDING' or wl.status = 'APPROVED') AND (dm.prison_id != 'OUT')",
+      "query": "SELECT wl.prison_code, wl.prisoner_number, dm.name, dm.cell_location, wl.activity_id, a.description, CASE WHEN a.end_date IS NULL OR a.end_date > CURRENT_DATE THEN 'LIVE' ELSE 'ARCHIVED' END AS activity_status, cat.activity_category_id, cat.name as category_name, wl.status, wl.application_date, CURRENT_DATE - wl.application_date as number_days, comments FROM prisons.activities_waiting_list wl LEFT JOIN prisons.activities_activity a on wl.activity_id = a.activity_id LEFT JOIN prisons.activities_activity_category cat on a.activity_category_id  = cat.activity_category_id LEFT JOIN datamart.person.prisoner dm on wl.prisoner_number = dm.prisoner_number WHERE (wl.status = 'PENDING' or wl.status = 'APPROVED') AND (dm.prison_id != 'OUT')",
       "schema": {
         "field": [
           {
@@ -95,7 +94,7 @@
       "id": "waitlist-applications-completed",
       "name": "Outstanding Waitlist Applications",
       "datasource": "datamart",
-      "query": "SELECT wl.prison_code, wl.prisoner_number, dm.name, dm.cell_location, wl.activity_id, a.description, CASE WHEN a.end_date IS NULL OR a.end_date > CURRENT_DATE THEN 'LIVE' ELSE 'ARCHIVED' END AS activity_status, cat.activity_category_id, cat.name as category_name, initcap(wl.status) AS status, wl.application_date, status_updated_time, datediff(days,wl.application_date,to_date(status_updated_time,'YYYY-MM-DD')) as number_days, comments FROM prisons.activities_waiting_list wl LEFT JOIN prisons.activities_activity a on wl.activity_id = a.activity_id LEFT JOIN prisons.activities_activity_category cat on a.activity_category_id  = cat.activity_category_id LEFT JOIN datamart.person.prisoner dm on wl.prisoner_number = dm.prisoner_number WHERE (wl.status = 'REJECTED' or wl.status = 'DECLINED' or wl.status = 'ALLOCATED' ) AND (dm.prison_id != 'OUT')",
+      "query": "SELECT wl.prison_code, wl.prisoner_number, dm.name, dm.cell_location, wl.activity_id, a.description, CASE WHEN a.end_date IS NULL OR a.end_date > CURRENT_DATE THEN 'LIVE' ELSE 'ARCHIVED' END AS activity_status, cat.activity_category_id, cat.name as category_name, wl.status, wl.application_date, status_updated_time, datediff(days,wl.application_date,to_date(status_updated_time,'YYYY-MM-DD')) as number_days, comments FROM prisons.activities_waiting_list wl LEFT JOIN prisons.activities_activity a on wl.activity_id = a.activity_id LEFT JOIN prisons.activities_activity_category cat on a.activity_category_id  = cat.activity_category_id LEFT JOIN datamart.person.prisoner dm on wl.prisoner_number = dm.prisoner_number WHERE (wl.status = 'REJECTED' or wl.status = 'DECLINED' or wl.status = 'ALLOCATED' ) AND (dm.prison_id != 'OUT')",
       "schema": {
         "field": [
           {
@@ -340,11 +339,11 @@
               "interactive": "true",
               "staticoptions": [
                 {
-                  "name": "Approved",
+                  "name": "APPROVED",
                   "display": "Approved"
                 },
                 {
-                  "name": "Pending",
+                  "name": "PENDING",
                   "display": "Pending"
                 }
               ]
@@ -384,8 +383,8 @@
     },
     {
       "id": "waitlist-applications-completed-report",
-      "name": "Days from application to allocation or rejection",
-      "description": "All prisoner applications that resulted in allocation or rejection, with the number of days before that decision was taken.",
+      "name": "Completed activity applications",
+      "description": "All completed applications where the prisoner has been allocated or rejected.",
       "classification": "Official",
       "version": "1.0.0",
       "render": "HTML",
@@ -428,6 +427,14 @@
             "defaultsort": false
           },
           {
+            "name": "$ref:activity_id",
+            "display": "Activity",
+            "formula": "",
+            "visible": "false",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
             "name": "$ref:description",
             "display": "Activity name",
             "formula": "make_url('https://activities-${env}.prison.service.justice.gov.uk/activities/allocation-dashboard/${activity_id}#waitlist-tab',${description},TRUE)",
@@ -439,7 +446,7 @@
             "name": "$ref:activity_category_id",
             "display": "Activity category",
             "formula": "${category_name}",
-            "visible": "false",
+            "visible": "true",
             "sortable": true,
             "defaultsort": false,
             "filter": {
@@ -448,7 +455,7 @@
               "interactive": "true",
               "dynamicoptions": {
                 "returnAsStaticOptions": true,
-                "maximumOptions": 15,
+                "maximumOptions": 200,
                 "dataset": "$ref:activity-category-filter",
                 "name": "activity_category_id",
                 "display": "name"
@@ -468,12 +475,16 @@
               "interactive": "true",
               "staticoptions": [
                 {
-                  "name": "Allocated",
+                  "name": "ALLOCATED",
                   "display": "Allocated"
                 },
                 {
-                  "name": "Declined",
+                  "name": "DECLINED",
                   "display": "Declined"
+                },
+                {
+                  "name": "REJECTED",
+                  "display": "Rejected"
                 }
               ]
             }
@@ -495,7 +506,7 @@
           },
           {
             "name": "$ref:number_days",
-            "display": "Days to allocation or rejection",
+            "display": "Days elapsed",
             "formula": "",
             "visible": "true",
             "sortable": true,
