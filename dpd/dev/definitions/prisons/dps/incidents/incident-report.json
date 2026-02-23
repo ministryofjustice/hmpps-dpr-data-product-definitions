@@ -1,7 +1,8 @@
 {
   "id": "incident-report",
-  "name": "Incident report summary",
-  "description": "List of all incidents filtered by dates, types, status and locations.",
+  "name": "Incident Reports",
+  "description": "Collection of reports related to incidents.",
+  "product": "Incident Reporting (IRS)",
   "metadata": {
     "author": "Michael Willis",
     "version": "1.0.0",
@@ -30,7 +31,8 @@
                 "${role}",
                 "INCIDENT_REPORTS__RO",
                 "INCIDENT_REPORTS__RW",
-                "INCIDENT_REPORTS__APPROVE"
+                "INCIDENT_REPORTS__APPROVE",
+                "PRISONS_REPORTING_USER"
               ]
             }
           ]
@@ -40,7 +42,7 @@
     {
       "id": "caseloads",
       "type": "row-level",
-      "action": ["prison_id IN (${caseloads})"],
+      "action": ["location IN (${caseloads})"],
       "rule": [
         {
           "effect": "permit",
@@ -55,30 +57,71 @@
   ],
   "dataset": [
     {
+      "id": "types",
+      "name": "Incident Types",
+      "datasource": "athena_redshift",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_type_family",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Type code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Type description",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "status",
+      "name": "Incident Status",
+      "datasource": "athena_redshift",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_status where code NOT IN ('DUPLICATE', 'NOT_REPORTABLE') order by sequence",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Status code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Status description",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisoner_role",
+      "name": "Prisoner Role",
+      "datasource": "replicaDataSource",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_prisoner_role",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Role code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Role Description",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    
+    {
       "id": "summary",
       "name": "Incident report summary",
-      "datasource": "athena_redshift",
-      "query": "SELECT r.id,\n       report_reference,\n       ctf.code                    as type,\n       ctf.description             as type_description,\n       r.status,\n       cs.description as status_description,\n       incident_date_and_time,\n       reported_at,\n       reported_by,\n       r.title,\n       r.description,\n       location                    as prison_id,\n       modified_at,\n       el.description as prison_name,\n       el.noms_region_code         as region_code,\n       area.description            as region_name\nFROM prisons.incidentreporting_report r\n         join prisons.incidentreporting_constant_status cs on r.status = cs.code\n         join prisons.incidentreporting_constant_type ct on r.type = ct.code\n         join prisons.incidentreporting_constant_type_family ctf on ctf.code = ct.family_code\n         join prisons.nomis_agency_locations el on el.agy_loc_id = r.location and el.agency_location_type = 'INST'\n         join prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = el.noms_region_code\nWHERE r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE') and date(r.incident_date_and_time) >= (SELECT START_DATE from prompt_) and date(r.incident_date_and_time) <= (SELECT END_DATE from prompt_)",
-      "parameters": [
-        {
-          "index": 0,
-          "name": "start_date",
-          "filterType": "date",
-          "reportFieldType": "date",
-          "display": "Enter Incident Date (Start)",
-          "description": "",
-          "mandatory": "true"
-        },
-        {
-          "index": 1,
-          "name": "end_date",
-          "filterType": "date",
-          "reportFieldType": "date",
-          "display": "Enter Incident Date (End)",
-          "description": "",
-          "mandatory": "true"
-        }
-      ],
+      "datasource": "replicaDataSource",
+      "query": "SELECT id,\n       report_reference,\n       ctf.code                    as type,\n       ctf.description             as type_description,\n       status,\n       cs.description as status_description,\n       incident_date_and_time,\n       reported_at,\n       reported_by,\n       title,\n       r.description,\n       location,\n       modified_at,\n       (select STRING_AGG(prisoner_number || ' (' || cr.description || ')',',')\n        from prisons.incidentreporting_prisoner_involvement  pi join prisons.incidentreporting_constant_prisoner_role  cr on pi.prisoner_role = cr.code\n        where pi.report_id = r.id) as prisoners_involved\nFROM prisons.incidentreporting_report r\n       join prisons.incidentreporting_constant_status cs on r.status = cs.code\n       join prisons.incidentreporting_constant_type ct on r.type = ct.code\n       join prisons.incidentreporting_constant_type_family ctf on ctf.code = ct.family_code\nWHERE status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
       "schema": {
         "field": [
           {
@@ -110,19 +153,7 @@
             "type": "datetime"
           },
           {
-            "name": "prison_id",
-            "type": "string"
-          },
-          {
-            "name": "prison_name",
-            "type": "string"
-          },
-          {
-            "name": "region_code",
-            "type": "string"
-          },
-          {
-            "name": "region_name",
+            "name": "location",
             "type": "string"
           },
           {
@@ -144,86 +175,480 @@
           {
             "name": "modified_at",
             "type": "datetime"
+          },
+          {
+            "name": "prisoners_involved",
+            "type": "string"
           }
         ]
       }
     },
     {
-      "id": "types",
-      "name": "Incident Types",
-      "datasource": "athena_redshift",
-      "query": "SELECT code, description FROM prisons.incidentreporting_constant_type_family",
+      "id": "by-location-per-day",
+      "name": "Count of incidents per location per day",
+      "datasource": "replicaDataSource",
+      "query": "SELECT cast(date_trunc('day', incident_date_and_time) as date) as start_date, to_char(min(incident_date_and_time), 'DD/MM/YYYY') as filter_date, location, ctf.code as type, ctf.description as type_description, count(*) num_of_incidents\nFROM prisons.incidentreporting_report r join prisons.incidentreporting_constant_status cs on r.status = cs.code join prisons.incidentreporting_constant_type ct on r.type = ct.code join prisons.incidentreporting_constant_type_family ctf on ctf.code = ct.family_code WHERE status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')\ngroup by date_trunc('day', r.incident_date_and_time), r.location, ctf.code, ctf.description",
       "schema": {
         "field": [
           {
-            "name": "code",
-            "display": "Type code",
+            "name": "start_date",
+            "type": "date"
+          },
+          {
+            "name": "filter_date",
+            "type": "date"
+          },
+          {
+            "name": "location",
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "type": "string"
+          },
+          {
+            "name": "type_description",
+            "type": "string"
+          },
+          {
+            "name": "num_of_incidents",
+            "type": "long"
+          }
+        ]
+      }
+    },
+    {
+      "id": "by-location-per-week",
+      "name": "Count of incidents per location per week",
+      "datasource": "replicaDataSource",
+      "query": "SELECT cast(date_trunc('week', incident_date_and_time) as date) as start_date, to_char(min(incident_date_and_time), 'DD/MM/YYYY') as min_date, to_char(max(incident_date_and_time), 'DD/MM/YYYY') as max_date, location, ctf.code as type, ctf.description as type_description, count(*) num_of_incidents\nFROM prisons.incidentreporting_report r join prisons.incidentreporting_constant_status cs on r.status = cs.code join prisons.incidentreporting_constant_type ct on r.type = ct.code join prisons.incidentreporting_constant_type_family ctf on ctf.code = ct.family_code WHERE status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')\ngroup by date_trunc('week', r.incident_date_and_time), r.location, ctf.code, ctf.description",
+      "schema": {
+        "field": [
+          {
+            "name": "start_date",
+            "type": "date"
+          },
+          {
+            "name": "min_date",
+            "type": "date"
+          },
+          {
+            "name": "max_date",
+            "type": "date"
+          },
+          {
+            "name": "location",
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "type": "string"
+          },
+          {
+            "name": "type_description",
+            "type": "string"
+          },
+          {
+            "name": "num_of_incidents",
+            "type": "long"
+          }
+        ]
+      }
+    },
+    {
+      "id": "by-location-per-month",
+      "name": "Count of incidents per location per month",
+      "datasource": "replicaDataSource",
+      "query": "SELECT cast(date_trunc('month', incident_date_and_time) as date) as start_date, to_char(min(incident_date_and_time), 'DD/MM/YYYY') as min_date, to_char(max(incident_date_and_time), 'DD/MM/YYYY') as max_date, location, ctf.code as type, ctf.description as type_description, count(*) num_of_incidents\nFROM prisons.incidentreporting_report r join prisons.incidentreporting_constant_status cs on r.status = cs.code join prisons.incidentreporting_constant_type ct on r.type = ct.code join prisons.incidentreporting_constant_type_family ctf on ctf.code = ct.family_code WHERE status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')\ngroup by date_trunc('month', r.incident_date_and_time), r.location, ctf.code, ctf.description",
+      "schema": {
+        "field": [
+          {
+            "name": "start_date",
+            "type": "date"
+          },
+          {
+            "name": "min_date",
+            "type": "date"
+          },
+          {
+            "name": "max_date",
+            "type": "date"
+          },
+          {
+            "name": "location",
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "type": "string"
+          },
+          {
+            "name": "type_description",
+            "type": "string"
+          },
+          {
+            "name": "num_of_incidents",
+            "type": "long"
+          }
+        ]
+      }
+    },
+    {
+      "id": "per-type",
+      "name": "Count of prisoner incidents by type per month",
+      "datasource": "replicaDataSource",
+      "query": "select cast(date_trunc('month', incident_date_and_time) as date) as month_year,\n       to_char(min(incident_date_and_time), 'DD/MM/YYYY')        as min_date,\n       to_char(max(incident_date_and_time), 'DD/MM/YYYY')        as max_date,\n       pi.prisoner_number,\n       initcap(pi.first_name)                                    as first_name,\n       initcap(pi.last_name)                                     as last_name,\n       ctf.code as type,\n       ctf.description                                               type_description,\n       r.location,\n       COUNT(distinct r.id)                               as num_of_incidents\nfrom prisons.incidentreporting_prisoner_involvement  pi\n         join prisons.incidentreporting_report r on r.id = pi.report_id\n         join prisons.incidentreporting_constant_type ct on r.type = ct.code join prisons.incidentreporting_constant_type_family ctf on ctf.code = ct.family_code\nWHERE status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')\nGROUP BY date_trunc('month', r.incident_date_and_time), pi.prisoner_number, pi.last_name, pi.first_name, ctf.code,\n         ctf.description, r.location",
+      "schema": {
+        "field": [
+          {
+            "name": "month_year",
+            "type": "date"
+          },
+          {
+            "name": "min_date",
+            "type": "date"
+          },
+          {
+            "name": "max_date",
+            "type": "date"
+          },
+          {
+            "name": "type",
+            "type": "string"
+          },
+          {
+            "name": "type_description",
+            "type": "string"
+          },
+          {
+            "name": "first_name",
+            "type": "string"
+          },
+          {
+            "name": "last_name",
+            "type": "string"
+          },
+          {
+            "name": "prisoner_number",
+            "type": "string"
+          },
+          {
+            "name": "location",
+            "type": "string"
+          },
+          {
+            "name": "num_of_incidents",
+            "type": "long"
+          }
+        ]
+      }
+    },
+    {
+      "id": "by-prisoner",
+      "name": "Report of prisoner involvement in an incident",
+      "datasource": "replicaDataSource",
+      "query": "select r.id, r.report_reference, r.location,ctf.code as type, ct.description type_description, r.status, cs.description status_description, r.incident_date_and_time, r.reported_by, initcap(pi.first_name) as first_name, initcap(pi.last_name) as last_name, pi.prisoner_number, pi.comment\nfrom prisons.incidentreporting_prisoner_involvement  pi join prisons.incidentreporting_report r on r.id = pi.report_id\njoin prisons.incidentreporting_constant_status cs on r.status = cs.code join prisons.incidentreporting_constant_type ct on r.type = ct.code join prisons.incidentreporting_constant_type_family ctf on ctf.code = ct.family_code WHERE status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
+      "schema": {
+        "field": [
+          {
+            "name": "id",
+            "type": "string"
+          },
+          {
+            "name": "report_reference",
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "filter": {
+              "type": "multiselect",
+              "dynamicoptions": {
+                "maximumOptions": 60,
+                "returnAsStaticOptions": true,
+                "dataset": "types",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "type_description",
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "filter": {
+              "type": "multiselect",
+              "dynamicoptions": {
+                "maximumOptions": 20,
+                "returnAsStaticOptions": true,
+                "dataset": "status",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "status_description",
+            "type": "string"
+          },
+          {
+            "name": "incident_date_and_time",
+            "type": "datetime"
+          },
+          {
+            "name": "reported_by",
+            "type": "string"
+          },
+          {
+            "name": "first_name",
+            "type": "string"
+          },
+          {
+            "name": "last_name",
+            "type": "string"
+          },
+          {
+            "name": "prisoner_number",
+            "type": "string"
+          },
+          {
+            "name": "comment",
+            "type": "string"
+          },
+          {
+            "name": "location",
+            "type": "string",
+            "filter": {
+              "type" : "caseloads",
+              "mandatory": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "by-staff",
+      "name": "Report of staff involvement in an incident",
+      "datasource": "replicaDataSource",
+      "query": "select r.id, r.report_reference, r.location, ctf.code as type, ctf.description type_description, r.status, cs.description status_description, r.incident_date_and_time, r.reported_by, initcap(st.first_name) as first_name, initcap(st.last_name) as last_name, st.staff_username, st.comment, r.title, r.description from staff_involvement st join prisons.incidentreporting_report r on r.id = st.report_id\njoin prisons.incidentreporting_constant_status cs on r.status = cs.code join prisons.incidentreporting_constant_type ct on r.type = ct.code join prisons.incidentreporting_constant_type_family ctf on ctf.code = ct.family_code WHERE status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
+      "schema": {
+        "field": [
+          {
+            "name": "id",
+            "type": "string"
+          },
+          {
+            "name": "report_reference",
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "filter": {
+              "type": "multiselect",
+              "dynamicoptions": {
+                "maximumOptions": 60,
+                "returnAsStaticOptions": true,
+                "dataset": "types",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "type_description",
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "filter": {
+              "type": "multiselect",
+              "dynamicoptions": {
+                "maximumOptions": 20,
+                "returnAsStaticOptions": true,
+                "dataset": "status",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "status_description",
+            "type": "string"
+          },
+          {
+            "name": "incident_date_and_time",
+            "type": "datetime"
+          },
+          {
+            "name": "reported_by",
+            "type": "string"
+          },
+          {
+            "name": "first_name",
+            "type": "string"
+          },
+          {
+            "name": "last_name",
+            "type": "string"
+          },
+          {
+            "name": "staff_username",
+            "type": "string"
+          },
+          {
+            "name": "comment",
+            "type": "string"
+          },
+          {
+            "name": "location",
+            "type": "string",
+            "filter": {
+              "type" : "caseloads",
+              "mandatory": false
+            }
+          },
+          {
+            "name": "title",
             "type": "string"
           },
           {
             "name": "description",
-            "display": "Type description",
             "type": "string"
           }
         ]
       }
     },
     {
-      "id": "status",
-      "name": "Incident Status",
-      "datasource": "athena_redshift",
-      "query": "SELECT code, description FROM prisons.incidentreporting_constant_status where code NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
+      "id": "prisoner-summary",
+      "name": "Prisoner summary of incidents",
+      "datasource": "replicaDataSource",
+      "query": "with latest_report_per_prisoner as (\n    select distinct on (pi.prisoner_number)\n        pi.prisoner_number,\n        r.location as latest_location\n    from prisons.incidentreporting_prisoner_involvement  pi\n             join prisons.incidentreporting_report r on r.id = pi.report_id\n    where r.status not in ('DUPLICATE', 'NOT_REPORTABLE')\n    order by\n        pi.prisoner_number,\n        r.incident_date_and_time desc nulls last,\n        r.reported_at desc nulls last,\n        r.created_at desc nulls last,\n        r.id desc\n)\nselect\n    pi.prisoner_number,\n    initcap(pi.first_name)                                      as first_name,\n    initcap(pi.last_name)                                       as last_name,\n    lrp.latest_location                                         as location,\n    sum(case when ctf.code = 'ASSAULT' then 1 else 0 end)       as assault_count,\n    sum(case when ctf.code = 'SELF_HARM' then 1 else 0 end)     as self_harm_count,\n    sum(case when ctf.code = 'FIND' then 1 else 0 end)          as finds_count,\n    sum(case when ctf.code = 'DISORDER' then 1 else 0 end)      as disorder_count,\n    sum(case when ctf.code = 'DRUGS' then 1 else 0 end)         as drugs_count,\n    sum(case when ctf.code = 'MISCELLANEOUS' then 1 else 0 end) as misc_count,\n    count(*)                                                    as total_incidents\nfrom prisons.incidentreporting_prisoner_involvement  pi\n         join prisons.incidentreporting_report r on r.id = pi.report_id\n         join prisons.incidentreporting_constant_type ct on r.type = ct.code\n         join prisons.incidentreporting_constant_type_family ctf on ctf.code = ct.family_code\n         left join latest_report_per_prisoner lrp\n                   on lrp.prisoner_number = pi.prisoner_number\nwhere r.status not in ('DUPLICATE', 'NOT_REPORTABLE')\ngroup by\n    pi.last_name, pi.first_name, pi.prisoner_number,\n    lrp.latest_location",
       "schema": {
         "field": [
           {
-            "name": "code",
-            "display": "Status code",
+            "name": "prisoner_number",
             "type": "string"
           },
           {
-            "name": "description",
-            "display": "Status description",
+            "name": "first_name",
             "type": "string"
+          },
+          {
+            "name": "last_name",
+            "type": "string"
+          },
+          {
+            "name": "location",
+            "type": "string"
+          },
+          {
+            "name": "assault_count",
+            "type": "long"
+          },
+          {
+            "name": "self_harm_count",
+            "type": "long"
+          },
+          {
+            "name": "finds_count",
+            "type": "long"
+          },
+          {
+            "name": "disorder_count",
+            "type": "long"
+          },
+          {
+            "name": "drugs_count",
+            "type": "long"
+          },
+          {
+            "name": "misc_count",
+            "type": "long"
+          },
+          {
+            "name": "total_incidents",
+            "type": "long"
           }
         ]
       }
     },
     {
-      "id": "regionCodes",
-      "name": "Region Codes",
-      "datasource": "athena_redshift",
-      "query": "select area_code as code, description from prisons.nomis_areas where area_class = 'REGION' and active_flag = 'Y' order by description",
+      "id": "by-location-per-week",
+      "name": "Location / week",
+      "datasource": "replicaDataSource",
+      "query": "select Cast(Date_trunc('week', created_at) AS DATE) as week,\n       to_char(min(created_at), 'DD/MM/YYYY')       as min_date,\n       to_char(max(created_at), 'DD/MM/YYYY')       as max_date,\n       location,\n       COALESCE(ct.description, 'All types')        as incident_type,\n       COALESCE(ct.code, 'All')               as type,\n       count(id)                                    as number_of_reports\nfrom prisons.incidentreporting_report as r\n         left join (select code, description\n                    from constant_type) as ct\n                   on r.type = ct.code\nwhere source = 'DPS'\ngroup by week, location, ROLLUP (ct.description, ct.code)",
       "schema": {
         "field": [
           {
-            "name": "code",
-            "display": "Code",
+            "name": "week",
+            "type": "date"
+          },
+          {
+            "name": "min_date",
+            "type": "date"
+          },
+          {
+            "name": "max_date",
+            "type": "date"
+          },
+          {
+            "name": "location",
             "type": "string"
           },
           {
-            "name": "description",
-            "display": "Description",
+            "name": "incident_type",
             "type": "string"
+          },
+          {
+            "name": "type",
+            "type": "string"
+          },
+          {
+            "name": "number_of_reports",
+            "type": "long"
           }
         ]
       }
     },
     {
-      "id": "prisons",
-      "name": "Prisons",
-      "datasource": "athena_redshift",
-      "query": "select agy_loc_id prison_id, initcap(description) prison_name FROM prisons.nomis_agency_locations al \nwhere al.agency_location_type = 'INST'\nand al.active_flag = 'Y'\norder by description",
+      "id": "by-location-per-month",
+      "name": "Location / month",
+      "datasource": "replicaDataSource",
+      "query": "select Cast(Date_trunc('month', created_at) AS DATE) as month,\n       to_char(min(created_at), 'DD/MM/YYYY')        as min_date,\n       to_char(max(created_at), 'DD/MM/YYYY')        as max_date,\n       location,\n       COALESCE(ct.description, 'All types')         as incident_type,\n       COALESCE(ct.code,        'All')               as type,\n       count(id)                                     as number_of_reports\nfrom prisons.incidentreporting_report as r\n         left join (select code, description\n                    from constant_type) as ct\n                   on r.type = ct.code\nwhere source = 'DPS'\ngroup by month, location, ROLLUP (ct.description, ct.code)",
       "schema": {
         "field": [
           {
-            "name": "prison_id",
-            "display": "Prison Id",
+            "name": "month",
+            "type": "date"
+          },
+          {
+            "name": "min_date",
+            "type": "date"
+          },
+          {
+            "name": "max_date",
+            "type": "date"
+          },
+          {
+            "name": "location",
             "type": "string"
           },
           {
-            "name": "prison_name",
-            "display": "Prison name",
+            "name": "incident_type",
             "type": "string"
+          },
+          {
+            "name": "type",
+            "type": "string"
+          },
+          {
+            "name": "number_of_reports",
+            "type": "long"
           }
         ]
       }
@@ -248,65 +673,26 @@
         "field": [
           {
             "name": "$ref:report_reference",
-            "display": "Report Reference",
+            "display": "Incident number",
             "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports/${id}',${report_reference},TRUE)",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
           },
           {
-            "name": "$ref:prison_id",
-            "display": "Prison",
-            "sortable": true,
-            "visible": "false",
-            "defaultsort": false,
-            "filter": {
-              "type": "multiselect",
-              "mandatory": false,
-              "dynamicoptions": {
-                "maximumOptions": 140,
-                "returnAsStaticOptions": true,
-                "dataset": "prisons",
-                "name": "prison_id",
-                "display": "prison_name"
-              }
-            }
-          },
-          {
-            "name": "$ref:prison_name",
-            "display": "Prison name",
+            "name": "$ref:location",
+            "display": "Location of incident",
             "sortable": true,
             "visible": "true",
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:region_code",
-            "display": "Region",
-            "sortable": true,
-            "visible": "false",
             "defaultsort": false,
             "filter": {
-              "type": "multiselect",
-              "mandatory": false,
-              "dynamicoptions": {
-                "maximumOptions": 140,
-                "returnAsStaticOptions": true,
-                "dataset": "regionCodes",
-                "name": "code",
-                "display": "description"
-              }
+              "type" : "caseloads",
+              "mandatory": false
             }
-          },
-          {
-            "name": "$ref:region_name",
-            "display": "Region name",
-            "sortable": true,
-            "visible": "true",
-            "defaultsort": false
           },
           {
             "name": "$ref:type",
-            "display": "Type",
+            "display": "Type code",
             "sortable": false,
             "visible": "false",
             "defaultsort": false,
@@ -331,7 +717,7 @@
           },
           {
             "name": "$ref:status",
-            "display": "Status",
+            "display": "Status code",
             "sortable": false,
             "visible": "false",
             "defaultsort": false,
@@ -362,7 +748,12 @@
             "type": "datetime",
             "visible": "true",
             "defaultsort": true,
-            "sortdirection": "desc"
+            "sortdirection": "desc",
+            "filter": {
+              "mandatory": false,
+              "type": "daterange",
+              "default": "today(-1,months) - today()"
+            }
           },
           {
             "name": "$ref:reported_at",
@@ -378,6 +769,13 @@
             "display": "Incident title",
             "sortable": false,
             "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:prisoners_involved",
+            "display": "Prisoners involved",
+            "sortable": false,
+            "visible": "true",
             "defaultsort": false
           },
           {
@@ -404,6 +802,805 @@
             "formula": "format_date(${modified_at}, 'dd/MM/yyyy HH:mm')",
             "type": "date",
             "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          }
+        ]
+      },
+      "destination": []
+    },
+    {
+      "id": "by-location-per-day",
+      "name": "Day and location reports",
+      "description": "Counts of incidents by type and location for each day.",
+      "version": "1.0.0",
+      "dataset": "$ref:by-location-per-day",
+      "policy": [],
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:start_date",
+            "display": "Date of incident",
+            "formula": "format_date(${start_date}, 'dd/MM/yyyy')",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": true,
+            "sortdirection": "desc",
+            "filter": {
+              "type": "daterange",
+              "default": "today(-1,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:type",
+            "display": "Type code",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "dynamicoptions": {
+                "maximumOptions": 60,
+                "returnAsStaticOptions": true,
+                "dataset": "types",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "$ref:type_description",
+            "display": "Incident type",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:location",
+            "display": "Location of incident",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "caseloads",
+              "mandatory": false
+            }
+          },
+          {
+            "name": "$ref:num_of_incidents",
+            "display": "Incidents/Day",
+            "sortable": true,
+            "visible": "true",
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?fromDate=${filter_date}&toDate=${filter_date}&location=${location}&typeFamily=${type}',${num_of_incidents},TRUE)",
+            "defaultsort": false
+          }
+        ]
+      },
+      "destination": []
+    },
+    {
+      "id": "by-location-per-week",
+      "name": "Week and location reports",
+      "description": "Counts of incidents by type and location for each week.",
+      "version": "1.0.0",
+      "dataset": "$ref:by-location-per-week",
+      "policy": [],
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:start_date",
+            "display": "Date of incident",
+            "formula": "format_date(${start_date}, 'dd/MM/yyyy')",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": true,
+            "sortdirection": "desc",
+            "filter": {
+              "type": "daterange",
+              "default": "today(-1,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:type",
+            "display": "Type code",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "dynamicoptions": {
+                "maximumOptions": 60,
+                "returnAsStaticOptions": true,
+                "dataset": "types",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "$ref:type_description",
+            "display": "Incident type",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:location",
+            "display": "Location of incident",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "caseloads",
+              "mandatory": false
+            }
+          },
+          {
+            "name": "$ref:num_of_incidents",
+            "display": "Incidents/Week",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?fromDate=${min_date}&toDate=${max_date}&location=${location}&typeFamily=${type}',${num_of_incidents},TRUE)"
+          }
+        ]
+      },
+      "destination": []
+    },
+    {
+      "id": "by-location-per-month",
+      "name": "Month and location reports",
+      "description": "Counts of incidents by type and location for each month.",
+      "version": "1.0.0",
+      "dataset": "$ref:by-location-per-month",
+      "policy": [],
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:start_date",
+            "display": "Month of incident",
+            "formula": "format_date(${start_date}, 'MMM-yyyy')",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": true,
+            "sortdirection": "desc",
+            "filter": {
+              "type": "daterange",
+              "default": "today(-3,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:type",
+            "display": "Type code",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "dynamicoptions": {
+                "maximumOptions": 60,
+                "returnAsStaticOptions": true,
+                "dataset": "types",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "$ref:type_description",
+            "display": "Incident type",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:location",
+            "display": "Location of incident",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "caseloads",
+              "mandatory": false
+            }
+          },
+          {
+            "name": "$ref:num_of_incidents",
+            "display": "Incidents/month",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?fromDate=${min_date}&toDate=${max_date}&location=${location}&typeFamily=${type}',${num_of_incidents},TRUE)"
+          }
+        ]
+      },
+      "destination": []
+    },
+    {
+      "id": "by-location-per-week",
+      "name": "Location / week",
+      "description": "Counts of incident reports created in DPS for each location by type per week.",
+      "version": "1.0.0",
+      "dataset": "$ref:by-location-per-week",
+      "policy": [],
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:week",
+            "display": "Week starting date when reports created",
+            "formula": "format_date(${week}, 'dd-MMM-yyyy')",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": true,
+            "sortdirection": "desc",
+            "filter": {
+              "type": "daterange",
+              "default": "today(-3,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:location",
+            "display": "Location",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "caseloads",
+              "mandatory": false
+            }
+          },
+          {
+            "name": "$ref:incident_type",
+            "display": "Incident type",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:type",
+            "display": "Type code",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 60,
+                "returnAsStaticOptions": true,
+                "dataset": "types",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "$ref:number_of_reports",
+            "display": "Number of reports created",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          }
+        ]
+      },
+      "destination": []
+    },
+    {
+      "id": "by-location-per-month",
+      "name": "Location / month",
+      "description": "Counts of incident reports created in DPS for each location per month.",
+      "version": "1.0.0",
+      "dataset": "$ref:by-location-per-month",
+      "policy": [],
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:month",
+            "display": "Month when reports created",
+            "formula": "format_date(${month}, 'MMM-yyyy')",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": true,
+            "sortdirection": "desc",
+            "filter": {
+              "type": "daterange",
+              "default": "today(-3,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:location",
+            "display": "Location",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "caseloads",
+              "mandatory": false
+            }
+          },
+          {
+            "name": "$ref:incident_type",
+            "display": "Incident type",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:type",
+            "display": "Type code",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 60,
+                "returnAsStaticOptions": true,
+                "dataset": "types",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "$ref:number_of_reports",
+            "display": "Number of reports created",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          }
+        ]
+      },
+      "destination": []
+    },
+    {
+      "id": "per-type",
+      "name": "Monthly prisoner incidents",
+      "description": "Count each prisoner and the incidents they're involved in per month.",
+      "version": "1.0.0",
+      "dataset": "$ref:per-type",
+      "policy": [],
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:prisoner_number",
+            "display": "Prisoner number",
+            "sortable": true,
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prisoner_number}',${prisoner_number},TRUE)",
+            "visible": "true",
+            "defaultsort": true,
+            "filter": {
+              "type": "text"
+            }
+          },
+          {
+            "name": "$ref:last_name",
+            "formula": "${last_name}, ${first_name}",
+            "display": "Name",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+
+          {
+            "name": "$ref:month_year",
+            "display": "Month",
+            "formula": "format_date(${month_year}, 'MMM-yyyy')",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "daterange",
+              "default": "today(-1,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:type",
+            "display": "Type code",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": true,
+            "filter": {
+              "type": "multiselect",
+              "dynamicoptions": {
+                "maximumOptions": 60,
+                "returnAsStaticOptions": true,
+                "dataset": "types",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "$ref:type_description",
+            "display": "Incident type",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:location",
+            "display": "Location of incident",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "caseloads",
+              "mandatory": false
+            }
+          },
+          {
+            "name": "$ref:num_of_incidents",
+            "display": "Incidents/month",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?searchID=${prisoner_number}&fromDate=${min_date}&toDate=${max_date}&location=${location}&typeFamily=${type}',${num_of_incidents},TRUE)"
+          }
+        ]
+      },
+      "destination": []
+    },
+    {
+      "id": "by-prisoner",
+      "name": "Prisoner involvement",
+      "description": "Details of prisoners and their involvement in an incident.",
+      "version": "1.0.0",
+      "dataset": "$ref:by-prisoner",
+      "policy": [],
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:prisoner_number",
+            "display": "Prisoner number",
+            "sortable": true,
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prisoner_number}',${prisoner_number},TRUE)",
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "text"
+            }
+          },
+          {
+            "name": "$ref:last_name",
+            "formula": "${last_name}, ${first_name}",
+            "display": "Name",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:report_reference",
+            "display": "Incident number",
+            "sortable": true,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports/${id}',${report_reference},TRUE)",
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:incident_date_and_time",
+            "display": "Date of incident",
+            "formula": "format_date(${incident_date_and_time}, 'dd/MM/yyyy HH:mm')",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": true,
+            "sortdirection": "desc",
+            "filter": {
+              "type": "daterange",
+              "default": "today(-1,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:type",
+            "display": "Type code",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:type_description",
+            "display": "Incident type",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:status",
+            "display": "Status code",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:status_description",
+            "display": "Incident status",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:location",
+            "display": "Location of incident",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "caseloads",
+              "mandatory": false
+            }
+          },
+          {
+            "name": "$ref:comment",
+            "display": "Extra information",
+            "sortable": false,
+            "visible": "true",
+            "defaultsort": false
+          }
+        ]
+      },
+      "destination": []
+    },
+    {
+      "id": "prisoner-summary",
+      "name": "Prisoner summary of incidents",
+      "description": "Count of incidents per prisoner for self harm, assaults and others",
+      "version": "1.0.0",
+      "dataset": "$ref:prisoner-summary",
+      "policy": [],
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:prisoner_number",
+            "display": "Prisoner number",
+            "sortable": true,
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prisoner_number}',${prisoner_number},TRUE)",
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "text"
+            }
+          },
+          {
+            "name": "$ref:last_name",
+            "formula": "${last_name}, ${first_name}",
+            "display": "Name",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": true
+          },
+          {
+            "name": "$ref:location",
+            "display": "Location of incident",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "caseloads",
+              "mandatory": false
+            }
+          },
+          {
+            "name": "$ref:assault_count",
+            "display": "Assaults",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?searchID=${prisoner_number}&typeFamily=ASSAULT',${assault_count},TRUE)"
+          },
+          {
+            "name": "$ref:self_harm_count",
+            "display": "Self harm",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?searchID=${prisoner_number}&typeFamily=SELF_HARM',${self_harm_count},TRUE)"
+          },
+          {
+            "name": "$ref:finds_count",
+            "display": "Finds",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?searchID=${prisoner_number}&typeFamily=FIND',${finds_count},TRUE)"
+          },
+          {
+            "name": "$ref:disorder_count",
+            "display": "Disorder",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?searchID=${prisoner_number}&typeFamily=DISORDER',${disorder_count},TRUE)"
+          },
+          {
+            "name": "$ref:drugs_count",
+            "display": "Drugs",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?searchID=${prisoner_number}&typeFamily=DRUGS',${drugs_count},TRUE)"
+          },
+          {
+            "name": "$ref:misc_count",
+            "display": "Miscellaneous",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?searchID=${prisoner_number}&typeFamily=MISCELLANEOUS',${misc_count},TRUE)"
+          },
+          {
+            "name": "$ref:total_incidents",
+            "display": "Total incidents",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?searchID=${prisoner_number}',${total_incidents},TRUE)"
+          }
+        ]
+      },
+      "destination": []
+    },
+    {
+      "id": "by-staff",
+      "name": "Staff involved in incidents",
+      "description": "Details each staff member and their involvement in an incident.",
+      "version": "1.0.0",
+      "dataset": "$ref:by-staff",
+      "policy": [],
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:staff_username",
+            "display": "Staff username",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "text"
+            }
+          },
+          {
+            "name": "$ref:last_name",
+            "formula": "${last_name}, ${first_name}",
+            "display": "Name",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:report_reference",
+            "display": "Incident number",
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports/${id}',${report_reference},TRUE)",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:incident_date_and_time",
+            "formula": "format_date(${incident_date_and_time}, 'dd/MM/yyyy HH:mm')",
+            "display": "Date of incident",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": true,
+            "sortdirection": "desc",
+            "filter": {
+              "type": "daterange",
+              "default": "today(-1,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:type",
+            "display": "Type code",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:type_description",
+            "display": "Incident type",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:status_description",
+            "display": "Incident status",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:location",
+            "display": "Location of incident",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "caseloads",
+              "mandatory": false
+            }
+          },
+          {
+            "name": "$ref:comment",
+            "display": "Extra information",
+            "sortable": false,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:title",
+            "display": "Incident title",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:description",
+            "display": "Incident details",
+            "sortable": false,
             "visible": "false",
             "defaultsort": false
           }
