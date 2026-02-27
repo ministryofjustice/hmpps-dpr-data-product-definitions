@@ -20,7 +20,7 @@
       "id": "waitlist-applications-pending-approved",
       "name": "Outstanding Waitlist Applications",
       "datasource": "datamart",
-      "query": "SELECT wl.prison_code, wl.prisoner_number, dm.name, dm.cell_location, wl.activity_id, a.description, CASE WHEN a.end_date IS NULL OR a.end_date > CURRENT_DATE THEN 'LIVE' ELSE 'ARCHIVED' END AS activity_status, cat.activity_category_id, cat.name as category_name, initcap(wl.status) as status, wl.application_date, CURRENT_DATE - wl.application_date as number_days, comments FROM prisons.activities_waiting_list wl LEFT JOIN prisons.activities_activity a on wl.activity_id = a.activity_id LEFT JOIN prisons.activities_activity_category cat on a.activity_category_id  = cat.activity_category_id LEFT JOIN datamart.person.prisoner dm on wl.prisoner_number = dm.prisoner_number WHERE (wl.status = 'PENDING' or wl.status = 'APPROVED') AND (dm.prison_id != 'OUT')",
+      "query": "SELECT wl.prison_code, wl.prisoner_number, dm.name, substring(dm.cell_location,5,10) AS cell_location, wl.activity_id, a.description, CASE WHEN a.end_date IS NULL OR a.end_date > CURRENT_DATE THEN 'LIVE' ELSE 'ARCHIVED' END AS activity_status, cat.activity_category_id, cat.name as category_name, initcap(wl.status) as status, wl.application_date, nvl(CURRENT_DATE - wl.application_date,0) as number_days, comments FROM prisons.activities_waiting_list wl LEFT JOIN prisons.activities_activity a on wl.activity_id = a.activity_id LEFT JOIN prisons.activities_activity_category cat on a.activity_category_id  = cat.activity_category_id LEFT JOIN datamart.person.prisoner dm on wl.prisoner_number = dm.prisoner_number WHERE (wl.status = 'PENDING' or wl.status = 'APPROVED') AND (dm.prison_id != 'OUT')",
       "schema": {
         "field": [
           {
@@ -95,7 +95,7 @@
       "id": "waitlist-applications-completed",
       "name": "Outstanding Waitlist Applications",
       "datasource": "datamart",
-      "query": "SELECT wl.prison_code, wl.prisoner_number, dm.name, dm.cell_location, wl.activity_id, a.description, CASE WHEN a.end_date IS NULL OR a.end_date > CURRENT_DATE THEN 'LIVE' ELSE 'ARCHIVED' END AS activity_status, cat.activity_category_id, cat.name as category_name, initcap(wl.status) AS status, wl.application_date, status_updated_time, datediff(days,wl.application_date,to_date(status_updated_time,'YYYY-MM-DD')) as number_days, comments FROM prisons.activities_waiting_list wl LEFT JOIN prisons.activities_activity a on wl.activity_id = a.activity_id LEFT JOIN prisons.activities_activity_category cat on a.activity_category_id  = cat.activity_category_id LEFT JOIN datamart.person.prisoner dm on wl.prisoner_number = dm.prisoner_number WHERE (wl.status = 'REJECTED' or wl.status = 'DECLINED' or wl.status = 'ALLOCATED' ) AND (dm.prison_id != 'OUT')",
+      "query": "SELECT wl.prison_code, wl.prisoner_number, dm.name, substring(dm.cell_location,5,10) AS cell_location, wl.activity_id, a.description, CASE WHEN a.end_date IS NULL OR a.end_date > CURRENT_DATE THEN 'LIVE' ELSE 'ARCHIVED' END AS activity_status, cat.activity_category_id, cat.name as category_name, CASE WHEN wl.status = 'DECLINED' THEN 'Rejected' ELSE initcap(wl.status) END AS status, wl.application_date, status_updated_time, nvl(datediff(days,wl.application_date,to_date(status_updated_time,'YYYY-MM-DD')),0) as number_days, comments FROM prisons.activities_waiting_list wl LEFT JOIN prisons.activities_activity a on wl.activity_id = a.activity_id LEFT JOIN prisons.activities_activity_category cat on a.activity_category_id  = cat.activity_category_id LEFT JOIN datamart.person.prisoner dm on wl.prisoner_number = dm.prisoner_number WHERE (wl.status = 'REJECTED' or wl.status = 'DECLINED' or wl.status = 'ALLOCATED' ) AND (dm.prison_id != 'OUT')",
       "schema": {
         "field": [
           {
@@ -218,7 +218,7 @@
             {
               "match": [
                 "${role}",
-                "ROLE_PRISONS_REPORTING_USER"
+                "ROLE_ACTIVITY_HUB"
               ]
             }
           ]
@@ -311,7 +311,7 @@
             "name": "$ref:activity_category_id",
             "display": "Activity category",
             "formula": "${category_name}",
-            "visible": "true",
+            "visible": "false",
             "sortable": true,
             "defaultsort": false,
             "filter": {
@@ -351,9 +351,18 @@
             }
           },
           {
+            "name": "$ref:number_days",
+            "display": "Days since application",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "sortdirection": "desc"
+          },
+          {
             "name": "$ref:application_date",
             "display": "Application date",
-            "formula": "format_date(${application_date}, 'dd/MM/yyyy')",
+            "formula": "format_date(${application_date}, 'dd MMMM yyyy')",
             "visible": "true",
             "sortable": true,
             "defaultsort": false,
@@ -363,14 +372,6 @@
               "interactive": "true",
               "default": ""
             }
-          },
-          {
-            "name": "$ref:number_days",
-            "display": "Days since application",
-            "formula": "",
-            "visible": "true",
-            "sortable": true,
-            "defaultsort": true
           },
           {
             "name": "$ref:comments",
@@ -472,16 +473,25 @@
                   "display": "Allocated"
                 },
                 {
-                  "name": "Declined",
-                  "display": "Declined"
+                  "name": "Rejected",
+                  "display": "Rejected"
                 }
               ]
             }
           },
           {
+            "name": "$ref:number_days",
+            "display": "Days to allocation or rejection",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "sortdirection": "desc"
+          },
+          {
             "name": "$ref:application_date",
             "display": "Application date",
-            "formula": "format_date(${application_date}, 'dd/MM/yyyy')",
+            "formula": "format_date(${application_date}, 'dd MMMM yyyy')",
             "visible": "true",
             "sortable": true,
             "defaultsort": true,
@@ -492,14 +502,6 @@
               "interactive": "true",
               "default": ""
             }
-          },
-          {
-            "name": "$ref:number_days",
-            "display": "Days to allocation or rejection",
-            "formula": "",
-            "visible": "true",
-            "sortable": true,
-            "defaultsort": false
           },
           {
             "name": "$ref:comments",
