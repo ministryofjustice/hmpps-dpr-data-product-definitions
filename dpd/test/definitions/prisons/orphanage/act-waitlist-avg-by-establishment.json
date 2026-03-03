@@ -1,7 +1,7 @@
 {
   "id": "act004-waitlist-average-by-establishment",
-  "name": "Age of current activity applications by establishment ",
-  "description": "The average age of pending and approved applications for activities in each establishment.",
+  "name": "Activity waitlist reports",
+  "description": "",
   "metadata": {
     "author": "Zahoor Hussain",
     "owner": "Claire Morgan",
@@ -26,7 +26,7 @@
       "name": "Waitlist",
       "description": "Waitlist averages",
       "datasource": "datamart",
-      "query": "SELECT w.prison_code AS pcode, p.name AS pname,COUNT(distinct w.activity_id) as waitlist_count,COUNT(distinct a.activity_id) as activity_count,COUNT(distinct CASE WHEN (end_date > CURRENT_DATE OR end_date IS NULL) THEN a.activity_id END) as activity_live,COUNT(distinct CASE WHEN (end_date < CURRENT_DATE) THEN a.activity_id END) as activity_archive,AVG(DATEDIFF (day,w.application_date,CURRENT_DATE)) AS avg_waittime FROM prisons.activities_waiting_list w JOIN prisons.activities_activity a USING (prison_code) JOIN datamart.establishment.prison p ON w.prison_code = p.prison_id WHERE status IN ('PENDING','APPROVED') AND start_date < CURRENT_DATE GROUP BY GROUPING SETS ((pname,pcode),()) ORDER BY pcode",
+      "query": "SELECT w.prison_code AS pcode, p.name AS pname,COUNT(distinct w.activity_id) as waitlist_count,COUNT(distinct a.activity_id) as activity_count,COUNT(distinct CASE WHEN (end_date > CURRENT_DATE OR end_date IS NULL) THEN a.activity_id END) as activity_live,COUNT(distinct CASE WHEN (end_date < CURRENT_DATE) THEN a.activity_id END) as activity_archive,AVG(DATEDIFF (day,w.application_date,CURRENT_DATE)) AS avg_waittime FROM prisons.activities_waiting_list w JOIN prisons.activities_activity a USING (prison_code) LEFT JOIN datamart.establishment.establishment p ON p.id = w.prison_code WHERE status IN ('PENDING','APPROVED') AND start_date < CURRENT_DATE GROUP BY GROUPING SETS ((pname,pcode),()) ORDER BY pcode",
       "schema": {
         "field": [
           {
@@ -182,7 +182,54 @@
                     "display": "Average days since application"
                   }
                 ],
-                "filter": [],
+                "expectNull": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "activity-status-bar",
+          "display": "Age of current activity applications by establishment",
+          "visualisation": [
+            {
+              "id": "bar",
+              "type": "bar",
+              "display": "",
+              "option": {
+                "horizontal": true
+              },
+              "column": {
+                "key": [],
+                "measure": [
+                  {
+                    "id": "$ref:pname",
+                    "display": "Prison",
+                    "axis": "x"
+                  },
+                  {
+                    "id": "$ref:avg_waittime",
+                    "display": "Average time (days)",
+                    "axis": "y"
+                  }
+                ],
+                "filter": [
+                  {
+                    "id": "$ref:activity_category",
+                    "equals": null
+                  },
+                  {
+                    "id": "$ref:activity_name",
+                    "equals": null
+                  },
+                  {
+                    "id": "$ref:status",
+                    "equals": null
+                  },
+                  {
+                    "id": "$ref:requested_by",
+                    "equals": null
+                  }
+                ],
                 "expectNull": false
               }
             }
