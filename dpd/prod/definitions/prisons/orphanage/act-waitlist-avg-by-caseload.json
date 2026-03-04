@@ -1,0 +1,318 @@
+{
+  "id": "act003-waitlist-average-by-caseload",
+  "name": "Activity waitlist reports",
+  "description": "The average number of days since current activity applications were first logged.",
+  "metadata": {
+    "author": "Zahoor Hussain",
+    "owner": "Claire Morgan",
+    "version": "1.1.0",
+    "tags": [
+      "ACT001  v00.00.01",
+      "DPS",
+      "Activities Reporting"
+    ],
+    "JIRA": "https://dsdmoj.atlassian.net/browse/DPR2-2272",
+    "status": "policy updates",
+    "completed": "included comments - applied active caseload"
+  },
+  "datasource": [
+    {
+      "id": "datamart",
+      "name": "datamart"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "waitlist",
+      "name": "Waitlist",
+      "description": "Waitlist averages",
+      "datasource": "datamart",
+      "query": "SELECT w.prison_code AS pcode, p.name AS pname,a.description AS activity_name,initcap(status) AS status, CASE WHEN requested_by = 'ACTIVITY_LEADER' THEN 'Activity leader' WHEN requested_by = 'EDUCATION_STAFF' THEN 'Education staff' WHEN requested_by = 'GUIDANCE_STAFF' THEN 'IAG or careers guidance staff' WHEN requested_by = 'MENTAL_HEALTH_STAFF' THEN 'Mental health staff' WHEN requested_by = 'OMU_STAFF' THEN 'Offender Management Unit' WHEN requested_by = 'OTHER' THEN 'Other' WHEN requested_by = 'POM_STAFF' THEN 'Keyworker or POM' WHEN requested_by = 'PRISONER' THEN 'Prisoner' WHEN requested_by = 'RECP_STAFF' THEN 'Reception staff' WHEN requested_by = 'RED_BAND' THEN 'Orderly or Red Band' WHEN requested_by = 'WING_STAFF' THEN 'Wing staff' WHEN requested_by = 'WORKSHOP_STAFF' THEN 'Workshop staff' END AS requested_by,COUNT(a.description) as activity_count,Min(DATEDIFF (day,w.application_date,CURRENT_DATE)) as min_waittime,AVG(DATEDIFF (day,w.application_date,CURRENT_DATE)) AS avg_waittime, Max(DATEDIFF (day,w.application_date,CURRENT_DATE)) as max_waittime FROM prisons.activities_waiting_list w JOIN prisons.activities_activity a USING (activity_id) inner join prisons.activities_activity_category ac USING (activity_category_id) LEFT JOIN datamart.establishment.establishment p ON p.id = w.prison_code WHERE status NOT IN ('ALLOCATED','REMOVED','DECLINED') AND start_date < CURRENT_DATE AND (end_date > CURRENT_DATE OR end_date IS NULL) GROUP BY GROUPING SETS ((pname,pcode,activity_name,status,requested_by),(pname,pcode,activity_name),(pcode,pname,status),(pname,pcode),()) ORDER BY pcode,activity_name,status",
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "pcode",
+            "type": "string",
+            "display": "Prison code"
+          },
+          {
+            "index": 0,
+            "name": "pname",
+            "type": "string",
+            "sortable": true,
+            "display": "Prison name"
+          },
+          {
+            "index": 1,
+            "name": "activity_name",
+            "type": "string",
+            "display": "Name"
+          },
+          {
+            "index": 2,
+            "name": "status",
+            "type": "string",
+            "sortable": true,
+            "display": "Application Status"
+          },
+          {
+            "index": 3,
+            "name": "requested_by",
+            "type": "string",
+            "sortable": true,
+            "display": "Requestor"
+          },
+          {
+            "index": 4,
+            "name": "activity_count",
+            "type": "string",
+            "sortable": true,
+            "display": "Count"
+          },
+          {
+            "index": 5,
+            "name": "min_waittime",
+            "type": "string",
+            "sortable": true,
+            "display": "Min"
+          },
+          {
+            "index": 6,
+            "name": "avg_waittime",
+            "type": "string",
+            "sortable": true,
+            "display": "AVG"
+          },
+          {
+            "index": 7,
+            "name": "max_waittime",
+            "type": "string",
+            "display": "Max"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisons",
+      "name": "prisons",
+      "datasource": "datamart",
+      "query": "SELECT prison_id,name AS prison_name FROM establishment.prison WHERE active = TRUE ORDER by name",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_id",
+            "type": "string"
+          },
+          {
+            "name": "prison_name",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_ACTIVITY_HUB"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseload",
+      "type": "row-level",
+      "action": [
+        "pcode = '${caseload}'"
+      ],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": [
+                "${caseload}"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [],
+  "dashboard": [
+    {
+      "id": "waitlist-status-breakdown",
+      "name": "Age of current activity applications",
+      "description": "",
+      "dataset": "waitlist",
+      "section": [
+        {
+          "id": "activity-status-breakdown",
+          "display": "Age of current activity applications",
+          "visualisation": [
+            {
+              "id": "pc",
+              "type": "list",
+              "display": "The average number of days since current activity applications were first logged",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:pcode",
+                    "display": "Prison Code"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:pname",
+                    "display": "Prison"
+                  },
+                  {
+                    "id": "$ref:activity_count",
+                    "display": "Total applications"
+                  },
+                  {
+                    "id": "$ref:avg_waittime",
+                    "display": "Average days since application"
+                  },
+                  {
+                    "id": "$ref:max_waittime",
+                    "display": "Oldest application"
+                  }
+                ],
+                "filter": [
+                  {
+                    "id": "$ref:activity_name",
+                    "equals": null
+                  },
+                  {
+                    "id": "$ref:status",
+                    "equals": null
+                  },
+                  {
+                    "id": "$ref:requested_by",
+                    "equals": null
+                  }
+                ],
+                "expectNull": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "activity-status-breakdown",
+          "display": "Age of applications by activity",
+          "visualisation": [
+            {
+              "id": "pc-description",
+              "type": "list",
+              "display": "Age of applications by activity",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:pname",
+                    "display": "Prison Name"
+                  },
+                  {
+                    "id": "$ref:activity_name",
+                    "display": "Activity Name"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:activity_name",
+                    "display": "Activity"
+                  },
+                  {
+                    "id": "$ref:activity_count",
+                    "display": "Applications"
+                  },
+                  {
+                    "id": "$ref:avg_waittime",
+                    "display": "Average days since application"
+                  }
+                ],
+                "filter": [
+                  {
+                    "id": "$ref:status",
+                    "equals": null
+                  },
+                  {
+                    "id": "$ref:requested_by",
+                    "equals": null
+                  }
+                ],
+                "expectNull": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "pc-activity-status-breakdown",
+          "display": "Age of applications by status",
+          "visualisation": [
+            {
+              "id": "pc-activity-status",
+              "type": "list",
+              "display": "Age of applications by Activity, Status and Requester",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:pcode",
+                    "display": "Prison "
+                  },
+                  {
+                    "id": "$ref:activity_name",
+                    "display": "Activity Name"
+                  },
+                  {
+                    "id": "$ref:status",
+                    "display": "Activity Status"
+                  },
+                  {
+                    "id": "$ref:requested_by",
+                    "display": "Requester"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:activity_name",
+                    "display": "Activity"
+                  },
+                  {
+                    "id": "$ref:status",
+                    "display": "Application status"
+                  },
+                  {
+                    "id": "$ref:requested_by",
+                    "display": "Requester"
+                  },
+                  {
+                    "id": "$ref:activity_count",
+                    "display": "Applications"
+                  },
+                  {
+                    "id": "$ref:avg_waittime",
+                    "display": "Average days since application"
+                  }
+                ],
+                "expectNull": false
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
