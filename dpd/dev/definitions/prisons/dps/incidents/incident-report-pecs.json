@@ -9,9 +9,12 @@
   },
   "datasource": [
     {
-      "id": "irs",
-      "name": "replicaDataSource",
-      "connection": "postgres"
+      "id": "athena_redshift",
+      "name": "athena_redshift_federated",
+      "database": "datamart",
+      "catalog": "redshift_datamart",
+      "connection": "federated",
+      "dialect": "redshift/4"
     }
   ],
   "policy": [
@@ -25,7 +28,8 @@
             {
               "match": [
                 "${role}",
-                "INCIDENT_REPORTS__PECS"
+                "INCIDENT_REPORTS__PECS",
+                "ROLE_PRISONS_REPORTING_USER"
               ]
             }
           ]
@@ -38,7 +42,7 @@
       "id": "summary",
       "name": "All incident reports (including PECS) summary",
       "datasource": "replicaDataSource",
-      "query": "SELECT id,\n       report_reference,\n       ctf.code                    as type,\n       ctf.description             as type_description,\n       status,\n       cs.description              as status_description,\n       incident_date_and_time,\n       reported_at,\n       reported_by,\n       title,\n       r.description,\n       location,\n       modified_at,\n       (select STRING_AGG(prisoner_number || ' (' || cr.description || ')', ',')\n        from prisons.incidentreporting_prisoner_involvement pi\n               join prisons.incidentreporting_constant_prisoner_role cr on pi.prisoner_role = cr.code\n        where pi.report_id = r.id) as prisoners_involved,\n       (case\n          when location in ('NORTH', 'SOUTH') then 'PECS'\n          else 'Prison' end)       as pecs_or_prison_type\nFROM prisons.incidentreporting_report r\n       join prisons.incidentreporting_constant_status cs on r.status = cs.code\n       join prisons.incidentreporting_constant_type ct on r.type = ct.code\n       join prisons.incidentreporting_constant_type_family ctf on ctf.code = ct.family_code\nWHERE status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
+      "query": "SELECT \n    r.id,\n    r.report_reference,\n    ctf.code AS type,\n    ctf.description AS type_description,\n    r.status,\n    cs.description AS status_description,\n    r.incident_date_and_time,\n    r.reported_at,\n    r.reported_by,\n    r.title,\n    r.description,\n    r.location,\n    r.modified_at,\n(select listagg(prisoner_number || ' (' || cr.description || ')',', ') WITHIN GROUP (ORDER BY prisoner_number ASC)\n        from prisons.incidentreporting_prisoner_involvement pi join prisons.incidentreporting_constant_prisoner_role cr on pi.prisoner_role = cr.code\n        where pi.report_id = r.id) as prisoners_involved,\n    (CASE \n        WHEN r.location IN ('NORTH', 'SOUTH') THEN 'PECS' \n        ELSE 'Prison' \n     END) AS pecs_or_prison_type\nFROM prisons.incidentreporting_report r\nJOIN prisons.incidentreporting_constant_status cs ON r.status = cs.code\nJOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\nJOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\nWHERE r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
       "schema": {
         "field": [
           {
