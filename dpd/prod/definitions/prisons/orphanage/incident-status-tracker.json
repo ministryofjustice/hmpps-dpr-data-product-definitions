@@ -1,0 +1,299 @@
+
+{
+  "id": "inc002",
+  "name": "MIS DARU Incident Tracker",
+  "description": "The report is used by the Data Analysis and Reporting Unit (DARU) to monitor, assure and report against the volume and quality of Incidents data.<br/>INC0022 - v00.00.01  Last Modified: 24/05/18",
+  "metadata": {
+    "version": "1.1.0",
+    "tags": [
+      "INC0022  v00.00.01",
+      "DPS", "Incident Reporting"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "dps_inc_reporting",
+      "name": "DPS Incident Reporting",
+      "database": "public",
+      "catalog": "dps_inc_reporting",
+      "connection": "federated",
+      "dialect": "postgres/19"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "inc0022-1",
+      "name": "Incidents",
+      "description": "MIS Incidents",
+      "datasource": "dps_inc_reporting",
+      "query":"",
+      "multiphaseQuery": [
+        {
+          "index": 0,
+          "datasource": {
+            "id": "nomis",
+            "name": "NOMIS",
+            "database": "DIGITAL_PRISON_REPORTING",
+            "catalog": "nomis",
+            "connection": "federated",
+            "dialect": "oracle/11g"
+          },
+          "query": "SELECT AGENCY_LOCATIONS.agy_loc_id as establishment_code, AGENCY_LOCATIONS.description as establishment_name FROM OMS_OWNER.AGENCY_LOCATIONS"
+        },
+        {
+          "index": 1,
+          "datasource": {
+            "id": "athena_dps_inc_reporting",
+            "name": "athena_dps_inc_reporting",
+            "database": "public",
+            "catalog": "dps_inc_reporting",
+            "connection": "federated",
+            "dialect": "postgres/19"
+          },
+          "query": "SELECT location, ctf.description incident_type, COUNT(id) as TOTAL FROM report r join constant_type ct ON r.type = ct.code join constant_type_family ctf ON ctf.code = ct.family_code WHERE date(incident_date_and_time) >= (SELECT START_DATE from prompt_) and date(incident_date_and_time) <= (SELECT END_DATE from prompt_) GROUP BY GROUPING SETS ( (location, ctf.description), (location), (ctf.description) ) ORDER BY location",
+          "parameters": [
+            {
+              "index": 0,
+              "name": "start_date",
+              "filterType": "date",
+              "reportFieldType": "date",
+              "display": "Enter Incident Date (Start)",
+              "description": "",
+              "mandatory": "true"
+            },
+            {
+              "index": 1,
+              "name": "end_date",
+              "filterType": "date",
+              "reportFieldType": "date",
+              "display": "Enter Incident Date (End)",
+              "description": "",
+              "mandatory": "true"
+            }
+          ]
+
+        },
+        {
+          "index": 2,
+          "datasource": {
+            "id": "athena",
+            "name": "athena",
+            "database": "reports",
+            "catalog": "AwsDataCatalog",
+            "connection": "awsdatacatalog"
+          },
+          "query": "SELECT LOCATION, ESTABLISHMENT_NAME, incident_type, TOTAL from AwsDataCatalog.reports.${table[1]} LEFT JOIN AwsDataCatalog.reports.${table[0]} on AwsDataCatalog.reports.${table[1]}.LOCATION=AwsDataCatalog.reports.${table[0]}.establishment_code"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "LOCATION",
+            "type": "string",
+            "display": "LOCATION"
+          },
+          {
+            "index": 1,
+            "name": "ESTABLISHMENT_NAME",
+            "type": "string",
+            "display": "Name"
+          },
+          {
+            "index": 2,
+            "name": "incident_type",
+            "type": "string",
+            "display": "Incident Type"
+          },
+          {
+            "index": 3,
+            "name": "TOTAL",
+            "type": "string",
+            "display": "Total"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "INCIDENT_REPORTS__RO",
+                "INCIDENT_REPORTS__RW",
+                "INCIDENT_REPORTS__APPROVE"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseloads",
+      "type": "row-level",
+      "action": [
+        "location IN (${caseloads}) OR location IS NULL"
+      ],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": [
+                "${caseloads}"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "116773.RS",
+      "name": "Incident Tracker",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "inc0022-1",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:ESTABLISHMENT_NAME",
+            "display": "Prison Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "legacyId": "DP2.DO20",
+            "sortdirection": "asc"
+          },
+          {
+            "name": "$ref:incident_type",
+            "display": "Incident Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP2.DO20"
+          },
+          {
+            "name": "$ref:TOTAL",
+            "display": "Number of Incidents",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP2.DOc9"
+          }
+        ]
+      }
+    }
+  ],
+  "dashboard": [{
+    "id": "incident-type-location",
+    "name": "Incident Type/Location Breakdown",
+    "description": "Incident Type/Location Breakdown",
+    "dataset": "inc0022-1",
+    "section": [
+      {
+        "id": "type-breakdown",
+        "display": "Type breakdown",
+        "visualisation": [
+          {
+            "id": "total-incidents",
+            "type": "list",
+            "display": "Total Incidents By Type",
+            "column": {
+              "key": [
+                {
+                  "id": "$ref:incident_type",
+                  "display": "Incident Type"
+                }
+              ],
+              "measure": [
+                {
+                  "id": "$ref:incident_type",
+                  "display": "Incident Type"
+                },
+                {
+                  "id": "$ref:TOTAL",
+                  "display": "Total Incidents"
+                }
+              ],
+              "expectNull": true
+            }
+          },
+          {
+            "id": "incidents-by-location",
+            "type": "list",
+            "display": "Total Incidents By Location",
+            "column": {
+              "key": [
+                {
+                  "id": "$ref:LOCATION",
+                  "display": "Location"
+                }
+              ],
+              "measure": [
+                {
+                  "id": "$ref:ESTABLISHMENT_NAME",
+                  "display": "Name"
+                },
+                {
+                  "id": "$ref:TOTAL",
+                  "display": "Total Incidents"
+                }
+              ],
+              "expectNull": true
+            }
+          },
+          {
+            "id": "incidents-by-location-type",
+            "type": "list",
+            "display": "Total Incidents By Location & Type",
+            "column": {
+              "key": [
+                {
+                  "id": "$ref:LOCATION",
+                  "display": "Location"
+                },                {
+                  "id": "$ref:incident_type",
+                  "display": "Incident Type"
+                }
+              ],
+              "measure": [
+                {
+                  "id": "$ref:ESTABLISHMENT_NAME",
+                  "display": "Name"
+                },
+                {
+                  "id": "$ref:incident_type",
+                  "display": "Incident Type"
+                },
+                {
+                  "id": "$ref:TOTAL",
+                  "display": "Total Incidents"
+                }
+              ],
+              "expectNull": false
+            }
+          }
+        ]
+      }
+    ]
+  }]
+}
