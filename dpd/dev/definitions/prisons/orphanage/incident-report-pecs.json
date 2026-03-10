@@ -1,20 +1,16 @@
 {
-  "id": "incident-report",
-  "name": "Incident report summary",
-  "description": "List of all incidents filtered by dates, types, status and locations.",
+  "id": "incident-report-pecs",
+  "name": "PECS incident reports",
+  "description": "List of incidents by dates, types, status and locations including PECS incidents.",
   "metadata": {
     "author": "Michael Willis",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "owner": "Managing Safety"
   },
   "datasource": [
     {
-      "id": "athena_redshift",
-      "name": "athena_redshift_federated",
-      "database": "datamart",
-      "catalog": "redshift_datamart",
-      "connection": "federated",
-      "dialect": "redshift/4"
+      "id" : "datamart",
+      "name" : "datamart"
     }
   ],
   "policy": [
@@ -30,23 +26,9 @@
                 "${role}",
                 "INCIDENT_REPORTS__RO",
                 "INCIDENT_REPORTS__RW",
+                "INCIDENT_REPORTS__PECS",
                 "INCIDENT_REPORTS__APPROVE"
               ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "caseloads",
-      "type": "row-level",
-      "action": ["prison_id IN (${caseloads})"],
-      "rule": [
-        {
-          "effect": "permit",
-          "condition": [
-            {
-              "exists": ["${caseloads}"]
             }
           ]
         }
@@ -55,30 +37,10 @@
   ],
   "dataset": [
     {
-      "id": "summary",
-      "name": "Incident report summary",
-      "datasource": "athena_redshift",
-      "query": "SELECT r.id,\n       report_reference,\n       ctf.code                    as type,\n       ctf.description             as type_description,\n       r.status,\n       cs.description as status_description,\n       incident_date_and_time,\n       reported_at,\n       reported_by,\n       r.title,\n       r.description,\n       location                    as prison_id,\n       modified_at,\n       el.description as prison_name,\n       el.noms_region_code         as region_code,\n       area.description            as region_name\nFROM prisons.incidentreporting_report r\n         join prisons.incidentreporting_constant_status cs on r.status = cs.code\n         join prisons.incidentreporting_constant_type ct on r.type = ct.code\n         join prisons.incidentreporting_constant_type_family ctf on ctf.code = ct.family_code\n         join prisons.nomis_agency_locations el on el.agy_loc_id = r.location and el.agency_location_type = 'INST'\n         join prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = el.noms_region_code\nWHERE r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE') and date(r.incident_date_and_time) >= (SELECT START_DATE from prompt_) and date(r.incident_date_and_time) <= (SELECT END_DATE from prompt_)",
-      "parameters": [
-        {
-          "index": 0,
-          "name": "start_date",
-          "filterType": "date",
-          "reportFieldType": "date",
-          "display": "Enter Incident Date (Start)",
-          "description": "",
-          "mandatory": "true"
-        },
-        {
-          "index": 1,
-          "name": "end_date",
-          "filterType": "date",
-          "reportFieldType": "date",
-          "display": "Enter Incident Date (End)",
-          "description": "",
-          "mandatory": "true"
-        }
-      ],
+      "id": "pecs-summary",
+      "name": "PECS incident reports",
+      "datasource": "datamart",
+      "query": "SELECT \n    r.id,\n    r.report_reference,\n    ctf.code AS type,\n    ctf.description AS type_description,\n    r.status,\n    cs.description AS status_description,\n    r.incident_date_and_time,\n    r.reported_at,\n    r.reported_by,\n    r.title,\n    r.description,\n    r.location,\n    al.description AS location_name,\n    al.noms_region_code AS region_code,\n    area.description AS region_name,\n    r.modified_at,\n    -- Apply the CAST to prevent the 65k VARCHAR overflow error\n    (SELECT CAST(LISTAGG(prisoner_number || ' (' || cr.description || ')', ', ') \n            WITHIN GROUP (ORDER BY prisoner_number ASC) AS VARCHAR(4000))\n     FROM prisons.incidentreporting_prisoner_involvement pi \n     JOIN prisons.incidentreporting_constant_prisoner_role cr ON pi.prisoner_role = cr.code\n     WHERE pi.report_id = r.id) AS prisoners_involved,\n    (CASE \n        WHEN r.location IN ('NORTH', 'SOUTH') THEN 'PECS' \n        ELSE 'Prison' \n     END) AS pecs_or_prison_type\nFROM prisons.incidentreporting_report r\nJOIN prisons.incidentreporting_constant_status cs ON r.status = cs.code\nJOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\nJOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\nJOIN prisons.nomis_AGENCY_LOCATIONS al ON al.agy_loc_id = r.location\nLEFT JOIN prisons.nomis_areas area ON area.area_class = 'REGION' AND area.area_code = al.noms_region_code\nWHERE r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
       "schema": {
         "field": [
           {
@@ -110,11 +72,22 @@
             "type": "datetime"
           },
           {
-            "name": "prison_id",
+            "name": "pecs_or_prison_type",
+            "type": "string",
+            "filter": {
+              "type": "multiselect",
+              "staticoptions": [
+                {"name": "Prison","display": "Prisons"},
+                {"name": "PECS","display": "PECS"}
+              ]
+            }
+          },
+          {
+            "name": "location",
             "type": "string"
           },
           {
-            "name": "prison_name",
+            "name": "location_name",
             "type": "string"
           },
           {
@@ -144,6 +117,10 @@
           {
             "name": "modified_at",
             "type": "datetime"
+          },
+          {
+            "name": "prisoners_involved",
+            "type": "string"
           }
         ]
       }
@@ -151,8 +128,8 @@
     {
       "id": "types",
       "name": "Incident Types",
-      "datasource": "athena_redshift",
-      "query": "SELECT code, description FROM prisons.incidentreporting_constant_type_family",
+      "datasource": "replicaDataSource",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_type_family order by sequence",
       "schema": {
         "field": [
           {
@@ -171,8 +148,8 @@
     {
       "id": "status",
       "name": "Incident Status",
-      "datasource": "athena_redshift",
-      "query": "SELECT code, description FROM prisons.incidentreporting_constant_status where code NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
+      "datasource": "replicaDataSource",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_status where code NOT IN ('DUPLICATE', 'NOT_REPORTABLE') order by sequence",
       "schema": {
         "field": [
           {
@@ -191,7 +168,7 @@
     {
       "id": "regionCodes",
       "name": "Region Codes",
-      "datasource": "athena_redshift",
+      "datasource": "datamart",
       "query": "select area_code as code, description from prisons.nomis_areas where area_class = 'REGION' and active_flag = 'Y' order by description",
       "schema": {
         "field": [
@@ -211,8 +188,8 @@
     {
       "id": "prisons",
       "name": "Prisons",
-      "datasource": "athena_redshift",
-      "query": "select agy_loc_id prison_id, initcap(description) prison_name FROM prisons.nomis_agency_locations al \nwhere al.agency_location_type = 'INST'\nand al.active_flag = 'Y'\norder by description",
+      "datasource": "datamart",
+      "query": "select agy_loc_id prison_id, description prison_name FROM prisons.nomis_agency_locations al \nwhere al.agency_location_type = 'INST'\nand al.active_flag = 'Y' AND al.agy_loc_id NOT IN ('TRN', 'OUT')\norder by description",
       "schema": {
         "field": [
           {
@@ -231,11 +208,12 @@
   ],
   "report": [
     {
-      "id": "summary",
-      "name": "Incident report summary",
-      "description": "List of all incidents filtered by dates, types, status and locations.",
+      "id": "incident-report-pecs",
+      "name": "PECS incident reports",
+      "description": "List of all incidents (including PECS) filtered by dates, types, status and locations.",
       "version": "1.0.0",
-      "dataset": "$ref:summary",
+      "dataset": "$ref:pecs-summary",
+      "policy": [],
       "render": "HTML",
       "feature": [
         {
@@ -247,15 +225,22 @@
         "field": [
           {
             "name": "$ref:report_reference",
-            "display": "Report Reference",
+            "display": "Incident number",
             "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports/${id}',${report_reference},TRUE)",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
           },
           {
-            "name": "$ref:prison_id",
-            "display": "Prison",
+            "name": "$ref:pecs_or_prison_type",
+            "display": "PECS/Prison",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:location",
+            "display": "Location",
             "sortable": true,
             "visible": "false",
             "defaultsort": false,
@@ -272,8 +257,8 @@
             }
           },
           {
-            "name": "$ref:prison_name",
-            "display": "Prison name",
+            "name": "$ref:location_name",
+            "display": "Location name",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
@@ -288,7 +273,7 @@
               "type": "multiselect",
               "mandatory": false,
               "dynamicoptions": {
-                "maximumOptions": 140,
+                "maximumOptions": 20,
                 "returnAsStaticOptions": true,
                 "dataset": "regionCodes",
                 "name": "code",
@@ -298,14 +283,14 @@
           },
           {
             "name": "$ref:region_name",
-            "display": "Region name",
+            "display": "Region",
             "sortable": true,
-            "visible": "true",
+            "visible": "false",
             "defaultsort": false
           },
           {
             "name": "$ref:type",
-            "display": "Type",
+            "display": "Type code",
             "sortable": false,
             "visible": "false",
             "defaultsort": false,
@@ -330,7 +315,7 @@
           },
           {
             "name": "$ref:status",
-            "display": "Status",
+            "display": "Status code",
             "sortable": false,
             "visible": "false",
             "defaultsort": false,
@@ -361,7 +346,12 @@
             "type": "datetime",
             "visible": "true",
             "defaultsort": true,
-            "sortdirection": "desc"
+            "sortdirection": "desc",
+            "filter": {
+              "mandatory": false,
+              "type": "daterange",
+              "default": "today(-1,months) - today()"
+            }
           },
           {
             "name": "$ref:reported_at",
@@ -369,7 +359,7 @@
             "display": "Reported on",
             "sortable": true,
             "type": "date",
-            "visible": "true",
+            "visible": "false",
             "defaultsort": false
           },
           {
@@ -404,6 +394,13 @@
             "type": "date",
             "sortable": true,
             "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:prisoners_involved",
+            "display": "Prisoners involved",
+            "sortable": false,
+            "visible": "true",
             "defaultsort": false
           }
         ]
