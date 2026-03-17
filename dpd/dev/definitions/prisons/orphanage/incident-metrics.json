@@ -469,7 +469,7 @@
       "id": "report-submission-per-month",
       "name": "RO submission statistics / month",
       "datasource": "datamart",
-      "query": "SELECT CAST(date_trunc('month', reported_at) AS DATE) AS month, to_char(MIN(reported_at), 'DD/MM/YYYY') AS min_date, to_char(MAX(reported_at), 'DD/MM/YYYY') AS max_date, COALESCE(location, 'All locations') AS location, count(id) AS total_reports, ROUND(AVG(time_diff_mins),1) AS avg_mins, ROUND(CAST(PERCENTILE_CONT(0.5) WITHIN GROUP(ORDER BY time_diff_mins) AS decimal(18,2)),1) AS median_mins, ROUND(MAX(time_diff_hrs),1) AS longest_submitted_hrs, count(CASE WHEN (time_diff_hrs > 72) THEN id END) AS number_took_too_long, ROUND((CAST(count(CASE WHEN (time_diff_hrs > 72) THEN id END) AS decimal(18,2))/CAST(count(id) AS decimal(18,2)))*100, 1) AS perc_too_long, ROUND(AVG(CASE WHEN time_diff_mins < 4320 THEN time_diff_mins END),1) AS avg_mins_wo_too_long, count(CASE WHEN correction_requested_at IS NULL THEN id END) AS not_yet_actioned, count(CASE WHEN status = 'DRAFT' THEN id END) AS currently_in_draft, count(CASE WHEN status = 'DRAFT' AND (EXTRACT(epoch FROM (CURRENT_TIMESTAMP - reported_at))/3600) > 72 THEN id END) AS number_overdue FROM (SELECT *, time_diff_mins/60 AS time_diff_hrs FROM (SELECT r.id, r.location, r.type, r.status, r.reported_at, cr.correction_requested_at, cr.user_action, CASE WHEN (correction_requested_at IS NOT NULL) THEN ROUND((EXTRACT(epoch FROM (cr.correction_requested_at - r.reported_at)))/60, 1) ELSE NULL END AS time_diff_mins FROM prisons.incidentreporting_report AS r LEFT JOIN (SELECT report_id, correction_requested_at, user_action FROM prisons.incidentreporting_correction_request WHERE sequence = 0 AND user_action IN ('REQUEST_REVIEW', 'REQUEST_NOT_REPORTABLE', 'REQUEST_DUPLICATE') AND user_type = 'REPORTING_OFFICER') AS cr ON r.id = cr.report_id WHERE location NOT IN ('NORTH', 'SOUTH') AND source = 'DPS')) GROUP BY 1, ROLLUP(location)",
+      "query": "SELECT result.*, COALESCE(al.prison_name, 'All prisons') AS prison_name from (SELECT CAST(date_trunc('month', reported_at) AS DATE) AS month, to_char(MIN(reported_at), 'DD/MM/YYYY') AS min_date, to_char(MAX(reported_at), 'DD/MM/YYYY') AS max_date, COALESCE(location, 'All prisons') AS prison_id, count(id) AS total_reports, ROUND(AVG(time_diff_mins),1) AS avg_mins, ROUND(CAST(PERCENTILE_CONT(0.5) WITHIN GROUP(ORDER BY time_diff_mins) AS decimal(18,2)),1) AS median_mins, ROUND(MAX(time_diff_hrs),1) AS longest_submitted_hrs, count(CASE WHEN (time_diff_hrs > 72) THEN id END) AS number_took_too_long, ROUND((CAST(count(CASE WHEN (time_diff_hrs > 72) THEN id END) AS decimal(18,2))/CAST(count(id) AS decimal(18,2)))*100, 1) AS perc_too_long, ROUND(AVG(CASE WHEN time_diff_mins < 4320 THEN time_diff_mins END),1) AS avg_mins_wo_too_long, count(CASE WHEN correction_requested_at IS NULL THEN id END) AS not_yet_actioned, count(CASE WHEN status = 'DRAFT' THEN id END) AS currently_in_draft, count(CASE WHEN status = 'DRAFT' AND (EXTRACT(epoch FROM (CURRENT_TIMESTAMP - reported_at))/3600) > 72 THEN id END) AS number_overdue FROM (SELECT *, time_diff_mins/60 AS time_diff_hrs FROM (SELECT r.id, r.location, r.type, r.status, r.reported_at, cr.correction_requested_at, cr.user_action, CASE WHEN (correction_requested_at IS NOT NULL) THEN ROUND((EXTRACT(epoch FROM (cr.correction_requested_at - r.reported_at)))/60, 1) ELSE NULL END AS time_diff_mins FROM prisons.incidentreporting_report AS r LEFT JOIN (SELECT report_id, correction_requested_at, user_action FROM prisons.incidentreporting_correction_request WHERE sequence = 0 AND user_action IN ('REQUEST_REVIEW', 'REQUEST_NOT_REPORTABLE', 'REQUEST_DUPLICATE') AND user_type = 'REPORTING_OFFICER') AS cr ON r.id = cr.report_id WHERE location NOT IN ('NORTH', 'SOUTH') AND source = 'DPS')) GROUP BY 1, ROLLUP(location)) as result\n LEFT JOIN (select agy_loc_id prison_id, description prison_name\nFROM prisons.nomis_agency_locations) as al\n ON result.prison_id = al.prison_id",
       "schema": {
         "field": [
           {
@@ -485,7 +485,7 @@
             "type": "date"
           },
           {
-            "name": "location",
+            "name": "prison_id",
             "type": "string"
           },
           {
@@ -527,6 +527,10 @@
           {
             "name": "number_overdue",
             "type": "long"
+          },
+          {
+            "name": "prison_name",
+            "type": "string"
           }
         ]
       }
@@ -535,7 +539,7 @@
       "id": "response-durations-per-month",
       "name": "Feedback durations / month",
       "datasource": "datamart",
-      "query": "SELECT \n    dwlp.month, \n    dw.min_date, \n    dw.max_date, \n    dwlp.location, \n    dw.number_of_dw_responses, \n    dw.dw_resp_time_days, \n    ro.number_of_ro_responses, \n    ro.ro_resp_time_days, \n    dwlp.number_of_loops, \n    dwlp.feedback_loop_days \nFROM (\n    SELECT \n        CAST(date_trunc('month', r.created_at) AS DATE) AS month, \n        COALESCE(r.location, 'All locations') AS location, \n        COUNT(stats.time_since_last) AS number_of_loops, \n        ROUND(AVG(stats.time_since_last)/24, 1) AS feedback_loop_days \n    FROM prisons.incidentreporting_report AS r \n    LEFT JOIN (\n        SELECT cr.report_id, diff.time_since_last \n        FROM prisons.incidentreporting_correction_request AS cr \n        LEFT JOIN (\n            SELECT report_id, sequence, time_since_last \n            FROM (\n                SELECT \n                    *, \n                    sequence - lag(sequence) OVER (PARTITION BY report_id ORDER BY sequence) AS seq_diff, \n                    ROUND((EXTRACT(epoch FROM (correction_requested_at - lag(correction_requested_at) OVER (PARTITION BY report_id ORDER BY sequence))))/3600, 1) AS time_since_last \n                FROM (\n                    SELECT cr.report_id, sequence, correction_requested_at \n                    FROM prisons.incidentreporting_correction_request AS cr \n                    LEFT JOIN (\n                        SELECT report_id, CASE WHEN count(id) > 1 THEN 1 ELSE NULL END AS marker \n                        FROM prisons.incidentreporting_correction_request \n                        WHERE user_type = 'DATA_WARDEN' \n                        GROUP BY report_id\n                    ) AS mk ON cr.report_id = mk.report_id \n                    WHERE mk.marker IS NOT NULL AND user_type = 'DATA_WARDEN'\n                ) AS inner_sub -- Alias added here\n            ) AS outer_sub -- Alias added here\n            WHERE seq_diff > 1\n        ) AS diff ON cr.report_id = diff.report_id AND cr.sequence = diff.sequence \n        WHERE diff.time_since_last IS NOT NULL\n    ) AS stats ON r.id = stats.report_id \n    WHERE r.source = 'DPS' AND r.location NOT IN ('NORTH', 'SOUTH') \n    GROUP BY 1, ROLLUP(r.location)\n) AS dwlp \nJOIN (\n    SELECT \n        CAST(date_trunc('month', r.created_at) AS DATE) AS month, \n        COALESCE(r.location, 'All locations') AS location, \n        COUNT(stats.time_since_last) AS number_of_ro_responses, \n        ROUND(AVG(stats.time_since_last)/24, 1) AS ro_resp_time_days \n    FROM prisons.incidentreporting_report AS r \n    LEFT JOIN (\n        SELECT report_id, time_since_last \n        FROM (\n            SELECT \n                *, \n                ROUND((EXTRACT(epoch FROM (correction_requested_at - lag(correction_requested_at) OVER (PARTITION BY report_id ORDER BY sequence))))/3600, 1) AS time_since_last, \n                lag(user_type) OVER (PARTITION BY report_id ORDER BY sequence) AS last_user_type \n            FROM prisons.incidentreporting_correction_request\n        ) AS ro_sub -- Alias added here\n        WHERE user_type <> last_user_type AND user_type = 'REPORTING_OFFICER'\n    ) AS stats ON r.id = stats.report_id \n    WHERE r.source = 'DPS' AND r.location NOT IN ('NORTH', 'SOUTH') \n    GROUP BY 1, ROLLUP(r.location)\n) AS ro ON dwlp.month = ro.month AND dwlp.location = ro.location \nJOIN (\n    SELECT \n        CAST(date_trunc('month', r.created_at) AS DATE) AS month, \n        to_char(MIN(r.created_at), 'DD/MM/YYYY') AS min_date, \n        to_char(MAX(r.created_at), 'DD/MM/YYYY') AS max_date, \n        COALESCE(r.location, 'All locations') AS location, \n        COUNT(stats.time_since_last) AS number_of_dw_responses, \n        ROUND(AVG(stats.time_since_last)/24, 1) AS dw_resp_time_days \n    FROM prisons.incidentreporting_report AS r \n    LEFT JOIN (\n        SELECT report_id, time_since_last \n        FROM (\n            SELECT \n                *, \n                ROUND((EXTRACT(epoch FROM (correction_requested_at - lag(correction_requested_at) OVER (PARTITION BY report_id ORDER BY sequence))))/3600, 1) AS time_since_last, \n                lag(user_type) OVER (PARTITION BY report_id ORDER BY sequence) AS last_user_type \n            FROM prisons.incidentreporting_correction_request\n        ) AS dw_sub -- Alias added here\n        WHERE user_type <> last_user_type AND user_type = 'DATA_WARDEN'\n    ) AS stats ON r.id = stats.report_id \n    WHERE r.source = 'DPS' AND r.location NOT IN ('NORTH', 'SOUTH') \n    GROUP BY 1, ROLLUP(r.location) \n) AS dw ON dwlp.month = dw.month AND dwlp.location = dw.location",
+      "query": "SELECT result.*, COALESCE(al.prison_name, 'All prisons') AS prison_name from (SELECT \n    dwlp.month, \n    dw.min_date, \n    dw.max_date, \n    dwlp.prison_id, \n    dw.number_of_dw_responses, \n    dw.dw_resp_time_days, \n    ro.number_of_ro_responses, \n    ro.ro_resp_time_days, \n    dwlp.number_of_loops, \n    dwlp.feedback_loop_days \nFROM (\n    SELECT \n        CAST(date_trunc('month', r.created_at) AS DATE) AS month, \n        COALESCE(r.location, 'All prisons') AS prison_id, \n        COUNT(stats.time_since_last) AS number_of_loops, \n        ROUND(AVG(stats.time_since_last)/24, 1) AS feedback_loop_days \n    FROM prisons.incidentreporting_report AS r \n    LEFT JOIN (\n        SELECT cr.report_id, diff.time_since_last \n        FROM prisons.incidentreporting_correction_request AS cr \n        LEFT JOIN (\n            SELECT report_id, sequence, time_since_last \n            FROM (\n                SELECT \n                    *, \n                    sequence - lag(sequence) OVER (PARTITION BY report_id ORDER BY sequence) AS seq_diff, \n                    ROUND((EXTRACT(epoch FROM (correction_requested_at - lag(correction_requested_at) OVER (PARTITION BY report_id ORDER BY sequence))))/3600, 1) AS time_since_last \n                FROM (\n                    SELECT cr.report_id, sequence, correction_requested_at \n                    FROM prisons.incidentreporting_correction_request AS cr \n                    LEFT JOIN (\n                        SELECT report_id, CASE WHEN count(id) > 1 THEN 1 ELSE NULL END AS marker \n                        FROM prisons.incidentreporting_correction_request \n                        WHERE user_type = 'DATA_WARDEN' \n                        GROUP BY report_id\n                    ) AS mk ON cr.report_id = mk.report_id \n                    WHERE mk.marker IS NOT NULL AND user_type = 'DATA_WARDEN'\n                ) AS inner_sub -- Alias added here\n            ) AS outer_sub -- Alias added here\n            WHERE seq_diff > 1\n        ) AS diff ON cr.report_id = diff.report_id AND cr.sequence = diff.sequence \n        WHERE diff.time_since_last IS NOT NULL\n    ) AS stats ON r.id = stats.report_id \n    WHERE r.source = 'DPS' AND r.location NOT IN ('NORTH', 'SOUTH') \n    GROUP BY 1, ROLLUP(r.location)\n) AS dwlp \nJOIN (\n    SELECT \n        CAST(date_trunc('month', r.created_at) AS DATE) AS month, \n        COALESCE(r.location, 'All prisons') AS location, \n        COUNT(stats.time_since_last) AS number_of_ro_responses, \n        ROUND(AVG(stats.time_since_last)/24, 1) AS ro_resp_time_days \n    FROM prisons.incidentreporting_report AS r \n    LEFT JOIN (\n        SELECT report_id, time_since_last \n        FROM (\n            SELECT \n                *, \n                ROUND((EXTRACT(epoch FROM (correction_requested_at - lag(correction_requested_at) OVER (PARTITION BY report_id ORDER BY sequence))))/3600, 1) AS time_since_last, \n                lag(user_type) OVER (PARTITION BY report_id ORDER BY sequence) AS last_user_type \n            FROM prisons.incidentreporting_correction_request\n        ) AS ro_sub -- Alias added here\n        WHERE user_type <> last_user_type AND user_type = 'REPORTING_OFFICER'\n    ) AS stats ON r.id = stats.report_id \n    WHERE r.source = 'DPS' AND r.location NOT IN ('NORTH', 'SOUTH') \n    GROUP BY 1, ROLLUP(r.location)\n) AS ro ON dwlp.month = ro.month AND dwlp.prison_id = ro.location \nJOIN (\n    SELECT \n        CAST(date_trunc('month', r.created_at) AS DATE) AS month, \n        to_char(MIN(r.created_at), 'DD/MM/YYYY') AS min_date, \n        to_char(MAX(r.created_at), 'DD/MM/YYYY') AS max_date, \n        COALESCE(r.location, 'All prisons') AS location, \n        COUNT(stats.time_since_last) AS number_of_dw_responses, \n        ROUND(AVG(stats.time_since_last)/24, 1) AS dw_resp_time_days \n    FROM prisons.incidentreporting_report AS r \n    LEFT JOIN (\n        SELECT report_id, time_since_last \n        FROM (\n            SELECT \n                *, \n                ROUND((EXTRACT(epoch FROM (correction_requested_at - lag(correction_requested_at) OVER (PARTITION BY report_id ORDER BY sequence))))/3600, 1) AS time_since_last, \n                lag(user_type) OVER (PARTITION BY report_id ORDER BY sequence) AS last_user_type \n            FROM prisons.incidentreporting_correction_request\n        ) AS dw_sub -- Alias added here\n        WHERE user_type <> last_user_type AND user_type = 'DATA_WARDEN'\n    ) AS stats ON r.id = stats.report_id \n    WHERE r.source = 'DPS' AND r.location NOT IN ('NORTH', 'SOUTH') \n    GROUP BY 1, ROLLUP(r.location) \n) AS dw ON dwlp.month = dw.month AND dwlp.prison_id = dw.location) as result\n LEFT JOIN (select agy_loc_id prison_id, description prison_name\nFROM prisons.nomis_agency_locations) as al\n ON result.prison_id = al.prison_id",
       "schema": {
         "field": [
           {
@@ -551,7 +555,7 @@
             "type": "date"
           },
           {
-            "name": "location",
+            "name": "prison_id",
             "type": "string"
           },
           {
@@ -577,6 +581,10 @@
           {
             "name": "feedback_loop_days",
             "type": "float"
+          },
+          {
+            "name": "prison_name",
+            "type": "string"
           }
         ]
       }
@@ -585,7 +593,7 @@
       "id": "incidents-reopened-per-week",
       "name": "Incidents reopened / week",
       "datasource": "datamart",
-      "query": "SELECT CAST(date_trunc('week', sh.changed_at) AS DATE) AS week, to_char(MIN(sh.changed_at), 'DD/MM/YYYY') AS min_date, to_char(MAX(sh.changed_at), 'DD/MM/YYYY') AS max_date, COALESCE(r.location, 'All locations') AS location, COALESCE(ct.description, 'All incident types') AS incident_type, count(sh.report_id) AS reopened_count FROM prisons.incidentreporting_status_history AS sh LEFT JOIN (SELECT location, type, id FROM prisons.incidentreporting_report) AS r ON sh.report_id = r.id LEFT JOIN (SELECT code, description FROM prisons.incidentreporting_constant_type) AS ct ON r.type = ct.code WHERE status = 'REOPENED' GROUP BY 1, ROLLUP(r.location), ROLLUP(ct.description)",
+      "query": "SELECT result.*, COALESCE(al.prison_name, 'All prisons') AS prison_name from (SELECT CAST(date_trunc('week', sh.changed_at) AS DATE) AS week, to_char(MIN(sh.changed_at), 'DD/MM/YYYY') AS min_date, to_char(MAX(sh.changed_at), 'DD/MM/YYYY') AS max_date, COALESCE(r.location, 'All prisons') AS prison_id, COALESCE(ct.description, 'All incident types') AS incident_type, count(sh.report_id) AS reopened_count FROM prisons.incidentreporting_status_history AS sh LEFT JOIN (SELECT location, type, id FROM prisons.incidentreporting_report) AS r ON sh.report_id = r.id LEFT JOIN (SELECT code, description FROM prisons.incidentreporting_constant_type) AS ct ON r.type = ct.code WHERE status = 'REOPENED' GROUP BY 1, ROLLUP(r.location), ROLLUP(ct.description)) as result\n LEFT JOIN (select agy_loc_id prison_id, description prison_name\nFROM prisons.nomis_agency_locations) as al\n ON result.prison_id = al.prison_id",
       "schema": {
         "field": [
           {
@@ -601,7 +609,7 @@
             "type": "date"
           },
           {
-            "name": "location",
+            "name": "prison_id",
             "type": "string"
           },
           {
@@ -611,6 +619,10 @@
           {
             "name": "reopened_count",
             "type": "long"
+          },
+          {
+            "name": "prison_name",
+            "type": "string"
           }
         ]
       }
@@ -619,7 +631,7 @@
       "id": "incidents-reopened-per-month",
       "name": "Incidents reopened / month",
       "datasource": "datamart",
-      "query": "SELECT \n    CAST(date_trunc('month', sh.changed_at) AS DATE) AS month, \n    -- Use TO_CHAR for Redshift execution\n    to_char(MIN(sh.changed_at), 'DD/MM/YYYY') AS min_date, \n    to_char(MAX(sh.changed_at), 'DD/MM/YYYY') AS max_date, \n    COALESCE(r.location, 'All locations') AS location, \n    COALESCE(ct.description, 'All incident types') AS incident_type, \n    COUNT(sh.report_id) AS reopened_count \nFROM \n    prisons.incidentreporting_status_history AS sh \nLEFT JOIN (\n    SELECT location, type, id \n    FROM prisons.incidentreporting_report\n) AS r ON sh.report_id = r.id \nLEFT JOIN (\n    SELECT code, description \n    FROM prisons.incidentreporting_constant_type\n) AS ct ON r.type = ct.code \nWHERE \n    status = 'REOPENED' \nGROUP BY \n    1, \n    ROLLUP(r.location), \n    ROLLUP(ct.description)",
+      "query": "SELECT result.*, COALESCE(al.prison_name, 'All prisons') AS prison_name from (SELECT \n    CAST(date_trunc('month', sh.changed_at) AS DATE) AS month, \n    -- Use TO_CHAR for Redshift execution\n    to_char(MIN(sh.changed_at), 'DD/MM/YYYY') AS min_date, \n    to_char(MAX(sh.changed_at), 'DD/MM/YYYY') AS max_date, \n    COALESCE(r.location, 'All prisons') AS prison_id, \n    COALESCE(ct.description, 'All incident types') AS incident_type, \n    COUNT(sh.report_id) AS reopened_count \nFROM \n    prisons.incidentreporting_status_history AS sh \nLEFT JOIN (\n    SELECT location, type, id \n    FROM prisons.incidentreporting_report\n) AS r ON sh.report_id = r.id \nLEFT JOIN (\n    SELECT code, description \n    FROM prisons.incidentreporting_constant_type\n) AS ct ON r.type = ct.code \nWHERE \n    status = 'REOPENED' \nGROUP BY \n    1, \n    ROLLUP(r.location), \n    ROLLUP(ct.description)) as result\n LEFT JOIN (select agy_loc_id prison_id, description prison_name\nFROM prisons.nomis_agency_locations) as al\n ON result.prison_id = al.prison_id",
       "schema": {
         "field": [
           {
@@ -635,7 +647,7 @@
             "type": "date"
           },
           {
-            "name": "location",
+            "name": "prison_id",
             "type": "string"
           },
           {
@@ -645,6 +657,10 @@
           {
             "name": "reopened_count",
             "type": "long"
+          },
+          {
+            "name": "prison_name",
+            "type": "string"
           }
         ]
       }
@@ -653,7 +669,7 @@
       "id": "active-prisons",
       "name": "All active prisons",
       "datasource": "datamart",
-      "query": "select description prison_name, agy_loc_id prison_id\nFROM prisons.nomis_agency_locations al\nwhere al.active_flag = 'Y' AND al.agy_loc_id NOT IN ('TRN', 'OUT', 'SOUTH', 'NORTH') \nAND EXISTS(select DISTINCT(location) as agy_loc_id from prisons.incidentreporting_report r where source = 'DPS' and r.location = al.agy_loc_id)\nUNION ALL SELECT 'All locations' as location_name, 'All locations' as location_id",
+      "query": "select description prison_name, agy_loc_id prison_id\nFROM prisons.nomis_agency_locations al\nwhere al.active_flag = 'Y' AND al.agy_loc_id NOT IN ('TRN', 'OUT', 'SOUTH', 'NORTH') \nAND EXISTS(select DISTINCT(location) as agy_loc_id from prisons.incidentreporting_report r where source = 'DPS' and r.location = al.agy_loc_id)\nUNION ALL SELECT 'All prisons' as prison_name, 'All prisons' as prison_id",
       "schema": {
         "field": [
           {
@@ -1582,8 +1598,8 @@
             }
           },
           {
-            "name": "$ref:location",
-            "display": "Location",
+            "name": "$ref:prison_name",
+            "display": "Prison",
             "sortable": true,
             "visible": "true",
             "defaultsort": false,
@@ -1599,6 +1615,13 @@
                 "display": "prison_name"
               }
             }
+          },
+          {
+            "name": "$ref:prison_id",
+            "display": "Prison ID",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
           },
           {
             "name": "$ref:total_reports",
@@ -1705,8 +1728,8 @@
             }
           },
           {
-            "name": "$ref:location",
-            "display": "Location",
+            "name": "$ref:prison_name",
+            "display": "Prison",
             "sortable": true,
             "visible": "true",
             "defaultsort": false,
@@ -1722,6 +1745,13 @@
                 "display": "prison_name"
               }
             }
+          },
+          {
+            "name": "$ref:prison_id",
+            "display": "Prison ID",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
           },
           {
             "name": "$ref:number_of_dw_responses",
@@ -1799,8 +1829,8 @@
             }
           },
           {
-            "name": "$ref:location",
-            "display": "Location",
+            "name": "$ref:prison_name",
+            "display": "Prison",
             "sortable": true,
             "visible": "true",
             "defaultsort": false,
@@ -1816,6 +1846,13 @@
                 "display": "prison_name"
               }
             }
+          },
+          {
+            "name": "$ref:prison_id",
+            "display": "Prison ID",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
           },
           {
             "name": "$ref:incident_type",
@@ -1876,8 +1913,8 @@
             }
           },
           {
-            "name": "$ref:location",
-            "display": "Location",
+            "name": "$ref:prison_name",
+            "display": "Prison",
             "sortable": true,
             "visible": "true",
             "defaultsort": false,
@@ -1893,6 +1930,13 @@
                 "display": "prison_name"
               }
             }
+          },
+          {
+            "name": "$ref:prison_id",
+            "display": "Prison ID",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
           },
           {
             "name": "$ref:incident_type",
