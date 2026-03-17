@@ -249,7 +249,7 @@
       "id": "report-actions-per-week",
       "name": "Report actions / week",
       "datasource": "datamart",
-      "query": "SELECT \n    CAST(date_trunc('week', cr.correction_requested_at) AS DATE) AS week, \n    to_char(MIN(cr.correction_requested_at), 'DD/MM/YYYY') AS min_date, \n    to_char(MAX(cr.correction_requested_at), 'DD/MM/YYYY') AS max_date, \n    COALESCE(r.location, 'All locations') AS location, \n    COALESCE(ct.description, 'All incident types') AS incident_type, \n    count(DISTINCT(cr.report_id)) AS num_reports, \n    count(cr.id) AS total_actions, \n    -- Added NULLIF to protect against division by zero errors\n    ROUND(CAST(count(cr.id) AS decimal(18,2))/NULLIF(CAST(count(DISTINCT(cr.report_id)) AS decimal(18,2)), 0), 1) AS avg_actions_per_report, \n    count(CASE WHEN user_action = 'REQUEST_REVIEW' AND last_status = 'DRAFT' THEN cr.id END) AS num_first_submissions, \n    count(CASE WHEN user_action = 'REQUEST_DUPLICATE' AND last_status = 'DRAFT' THEN cr.id END) AS num_first_req_dup, \n    count(CASE WHEN user_action = 'REQUEST_NOT_REPORTABLE' AND last_status = 'DRAFT' THEN cr.id END) AS num_first_req_nr, \n    count(CASE WHEN user_action = 'REQUEST_CORRECTION' AND last_status = 'DRAFT' THEN cr.id END) AS num_sent_back, \n    count(CASE WHEN user_action = 'HOLD' THEN cr.id END) AS num_held, \n    count(CASE WHEN user_action = 'REQUEST_REVIEW' AND last_status <> 'DRAFT' THEN cr.id END) AS num_resubmissions, \n    count(CASE WHEN user_action = 'REQUEST_DUPLICATE' AND last_status <> 'DRAFT' THEN cr.id END) AS num_add_req_dup, \n    count(CASE WHEN user_action = 'REQUEST_NOT_REPORTABLE' AND last_status <> 'DRAFT' THEN cr.id END) AS num_add_req_nr, \n    count(CASE WHEN user_action = 'REQUEST_CORRECTION' AND last_status <> 'DRAFT' THEN cr.id END) AS num_sent_back_again, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'REPORTING_OFFICER' AND last_status NOT IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE') THEN cr.id END) AS num_recalled_ro, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'DATA_WARDEN' AND last_status NOT IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE')  THEN cr.id END) AS num_recalled_dw, \n    count(CASE WHEN user_action = 'CLOSE' THEN cr.id END) AS num_closed, \n    count(CASE WHEN user_action = 'MARK_DUPLICATE' THEN cr.id END) AS num_mark_dup, \n    count(CASE WHEN user_action = 'MARK_NOT_REPORTABLE' THEN cr.id END) AS num_mark_nr, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'REPORTING_OFFICER' AND last_status IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE') THEN cr.id END) AS num_reopened_ro, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'DATA_WARDEN' AND last_status IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE')  THEN cr.id END) AS num_reopened_dw \nFROM prisons.incidentreporting_correction_request AS cr \nLEFT JOIN (\n    SELECT location, id, type, source FROM prisons.incidentreporting_report\n) AS r ON cr.report_id = r.id \nLEFT JOIN (\n    SELECT \n        report_id, \n        status AS new_status, \n        changed_by, \n        lag(status) OVER (PARTITION BY report_id ORDER BY changed_at) AS last_status, \n        -- Redshift frame clause added here\n        count(status) OVER (\n            PARTITION BY report_id \n            ORDER BY changed_at \n            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n        ) - 2 AS sh_sequence \n    FROM prisons.incidentreporting_status_history\n) AS sh ON cr.report_id = sh.report_id AND cr.sequence = sh.sh_sequence AND cr.correction_requested_by = sh.changed_by \nLEFT JOIN (\n    SELECT code, description FROM prisons.incidentreporting_constant_type\n) AS ct ON r.type = ct.code \nWHERE r.source = 'DPS' \nGROUP BY 1, ROLLUP(r.location), ROLLUP(ct.description)",
+      "query": "SELECT result.*, COALESCE(al.location_name, 'All locations') AS location_name from (SELECT \n    CAST(date_trunc('week', cr.correction_requested_at) AS DATE) AS week, \n    to_char(MIN(cr.correction_requested_at), 'DD/MM/YYYY') AS min_date, \n    to_char(MAX(cr.correction_requested_at), 'DD/MM/YYYY') AS max_date, \n    COALESCE(r.location, 'All locations') AS location_id,\n    COALESCE(ct.description, 'All incident types') AS incident_type, \n    count(DISTINCT(cr.report_id)) AS num_reports, \n    count(cr.id) AS total_actions, \n    ROUND(CAST(count(cr.id) AS decimal(18,2))/NULLIF(CAST(count(DISTINCT(cr.report_id)) AS decimal(18,2)), 0), 1) AS avg_actions_per_report, \n    count(CASE WHEN user_action = 'REQUEST_REVIEW' AND last_status = 'DRAFT' THEN cr.id END) AS num_first_submissions, \n    count(CASE WHEN user_action = 'REQUEST_DUPLICATE' AND last_status = 'DRAFT' THEN cr.id END) AS num_first_req_dup, \n    count(CASE WHEN user_action = 'REQUEST_NOT_REPORTABLE' AND last_status = 'DRAFT' THEN cr.id END) AS num_first_req_nr, \n    count(CASE WHEN user_action = 'REQUEST_CORRECTION' AND last_status = 'DRAFT' THEN cr.id END) AS num_sent_back, \n    count(CASE WHEN user_action = 'HOLD' THEN cr.id END) AS num_held, \n    count(CASE WHEN user_action = 'REQUEST_REVIEW' AND last_status <> 'DRAFT' THEN cr.id END) AS num_resubmissions, \n    count(CASE WHEN user_action = 'REQUEST_DUPLICATE' AND last_status <> 'DRAFT' THEN cr.id END) AS num_add_req_dup, \n    count(CASE WHEN user_action = 'REQUEST_NOT_REPORTABLE' AND last_status <> 'DRAFT' THEN cr.id END) AS num_add_req_nr, \n    count(CASE WHEN user_action = 'REQUEST_CORRECTION' AND last_status <> 'DRAFT' THEN cr.id END) AS num_sent_back_again, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'REPORTING_OFFICER' AND last_status NOT IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE') THEN cr.id END) AS num_recalled_ro, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'DATA_WARDEN' AND last_status NOT IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE')  THEN cr.id END) AS num_recalled_dw, \n    count(CASE WHEN user_action = 'CLOSE' THEN cr.id END) AS num_closed, \n    count(CASE WHEN user_action = 'MARK_DUPLICATE' THEN cr.id END) AS num_mark_dup, \n    count(CASE WHEN user_action = 'MARK_NOT_REPORTABLE' THEN cr.id END) AS num_mark_nr, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'REPORTING_OFFICER' AND last_status IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE') THEN cr.id END) AS num_reopened_ro, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'DATA_WARDEN' AND last_status IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE')  THEN cr.id END) AS num_reopened_dw \nFROM prisons.incidentreporting_correction_request AS cr \nLEFT JOIN (\n    SELECT location, id, type, source \n    FROM prisons.incidentreporting_report\n) AS r ON cr.report_id = r.id \nLEFT JOIN (\n    SELECT \n        report_id, \n        status AS new_status, \n        changed_by, \n        lag(status) OVER (PARTITION BY report_id ORDER BY changed_at) AS last_status, \n        -- Added explicit frame clause for Redshift compatibility\n        count(status) OVER (\n            PARTITION BY report_id \n            ORDER BY changed_at \n            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n        ) - 2 AS sh_sequence \n    FROM prisons.incidentreporting_status_history\n) AS sh ON cr.report_id = sh.report_id AND cr.sequence = sh.sh_sequence AND cr.correction_requested_by = sh.changed_by \nLEFT JOIN (\n    SELECT code, description \n    FROM prisons.incidentreporting_constant_type\n) AS ct ON r.type = ct.code\nWHERE r.source = 'DPS' \nGROUP BY 1, ROLLUP(r.location), ROLLUP(ct.description)) as result\n LEFT JOIN (select agy_loc_id location_id, description location_name\nFROM prisons.nomis_agency_locations) as al\n ON result.location_id = al.location_id",
       "schema": {
         "field": [
           {
@@ -265,7 +265,7 @@
             "type": "date"
           },
           {
-            "name": "location",
+            "name": "location_id",
             "type": "string"
           },
           {
@@ -347,6 +347,10 @@
           {
             "name": "num_reopened_dw",
             "type": "long"
+          },
+          {
+            "name": "location_name",
+            "type": "string"
           }
         ]
       }
@@ -355,7 +359,7 @@
       "id": "report-actions-per-month",
       "name": "Report actions / month",
       "datasource": "datamart",
-      "query": "SELECT \n    CAST(date_trunc('month', cr.correction_requested_at) AS DATE) AS month, \n    to_char(MIN(cr.correction_requested_at), 'DD/MM/YYYY') AS min_date, \n    to_char(MAX(cr.correction_requested_at), 'DD/MM/YYYY') AS max_date, \n    COALESCE(r.location, 'All locations') AS location, \n    COALESCE(ct.description, 'All incident types') AS incident_type, \n    count(DISTINCT(cr.report_id)) AS num_reports, \n    count(cr.id) AS total_actions, \n    ROUND(CAST(count(cr.id) AS decimal(18,2))/NULLIF(CAST(count(DISTINCT(cr.report_id)) AS decimal(18,2)), 0), 1) AS avg_actions_per_report, \n    count(CASE WHEN user_action = 'REQUEST_REVIEW' AND last_status = 'DRAFT' THEN cr.id END) AS num_first_submissions, \n    count(CASE WHEN user_action = 'REQUEST_DUPLICATE' AND last_status = 'DRAFT' THEN cr.id END) AS num_first_req_dup, \n    count(CASE WHEN user_action = 'REQUEST_NOT_REPORTABLE' AND last_status = 'DRAFT' THEN cr.id END) AS num_first_req_nr, \n    count(CASE WHEN user_action = 'REQUEST_CORRECTION' AND last_status = 'DRAFT' THEN cr.id END) AS num_sent_back, \n    count(CASE WHEN user_action = 'HOLD' THEN cr.id END) AS num_held, \n    count(CASE WHEN user_action = 'REQUEST_REVIEW' AND last_status <> 'DRAFT' THEN cr.id END) AS num_resubmissions, \n    count(CASE WHEN user_action = 'REQUEST_DUPLICATE' AND last_status <> 'DRAFT' THEN cr.id END) AS num_add_req_dup, \n    count(CASE WHEN user_action = 'REQUEST_NOT_REPORTABLE' AND last_status <> 'DRAFT' THEN cr.id END) AS num_add_req_nr, \n    count(CASE WHEN user_action = 'REQUEST_CORRECTION' AND last_status <> 'DRAFT' THEN cr.id END) AS num_sent_back_again, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'REPORTING_OFFICER' AND last_status NOT IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE') THEN cr.id END) AS num_recalled_ro, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'DATA_WARDEN' AND last_status NOT IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE')  THEN cr.id END) AS num_recalled_dw, \n    count(CASE WHEN user_action = 'CLOSE' THEN cr.id END) AS num_closed, \n    count(CASE WHEN user_action = 'MARK_DUPLICATE' THEN cr.id END) AS num_mark_dup, \n    count(CASE WHEN user_action = 'MARK_NOT_REPORTABLE' THEN cr.id END) AS num_mark_nr, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'REPORTING_OFFICER' AND last_status IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE') THEN cr.id END) AS num_reopened_ro, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'DATA_WARDEN' AND last_status IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE')  THEN cr.id END) AS num_reopened_dw \nFROM prisons.incidentreporting_correction_request AS cr \nLEFT JOIN (\n    SELECT location, id, type, source \n    FROM prisons.incidentreporting_report\n) AS r ON cr.report_id = r.id \nLEFT JOIN (\n    SELECT \n        report_id, \n        status AS new_status, \n        changed_by, \n        lag(status) OVER (PARTITION BY report_id ORDER BY changed_at) AS last_status, \n        -- Added explicit frame clause for Redshift compatibility\n        count(status) OVER (\n            PARTITION BY report_id \n            ORDER BY changed_at \n            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n        ) - 2 AS sh_sequence \n    FROM prisons.incidentreporting_status_history\n) AS sh ON cr.report_id = sh.report_id AND cr.sequence = sh.sh_sequence AND cr.correction_requested_by = sh.changed_by \nLEFT JOIN (\n    SELECT code, description \n    FROM prisons.incidentreporting_constant_type\n) AS ct ON r.type = ct.code \nWHERE r.source = 'DPS' \nGROUP BY 1, ROLLUP(r.location), ROLLUP(ct.description)",
+      "query": "SELECT result.*, COALESCE(al.location_name, 'All locations') AS location_name from (SELECT \n    CAST(date_trunc('month', cr.correction_requested_at) AS DATE) AS month, \n    to_char(MIN(cr.correction_requested_at), 'DD/MM/YYYY') AS min_date, \n    to_char(MAX(cr.correction_requested_at), 'DD/MM/YYYY') AS max_date, \n    COALESCE(r.location, 'All locations') AS location_id,\n    COALESCE(ct.description, 'All incident types') AS incident_type, \n    count(DISTINCT(cr.report_id)) AS num_reports, \n    count(cr.id) AS total_actions, \n    ROUND(CAST(count(cr.id) AS decimal(18,2))/NULLIF(CAST(count(DISTINCT(cr.report_id)) AS decimal(18,2)), 0), 1) AS avg_actions_per_report, \n    count(CASE WHEN user_action = 'REQUEST_REVIEW' AND last_status = 'DRAFT' THEN cr.id END) AS num_first_submissions, \n    count(CASE WHEN user_action = 'REQUEST_DUPLICATE' AND last_status = 'DRAFT' THEN cr.id END) AS num_first_req_dup, \n    count(CASE WHEN user_action = 'REQUEST_NOT_REPORTABLE' AND last_status = 'DRAFT' THEN cr.id END) AS num_first_req_nr, \n    count(CASE WHEN user_action = 'REQUEST_CORRECTION' AND last_status = 'DRAFT' THEN cr.id END) AS num_sent_back, \n    count(CASE WHEN user_action = 'HOLD' THEN cr.id END) AS num_held, \n    count(CASE WHEN user_action = 'REQUEST_REVIEW' AND last_status <> 'DRAFT' THEN cr.id END) AS num_resubmissions, \n    count(CASE WHEN user_action = 'REQUEST_DUPLICATE' AND last_status <> 'DRAFT' THEN cr.id END) AS num_add_req_dup, \n    count(CASE WHEN user_action = 'REQUEST_NOT_REPORTABLE' AND last_status <> 'DRAFT' THEN cr.id END) AS num_add_req_nr, \n    count(CASE WHEN user_action = 'REQUEST_CORRECTION' AND last_status <> 'DRAFT' THEN cr.id END) AS num_sent_back_again, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'REPORTING_OFFICER' AND last_status NOT IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE') THEN cr.id END) AS num_recalled_ro, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'DATA_WARDEN' AND last_status NOT IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE')  THEN cr.id END) AS num_recalled_dw, \n    count(CASE WHEN user_action = 'CLOSE' THEN cr.id END) AS num_closed, \n    count(CASE WHEN user_action = 'MARK_DUPLICATE' THEN cr.id END) AS num_mark_dup, \n    count(CASE WHEN user_action = 'MARK_NOT_REPORTABLE' THEN cr.id END) AS num_mark_nr, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'REPORTING_OFFICER' AND last_status IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE') THEN cr.id END) AS num_reopened_ro, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'DATA_WARDEN' AND last_status IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE')  THEN cr.id END) AS num_reopened_dw \nFROM prisons.incidentreporting_correction_request AS cr \nLEFT JOIN (\n    SELECT location, id, type, source \n    FROM prisons.incidentreporting_report\n) AS r ON cr.report_id = r.id \nLEFT JOIN (\n    SELECT \n        report_id, \n        status AS new_status, \n        changed_by, \n        lag(status) OVER (PARTITION BY report_id ORDER BY changed_at) AS last_status, \n        -- Added explicit frame clause for Redshift compatibility\n        count(status) OVER (\n            PARTITION BY report_id \n            ORDER BY changed_at \n            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n        ) - 2 AS sh_sequence \n    FROM prisons.incidentreporting_status_history\n) AS sh ON cr.report_id = sh.report_id AND cr.sequence = sh.sh_sequence AND cr.correction_requested_by = sh.changed_by \nLEFT JOIN (\n    SELECT code, description \n    FROM prisons.incidentreporting_constant_type\n) AS ct ON r.type = ct.code\nWHERE r.source = 'DPS' \nGROUP BY 1, ROLLUP(r.location), ROLLUP(ct.description)) as result\n LEFT JOIN (select agy_loc_id location_id, description location_name\nFROM prisons.nomis_agency_locations) as al\n ON result.location_id = al.location_id",
       "schema": {
         "field": [
           {
@@ -371,7 +375,7 @@
             "type": "date"
           },
           {
-            "name": "location",
+            "name": "location_id",
             "type": "string"
           },
           {
@@ -453,6 +457,10 @@
           {
             "name": "num_reopened_dw",
             "type": "long"
+          },
+          {
+            "name": "location_name",
+            "type": "string"
           }
         ]
       }
@@ -662,10 +670,30 @@
       }
     },
     {
+      "id": "all-active-locations",
+      "name": "All Locations",
+      "datasource": "datamart",
+      "query": "select description location_name, agy_loc_id location_id\nFROM prisons.nomis_agency_locations al\nwhere al.active_flag = 'Y' AND al.agy_loc_id NOT IN ('TRN', 'OUT') \nAND EXISTS(select DISTINCT(location) as agy_loc_id from prisons.incidentreporting_report r where source = 'DPS' and r.location = al.agy_loc_id)\nUNION ALL SELECT 'All locations' as location_name, 'All locations' as location_id",
+      "schema": {
+        "field": [
+          {
+            "name": "location_name",
+            "display": "Location name",
+            "type": "string"
+          },
+          {
+            "name": "location_id",
+            "display": "Location Id",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
       "id": "types",
       "name": "Incident Types",
       "datasource": "datamart",
-      "query": "SELECT code, description FROM prisons.incidentreporting_constant_type_family",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_type_family\nUNION ALL select 'All incident types' as code, 'All incident types' as description",
       "schema": {
         "field": [
           {
@@ -736,6 +764,7 @@
             "sortable": true,
             "visible": "true",
             "defaultsort": false,
+            "interactive": true,
             "filter": {
               "type": "multiselect",
               "dynamicoptions": {
@@ -836,6 +865,7 @@
             "defaultsort": false,
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "dynamicoptions": {
                 "returnAsStaticOptions": true,
                 "dataset": "data_wardens",
@@ -935,6 +965,7 @@
             "filter": {
               "type": "multiselect",
               "mandatory": false,
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 140,
                 "returnAsStaticOptions": true,
@@ -952,6 +983,7 @@
             "defaultsort": false,
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 60,
                 "returnAsStaticOptions": true,
@@ -1039,6 +1071,7 @@
             "filter": {
               "type": "multiselect",
               "mandatory": false,
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 140,
                 "returnAsStaticOptions": true,
@@ -1054,6 +1087,7 @@
             "sortable": true,
             "visible": "true",
             "defaultsort": false,
+            "interactive": true,
             "filter": {
               "type": "multiselect",
               "dynamicoptions": {
@@ -1124,11 +1158,11 @@
             "sortdirection": "desc",
             "filter": {
               "type": "daterange",
-              "default": "today(-3,months) - today()"
+              "default": "today(-4,weeks) - today()"
             }
           },
           {
-            "name": "$ref:location",
+            "name": "$ref:location_name",
             "display": "Location",
             "sortable": true,
             "visible": "true",
@@ -1136,14 +1170,22 @@
             "filter": {
               "type": "multiselect",
               "mandatory": false,
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 140,
                 "returnAsStaticOptions": true,
-                "dataset": "prisons",
-                "name": "prison_id",
-                "display": "prison_name"
+                "dataset": "all-active-locations",
+                "name": "location_id",
+                "display": "location_name"
               }
             }
+          },
+          {
+            "name": "$ref:location_id",
+            "display": "Location ID",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
           },
           {
             "name": "$ref:incident_type",
@@ -1153,6 +1195,7 @@
             "defaultsort": false,
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 60,
                 "returnAsStaticOptions": true,
@@ -1329,7 +1372,7 @@
             }
           },
           {
-            "name": "$ref:location",
+            "name": "$ref:location_name",
             "display": "Location",
             "sortable": true,
             "visible": "true",
@@ -1337,14 +1380,22 @@
             "filter": {
               "type": "multiselect",
               "mandatory": false,
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 140,
                 "returnAsStaticOptions": true,
-                "dataset": "prisons",
-                "name": "prison_id",
-                "display": "prison_name"
+                "dataset": "all-active-locations",
+                "name": "location_name",
+                "display": "location_name"
               }
             }
+          },
+          {
+            "name": "$ref:location_id",
+            "display": "Location ID",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
           },
           {
             "name": "$ref:incident_type",
@@ -1354,6 +1405,7 @@
             "defaultsort": false,
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 60,
                 "returnAsStaticOptions": true,
@@ -1538,6 +1590,7 @@
             "filter": {
               "type": "multiselect",
               "mandatory": false,
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 140,
                 "returnAsStaticOptions": true,
@@ -1660,6 +1713,7 @@
             "filter": {
               "type": "multiselect",
               "mandatory": false,
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 140,
                 "returnAsStaticOptions": true,
@@ -1753,6 +1807,7 @@
             "filter": {
               "type": "multiselect",
               "mandatory": false,
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 140,
                 "returnAsStaticOptions": true,
@@ -1770,6 +1825,7 @@
             "defaultsort": false,
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 60,
                 "returnAsStaticOptions": true,
@@ -1828,6 +1884,7 @@
             "filter": {
               "type": "multiselect",
               "mandatory": false,
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 140,
                 "returnAsStaticOptions": true,
@@ -1845,6 +1902,7 @@
             "defaultsort": false,
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 60,
                 "returnAsStaticOptions": true,
