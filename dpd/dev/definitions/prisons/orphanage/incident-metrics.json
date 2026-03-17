@@ -153,7 +153,7 @@
       "id": "report-return-rate-per-month",
       "name": "% of reports returned / month",
       "datasource": "datamart",
-      "query": "SELECT month, min_date, max_date, location, incident_type, all_reports, returned, dw_not_seen, closed, CASE WHEN (all_reports-dw_not_seen) = 0 THEN 0.0 ELSE ROUND((CAST(returned AS decimal(18,2))/(all_reports-dw_not_seen))*100, 1) END AS dw_seen_percentage_returned FROM (SELECT CAST(date_trunc('month', created_at) AS DATE) AS month, to_char(MIN(created_at), 'DD/MM/YYYY') AS min_date, to_char(MAX(created_at), 'DD/MM/YYYY') AS max_date, COALESCE(r.location, 'All locations') AS location, COALESCE(ct.description, 'All incident types') AS incident_type, count(r.id) AS all_reports, count(CASE WHEN cr.requested_corection = '1' THEN r.id END) AS returned, count(CASE WHEN r.status IN ('DRAFT', 'AWAITING_REVIEW') THEN r.id END) AS dw_not_seen, count(CASE WHEN r.status IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE') THEN r.id END) AS closed FROM prisons.incidentreporting_report AS r LEFT JOIN (SELECT DISTINCT report_id, '1' AS requested_corection FROM prisons.incidentreporting_correction_request WHERE user_action = 'REQUEST_CORRECTION') AS cr ON r.id = cr.report_id LEFT JOIN (SELECT code, description FROM prisons.incidentreporting_constant_type) AS ct ON r.type = ct.code WHERE r.source = 'DPS' AND r.location NOT IN ('NORTH', 'SOUTH') GROUP BY 1, ROLLUP(r.location), ROLLUP(ct.description))",
+      "query": "SELECT result.*, COALESCE(al.prison_name, 'All prisons') AS prison_name from (SELECT month, min_date, max_date, prison_id, incident_type, all_reports, returned, dw_not_seen, closed, CASE WHEN (all_reports-dw_not_seen) = 0 THEN 0.0 ELSE ROUND((CAST(returned AS decimal(18,2))/(all_reports-dw_not_seen))*100, 1) END AS dw_seen_percentage_returned FROM (SELECT CAST(date_trunc('month', created_at) AS DATE) AS month, to_char(MIN(created_at), 'DD/MM/YYYY') AS min_date, to_char(MAX(created_at), 'DD/MM/YYYY') AS max_date, COALESCE(r.location, 'All prisons') AS prison_id, COALESCE(ct.description, 'All incident types') AS incident_type, count(r.id) AS all_reports, count(CASE WHEN cr.requested_corection = '1' THEN r.id END) AS returned, count(CASE WHEN r.status IN ('DRAFT', 'AWAITING_REVIEW') THEN r.id END) AS dw_not_seen, count(CASE WHEN r.status IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE') THEN r.id END) AS closed FROM prisons.incidentreporting_report AS r LEFT JOIN (SELECT DISTINCT report_id, '1' AS requested_corection FROM prisons.incidentreporting_correction_request WHERE user_action = 'REQUEST_CORRECTION') AS cr ON r.id = cr.report_id LEFT JOIN (SELECT code, description FROM prisons.incidentreporting_constant_type) AS ct ON r.type = ct.code WHERE r.source = 'DPS' AND r.location NOT IN ('NORTH', 'SOUTH') GROUP BY 1, ROLLUP(r.location), ROLLUP(ct.description))) as result\n LEFT JOIN (select agy_loc_id prison_id, description prison_name\nFROM prisons.nomis_agency_locations) as al\n ON result.prison_id = al.prison_id",
       "schema": {
         "field": [
           {
@@ -169,7 +169,7 @@
             "type": "date"
           },
           {
-            "name": "location",
+            "name": "prison_id",
             "type": "string"
           },
           {
@@ -195,6 +195,10 @@
           {
             "name": "dw_seen_percentage_returned",
             "type": "float"
+          },
+          {
+            "name": "prison_name",
+            "type": "string"
           }
         ]
       }
@@ -203,7 +207,7 @@
       "id": "review-return-rate-per-month",
       "name": "% of reviews returned / month",
       "datasource": "datamart",
-      "query": "SELECT \n    *, \n    ROUND((CAST(sent_back AS decimal(18,2)) / NULLIF(reports_reviewed, 0)) * 100, 1) AS per_returned \nFROM (\n    SELECT \n        CAST(date_trunc('month', correction_requested_at) AS DATE) AS month, \n        to_char(MIN(correction_requested_at), 'DD/MM/YYYY') AS min_date, \n        to_char(MAX(correction_requested_at), 'DD/MM/YYYY') AS max_date, \n        COALESCE(location, 'All locations') AS location, \n        COALESCE(incident_type, 'All incident types') AS incident_type, \n        COUNT(report_id) AS reports_reviewed, \n        COUNT(CASE WHEN user_action = 'REQUEST_CORRECTION' THEN report_id END) AS sent_back, \n        COUNT(CASE WHEN user_action <> 'REQUEST_CORRECTION' THEN report_id END) AS completed \n    FROM (\n        SELECT \n            report_id, \n            correction_requested_at, \n            location, \n            incident_type, \n            sequence, \n            user_action, \n            prev_dw_action \n        FROM (\n            SELECT \n                cr.report_id, \n                cr.sequence, \n                cr.user_action, \n                cr.correction_requested_at, \n                ct.description AS incident_type, \n                r.location, \n                -- Added the explicit frame clause required by Redshift\n                first_value(sequence) OVER (\n                    PARTITION BY report_id \n                    ORDER BY sequence \n                    ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING\n                ) AS first_dw_sequence, \n                lag(user_action) OVER (PARTITION BY report_id ORDER BY sequence) AS prev_dw_action \n            FROM prisons.incidentreporting_correction_request AS cr \n            LEFT JOIN (SELECT id, source, type, location FROM prisons.incidentreporting_report) AS r ON cr.report_id = r.id \n            LEFT JOIN (SELECT code, description FROM prisons.incidentreporting_constant_type) AS ct ON r.type = ct.code \n            WHERE r.source = 'DPS' \n              AND user_type = 'DATA_WARDEN' \n              AND r.location NOT IN ('NORTH', 'SOUTH')\n        ) \n        WHERE (sequence = first_dw_sequence AND user_action <> 'HOLD') \n           OR (sequence = first_dw_sequence + 1 AND prev_dw_action = 'HOLD')\n    ) \n    GROUP BY 1, ROLLUP(location), ROLLUP(incident_type)\n)",
+      "query": "SELECT result.*, COALESCE(al.prison_name, 'All prisons') AS prison_name from (SELECT \n    *, \n    ROUND((CAST(sent_back AS decimal(18,2)) / NULLIF(reports_reviewed, 0)) * 100, 1) AS per_returned \nFROM (\n    SELECT \n        CAST(date_trunc('month', correction_requested_at) AS DATE) AS month, \n        to_char(MIN(correction_requested_at), 'DD/MM/YYYY') AS min_date, \n        to_char(MAX(correction_requested_at), 'DD/MM/YYYY') AS max_date, \n        COALESCE(location, 'All prisons') AS prison_id, \n        COALESCE(incident_type, 'All incident types') AS incident_type, \n        COUNT(report_id) AS reports_reviewed, \n        COUNT(CASE WHEN user_action = 'REQUEST_CORRECTION' THEN report_id END) AS sent_back, \n        COUNT(CASE WHEN user_action <> 'REQUEST_CORRECTION' THEN report_id END) AS completed \n    FROM (\n        SELECT \n            report_id, \n            correction_requested_at, \n            location, \n            incident_type, \n            sequence, \n            user_action, \n            prev_dw_action \n        FROM (\n            SELECT \n                cr.report_id, \n                cr.sequence, \n                cr.user_action, \n                cr.correction_requested_at, \n                ct.description AS incident_type, \n                r.location, \n                -- Added the explicit frame clause required by Redshift\n                first_value(sequence) OVER (\n                    PARTITION BY report_id \n                    ORDER BY sequence \n                    ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING\n                ) AS first_dw_sequence, \n                lag(user_action) OVER (PARTITION BY report_id ORDER BY sequence) AS prev_dw_action \n            FROM prisons.incidentreporting_correction_request AS cr \n            LEFT JOIN (SELECT id, source, type, location FROM prisons.incidentreporting_report) AS r ON cr.report_id = r.id \n            LEFT JOIN (SELECT code, description FROM prisons.incidentreporting_constant_type) AS ct ON r.type = ct.code \n            WHERE r.source = 'DPS' \n              AND user_type = 'DATA_WARDEN' \n              AND r.location NOT IN ('NORTH', 'SOUTH')\n        ) \n        WHERE (sequence = first_dw_sequence AND user_action <> 'HOLD') \n           OR (sequence = first_dw_sequence + 1 AND prev_dw_action = 'HOLD')\n    ) \n    GROUP BY 1, ROLLUP(location), ROLLUP(incident_type))) as result\n LEFT JOIN (select agy_loc_id prison_id, description prison_name\nFROM prisons.nomis_agency_locations) as al\n ON result.prison_id = al.prison_id",
       "schema": {
         "field": [
           {
@@ -219,7 +223,7 @@
             "type": "date"
           },
           {
-            "name": "location",
+            "name": "prison_id",
             "type": "string"
           },
           {
@@ -241,6 +245,10 @@
           {
             "name": "per_returned",
             "type": "long"
+          },
+          {
+            "name": "prison_name",
+            "type": "string"
           }
         ]
       }
@@ -973,8 +981,8 @@
             }
           },
           {
-            "name": "$ref:location",
-            "display": "Location of incident",
+            "name": "$ref:prison_name",
+            "display": "Prison",
             "sortable": true,
             "visible": "true",
             "defaultsort": false,
@@ -990,6 +998,13 @@
                 "display": "prison_name"
               }
             }
+          },
+          {
+            "name": "$ref:prison_id",
+            "display": "Prison ID",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
           },
           {
             "name": "$ref:incident_type",
@@ -1079,8 +1094,8 @@
             }
           },
           {
-            "name": "$ref:location",
-            "display": "Location of incident",
+            "name": "$ref:prison_name",
+            "display": "Prison",
             "sortable": true,
             "visible": "true",
             "defaultsort": false,
@@ -1098,14 +1113,21 @@
             }
           },
           {
+            "name": "$ref:prison_id",
+            "display": "Prison ID",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
             "name": "$ref:incident_type",
             "display": "Incident type",
             "sortable": true,
             "visible": "true",
             "defaultsort": false,
-            "interactive": true,
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 60,
                 "returnAsStaticOptions": true,
