@@ -15,6 +15,21 @@
       "catalog": "dps_locations",
       "connection": "federated",
       "dialect": "postgres/19"
+    },
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis",
+      "connection": "federated",
+      "dialect": "oracle/11g"
+    },
+    {
+      "id": "athena",
+      "name": "athena",
+      "database": "reports",
+      "catalog": "AwsDataCatalog",
+      "connection": "awsdatacatalog"
     }
   ],
   "policy": [
@@ -45,49 +60,22 @@
       "multiphaseQuery": [
         {
           "index": 0,
-          "datasource": {
-            "id": "dps_locations",
-            "name": "DPS Residential locations",
-            "database": "public",
-            "catalog": "dps_locations",
-            "connection": "federated",
-            "dialect": "postgres/19"
-          },
+          "datasource": "dps_locations",
           "query": "select l.id, l.prison_id, concat(l.prison_id, '-', l.path_hierarchy) as path_hierarchy, initcap(l.local_name) as local_name, l.cell_mark,\n       (CHAR_LENGTH(l.path_hierarchy) - CHAR_LENGTH(REPLACE(l.path_hierarchy, '-', ''))) / CHAR_LENGTH('-') +1 as level,\n       c.certified_normal_accommodation,\n       c.working_capacity,\n       c.max_capacity,\n       initcap(l.location_type) as location_type,\n       initcap(l.status) as status,\n       (select string_agg( distinct INITCAP(replace(uf.used_for, '_', ' ')), ',') from cell_used_for uf where l.id = uf.location_id) used_for,\n       (select string_agg( distinct INITCAP(replace(sc.specialist_cell_type, '_', ' ')), ',') from specialist_cell sc where l.id = sc.location_id) specialist_types\nfrom public.location l left join public.capacity c on l.capacity_id = c.id\nwhere l.location_type_discriminator = 'CELL' and l.status <> 'ARCHIVED'"
         },
         {
           "index": 1,
-          "datasource": {
-            "id": "nomis",
-            "name": "NOMIS",
-            "database": "DIGITAL_PRISON_REPORTING",
-            "catalog": "nomis",
-            "connection": "federated",
-            "dialect": "oracle/11g"
-          },
+          "datasource": "nomis",
           "query": "SELECT al.agy_loc_id  AS prison_id,\n       al.description AS path_hierarchy,\n       count(*)       as num_of_occupants\nFROM oms_owner.agency_internal_locations al\n         JOIN oms_owner.offender_bookings ob on ob.booking_seq = 1\n    AND ob.active_flag = 'Y' and ob.living_unit_id = al.internal_location_id\nGROUP BY al.agy_loc_id, al.description"
         },
         {
           "index": 2,
-          "datasource": {
-            "id": "nomis",
-            "name": "NOMIS",
-            "database": "DIGITAL_PRISON_REPORTING",
-            "catalog": "nomis",
-            "connection": "federated",
-            "dialect": "oracle/11g"
-          },
+          "datasource": "nomis",
           "query": "SELECT al.agy_loc_id AS prison_id, al.description AS prison_name FROM oms_owner.agency_locations al where al.agency_location_type = 'INST' and al.active_flag = 'Y'"
         },
         {
           "index": 3,
-          "datasource": {
-            "id": "athena",
-            "name": "athena",
-            "database": "reports",
-            "catalog": "AwsDataCatalog",
-            "connection": "awsdatacatalog"
-          },
+          "datasource": "athena",
           "query": "SELECT id,\n       l.prison_id,\n       a.prison_name,  l.path_hierarchy,\n       local_name,\n       cell_mark,\n       level,\n       status,\n       certified_normal_accommodation,\n       working_capacity,\n       max_capacity,\n       COALESCE(num_of_occupants, 0) as num_of_occupants,\n       (case when working_capacity = 0 then max_capacity else working_capacity end) - COALESCE(num_of_occupants, 0) as spaces_available,\n       (case when COALESCE(num_of_occupants, 0) - coalesce(certified_normal_accommodation,0) > 0 then 'Y' else 'N' end) as crowded,\n       (case when COALESCE(num_of_occupants, 0) - coalesce(certified_normal_accommodation,0) > 0 then COALESCE(num_of_occupants, 0) - coalesce(certified_normal_accommodation,0) else null end) as amount_over_capacity,\n       location_type,\n       used_for,\n       specialist_types\nfrom AwsDataCatalog.reports.${table[0]} l join AwsDataCatalog.reports.${table[2]} a on a.prison_id = l.prison_id left join AwsDataCatalog.reports.${table[1]} p on p.path_hierarchy = l.path_hierarchy"
         }
       ],
