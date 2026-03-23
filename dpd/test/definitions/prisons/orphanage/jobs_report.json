@@ -1,0 +1,199 @@
+{
+    "id": "esw-jobs-001",
+    "name": "ESW Jobs Board - Jobs Summary",
+    "description": "Report of jobs added or updated in the given time period",
+    "metadata": {
+        "version": "0.0.1",
+        "tags": [],
+        "author": "Mary Ford"
+    },
+    "datasource": [
+        {
+            "id": "redshift_via_athena",
+            "name": "datamart_via_athena",
+            "database": "datamart",
+            "catalog": "redshift_datamart",
+            "connection": "federated",
+            "dialect": "redshift/4"
+        }
+    ],
+    "dataset": [
+        {
+            "id": "esw-jobs-summary--DS",
+            "name": "Jobs added or updated",
+            "datasource": "redshift_via_athena",
+            "query": "SELECT jobs.created_by, jobs.id, jobs.created_at, jobs.last_modified_by, jobs.last_modified_at, number_of_vacancies, postcode, is_national, jobs.sector, closing_date, employers.name, employers.status from datamart.prisons.matchjobsandmanageapplications_jobs jobs join datamart.prisons.matchjobsandmanageapplications_employers employers on jobs.employer_id = employers.id where (jobs.created_at >= (SELECT START_DATE from prompt_) and jobs.created_at <= (SELECT END_DATE from prompt_)) or (jobs.last_modified_at >= (SELECT START_DATE from prompt_) and jobs.last_modified_at <= (SELECT END_DATE from prompt_))",
+            "parameters": [
+                            {
+              "index": 0,
+              "name": "start_date",
+              "filterType": "date",
+              "reportFieldType": "date",
+              "display": "Start Date",
+              "description": "",
+              "mandatory": "true"
+            },
+            {
+              "index": 1,
+              "name": "end_date",
+              "filterType": "date",
+              "reportFieldType": "date",
+              "display": "End Date",
+              "description": "",
+              "mandatory": "true"
+            }
+            ],
+            "schema": {
+                "field": [
+                    {
+                        "name": "created_by",
+                        "type": "string",
+                        "display": "Created By User",
+                        "sensitivity": "internal"
+                    },
+                    {
+                        "name": "id",
+                        "type": "string",
+                        "display": "Job ID",
+                        "sensitivity": "internal"
+                    },
+                    {
+                        "name": "created_at",
+                        "type": "datetime",
+                        "display": "Created On"
+                    },
+                    {
+                        "name": "number_of_vacancies",
+                        "type": "int",
+                        "display": "Number of Vacancies"
+                    },
+                    {
+                        "name": "last_modified_by",
+                        "type": "string",
+                        "display": "Modified By User",
+                        "sensitivity": "internal"
+                    },
+                    {
+                        "name": "last_modified_at",
+                        "type": "datetime",
+                        "display": "Modified On"
+                    },
+                    {
+                        "name": "postcode",
+                        "type": "string",
+                        "display": "Postcode"
+                    },
+                    {
+                        "name": "is_national",
+                        "type": "string",
+                        "display": "National Job?"
+                    },
+                    {
+                        "name": "sector",
+                        "type": "string",
+                        "display": "Job Sector"
+                    },
+                    {
+                        "name": "closing_date",
+                        "type": "date",
+                        "display": "Closing Date"
+                    },
+                    {
+                        "name": "name",
+                        "type": "string",
+                        "display": "Employer Name",
+                        "sensitivity": "internal"
+                    },
+                    {
+                        "name": "status",
+                        "type": "string",
+                        "display": "Employer Status"
+                    }
+                ]
+            }
+        }
+    ],
+    "policy": [
+        {
+            "id": "access",
+            "type": "access",
+            "rule": [
+                {
+                    "effect": "permit",
+                    "condition": [
+                        {
+                            "match": [
+                                "${role}",
+                                "ROLE_PRISONS_REPORTING_USER"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "report": [
+        {
+            "id": "esw-jobs-summary.RS",
+            "name": "Jobs added or updated in time period",
+            "description": "A list of jobs added or updated in the specified time period",
+            "version": "0.0.1",
+            "dataset": "esw-jobs-summary--DS",
+            "render": "HTML",
+            "classification": "OFFICIAL",
+            "specification": {
+                "template": "list",
+                "field": [
+                    {
+                        "name": "created_by",
+                        "sortable": true
+                    },
+                    {
+                        "name": "id"
+                    },
+                    {
+                        "name": "created_at",
+                        "sortable": true
+                    },
+                    {
+                        "name": "number_of_vacancies",
+                        "sortable": true
+                    },
+                    {
+                        "name": "last_modified_by",
+                        "sortable": true
+                    },
+                    {
+                        "name": "last_modified_at",
+                        "sortable": true
+                    },
+                    {
+                        "name": "postcode",
+                        "sortable": true
+                    },
+                    {
+                        "name": "is_national",
+                        "sortable": true
+                    },
+                    {
+                        "name": "sector",
+                        "sortable": true
+                    },
+                    {
+                        "name": "closing_date",
+                        "sortable": true
+                    },
+                    {
+                        "name": "name",
+                        "sortable": true,
+                        "defaultsort": true
+                    },
+                    {
+                        "name": "status",
+                        "sortable": true
+                    }
+                ]
+            }
+        }
+    ]
+}
