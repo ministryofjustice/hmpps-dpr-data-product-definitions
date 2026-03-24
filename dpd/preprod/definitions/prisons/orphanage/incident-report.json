@@ -79,7 +79,7 @@
       "id": "status",
       "name": "Incident Status",
       "datasource": "datamart",
-      "query": "SELECT code, description FROM prisons.incidentreporting_constant_status where code NOT IN ('DUPLICATE', 'NOT_REPORTABLE') order by sequence",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_status where code NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT') order by sequence",
       "schema": {
         "field": [
           {
@@ -119,7 +119,7 @@
       "id": "regionCodes",
       "name": "Region Codes",
       "datasource": "datamart",
-      "query": "select area_code as code, description from prisons.nomis_areas where area_class = 'REGION' and active_flag = 'Y' order by description",
+      "query": "select area_code as code, description from prisons.nomis_areas where area_class = 'REGION' and active_flag = 'Y' and area_code NOT IN ('CT', 'HS', 'KSE', 'MID', 'WM', 'YP') order by description",
       "schema": {
         "field": [
           {
@@ -159,7 +159,7 @@
       "id": "summary",
       "name": "Incident report summary",
       "datasource": "datamart",
-      "query": "SELECT id,\n       report_reference,\n       ctf.code                    as type,\n       ctf.description             as type_description,\n       status,\n       cs.description              as status_description,\n       incident_date_and_time,\n       reported_at,\n       reported_by,\n       title,\n       r.description,\n       location,\n       al.description              as location_name,\n       al.noms_region_code         as region_code,\n       area.description            as region_name,\n       modified_at,\n       -- Cast the LISTAGG result to a specific length to prevent the 65k error\n       (SELECT CAST(LISTAGG(prisoner_number || ' (' || cr.description || ')', ', ') \n               WITHIN GROUP (ORDER BY prisoner_number ASC) AS VARCHAR(4000))\n        FROM prisons.incidentreporting_prisoner_involvement pi \n        JOIN prisons.incidentreporting_constant_prisoner_role cr ON pi.prisoner_role = cr.code\n        WHERE pi.report_id = r.id) as prisoners_involved\nFROM prisons.incidentreporting_report r\n       JOIN prisons.incidentreporting_constant_status cs ON r.status = cs.code\n       JOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\n       JOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\n       JOIN prisons.nomis_AGENCY_LOCATIONS al ON al.agy_loc_id = r.location\n       LEFT JOIN prisons.nomis_areas area ON area.area_class = 'REGION' AND area.area_code = al.noms_region_code    \nWHERE status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
+      "query": "SELECT id,\n       report_reference,\n       ctf.code                    as type,\n       ctf.description             as type_description,\n       status,\n       cs.description              as status_description,\n       incident_date_and_time,\n       reported_at,\n       reported_by,\n       title,\n       r.description,\n       location,\n       al.description              as location_name,\n       al.noms_region_code         as region_code,\n       area.description            as region_name,\n       modified_at,\n       -- Cast the LISTAGG result to a specific length to prevent the 65k error\n       (SELECT CAST(LISTAGG(prisoner_number || ' (' || cr.description || ')', ', ') \n               WITHIN GROUP (ORDER BY prisoner_number ASC) AS VARCHAR(4000))\n        FROM prisons.incidentreporting_prisoner_involvement pi \n        JOIN prisons.incidentreporting_constant_prisoner_role cr ON pi.prisoner_role = cr.code\n        WHERE pi.report_id = r.id) as prisoners_involved\nFROM prisons.incidentreporting_report r\n       JOIN prisons.incidentreporting_constant_status cs ON r.status = cs.code\n       JOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\n       JOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\n       JOIN prisons.nomis_AGENCY_LOCATIONS al ON al.agy_loc_id = r.location\n       LEFT JOIN prisons.nomis_areas area ON area.area_class = 'REGION' AND area.area_code = al.noms_region_code    \nWHERE status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')",
       "schema": {
         "field": [
           {
@@ -237,7 +237,7 @@
       "id": "by-location-per-day",
       "name": "Count of incidents per location per day",
       "datasource": "datamart",
-      "query": "SELECT \n    CAST(date_trunc('day', incident_date_and_time) AS DATE) AS start_date, \n    -- Use TO_CHAR for Redshift dialect\n    to_char(min(incident_date_and_time), 'DD/MM/YYYY') AS filter_date, \n    location, \n    al.description              as location_name,\n    al.noms_region_code         as region_code,\n    area.description            as region_name,\n    ctf.code AS type, \n    ctf.description AS type_description, \n    count(*) AS num_of_incidents\nFROM \n    prisons.incidentreporting_report r \nJOIN \n    prisons.incidentreporting_constant_status cs ON r.status = cs.code \nJOIN \n    prisons.incidentreporting_constant_type ct ON r.type = ct.code \nJOIN \n    prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\nJOIN \n    prisons.nomis_AGENCY_LOCATIONS al on al.agy_loc_id = r.location\nLEFT JOIN \n    prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = al.noms_region_code        \nWHERE \n    status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')\nGROUP BY \n    1, \n    location, \n    al.description,\n    al.noms_region_code,\n    area.description,\n    ctf.code, \n    ctf.description",
+      "query": "SELECT \n    CAST(date_trunc('day', incident_date_and_time) AS DATE) AS start_date, \n    -- Use TO_CHAR for Redshift dialect\n    to_char(min(incident_date_and_time), 'DD/MM/YYYY') AS filter_date, \n    location, \n    al.description              as location_name,\n    al.noms_region_code         as region_code,\n    area.description            as region_name,\n    ctf.code AS type, \n    ctf.description AS type_description, \n    count(*) AS num_of_incidents\nFROM \n    prisons.incidentreporting_report r \nJOIN \n    prisons.incidentreporting_constant_status cs ON r.status = cs.code \nJOIN \n    prisons.incidentreporting_constant_type ct ON r.type = ct.code \nJOIN \n    prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\nJOIN \n    prisons.nomis_AGENCY_LOCATIONS al on al.agy_loc_id = r.location\nLEFT JOIN \n    prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = al.noms_region_code        \nWHERE \n    status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')\nGROUP BY \n    1, \n    location, \n    al.description,\n    al.noms_region_code,\n    area.description,\n    ctf.code, \n    ctf.description",
       "schema": {
         "field": [
           {
@@ -283,7 +283,7 @@
       "id": "by-location-per-week",
       "name": "Count of incidents per location per week",
       "datasource": "datamart",
-      "query": "SELECT \n    CAST(date_trunc('week', incident_date_and_time) AS DATE) AS start_date, \n    -- Use TO_CHAR for Redshift execution\n    to_char(min(incident_date_and_time), 'DD/MM/YYYY') AS min_date, \n    to_char(max(incident_date_and_time), 'DD/MM/YYYY') AS max_date, \n    location, \n    al.description              as location_name,\n    al.noms_region_code         as region_code,\n    area.description            as region_name,\n    ctf.code AS type, \n    ctf.description AS type_description, \n    count(*) AS num_of_incidents\nFROM \n    prisons.incidentreporting_report r \nJOIN \n    prisons.incidentreporting_constant_status cs ON r.status = cs.code \nJOIN \n    prisons.incidentreporting_constant_type ct ON r.type = ct.code \nJOIN \n    prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code \nJOIN \n    prisons.nomis_AGENCY_LOCATIONS al on al.agy_loc_id = r.location\nLEFT JOIN \n    prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = al.noms_region_code         \nWHERE \n    status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')\nGROUP BY \n    1, \n    location, \n    al.description,\n    al.noms_region_code,\n    area.description,\n    ctf.code, \n    ctf.description",
+      "query": "SELECT \n    CAST(date_trunc('week', incident_date_and_time) AS DATE) AS start_date, \n    -- Use TO_CHAR for Redshift execution\n    to_char(min(incident_date_and_time), 'DD/MM/YYYY') AS min_date, \n    to_char(max(incident_date_and_time), 'DD/MM/YYYY') AS max_date, \n    location, \n    al.description              as location_name,\n    al.noms_region_code         as region_code,\n    area.description            as region_name,\n    ctf.code AS type, \n    ctf.description AS type_description, \n    count(*) AS num_of_incidents\nFROM \n    prisons.incidentreporting_report r \nJOIN \n    prisons.incidentreporting_constant_status cs ON r.status = cs.code \nJOIN \n    prisons.incidentreporting_constant_type ct ON r.type = ct.code \nJOIN \n    prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code \nJOIN \n    prisons.nomis_AGENCY_LOCATIONS al on al.agy_loc_id = r.location\nLEFT JOIN \n    prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = al.noms_region_code         \nWHERE \n    status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')\nGROUP BY \n    1, \n    location, \n    al.description,\n    al.noms_region_code,\n    area.description,\n    ctf.code, \n    ctf.description",
       "schema": {
         "field": [
           {
@@ -333,7 +333,7 @@
       "id": "by-location-per-month",
       "name": "Count of incidents per location per month",
       "datasource": "datamart",
-      "query": "SELECT \n    CAST(date_trunc('month', incident_date_and_time) AS DATE) AS start_date, \n    -- Use TO_CHAR for Redshift/Federated execution\n    to_char(min(incident_date_and_time), 'DD/MM/YYYY') AS min_date, \n    to_char(max(incident_date_and_time), 'DD/MM/YYYY') AS max_date, \n    location, \n    al.description              as location_name,\n    al.noms_region_code         as region_code,\n    area.description            as region_name,\n    ctf.code AS type, \n    ctf.description AS type_description, \n    count(*) AS num_of_incidents\nFROM \n    prisons.incidentreporting_report r \nJOIN \n    prisons.incidentreporting_constant_status cs ON r.status = cs.code \nJOIN \n    prisons.incidentreporting_constant_type ct ON r.type = ct.code \nJOIN \n    prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code \nJOIN \n    prisons.nomis_AGENCY_LOCATIONS al on al.agy_loc_id = r.location\nLEFT JOIN \n    prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = al.noms_region_code      \nWHERE \n    status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')\nGROUP BY \n    1, \n    location, \n    al.description,\n    al.noms_region_code,\n    area.description,\n    ctf.code, \n    ctf.description",
+      "query": "SELECT \n    CAST(date_trunc('month', incident_date_and_time) AS DATE) AS start_date, \n    -- Use TO_CHAR for Redshift/Federated execution\n    to_char(min(incident_date_and_time), 'DD/MM/YYYY') AS min_date, \n    to_char(max(incident_date_and_time), 'DD/MM/YYYY') AS max_date, \n    location, \n    al.description              as location_name,\n    al.noms_region_code         as region_code,\n    area.description            as region_name,\n    ctf.code AS type, \n    ctf.description AS type_description, \n    count(*) AS num_of_incidents\nFROM \n    prisons.incidentreporting_report r \nJOIN \n    prisons.incidentreporting_constant_status cs ON r.status = cs.code \nJOIN \n    prisons.incidentreporting_constant_type ct ON r.type = ct.code \nJOIN \n    prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code \nJOIN \n    prisons.nomis_AGENCY_LOCATIONS al on al.agy_loc_id = r.location\nLEFT JOIN \n    prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = al.noms_region_code      \nWHERE \n    status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')\nGROUP BY \n    1, \n    location, \n    al.description,\n    al.noms_region_code,\n    area.description,\n    ctf.code, \n    ctf.description",
       "schema": {
         "field": [
           {
@@ -383,7 +383,7 @@
       "id": "per-type",
       "name": "Count of prisoner incidents by type per month",
       "datasource": "datamart",
-      "query": "SELECT \n    CAST(date_trunc('month', incident_date_and_time) AS DATE) AS month_year,\n    to_char(min(incident_date_and_time), 'DD/MM/YYYY') AS min_date,\n    to_char(max(incident_date_and_time), 'DD/MM/YYYY') AS max_date,\n    pi.prisoner_number,\n    initcap(pi.first_name) AS first_name,\n    initcap(pi.last_name) AS last_name,\n    ctf.code AS type,\n    ctf.description AS type_description,\n    r.location,\n        al.description as location_name,\n       al.noms_region_code         as region_code,\n       area.description            as region_name,\n    COUNT(DISTINCT r.id) AS num_of_incidents\nFROM \n    prisons.incidentreporting_prisoner_involvement pi\nJOIN \n    prisons.incidentreporting_report r ON r.id = pi.report_id\nJOIN \n    prisons.incidentreporting_constant_type ct ON r.type = ct.code \nJOIN \n    prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\nJOIN \n    prisons.nomis_AGENCY_LOCATIONS al on al.agy_loc_id = r.location\nLEFT JOIN \n    prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = al.noms_region_code\nWHERE \n    status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')\nGROUP BY \n    1, \n    location, \n    pi.prisoner_number,\n    pi.last_name, \n    pi.first_name, al.description,\n    al.noms_region_code,\n    area.description,\n    ctf.code, \n    ctf.description",
+      "query": "SELECT \n    CAST(date_trunc('month', incident_date_and_time) AS DATE) AS month_year,\n    to_char(min(incident_date_and_time), 'DD/MM/YYYY') AS min_date,\n    to_char(max(incident_date_and_time), 'DD/MM/YYYY') AS max_date,\n    pi.prisoner_number,\n    initcap(pi.first_name) AS first_name,\n    initcap(pi.last_name) AS last_name,\n    ctf.code AS type,\n    ctf.description AS type_description,\n    r.location,\n        al.description as location_name,\n       al.noms_region_code         as region_code,\n       area.description            as region_name,\n    COUNT(DISTINCT r.id) AS num_of_incidents\nFROM \n    prisons.incidentreporting_prisoner_involvement pi\nJOIN \n    prisons.incidentreporting_report r ON r.id = pi.report_id\nJOIN \n    prisons.incidentreporting_constant_type ct ON r.type = ct.code \nJOIN \n    prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\nJOIN \n    prisons.nomis_AGENCY_LOCATIONS al on al.agy_loc_id = r.location\nLEFT JOIN \n    prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = al.noms_region_code\nWHERE \n    status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')\nGROUP BY \n    1, \n    location, \n    pi.prisoner_number,\n    pi.last_name, \n    pi.first_name, al.description,\n    al.noms_region_code,\n    area.description,\n    ctf.code, \n    ctf.description",
       "schema": {
         "field": [
           {
@@ -445,7 +445,7 @@
       "id": "by-prisoner",
       "name": "Report of prisoner involvement in an incident",
       "datasource": "datamart",
-      "query": "SELECT \n    r.id, \n    r.report_reference, \n    r.location,\n    al.description              as location_name,\n    al.noms_region_code         as region_code,\n    area.description            as region_name,\n    ctf.code AS type, \n    ct.description AS type_description, \n    r.status, \n    cs.description AS status_description, \n    r.incident_date_and_time, \n    r.reported_by, \n        concat(upper(substring(pi.first_name, 1, 1)), lower(substring(pi.first_name, 2))) AS first_name, \n       concat(upper(substring(pi.last_name, 1, 1)), lower(substring(pi.last_name, 2))) AS last_name, \n    pi.prisoner_number, \n    pi.comment\nFROM \n    prisons.incidentreporting_prisoner_involvement pi \nJOIN \n    prisons.incidentreporting_report r ON r.id = pi.report_id\nJOIN \n    prisons.incidentreporting_constant_status cs ON r.status = cs.code \nJOIN \n    prisons.incidentreporting_constant_type ct ON r.type = ct.code \nJOIN \n    prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code \nJOIN \n    prisons.nomis_AGENCY_LOCATIONS al on al.agy_loc_id = r.location\n    \nLEFT JOIN prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = al.noms_region_code    \nWHERE \n    status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
+      "query": "SELECT \n    r.id, \n    r.report_reference, \n    r.location,\n    al.description              as location_name,\n    al.noms_region_code         as region_code,\n    area.description            as region_name,\n    ctf.code AS type, \n    ct.description AS type_description, \n    r.status, \n    cs.description AS status_description, \n    r.incident_date_and_time, \n    r.reported_by, \n        concat(upper(substring(pi.first_name, 1, 1)), lower(substring(pi.first_name, 2))) AS first_name, \n       concat(upper(substring(pi.last_name, 1, 1)), lower(substring(pi.last_name, 2))) AS last_name, \n    pi.prisoner_number, \n    pi.comment\nFROM \n    prisons.incidentreporting_prisoner_involvement pi \nJOIN \n    prisons.incidentreporting_report r ON r.id = pi.report_id\nJOIN \n    prisons.incidentreporting_constant_status cs ON r.status = cs.code \nJOIN \n    prisons.incidentreporting_constant_type ct ON r.type = ct.code \nJOIN \n    prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code \nJOIN \n    prisons.nomis_AGENCY_LOCATIONS al on al.agy_loc_id = r.location\n    \nLEFT JOIN prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = al.noms_region_code    \nWHERE \n    status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')",
       "schema": {
         "field": [
           {
@@ -461,6 +461,7 @@
             "type": "string",
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 60,
                 "returnAsStaticOptions": true,
@@ -479,6 +480,7 @@
             "type": "string",
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 20,
                 "returnAsStaticOptions": true,
@@ -539,7 +541,7 @@
       "id": "by-staff",
       "name": "Report of staff involvement in an incident",
       "datasource": "datamart",
-      "query": "SELECT \n    r.id, \n    r.report_reference, \n    r.location, \n    al.description as location_name,\n    al.noms_region_code         as region_code,\n    area.description            as region_name,\n    ctf.code AS type, \n    ctf.description AS type_description, \n    r.status, \n    cs.description AS status_description, \n    r.incident_date_and_time, \n    r.reported_by, \n       concat(upper(substring(st.first_name, 1, 1)), lower(substring(st.first_name, 2))) AS first_name, \n       concat(upper(substring(st.last_name, 1, 1)), lower(substring(st.last_name, 2))) AS last_name, \n    st.staff_username, \n    st.comment, \n    r.title, \n    r.description\nFROM \n    prisons.incidentreporting_staff_involvement st \nJOIN \n    prisons.incidentreporting_report r ON r.id = st.report_id\nJOIN \n    prisons.incidentreporting_constant_status cs ON r.status = cs.code \nJOIN \n    prisons.incidentreporting_constant_type ct ON r.type = ct.code \nJOIN \n    prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\nJOIN \n    prisons.nomis_AGENCY_LOCATIONS al on al.agy_loc_id = r.location\nLEFT JOIN \n    prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = al.noms_region_code    \nWHERE \n    status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
+      "query": "SELECT \n    r.id, \n    r.report_reference, \n    r.location, \n    al.description as location_name,\n    al.noms_region_code         as region_code,\n    area.description            as region_name,\n    ctf.code AS type, \n    ctf.description AS type_description, \n    r.status, \n    cs.description AS status_description, \n    r.incident_date_and_time, \n    r.reported_by, \n       concat(upper(substring(st.first_name, 1, 1)), lower(substring(st.first_name, 2))) AS first_name, \n       concat(upper(substring(st.last_name, 1, 1)), lower(substring(st.last_name, 2))) AS last_name, \n    st.staff_username, \n    st.comment, \n    r.title, \n    r.description\nFROM \n    prisons.incidentreporting_staff_involvement st \nJOIN \n    prisons.incidentreporting_report r ON r.id = st.report_id\nJOIN \n    prisons.incidentreporting_constant_status cs ON r.status = cs.code \nJOIN \n    prisons.incidentreporting_constant_type ct ON r.type = ct.code \nJOIN \n    prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\nJOIN \n    prisons.nomis_AGENCY_LOCATIONS al on al.agy_loc_id = r.location\nLEFT JOIN \n    prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = al.noms_region_code    \nWHERE \n    status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')",
       "schema": {
         "field": [
           {
@@ -555,6 +557,7 @@
             "type": "string",
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 60,
                 "returnAsStaticOptions": true,
@@ -573,6 +576,7 @@
             "type": "string",
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 20,
                 "returnAsStaticOptions": true,
@@ -641,7 +645,7 @@
       "id": "prisoner-summary",
       "name": "Prisoner summary of incidents",
       "datasource": "datamart",
-      "query": "select pi.prisoner_number,\n       pi.first_name                                               as first_name,\n       pi.last_name                                                as last_name,\n       ob.agy_loc_id                                               as location,\n       el.description                                              as prison_name,\n       el.noms_region_code                                         as region_code,\n       area.description                                            as region_name,\n       al.description                                              as cell_location,\n       sum(case when ctf.code = 'ASSAULT' then 1 else 0 end)       as assault_count,\n       sum(case when ctf.code = 'SELF_HARM' then 1 else 0 end)     as self_harm_count,\n       sum(case when ctf.code = 'FIND' then 1 else 0 end)          as finds_count,\n       sum(case when ctf.code = 'DISORDER' then 1 else 0 end)      as disorder_count,\n       sum(case when ctf.code = 'DRUGS' then 1 else 0 end)         as drugs_count,\n       sum(case when ctf.code = 'MISCELLANEOUS' then 1 else 0 end) as misc_count,\n       count(*)                                                    as total_incidents\nfrom prisons.nomis_OFFENDER_BOOKINGS ob\n         JOIN prisons.nomis_OFFENDERS o\n              ON o.OFFENDER_ID = ob.OFFENDER_ID AND ob.BOOKING_SEQ = 1 AND ob.ACTIVE_FLAG = 'Y'\n         join prisons.incidentreporting_prisoner_involvement pi on pi.prisoner_number = o.OFFENDER_ID_DISPLAY\n         join prisons.nomis_AGENCY_INTERNAL_LOCATIONS al on ob.LIVING_UNIT_ID = al.INTERNAL_LOCATION_ID\n         join prisons.nomis_agency_locations el on el.agy_loc_id = ob.agy_loc_id\n         join prisons.incidentreporting_report r on r.id = pi.report_id\n         join prisons.incidentreporting_constant_type ct on r.type = ct.code\n         join prisons.incidentreporting_constant_type_family ctf on ctf.code = ct.family_code\n         JOIN prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = el.noms_region_code         \nWHERE r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')\nGROUP BY pi.prisoner_number, pi.last_name, pi.first_name, ob.agy_loc_id, el.description, el.noms_region_code, area.description, al.description",
+      "query": "select pi.prisoner_number,\n       pi.first_name                                               as first_name,\n       pi.last_name                                                as last_name,\n       ob.agy_loc_id                                               as location,\n       el.description                                              as prison_name,\n       el.noms_region_code                                         as region_code,\n       area.description                                            as region_name,\n       al.description                                              as cell_location,\n       sum(case when ctf.code = 'ASSAULT' then 1 else 0 end)       as assault_count,\n       sum(case when ctf.code = 'SELF_HARM' then 1 else 0 end)     as self_harm_count,\n       sum(case when ctf.code = 'FIND' then 1 else 0 end)          as finds_count,\n       sum(case when ctf.code = 'DISORDER' then 1 else 0 end)      as disorder_count,\n       sum(case when ctf.code = 'DRUGS' then 1 else 0 end)         as drugs_count,\n       sum(case when ctf.code = 'MISCELLANEOUS' then 1 else 0 end) as misc_count,\n       count(*)                                                    as total_incidents\nfrom prisons.nomis_OFFENDER_BOOKINGS ob\n         JOIN prisons.nomis_OFFENDERS o\n              ON o.OFFENDER_ID = ob.OFFENDER_ID AND ob.BOOKING_SEQ = 1 AND ob.ACTIVE_FLAG = 'Y'\n         join prisons.incidentreporting_prisoner_involvement pi on pi.prisoner_number = o.OFFENDER_ID_DISPLAY\n         join prisons.nomis_AGENCY_INTERNAL_LOCATIONS al on ob.LIVING_UNIT_ID = al.INTERNAL_LOCATION_ID\n         join prisons.nomis_agency_locations el on el.agy_loc_id = ob.agy_loc_id\n         join prisons.incidentreporting_report r on r.id = pi.report_id\n         join prisons.incidentreporting_constant_type ct on r.type = ct.code\n         join prisons.incidentreporting_constant_type_family ctf on ctf.code = ct.family_code\n         JOIN prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = el.noms_region_code         \nWHERE r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')\nGROUP BY pi.prisoner_number, pi.last_name, pi.first_name, ob.agy_loc_id, el.description, el.noms_region_code, area.description, al.description",
       "schema": {
         "field": [
           {
@@ -711,7 +715,7 @@
       "id": "serious-sexual-assault",
       "name": "INC0020 Serious and Sexual Assault Incident Detail",
       "datasource": "datamart",
-      "query": "SELECT DISTINCT \n    r.id AS report_id,\n    r.report_reference,\n    r.incident_date_and_time,\n    r.title,\n    r.description,\n    r.status,\n    cs.description AS status_description,\n    r.location,\n    al.description as location_name,\n    al.noms_region_code         as region_code,\n    area.description            as region_name,\n    pi.id AS prisoner_involvement_id,\n    pi.prisoner_number,\n    pi.prisoner_role,\n    pr.description AS prisoner_role_description,\n    concat(upper(substring(pi.last_name, 1, 1)), lower(substring(pi.last_name, 2))) AS last_name,\n    concat(upper(substring(pi.first_name, 1, 1)), lower(substring(pi.first_name, 2))) AS first_name\nFROM \n    prisons.incidentreporting_report r\nJOIN \n    prisons.nomis_AGENCY_LOCATIONS al on al.agy_loc_id = r.location\nLEFT JOIN \n    prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = al.noms_region_code\nJOIN \n    prisons.incidentreporting_constant_status cs ON r.status = cs.code\nJOIN \n    prisons.incidentreporting_prisoner_involvement pi ON r.id = pi.report_id\nJOIN \n    prisons.incidentreporting_constant_prisoner_role pr ON pi.prisoner_role = pr.code\nJOIN \n    prisons.incidentreporting_question at_incident_question ON r.id = at_incident_question.report_id\nJOIN \n    prisons.incidentreporting_response at_incident_answer ON at_incident_question.id = at_incident_answer.question_id\nWHERE \n     r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')\n    AND (\n        (r.type = 'ASSAULT_5' AND (\n            (at_incident_question.question IN ('WAS A SERIOUS INJURY SUSTAINED',\n                                                'WAS THIS A SEXUAL ASSAULT',\n                                                'WAS MEDICAL TREATMENT FOR CONCUSSION OR INTERNAL INJURIES REQUIRED')\n             AND at_incident_answer.response IN ('YES'))\n            OR (\n                (at_incident_question.question IN ('IS THE ASSAILANT KNOWN TO HAVE AN INFECTIOUS DISEASE THAT CAN BE TRANSMITTED IN SALIVA')\n                 AND at_incident_answer.response IN ('YES'))\n                AND (at_incident_question.question IN ('DID THE SALIVA HIT THE BODY OR CLOTHING OF THE VICTIM(S)')\n                     AND at_incident_answer.response IN ('YES'))\n            )\n            OR (at_incident_question.question IN ('TYPE OF HOSPITAL ADMISSION')\n                AND at_incident_answer.response IN ('INPATIENT (OVERNIGHT ONLY)', 'INPATIENT (OVER 24HR)', 'LIFE SUPPORT'))\n            OR (at_incident_question.question IN ('WHERE DID IT HIT')\n                AND at_incident_answer.response IN ('NECK OR ABOVE'))\n            OR (at_incident_question.question IN ('DESCRIBE THE WEAPONS USED')\n                AND at_incident_answer.response IN ('EXCRETA/URINE'))\n        ))\n        OR (r.type = 'ASSAULT_1' AND (\n            (at_incident_question.question IN ('WAS A SERIOUS INJURY SUSTAINED',\n                                                'WAS THIS A SEXUAL ASSAULT',\n                                                'DID INJURIES RESULT IN DETENTION IN OUTSIDE HOSPITAL AS AN IN-PATIENT',\n                                                'WAS MEDICAL TREATMENT FOR CONCUSSION OR INTERNAL INJURIES REQUIRED')\n             AND at_incident_answer.response IN ('YES'))\n            OR (at_incident_question.question IN ('WHICH SERIOUS INJURIES WERE SUSTAINED')\n                AND at_incident_answer.response IN ('BITES', 'BLACK EYE', 'BROKEN NOSE', 'BROKEN TEETH', 'CRUSHING', \n                                                    'EXTENSIVE/MULTIPLE BRUISING', 'EXTENSIVE OR MULTIPLE BRUISING', \n                                                    'FRACTURE', 'SCALD OR BURN', 'STABBING', 'TEMPORARY/PERMANENT BLINDNESS'))\n        ))\n    )",
+      "query": "SELECT DISTINCT \n    r.id AS report_id,\n    r.report_reference,\n    r.incident_date_and_time,\n    r.title,\n    r.description,\n    r.status,\n    cs.description AS status_description,\n    r.location,\n    al.description as location_name,\n    al.noms_region_code         as region_code,\n    area.description            as region_name,\n    pi.id AS prisoner_involvement_id,\n    pi.prisoner_number,\n    pi.prisoner_role,\n    pr.description AS prisoner_role_description,\n    concat(upper(substring(pi.last_name, 1, 1)), lower(substring(pi.last_name, 2))) AS last_name,\n    concat(upper(substring(pi.first_name, 1, 1)), lower(substring(pi.first_name, 2))) AS first_name\nFROM \n    prisons.incidentreporting_report r\nJOIN \n    prisons.nomis_AGENCY_LOCATIONS al on al.agy_loc_id = r.location\nLEFT JOIN \n    prisons.nomis_areas area on area.area_class = 'REGION' and area.area_code = al.noms_region_code\nJOIN \n    prisons.incidentreporting_constant_status cs ON r.status = cs.code\nJOIN \n    prisons.incidentreporting_prisoner_involvement pi ON r.id = pi.report_id\nJOIN \n    prisons.incidentreporting_constant_prisoner_role pr ON pi.prisoner_role = pr.code\nJOIN \n    prisons.incidentreporting_question at_incident_question ON r.id = at_incident_question.report_id\nJOIN \n    prisons.incidentreporting_response at_incident_answer ON at_incident_question.id = at_incident_answer.question_id\nWHERE \n     r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')\n    AND (\n        (r.type = 'ASSAULT_5' AND (\n            (at_incident_question.question IN ('WAS A SERIOUS INJURY SUSTAINED',\n                                                'WAS THIS A SEXUAL ASSAULT',\n                                                'WAS MEDICAL TREATMENT FOR CONCUSSION OR INTERNAL INJURIES REQUIRED')\n             AND at_incident_answer.response IN ('YES'))\n            OR (\n                (at_incident_question.question IN ('IS THE ASSAILANT KNOWN TO HAVE AN INFECTIOUS DISEASE THAT CAN BE TRANSMITTED IN SALIVA')\n                 AND at_incident_answer.response IN ('YES'))\n                AND (at_incident_question.question IN ('DID THE SALIVA HIT THE BODY OR CLOTHING OF THE VICTIM(S)')\n                     AND at_incident_answer.response IN ('YES'))\n            )\n            OR (at_incident_question.question IN ('TYPE OF HOSPITAL ADMISSION')\n                AND at_incident_answer.response IN ('INPATIENT (OVERNIGHT ONLY)', 'INPATIENT (OVER 24HR)', 'LIFE SUPPORT'))\n            OR (at_incident_question.question IN ('WHERE DID IT HIT')\n                AND at_incident_answer.response IN ('NECK OR ABOVE'))\n            OR (at_incident_question.question IN ('DESCRIBE THE WEAPONS USED')\n                AND at_incident_answer.response IN ('EXCRETA/URINE'))\n        ))\n        OR (r.type = 'ASSAULT_1' AND (\n            (at_incident_question.question IN ('WAS A SERIOUS INJURY SUSTAINED',\n                                                'WAS THIS A SEXUAL ASSAULT',\n                                                'DID INJURIES RESULT IN DETENTION IN OUTSIDE HOSPITAL AS AN IN-PATIENT',\n                                                'WAS MEDICAL TREATMENT FOR CONCUSSION OR INTERNAL INJURIES REQUIRED')\n             AND at_incident_answer.response IN ('YES'))\n            OR (at_incident_question.question IN ('WHICH SERIOUS INJURIES WERE SUSTAINED')\n                AND at_incident_answer.response IN ('BITES', 'BLACK EYE', 'BROKEN NOSE', 'BROKEN TEETH', 'CRUSHING', \n                                                    'EXTENSIVE/MULTIPLE BRUISING', 'EXTENSIVE OR MULTIPLE BRUISING', \n                                                    'FRACTURE', 'SCALD OR BURN', 'STABBING', 'TEMPORARY/PERMANENT BLINDNESS'))\n        ))\n    )",
       "schema": {
         "field": [
           {
@@ -789,7 +793,7 @@
       "id": "self-harm",
       "name": "Deliberate Self Harm Report",
       "datasource": "datamart",
-      "query": "WITH pivoted_responses AS (\n    SELECT \n        q.report_id,\n        MAX(CASE \n            WHEN q.question = 'WHERE DID THE INCIDENT TAKE PLACE' AND res.sequence = 0 \n            THEN res.response \n        END) AS q1_location,\n        \n        MAX(CASE \n            WHEN q.question = 'WHERE DID THE INCIDENT TAKE PLACE' AND res.sequence = 0 \n            THEN res.additional_information \n        END) AS additional_comment,\n        \n        -- Standardized all LISTAGG to use (ORDER BY res.sequence)\n        -- Added CAST to VARCHAR(4000) for Spectrum safety\n        CAST(LISTAGG(\n            CASE\n                WHEN q.question = 'DID SELF HARM METHOD INVOLVE CUTTING' AND res.response = 'YES' THEN 'Cutting'\n                WHEN q.question = 'DID SELF HARM METHOD INVOLVE HANGING' AND res.response = 'YES' THEN 'Hanging'\n                WHEN q.question = 'DID SELF HARM METHOD INVOLVE SELF STRANGULATION' AND res.response = 'YES' THEN 'Self Strangulation'\n                WHEN q.question = 'DID SELF HARM INVOLVE SELF POISONING/ OVERDOSE/SWALLOWING OBJECTS' AND res.response = 'YES' THEN 'Poisoning / Overdose / Swallowing'\n                WHEN q.question = 'DID SELF HARM METHOD INVOLVE BURNING' AND res.response = 'YES' THEN 'Burning'\n                WHEN q.question = 'WAS ANY OTHER SELF HARM METHOD INVOLVED' AND res.response = 'YES' THEN 'Other'\n            END, ', ') WITHIN GROUP (ORDER BY res.sequence) AS VARCHAR(4000)) AS category,\n\n        CAST(LISTAGG(\n            CASE \n                WHEN q.question IN ('TYPE OF IMPLEMENT USED', 'LIGATURE TYPE', 'SELF POISONING/OVERDOSE/SUBSTANCES/SWALLOWING', 'TYPE OF BURNING') \n                THEN res.label -- Using res.label as per your recent snippet\n            END, ', ') WITHIN GROUP (ORDER BY res.sequence) AS VARCHAR(4000)) AS materials_used,\n\n        CAST(LISTAGG(\n            CASE \n                WHEN q.question = 'WHAT OTHER METHOD OF SELF HARM WAS INVOLVED' \n                THEN res.label \n            END, ', ') WITHIN GROUP (ORDER BY res.sequence) AS VARCHAR(4000)) AS other_method\n\n    FROM prisons.incidentreporting_question q\n    JOIN prisons.incidentreporting_response res ON res.question_id = q.id\n    GROUP BY q.report_id\n)\nSELECT \n    r.id AS report_id,\n    r.report_reference,\n    r.location,\n    al.description              AS location_name,\n    al.noms_region_code         AS region_code,\n    area.description            AS region_name,\n    r.incident_date_and_time,\n    r.title,\n    r.description,\n    pi.prisoner_number,\n    -- Redshift natively supports INITCAP\n    INITCAP(pi.last_name)       AS last_name,\n    INITCAP(pi.first_name)      AS first_name,\n    pr.q1_location,\n    pr.additional_comment,\n    pr.category,\n    pr.materials_used,\n    pr.other_method\nFROM prisons.incidentreporting_report r\nJOIN \n    prisons.nomis_AGENCY_LOCATIONS al ON al.agy_loc_id = r.location\nLEFT JOIN \n    prisons.nomis_areas area ON area.area_class = 'REGION' AND area.area_code = al.noms_region_code\nJOIN prisons.incidentreporting_prisoner_involvement pi \n  ON r.id = pi.report_id \n AND pi.prisoner_role = 'PERPETRATOR'\nLEFT JOIN pivoted_responses pr ON r.id = pr.report_id\nWHERE r.type = 'SELF_HARM_1'\n  AND r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
+      "query": "WITH pivoted_responses AS (\n    SELECT \n        q.report_id,\n        MAX(CASE \n            WHEN q.question = 'WHERE DID THE INCIDENT TAKE PLACE' AND res.sequence = 0 \n            THEN res.response \n        END) AS q1_location,\n        \n        MAX(CASE \n            WHEN q.question = 'WHERE DID THE INCIDENT TAKE PLACE' AND res.sequence = 0 \n            THEN res.additional_information \n        END) AS additional_comment,\n        \n        -- Standardized all LISTAGG to use (ORDER BY res.sequence)\n        -- Added CAST to VARCHAR(4000) for Spectrum safety\n        CAST(LISTAGG(\n            CASE\n                WHEN q.question = 'DID SELF HARM METHOD INVOLVE CUTTING' AND res.response = 'YES' THEN 'Cutting'\n                WHEN q.question = 'DID SELF HARM METHOD INVOLVE HANGING' AND res.response = 'YES' THEN 'Hanging'\n                WHEN q.question = 'DID SELF HARM METHOD INVOLVE SELF STRANGULATION' AND res.response = 'YES' THEN 'Self Strangulation'\n                WHEN q.question = 'DID SELF HARM INVOLVE SELF POISONING/ OVERDOSE/SWALLOWING OBJECTS' AND res.response = 'YES' THEN 'Poisoning / Overdose / Swallowing'\n                WHEN q.question = 'DID SELF HARM METHOD INVOLVE BURNING' AND res.response = 'YES' THEN 'Burning'\n                WHEN q.question = 'WAS ANY OTHER SELF HARM METHOD INVOLVED' AND res.response = 'YES' THEN 'Other'\n            END, ', ') WITHIN GROUP (ORDER BY res.sequence) AS VARCHAR(4000)) AS category,\n\n        CAST(LISTAGG(\n            CASE \n                WHEN q.question IN ('TYPE OF IMPLEMENT USED', 'LIGATURE TYPE', 'SELF POISONING/OVERDOSE/SUBSTANCES/SWALLOWING', 'TYPE OF BURNING') \n                THEN res.label -- Using res.label as per your recent snippet\n            END, ', ') WITHIN GROUP (ORDER BY res.sequence) AS VARCHAR(4000)) AS materials_used,\n\n        CAST(LISTAGG(\n            CASE \n                WHEN q.question = 'WHAT OTHER METHOD OF SELF HARM WAS INVOLVED' \n                THEN res.label \n            END, ', ') WITHIN GROUP (ORDER BY res.sequence) AS VARCHAR(4000)) AS other_method\n\n    FROM prisons.incidentreporting_question q\n    JOIN prisons.incidentreporting_response res ON res.question_id = q.id\n    GROUP BY q.report_id\n)\nSELECT \n    r.id AS report_id,\n    r.report_reference,\n    r.location,\n    al.description              AS location_name,\n    al.noms_region_code         AS region_code,\n    area.description            AS region_name,\n    r.incident_date_and_time,\n    r.title,\n    r.description,\n    pi.prisoner_number,\n    -- Redshift natively supports INITCAP\n    INITCAP(pi.last_name)       AS last_name,\n    INITCAP(pi.first_name)      AS first_name,\n    pr.q1_location,\n    pr.additional_comment,\n    pr.category,\n    pr.materials_used,\n    pr.other_method\nFROM prisons.incidentreporting_report r\nJOIN \n    prisons.nomis_AGENCY_LOCATIONS al ON al.agy_loc_id = r.location\nLEFT JOIN \n    prisons.nomis_areas area ON area.area_class = 'REGION' AND area.area_code = al.noms_region_code\nJOIN prisons.incidentreporting_prisoner_involvement pi \n  ON r.id = pi.report_id \n AND pi.prisoner_role = 'PERPETRATOR'\nLEFT JOIN pivoted_responses pr ON r.id = pr.report_id\nWHERE r.type = 'SELF_HARM_1'\n  AND r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')",
       "schema": {
         "field": [
           {
@@ -857,6 +861,7 @@
             "type": "string",
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "staticoptions": [
                 {
                   "name": "Cutting",
@@ -970,7 +975,7 @@
           },
           {
             "name": "$ref:region_name",
-            "display": "Region",
+            "display": "Region name",
             "sortable": true,
             "visible": "false",
             "defaultsort": false
@@ -984,6 +989,7 @@
             "filter": {
               "type": "multiselect",
               "mandatory": false,
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 60,
                 "returnAsStaticOptions": true,
@@ -1009,6 +1015,7 @@
             "filter": {
               "type": "multiselect",
               "mandatory": false,
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 10,
                 "returnAsStaticOptions": true,
@@ -1078,6 +1085,7 @@
             "visible": "true",
             "defaultsort": false,
             "filter": {
+              "interactive": true,
               "type": "text"
             }
           },
@@ -1117,6 +1125,7 @@
             "visible": "true",
             "defaultsort": true,
             "filter": {
+              "interactive": true,
               "type": "text"
             }
           },
@@ -1181,7 +1190,7 @@
           },
           {
             "name": "$ref:region_name",
-            "display": "Region",
+            "display": "Region name",
             "sortable": true,
             "visible": "false",
             "defaultsort": false
@@ -1194,6 +1203,7 @@
             "defaultsort": false,
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "mandatory": false,
               "dynamicoptions": {
                 "maximumOptions": 10,
@@ -1234,6 +1244,7 @@
             "defaultsort": false,
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "mandatory": false,
               "dynamicoptions": {
                 "maximumOptions": 20,
@@ -1293,6 +1304,7 @@
             "visible": "true",
             "defaultsort": true,
             "filter": {
+              "interactive": true,
               "type": "text"
             }
           },
@@ -1357,7 +1369,7 @@
           },
           {
             "name": "$ref:region_name",
-            "display": "Region",
+            "display": "Region name",
             "sortable": true,
             "visible": "false",
             "defaultsort": false
@@ -1450,6 +1462,7 @@
             "defaultsort": false,
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 60,
                 "returnAsStaticOptions": true,
@@ -1511,7 +1524,7 @@
           },
           {
             "name": "$ref:region_name",
-            "display": "Region",
+            "display": "Region name",
             "sortable": true,
             "visible": "false",
             "defaultsort": false
@@ -1564,6 +1577,7 @@
             "defaultsort": false,
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 60,
                 "returnAsStaticOptions": true,
@@ -1625,7 +1639,7 @@
           },
           {
             "name": "$ref:region_name",
-            "display": "Region",
+            "display": "Region name",
             "sortable": true,
             "visible": "false",
             "defaultsort": false
@@ -1678,6 +1692,7 @@
             "defaultsort": false,
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 60,
                 "returnAsStaticOptions": true,
@@ -1739,7 +1754,7 @@
           },
           {
             "name": "$ref:region_name",
-            "display": "Region",
+            "display": "Region name",
             "sortable": true,
             "visible": "false",
             "defaultsort": false
@@ -1779,6 +1794,7 @@
             "visible": "true",
             "defaultsort": true,
             "filter": {
+              "interactive": true,
               "type": "text"
             }
           },
@@ -1810,6 +1826,7 @@
             "defaultsort": true,
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 60,
                 "returnAsStaticOptions": true,
@@ -1871,7 +1888,7 @@
           },
           {
             "name": "$ref:region_name",
-            "display": "Region",
+            "display": "Region name",
             "sortable": true,
             "visible": "false",
             "defaultsort": false
@@ -1911,6 +1928,7 @@
             "visible": "true",
             "defaultsort": false,
             "filter": {
+              "interactive": true,
               "type": "text"
             }
           },
@@ -2016,7 +2034,7 @@
           },
           {
             "name": "$ref:region_name",
-            "display": "Region",
+            "display": "Region name",
             "sortable": true,
             "visible": "false",
             "defaultsort": false
@@ -2053,8 +2071,9 @@
             "sortable": true,
             "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prisoner_number}',${prisoner_number},TRUE)",
             "visible": "true",
-            "defaultsort": true,
+            "defaultsort": false,
             "filter": {
+              "interactive": true,
               "type": "text"
             }
           },
@@ -2068,13 +2087,14 @@
           },
           {
             "name": "$ref:location",
-            "display": "Location",
+            "display": "Current location",
             "sortable": true,
             "visible": "false",
             "defaultsort": false,
             "filter": {
               "type": "multiselect",
               "mandatory": false,
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 140,
                 "returnAsStaticOptions": true,
@@ -2151,7 +2171,8 @@
             "display": "Total incidents",
             "sortable": true,
             "visible": "true",
-            "defaultsort": false,
+            "defaultsort": true,
+            "sortdirection": "desc",
             "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?searchID=${prisoner_number}',${total_incidents},TRUE)"
           }
         ]
@@ -2180,6 +2201,7 @@
             "visible": "false",
             "defaultsort": false,
             "filter": {
+              "interactive": true,
               "type": "text"
             }
           },
@@ -2278,7 +2300,7 @@
           },
           {
             "name": "$ref:region_name",
-            "display": "Region",
+            "display": "Region name",
             "sortable": true,
             "visible": "false",
             "defaultsort": false
