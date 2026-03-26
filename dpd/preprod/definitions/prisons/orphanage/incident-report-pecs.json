@@ -40,7 +40,7 @@
       "id": "pecs-summary",
       "name": "PECS incident reports",
       "datasource": "datamart",
-      "query": "SELECT \n    r.id,\n    r.report_reference,\n    ctf.code AS type,\n    ctf.description AS type_description,\n    r.status,\n    cs.description AS status_description,\n    r.incident_date_and_time,\n    r.reported_at,\n    r.reported_by,\n    r.title,\n    r.description,\n    r.location,\n    al.description AS location_name,\n    al.noms_region_code AS region_code,\n    area.description AS region_name,\n    r.modified_at,\n    -- Apply the CAST to prevent the 65k VARCHAR overflow error\n    (SELECT CAST(LISTAGG(prisoner_number || ' (' || cr.description || ')', ', ') \n            WITHIN GROUP (ORDER BY prisoner_number ASC) AS VARCHAR(4000))\n     FROM prisons.incidentreporting_prisoner_involvement pi \n     JOIN prisons.incidentreporting_constant_prisoner_role cr ON pi.prisoner_role = cr.code\n     WHERE pi.report_id = r.id) AS prisoners_involved,\n    (CASE \n        WHEN r.location IN ('NORTH', 'SOUTH') THEN 'PECS' \n        ELSE 'Prison' \n     END) AS pecs_or_prison_type\nFROM prisons.incidentreporting_report r\nJOIN prisons.incidentreporting_constant_status cs ON r.status = cs.code\nJOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\nJOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\nJOIN prisons.nomis_AGENCY_LOCATIONS al ON al.agy_loc_id = r.location\nLEFT JOIN prisons.nomis_areas area ON area.area_class = 'REGION' AND area.area_code = al.noms_region_code\nWHERE r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
+      "query": "SELECT \n    r.id,\n    r.report_reference,\n    ctf.code AS type,\n    ctf.description AS type_description,\n    r.status,\n    cs.description AS status_description,\n    r.incident_date_and_time,\n    r.reported_at,\n    r.reported_by,\n    r.title,\n    r.description,\n    r.location,\n    al.description AS location_name,\n    al.noms_region_code AS region_code,\n    area.description AS region_name,\n    r.modified_at,\n    -- Apply the CAST to prevent the 65k VARCHAR overflow error\n    (SELECT CAST(LISTAGG(prisoner_number || ' (' || cr.description || ')', ', ') \n            WITHIN GROUP (ORDER BY prisoner_number ASC) AS VARCHAR(4000))\n     FROM prisons.incidentreporting_prisoner_involvement pi \n     JOIN prisons.incidentreporting_constant_prisoner_role cr ON pi.prisoner_role = cr.code\n     WHERE pi.report_id = r.id) AS prisoners_involved,\n    (CASE \n        WHEN r.location IN ('NORTH', 'SOUTH') THEN 'PECS' \n        ELSE 'Prison' \n     END) AS pecs_or_prison_type\nFROM prisons.incidentreporting_report r\nJOIN prisons.incidentreporting_constant_status cs ON r.status = cs.code\nJOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\nJOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\nJOIN prisons.nomis_AGENCY_LOCATIONS al ON al.agy_loc_id = r.location\nLEFT JOIN prisons.nomis_areas area ON area.area_class = 'REGION' AND area.area_code = al.noms_region_code\nWHERE r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')",
       "schema": {
         "field": [
           {
@@ -76,6 +76,7 @@
             "type": "string",
             "filter": {
               "type": "multiselect",
+              "interactive": true,
               "staticoptions": [
                 {"name": "Prison","display": "Prisons"},
                 {"name": "PECS","display": "PECS"}
@@ -149,7 +150,7 @@
       "id": "status",
       "name": "Incident Status",
       "datasource": "replicaDataSource",
-      "query": "SELECT code, description FROM prisons.incidentreporting_constant_status where code NOT IN ('DUPLICATE', 'NOT_REPORTABLE') order by sequence",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_status where code NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT') order by sequence",
       "schema": {
         "field": [
           {
@@ -169,7 +170,7 @@
       "id": "regionCodes",
       "name": "Region Codes",
       "datasource": "datamart",
-      "query": "select area_code as code, description from prisons.nomis_areas where area_class = 'REGION' and active_flag = 'Y' order by description",
+      "query": "select area_code as code, description from prisons.nomis_areas where area_class = 'REGION' and active_flag = 'Y' and area_code NOT IN ('CT', 'HS', 'KSE', 'MID', 'WM', 'YP') order by description",
       "schema": {
         "field": [
           {
@@ -297,6 +298,7 @@
             "filter": {
               "type": "multiselect",
               "mandatory": false,
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 60,
                 "returnAsStaticOptions": true,
@@ -322,6 +324,7 @@
             "filter": {
               "type": "multiselect",
               "mandatory": false,
+              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 10,
                 "returnAsStaticOptions": true,
@@ -384,6 +387,7 @@
             "visible": "true",
             "defaultsort": false,
             "filter": {
+              "interactive": true,
               "type": "text"
             }
           },
