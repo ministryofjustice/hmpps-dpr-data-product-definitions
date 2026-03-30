@@ -12,45 +12,46 @@
   },
   "datasource": [
     {
-      "id": "dps_inc_reporting",
-      "name": "DPS Incident Reporting",
+      "id": "athena_dps_inc_reporting",
+      "name": "Athena DPS Incident Reporting",
       "database": "public",
       "catalog": "dps_inc_reporting",
       "connection": "federated",
       "dialect": "postgres/19"
+    },
+    {
+      "id": "nomis",
+      "name": "NOMIS",
+      "database": "DIGITAL_PRISON_REPORTING",
+      "catalog": "nomis",
+      "connection": "federated",
+      "dialect": "oracle/11g"
+    },
+    {
+      "id": "athena",
+      "name": "athena",
+      "database": "reports",
+      "catalog": "AwsDataCatalog",
+      "connection": "awsdatacatalog"
     }
+
   ],
   "dataset": [
     {
       "id": "inc0022-1",
       "name": "Incidents",
       "description": "MIS Incidents",
-      "datasource": "dps_inc_reporting",
-      "query":"",
-      "multiphaseQuery": [
+      "datasource": "athena_dps_inc_reporting",
+      "query": [
         {
           "index": 0,
-          "datasource": {
-            "id": "nomis",
-            "name": "NOMIS",
-            "database": "DIGITAL_PRISON_REPORTING",
-            "catalog": "nomis",
-            "connection": "federated",
-            "dialect": "oracle/11g"
-          },
+          "datasource": "nomis",
           "query": "SELECT AGENCY_LOCATIONS.agy_loc_id as establishment_code, AGENCY_LOCATIONS.description as establishment_name FROM OMS_OWNER.AGENCY_LOCATIONS"
         },
         {
           "index": 1,
-          "datasource": {
-            "id": "athena_dps_inc_reporting",
-            "name": "athena_dps_inc_reporting",
-            "database": "public",
-            "catalog": "dps_inc_reporting",
-            "connection": "federated",
-            "dialect": "postgres/19"
-          },
-          "query": "SELECT location, status, COUNT(id) as TOTAL FROM report WHERE date(incident_date_and_time) >= (SELECT START_DATE from prompt_) and date(incident_date_and_time) <= (SELECT END_DATE from prompt_) GROUP BY GROUPING SETS ( (location, status), (location), (status) ) ORDER BY location",
+          "datasource": "athena_dps_inc_reporting",
+          "query": "SELECT location, ctf.description incident_type, COUNT(id) as TOTAL FROM report r join constant_type ct ON r.type = ct.code join constant_type_family ctf ON ctf.code = ct.family_code WHERE date(incident_date_and_time) >= (SELECT START_DATE from prompt_) and date(incident_date_and_time) <= (SELECT END_DATE from prompt_) GROUP BY GROUPING SETS ( (location, ctf.description), (location), (ctf.description) ) ORDER BY location",
           "parameters": [
             {
               "index": 0,
@@ -75,14 +76,8 @@
         },
         {
           "index": 2,
-          "datasource": {
-            "id": "athena",
-            "name": "athena",
-            "database": "reports",
-            "catalog": "AwsDataCatalog",
-            "connection": "awsdatacatalog"
-          },
-          "query": "SELECT LOCATION, ESTABLISHMENT_NAME, STATUS, TOTAL from AwsDataCatalog.reports.${table[1]} LEFT JOIN AwsDataCatalog.reports.${table[0]} on AwsDataCatalog.reports.${table[1]}.LOCATION=AwsDataCatalog.reports.${table[0]}.establishment_code"
+          "datasource": "athena",
+          "query": "SELECT LOCATION, ESTABLISHMENT_NAME, incident_type, TOTAL from AwsDataCatalog.reports.${table[1]} LEFT JOIN AwsDataCatalog.reports.${table[0]} on AwsDataCatalog.reports.${table[1]}.LOCATION=AwsDataCatalog.reports.${table[0]}.establishment_code"
         }
       ],
       "schema": {
@@ -101,9 +96,9 @@
           },
           {
             "index": 2,
-            "name": "STATUS",
+            "name": "incident_type",
             "type": "string",
-            "display": "STATUS"
+            "display": "Incident Type"
           },
           {
             "index": 3,
@@ -126,7 +121,28 @@
             {
               "match": [
                 "${role}",
-                "ROLE_PRISONS_REPORTING_USER"
+                "INCIDENT_REPORTS__RO",
+                "INCIDENT_REPORTS__RW",
+                "INCIDENT_REPORTS__APPROVE"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseloads",
+      "type": "row-level",
+      "action": [
+        "location IN (${caseloads}) OR location IS NULL"
+      ],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": [
+                "${caseloads}"
               ]
             }
           ]
@@ -151,17 +167,18 @@
         "template": "list",
         "field": [
           {
-            "name": "$ref:LOCATION",
-            "display": "Incident Establishment Name",
+            "name": "$ref:ESTABLISHMENT_NAME",
+            "display": "Prison Name",
             "formula": "",
             "visible": "true",
             "sortable": true,
             "defaultsort": true,
-            "legacyId": "DP2.DO20"
+            "legacyId": "DP2.DO20",
+            "sortdirection": "asc"
           },
           {
-            "name": "$ref:STATUS",
-            "display": "Incident Status",
+            "name": "$ref:incident_type",
+            "display": "Incident Type",
             "formula": "",
             "visible": "true",
             "sortable": true,
@@ -182,30 +199,30 @@
     }
   ],
   "dashboard": [{
-    "id": "incident-status-location",
-    "name": "Incident Status/Location Breakdown",
-    "description": "Incident Status/Location Breakdown",
+    "id": "incident-type-location",
+    "name": "Incident Type/Location Breakdown",
+    "description": "Incident Type/Location Breakdown",
     "dataset": "inc0022-1",
     "section": [
       {
-        "id": "status-breakdown",
-        "display": "Status breakdown",
+        "id": "type-breakdown",
+        "display": "Type breakdown",
         "visualisation": [
           {
             "id": "total-incidents",
             "type": "list",
-            "display": "Total Incidents By Status",
+            "display": "Total Incidents By Type",
             "column": {
               "key": [
                 {
-                  "id": "$ref:STATUS",
-                  "display": "Status"
+                  "id": "$ref:incident_type",
+                  "display": "Incident Type"
                 }
               ],
               "measure": [
                 {
-                  "id": "$ref:STATUS",
-                  "display": "Status"
+                  "id": "$ref:incident_type",
+                  "display": "Incident Type"
                 },
                 {
                   "id": "$ref:TOTAL",
@@ -240,17 +257,17 @@
             }
           },
           {
-            "id": "incidents-by-location-status",
+            "id": "incidents-by-location-type",
             "type": "list",
-            "display": "Total Incidents By Location & Status",
+            "display": "Total Incidents By Location & Type",
             "column": {
               "key": [
                 {
                   "id": "$ref:LOCATION",
                   "display": "Location"
                 },                {
-                  "id": "$ref:STATUS",
-                  "display": "Status"
+                  "id": "$ref:incident_type",
+                  "display": "Incident Type"
                 }
               ],
               "measure": [
@@ -259,8 +276,8 @@
                   "display": "Name"
                 },
                 {
-                  "id": "$ref:STATUS",
-                  "display": "Status"
+                  "id": "$ref:incident_type",
+                  "display": "Incident Type"
                 },
                 {
                   "id": "$ref:TOTAL",
@@ -268,21 +285,6 @@
                 }
               ],
               "expectNull": false
-            }
-          }
-        ]
-      },
-      {
-        "id": "debug",
-        "display": "Debug",
-        "visualisation": [
-          {
-            "id": "all-data",
-            "type": "list",
-            "display": "All data",
-            "column": {
-              "measure": [],
-              "expectNull": true
             }
           }
         ]
