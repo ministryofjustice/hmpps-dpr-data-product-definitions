@@ -1,0 +1,695 @@
+{
+  "id": "act006-appointment-attendance-by-caseload",
+  "name": "Activity Appointment attendance",
+  "description": "View Appointment attendance by date range",
+  "metadata": {
+    "author": "Zahoor Hussain",
+    "owner": "Claire Morgan",
+    "version": "1.0.0",
+    "outstanding": "Visualisations need a release"
+  },
+  "datasource": [
+    {
+      "id": "datamart",
+      "name": "datamart"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "appointment-attendance",
+      "name": "Appointment attendance by date",
+      "datasource": "datamart",
+      "query": "SELECT prison_code, par.name AS parent_name, cat.description AS category_description, category_code, custom_name, NVL (custom_name, '') || ' ( ' || cat.description || ' )' AS appointment_name, att.appointment_id, appointment_tier_id AS appointment_tier, start_date, substring(start_time, 0, 6) || ' - ' || substring(end_time, 0, 6) AS start_to_end, att.prisoner_number, dm.name, substring(dm.cell_location, 5, 10) AS cell_location, CASE WHEN app.cancellation_reason_id IS NOT NULL THEN 'Cancelled' WHEN attended IS NULL THEN 'Not recorded yet' WHEN attended = false THEN 'Did not attend' WHEN attended THEN 'Attended' END AS attended FROM datamart.prisons.activities_appointment_attendee att LEFT JOIN datamart.prisons.activities_appointment app USING (appointment_id) LEFT JOIN datamart.prisons.activities_appointment_category cat ON cat.code = category_code LEFT JOIN datamart.prisons.activities_appointment_parent_category par USING (appointment_parent_category_id) LEFT JOIN datamart.person.prisoner dm USING (prisoner_number) WHERE appointment_tier_id in (1, 2) AND (dm.prison_id NOT IN ('OUT', 'ZZGHI')) AND NOT app.is_deleted ORDER by start_date, start_time",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_code",
+            "type": "string",
+            "display": "Prison"
+          },
+          {
+            "name": "parent_name",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "category_description",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "category_code",
+            "type": "string",
+            "display": "Cell location"
+          },
+          {
+            "name": "custom_name",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "appointment_name",
+            "type": "string",
+            "display": "Name"
+          },
+          {
+            "name": "appointment_id",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "appointment_tier",
+            "type": "string",
+            "display": "Tier"
+          },
+          {
+            "name": "start_date",
+            "type": "string",
+            "display": "Date"
+          },
+          {
+            "name": "start_to_end",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "prisoner_number",
+            "type": "string",
+            "display": "NOMIS Number"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "display": "Name"
+          },
+          {
+            "name": "cell_location",
+            "type": "string",
+            "display": "Cell location"
+          },
+          {
+            "name": "attended",
+            "type": "string",
+            "display": "Attended"
+          }
+        ]
+      }
+    },
+    {
+      "id": "appointment-summary",
+      "name": "Appointment attendance summary for visualisation",
+      "datasource": "datamart",
+      "query": "SELECT start_date AS ts, prison_code, CASE WHEN att.is_deleted THEN 'Cancelled' WHEN attended IS NULL THEN 'Not recorded yet' WHEN attended = false THEN 'Did not attend' WHEN attended THEN 'Attended' WHEN appointment_tier_id = 1 THEN 'Tier 1' WHEN appointment_tier_id = 2 THEN 'Tier 2' WHEN appointment_tier_id = 3 THEN 'Routine' END AS type, count(*) FROM datamart.prisons.activities_appointment_attendee att LEFT JOIN datamart.prisons.activities_appointment app USING (appointment_id) LEFT JOIN datamart.person.prisoner dm USING (prisoner_number) WHERE appointment_tier_id in (1, 2) AND (dm.prison_id IN ('LEI')) GROUP BY ts, prison_code,type ORDER by ts",
+      "schema": {
+        "field": [
+          {
+            "name": "ts",
+            "type": "string",
+            "display": "Date"
+          },
+          {
+            "name": "prison_code",
+            "type": "string",
+            "display": "Code"
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "display": "Code"
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "display": "Count"
+          }
+        ]
+      }
+    },
+    {
+      "id": "appointment-summary-by-date",
+      "name": "Appointment attendance summary by date range",
+      "datasource": "datamart",
+      "query": "SELECT a.start_date AS ts, a.prison_code, count(distinct a.appointment_id) AS appointment_count, count(aa.appointment_attendee_id) AS attendee_count, sum( CASE WHEN aa.attended IS TRUE THEN 1 ELSE 0 END ) AS attended_count, sum( CASE WHEN aa.attended IS FALSE THEN 1 ELSE 0 END ) AS non_attended_count, sum( CASE WHEN aa.attended IS NULL AND a.cancellation_reason_id IS NULL THEN 1 ELSE 0 END ) AS not_recorded_count, sum( CASE WHEN a.cancellation_reason_id THEN 1 ELSE 0 END ) AS cancelled_count, sum( CASE WHEN a.is_deleted THEN 1 ELSE 0 END ) AS deleted_count, CASE WHEN appointment_count THEN appointment_count - cancelled_count ELSE 0 END AS appointments, CASE WHEN attendee_count THEN attendee_count - cancelled_count ELSE 0 END AS attendees, CASE WHEN cancelled_count THEN cancelled_count - deleted_count ELSE 0 END AS cancellations, CASE WHEN attendees THEN round(attended_count / attendees::FLOAT * 100, 0) ELSE 0 END AS attended_pct, CASE WHEN attendees THEN round(non_attended_count / attendees::FLOAT * 100, 0) ELSE 0 END AS non_attended_pct, CASE WHEN attendees THEN round(not_recorded_count / attendees::FLOAT * 100, 0) ELSE 0 END AS not_recorded_pct, count( CASE WHEN appointment_tier_id = 1 AND attended THEN appointment_tier_id END ) AS tier1, count( CASE WHEN appointment_tier_id = 2 AND attended THEN appointment_tier_id END ) AS tier2, CASE WHEN attendees THEN round(tier1 / attendees::FLOAT * 100, 0) ELSE 0 END AS tier1_pct, CASE WHEN attendees THEN round(tier2 / attendees::FLOAT * 100, 0) ELSE 0 END AS tier2_pct FROM datamart.prisons.activities_appointment_attendee aa LEFT JOIN datamart.prisons.activities_appointment a ON a.appointment_id = aa.appointment_id WHERE aa.removal_reason_id IS NULL AND ts IS NOT NULL AND NOT a.is_deleted AND appointment_tier_id in (1, 2) GROUP BY GROUPING SETS ((ts, a.prison_code), ()) ORDER by ts, a.prison_code",
+      "schema": {
+        "field": [
+          {
+            "name": "ts",
+            "type": "date",
+            "display": "Date",
+            "filter": {
+              "index": 0,
+              "type": "daterange",
+              "interactive": "true",
+              "default": "today(-1, months) - today()"
+            }
+          },
+          {
+            "name": "prison_code",
+            "type": "string",
+            "display": "Code"
+          },
+          {
+            "name": "appointment_count",
+            "type": "int",
+            "display": ""
+          },
+          {
+            "name": "attendee_count",
+            "type": "int",
+            "display": ""
+          },
+          {
+            "name": "attended_count",
+            "type": "int",
+            "display": ""
+          },
+          {
+            "name": "non_attended_count",
+            "type": "int",
+            "display": ""
+          },
+          {
+            "name": "not_recorded_count",
+            "type": "int",
+            "display": ""
+          },
+          {
+            "name": "cancelled_count",
+            "type": "int",
+            "display": ""
+          },
+          {
+            "name": "deleted_count",
+            "type": "int",
+            "display": ""
+          },
+          {
+            "name": "appointments",
+            "type": "int",
+            "display": ""
+          },
+          {
+            "name": "attendees",
+            "type": "int",
+            "display": ""
+          },
+          {
+            "name": "cancellations",
+            "type": "int",
+            "display": ""
+          },
+          {
+            "name": "attended_pct",
+            "type": "int",
+            "display": ""
+          },
+          {
+            "name": "non_attended_pct",
+            "type": "int",
+            "display": ""
+          },
+          {
+            "name": "not_recorded_pct",
+            "type": "int",
+            "display": ""
+          },
+          {
+            "name": "tier1",
+            "type": "int",
+            "display": "Tier 1"
+          },
+          {
+            "name": "tier2",
+            "type": "int",
+            "display": "Tier 2"
+          },
+          {
+            "name": "tier1_pct",
+            "type": "int",
+            "display": "Tier 1"
+          },
+          {
+            "name": "tier2_pct",
+            "type": "int",
+            "display": "t2p"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_ACTIVITY_HUB"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseload",
+      "type": "row-level",
+      "action": [
+        "prison_code = '${caseload}'"
+      ],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": [
+                "${caseload}"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "appointment-attendance-by-date-range",
+      "name": "Appointment attendance by date range.",
+      "description": "Appointment attendance by date range.",
+      "classification": "Official",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "$ref:appointment-attendance",
+      "feature": [
+        {
+          "type": "share|save|email|print|download"
+        }
+      ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:start_date",
+            "display": "Date",
+            "formula": "format_date(${start_date}, 'dd MMMM yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "filter": {
+              "index": 0,
+              "type": "daterange",
+              "interactive": "true",
+              "default": "today() - today()"
+            }
+          },
+          {
+            "name": "$ref:start_to_end",
+            "display": "Time",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:appointment_name",
+            "display": "Appointment",
+            "formula": "make_url('https://activities.prison.service.justice.gov.uk/appointments/attendance/${appointment_id}/attendees',${appointment_name},TRUE)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:appointment_tier",
+            "display": "Tier",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "index": 1,
+              "type": "multiselect",
+              "interactive": "true",
+              "staticoptions": [
+                {
+                  "name": "1",
+                  "display": "1"
+                },
+                {
+                  "name": "2",
+                  "display": "2"
+                }
+              ]
+            }
+          },
+          {
+            "name": "$ref:attended",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "index": 1,
+              "type": "multiselect",
+              "interactive": "true",
+              "staticoptions": [
+                {
+                  "name": "Attended",
+                  "display": "Attended"
+                },
+                {
+                  "name": "Cancelled",
+                  "display": "Cancelled"
+                },
+                {
+                  "name": "Did not attend",
+                  "display": "Did not attend"
+                },
+                {
+                  "name": "Not recorded",
+                  "display": "Not recorded yet"
+                }
+              ]
+            }
+          },
+          {
+            "name": "$ref:prisoner_number",
+            "display": "Prison number",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:name",
+            "display": "Prisoner name",
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prisoner_number}',${name},TRUE)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:cell_location",
+            "display": "Cell location",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    }
+  ],
+  "dashboard": [
+    {
+      "id": "appointment-summary-by-date-range",
+      "name": "Appointment attendance summary by date range",
+      "description": "Tier 1 and Tier 2 appointments are included in this report, foundational (Tier 3) appointments are excluded so the figures will not match other reports where foundational appointments are included.",
+      "dataset": "appointment-summary-by-date",
+      "section": [
+        {
+          "id": "appointment-attendance-summary-by-date",
+          "display": "Appointment summary table",
+          "visualisation": [
+            {
+              "id": "pc1",
+              "type": "list",
+              "display": "Appointment summary by date range",
+              "option": {
+                "showLatest": false
+              },
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:ts",
+                    "display": "Date"
+                  },
+                  {
+                    "id": "$ref:prison_code",
+                    "display": "Code"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:ts",
+                    "display": "Date"
+                  },
+                  {
+                    "id": "$ref:appointment_count",
+                    "display": "Appointments"
+                  },
+                  {
+                    "id": "$ref:attendees",
+                    "display": "Attendees"
+                  },
+                  {
+                    "id": "$ref:attended_count",
+                    "display": "Attended"
+                  },
+                  {
+                    "id": "$ref:attended_pct",
+                    "display": "Attended %"
+                  },
+                  {
+                    "id": "$ref:non_attended_count",
+                    "display": "Non Attended"
+                  },
+                  {
+                    "id": "$ref:non_attended_pct",
+                    "display": "Non Attended %"
+                  },
+                  {
+                    "id": "$ref:not_recorded_count",
+                    "display": "Not recorded"
+                  },
+                  {
+                    "id": "$ref:not_recorded_pct",
+                    "display": "Not recorded %"
+                  },
+                  {
+                    "id": "$ref:tier1",
+                    "display": "Tier 1"
+                  },
+                  {
+                    "id": "$ref:tier2",
+                    "display": "Tier 2"
+                  },
+                  {
+                    "id": "$ref:cancellations",
+                    "display": "Cancellations"
+                  }
+                ],
+                "expectNull": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "appointment-attendance-charts",
+          "display": "Appointment line charts",
+          "visualisation": [
+            {
+              "id": "pc2",
+              "type": "line-timeseries",
+              "display": "Appointment count",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:prison_code",
+                    "display": "Code"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:ts",
+                    "display": "Date"
+                  },
+                  {
+                    "id": "$ref:appointments",
+                    "display": "Count"
+                  }
+                ],
+                "expectNull": false
+              }
+            },
+            {
+              "id": "pc3",
+              "type": "line-timeseries",
+              "display": "Attendee count",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:prison_code",
+                    "display": "Code"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:ts",
+                    "display": "Date"
+                  },
+                  {
+                    "id": "$ref:attendees",
+                    "display": "Count"
+                  }
+                ],
+                "expectNull": false
+              }
+            },
+            {
+              "id": "pc4",
+              "type": "line-timeseries",
+              "display": "Attendance Recorded %",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:prison_code",
+                    "display": "Code"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:ts",
+                    "display": "Date"
+                  },
+                  {
+                    "id": "$ref:attended_pct",
+                    "display": "%"
+                  }
+                ],
+                "expectNull": false
+              }
+            },
+            {
+              "id": "pc5",
+              "type": "line-timeseries",
+              "display": "Non Attended recorded %",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:prison_code",
+                    "display": "Code"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:ts",
+                    "display": "Date"
+                  },
+                  {
+                    "id": "$ref:non_attended_pct",
+                    "display": "%"
+                  }
+                ],
+                "expectNull": false
+              }
+            },
+            {
+              "id": "pc6",
+              "type": "line-timeseries",
+              "display": "Not Recorded %",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:prison_code",
+                    "display": "Code"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:ts",
+                    "display": "Date"
+                  },
+                  {
+                    "id": "$ref:not_recorded_pct",
+                    "display": "%"
+                  }
+                ],
+                "expectNull": false
+              }
+            },
+            {
+              "id": "pc7",
+              "type": "line-timeseries",
+              "display": "Tier 1 attended as %",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:prison_code",
+                    "display": "Code"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:ts",
+                    "display": "Date"
+                  },
+                  {
+                    "id": "$ref:tier1_pct",
+                    "display": "%"
+                  }
+                ],
+                "expectNull": false
+              }
+            },
+            {
+              "id": "pc8",
+              "type": "line-timeseries",
+              "display": "Tier 2 attendence as %",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:prison_code",
+                    "display": "Code"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:ts",
+                    "display": "Date"
+                  },
+                  {
+                    "id": "$ref:tier2_pct",
+                    "display": "%"
+                  }
+                ],
+                "expectNull": false
+              }
+            },
+            {
+              "id": "pc9",
+              "type": "line-timeseries",
+              "display": "Cancellations count",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:prison_code",
+                    "display": "Code"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:ts",
+                    "display": "Date"
+                  },
+                  {
+                    "id": "$ref:cancellations",
+                    "display": "Cancellations"
+                  }
+                ],
+                "expectNull": false
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
