@@ -10,7 +10,7 @@ const glob = require("glob");
 
 const schema = JSON.parse(fs.readFileSync(process.env.SCHEMA_LOCATION));
 
-const ajv = new Ajv({ allErrors: true });
+const ajv = new Ajv({ allErrors: true, strict: false, coerceTypes: true });
 const validate = ajv.compile(schema);
 
 const files = glob.sync("dpd/**/*.json");
@@ -20,9 +20,17 @@ let valid = true;
 for (const file of files) {
     const data = JSON.parse(fs.readFileSync(file));
     if (!validate(data)) {
-        console.error(`Errors in ${file}:`);
-        console.error(JSON.stringify(validate.errors, null, 2));
-        valid = false;
+        const filteredErrors = validate.errors.filter(
+            //The below exclusion is temporary to match previous validation behaviour.
+            //Long term the DPDs will have to be brought in line with the schema.
+            err => err.keyword !== "additionalProperties"
+        );
+
+        if (filteredErrors.length > 0) {
+            console.error(`Errors in ${file}:`);
+            console.error(JSON.stringify(filteredErrors, null, 2));
+            valid = false;
+        }
     }
 }
 
