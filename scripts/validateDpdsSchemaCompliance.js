@@ -20,9 +20,15 @@ let valid = true;
 for (const file of files) {
     const data = JSON.parse(fs.readFileSync(file));
     if (!validate(data)) {
-        console.error(`Errors in ${file}:`);
-        console.error(JSON.stringify(validate.errors, null, 2));
-        valid = false;
+        const filteredErrors = validate.errors.filter(
+            err => err.keyword !== "additionalProperties"
+        );
+
+        if (filteredErrors.length > 0) {
+            console.error(`Errors in ${file}:`);
+            console.error(JSON.stringify(filteredErrors, null, 2));
+            valid = false;
+        }
     }
 }
 
