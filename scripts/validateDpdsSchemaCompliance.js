@@ -10,7 +10,7 @@ const glob = require("glob");
 
 const schema = JSON.parse(fs.readFileSync(process.env.SCHEMA_LOCATION));
 
-const ajv = new Ajv({ allErrors: true });
+const ajv = new Ajv({ allErrors: true, strict: false, coerceTypes: true });
 const validate = ajv.compile(schema);
 
 const files = glob.sync("dpd/**/*.json");
