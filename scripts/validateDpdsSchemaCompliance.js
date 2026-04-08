@@ -21,6 +21,8 @@ for (const file of files) {
     const data = JSON.parse(fs.readFileSync(file));
     if (!validate(data)) {
         const filteredErrors = validate.errors.filter(
+            //The below exclusion is temporary to match previous validation behaviour.
+            //Long term the DPDs will have to be brought in line with the schema.
             err => err.keyword !== "additionalProperties"
         );
 
