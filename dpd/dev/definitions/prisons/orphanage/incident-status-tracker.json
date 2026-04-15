@@ -1,10 +1,10 @@
 
 {
   "id": "inc002",
-  "name": "MIS DARU Incident Tracker",
-  "description": "The report is used by the Data Analysis and Reporting Unit (DARU) to monitor, assure and report against the volume and quality of Incidents data.<br/>INC0022 - v00.00.01  Last Modified: 24/05/18",
+  "name": "DARU Incident Tracker",
+  "description": "The report is used by the Data Analysis and Reporting Unit (DARU) to monitor, assure and report against the volume and quality of Incidents data.<br/>INC0022 - v00.00.01  Last Modified: 15/04/26",
   "metadata": {
-    "version": "1.1.0",
+    "version": "1.2.0",
     "tags": [
       "INC0022  v00.00.01",
       "DPS", "Incident Reporting"
@@ -26,7 +26,7 @@
       "name": "Incidents",
       "description": "MIS Incidents",
       "datasource": "athena",
-      "query": "SELECT r.location, al.description location_name, ctf.description incident_type, COUNT(id) as TOTAL \nFROM prisons.incidentreporting_report r \njoin prisons.incidentreporting_constant_type ct ON r.type = ct.code \njoin prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code \njoin prisons.nomis_agency_locations al on al.agy_loc_id = r.location\nWHERE date(r.reported_at) >= (SELECT START_DATE from prompt_) and date(r.reported_at) <= (SELECT END_DATE from prompt_) \nGROUP BY GROUPING SETS ( (r.location, al.description, ctf.description), (r.location, al.description), (ctf.description) ) ORDER BY al.description, ctf.description",
+      "query": "SELECT r.location, al.description location_name, ctf.code as incident_code, ctf.description incident_type, cs.code as status_code, cs.description as status, COUNT(id) as TOTAL \nFROM prisons.incidentreporting_report r \njoin prisons.incidentreporting_constant_type ct ON r.type = ct.code \njoin prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code \njoin prisons.incidentreporting_constant_status cs ON cs.code = r.status \njoin prisons.nomis_agency_locations al on al.agy_loc_id = r.location\nWHERE cs.code NOT IN ('DRAFT', 'DUPLICATE', 'NOT_REPORTABLE')\nand date(r.reported_at) >= (SELECT START_DATE from prompt_) and date(r.reported_at) <= (SELECT END_DATE from prompt_) \nGROUP BY GROUPING SETS (\n(r.location, al.description, ctf.code, ctf.description, cs.code, cs.description), \n(r.location, al.description, ctf.code,ctf.description), \n(r.location, al.description, cs.code, cs.description), \n(r.location, al.description),\n(ctf.code, ctf.description), \n(cs.code, cs.description) \n)\nORDER BY al.description, ctf.description,cs.description",
       "parameters": [
         {
           "index": 0,
@@ -51,7 +51,7 @@
         "field": [
           {
             "index": 0,
-            "name": "LOCATION",
+            "name": "location",
             "type": "string",
             "display": "Prison ID"
           },
@@ -63,15 +63,93 @@
           },
           {
             "index": 2,
+            "name": "incident_code",
+            "type": "string",
+            "display": "Incident Code"
+          },
+          {
+            "index": 3,
             "name": "incident_type",
             "type": "string",
             "display": "Incident Type"
           },
           {
-            "index": 3,
+            "index": 4,
+            "name": "status_code",
+            "type": "string",
+            "display": "Status Code"
+          },
+          {
+            "index": 5,
+            "name": "status",
+            "type": "string",
+            "display": "Status"
+          },
+          {
+            "index": 6,
             "name": "TOTAL",
             "type": "int",
             "display": "Total"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisons",
+      "name": "Prisons",
+      "datasource": "datamart",
+      "query": "select agy_loc_id prison_id, description prison_name FROM prisons.nomis_agency_locations al \nwhere al.agency_location_type = 'INST'\nand al.active_flag = 'Y' AND al.agy_loc_id NOT IN ('TRN', 'OUT')\norder by description",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_id",
+            "display": "Prison Id",
+            "type": "string"
+          },
+          {
+            "name": "prison_name",
+            "display": "Prison name",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "types",
+      "name": "Incident Types",
+      "datasource": "datamart",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_type_family order by description",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Type code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Type description",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "status",
+      "name": "Incident Status",
+      "datasource": "datamart",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_status where code NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT') order by description",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Status code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Status description",
+            "type": "string"
           }
         ]
       }
@@ -120,7 +198,7 @@
   "report": [
     {
       "id": "116773.RS",
-      "name": "Incident Tracker",
+      "name": "DARU Incident Tracker",
       "classification": "OFFICIAL",
       "version": "1.0.0",
       "render": "HTML",
@@ -130,66 +208,129 @@
           "type": "print"
         }
       ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
       "specification": {
         "template": "list",
         "field": [
           {
+            "name": "$ref:location",
+            "display": "Prison",
+            "visible": "false",
+            "sortable": false,
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "interactive": true,
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 130,
+                "returnAsStaticOptions": true,
+                "dataset": "prisons",
+                "name": "prison_id",
+                "display": "prison_name"
+              }
+            }
+          },
+          {
             "name": "$ref:location_name",
             "display": "Prison Name",
-            "formula": "",
             "visible": "true",
             "sortable": true,
             "defaultsort": true,
-            "legacyId": "DP2.DO20",
             "sortdirection": "asc"
+          },
+          {
+            "name": "$ref:incident_code",
+            "display": "Incident type code",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "interactive": true,
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 60,
+                "returnAsStaticOptions": true,
+                "dataset": "types",
+                "name": "code",
+                "display": "description"
+              }
+            }
           },
           {
             "name": "$ref:incident_type",
             "display": "Incident Type",
-            "formula": "",
             "visible": "true",
             "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:status_code",
+            "display": "Status code",
+            "sortable": false,
+            "visible": "false",
             "defaultsort": false,
-            "legacyId": "DP2.DO20"
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "interactive": true,
+              "dynamicoptions": {
+                "maximumOptions": 10,
+                "returnAsStaticOptions": true,
+                "dataset": "status",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "$ref:status",
+            "display": "Incident status",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
           },
           {
             "name": "$ref:TOTAL",
             "display": "Number of Incidents",
-            "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacyId": "DP2.DOc9"
+            "defaultsort": false
           }
         ]
       }
     }
   ],
   "dashboard": [{
-    "id": "incident-type-location",
-    "name": "Incident Type/Location Breakdown",
-    "description": "Incident Type/Location Breakdown",
+    "id": "incident-type-status-location",
+    "name": "Incident Type, Status and Location Breakdown",
+    "description": "Dashboard to show the breakdown of incidents by location, type and status",
     "dataset": "inc0022-1",
     "section": [
       {
-        "id": "type-breakdown",
-        "display": "Type breakdown",
+        "id": "location-breakdown",
+        "display": "Location breakdown",
         "visualisation": [
           {
-            "id": "total-incidents",
+            "id": "incidents-by-location",
             "type": "list",
-            "display": "Total Incidents By Type",
+            "display": "Total Incidents By Location",
             "column": {
               "key": [
                 {
-                  "id": "$ref:incident_type",
-                  "display": "Incident Type"
+                  "id": "$ref:location",
+                  "display": "Location"
                 }
               ],
               "measure": [
                 {
-                  "id": "$ref:incident_type",
-                  "display": "Incident Type"
+                  "id": "$ref:location_name",
+                  "display": "Name"
                 },
                 {
                   "id": "$ref:TOTAL",
@@ -198,22 +339,32 @@
               ],
               "expectNull": true
             }
-          },
+          }
+        ]
+      },
+      {
+        "id": "type-breakdown",
+        "display": "Type breakdown",
+        "visualisation": [
           {
-            "id": "incidents-by-location",
+            "id": "total-incidents-by-type",
             "type": "list",
-            "display": "Total Incidents By Location",
+            "display": "Total Incidents By Type",
             "column": {
               "key": [
                 {
-                  "id": "$ref:LOCATION",
-                  "display": "Location"
+                  "id": "$ref:incident_code",
+                  "display": "Incident Code"
+                },
+                {
+                  "id": "$ref:incident_type",
+                  "display": "Incident Type"
                 }
               ],
               "measure": [
                 {
-                  "id": "$ref:location_name",
-                  "display": "Name"
+                  "id": "$ref:incident_type",
+                  "display": "Incident Type"
                 },
                 {
                   "id": "$ref:TOTAL",
@@ -230,9 +381,14 @@
             "column": {
               "key": [
                 {
-                  "id": "$ref:LOCATION",
+                  "id": "$ref:location",
                   "display": "Location"
-                },                {
+                },
+                {
+                  "id": "$ref:incident_code",
+                  "display": "Incident Code"
+                },
+                {
                   "id": "$ref:incident_type",
                   "display": "Incident Type"
                 }
@@ -251,7 +407,72 @@
                   "display": "Total Incidents"
                 }
               ],
-              "expectNull": false
+              "expectNull": true
+            }
+          }
+        ]
+      },
+      {
+        "id": "status-breakdown",
+        "display": "Status breakdown",
+        "visualisation": [
+          {
+            "id": "total-incidents-by-status",
+            "type": "list",
+            "display": "Total Incidents By Status",
+            "column": {
+              "key": [
+                {
+                  "id": "$ref:status_code",
+                  "display": "Incident Code"
+                },
+                {
+                  "id": "$ref:status",
+                  "display": "Incident Status"
+                }
+              ],
+              "measure": [
+                {
+                  "id": "$ref:status",
+                  "display": "Incident Status"
+                },
+                {
+                  "id": "$ref:TOTAL",
+                  "display": "Total Incidents"
+                }
+              ],
+              "expectNull": true
+            }
+          },
+          {
+            "id": "incidents-by-location-status",
+            "type": "list",
+            "display": "Total Incidents By Location & Status",
+            "column": {
+              "key": [
+                {
+                  "id": "$ref:location",
+                  "display": "Location"
+                },                {
+                  "id": "$ref:status_code",
+                  "display": "Incident Status"
+                }
+              ],
+              "measure": [
+                {
+                  "id": "$ref:location_name",
+                  "display": "Name"
+                },
+                {
+                  "id": "$ref:status",
+                  "display": "Incident Status"
+                },
+                {
+                  "id": "$ref:TOTAL",
+                  "display": "Total Incidents"
+                }
+              ],
+              "expectNull": true
             }
           }
         ]
