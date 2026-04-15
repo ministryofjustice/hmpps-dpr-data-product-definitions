@@ -12,27 +12,12 @@
   },
   "datasource": [
     {
-      "id": "athena_dps_inc_reporting",
-      "name": "Athena DPS Incident Reporting",
-      "database": "public",
-      "catalog": "dps_inc_reporting",
-      "connection": "federated",
-      "dialect": "postgres/19"
-    },
-    {
-      "id": "nomis",
-      "name": "NOMIS",
-      "database": "DIGITAL_PRISON_REPORTING",
-      "catalog": "nomis",
-      "connection": "federated",
-      "dialect": "oracle/11g"
-    },
-    {
       "id": "athena",
       "name": "athena",
-      "database": "reports",
+      "database": "prisons",
       "catalog": "AwsDataCatalog",
-      "connection": "awsdatacatalog"
+      "connection": "awsdatacatalog",
+      "dialect": "postgres/19"
     }
   ],
   "dataset": [
@@ -40,43 +25,26 @@
       "id": "inc0022-1",
       "name": "Incidents",
       "description": "MIS Incidents",
-      "datasource": "athena_dps_inc_reporting",
-      "query": [
+      "datasource": "athena",
+      "query": "SELECT r.location, al.description location_name, ctf.description incident_type, COUNT(id) as TOTAL \nFROM prisons.incidentreporting_report r \njoin prisons.incidentreporting_constant_type ct ON r.type = ct.code \njoin prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code \njoin prisons.nomis_agency_locations al on al.agy_loc_id = r.location\nWHERE date(r.reported_at) >= (SELECT START_DATE from prompt_) and date(r.reported_at) <= (SELECT END_DATE from prompt_) \nGROUP BY GROUPING SETS ( (r.location, al.description, ctf.description), (r.location, al.description), (ctf.description) ) ORDER BY al.description, ctf.description",
+      "parameters": [
         {
           "index": 0,
-          "datasource": "nomis",
-          "query": "SELECT AGENCY_LOCATIONS.agy_loc_id as establishment_code, AGENCY_LOCATIONS.description as establishment_name FROM OMS_OWNER.AGENCY_LOCATIONS"
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Start reported incident date",
+          "description": "",
+          "mandatory": "true"
         },
         {
           "index": 1,
-          "datasource": "athena_dps_inc_reporting",
-          "query": "SELECT location, ctf.description incident_type, COUNT(id) as TOTAL FROM report r join constant_type ct ON r.type = ct.code join constant_type_family ctf ON ctf.code = ct.family_code WHERE date(incident_date_and_time) >= (SELECT START_DATE from prompt_) and date(incident_date_and_time) <= (SELECT END_DATE from prompt_) GROUP BY GROUPING SETS ( (location, ctf.description), (location), (ctf.description) ) ORDER BY location",
-          "parameters": [
-            {
-              "index": 0,
-              "name": "start_date",
-              "filterType": "date",
-              "reportFieldType": "date",
-              "display": "Enter Incident Date (Start)",
-              "description": "",
-              "mandatory": "true"
-            },
-            {
-              "index": 1,
-              "name": "end_date",
-              "filterType": "date",
-              "reportFieldType": "date",
-              "display": "Enter Incident Date (End)",
-              "description": "",
-              "mandatory": "true"
-            }
-          ]
-
-        },
-        {
-          "index": 2,
-          "datasource": "athena",
-          "query": "SELECT LOCATION, ESTABLISHMENT_NAME, incident_type, TOTAL from AwsDataCatalog.reports.${table[1]} LEFT JOIN AwsDataCatalog.reports.${table[0]} on AwsDataCatalog.reports.${table[1]}.LOCATION=AwsDataCatalog.reports.${table[0]}.establishment_code"
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "End reported incident date",
+          "description": "",
+          "mandatory": "true"
         }
       ],
       "schema": {
@@ -85,13 +53,13 @@
             "index": 0,
             "name": "LOCATION",
             "type": "string",
-            "display": "LOCATION"
+            "display": "Prison ID"
           },
           {
             "index": 1,
-            "name": "ESTABLISHMENT_NAME",
+            "name": "location_name",
             "type": "string",
-            "display": "Name"
+            "display": "Prison Name"
           },
           {
             "index": 2,
@@ -102,7 +70,7 @@
           {
             "index": 3,
             "name": "TOTAL",
-            "type": "string",
+            "type": "int",
             "display": "Total"
           }
         ]
@@ -166,7 +134,7 @@
         "template": "list",
         "field": [
           {
-            "name": "$ref:ESTABLISHMENT_NAME",
+            "name": "$ref:location_name",
             "display": "Prison Name",
             "formula": "",
             "visible": "true",
@@ -244,7 +212,7 @@
               ],
               "measure": [
                 {
-                  "id": "$ref:ESTABLISHMENT_NAME",
+                  "id": "$ref:location_name",
                   "display": "Name"
                 },
                 {
@@ -271,7 +239,7 @@
               ],
               "measure": [
                 {
-                  "id": "$ref:ESTABLISHMENT_NAME",
+                  "id": "$ref:location_name",
                   "display": "Name"
                 },
                 {
