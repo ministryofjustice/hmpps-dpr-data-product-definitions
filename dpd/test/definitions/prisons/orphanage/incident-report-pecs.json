@@ -1,0 +1,423 @@
+{
+  "id": "incident-report-pecs",
+  "name": "PECS incident reports",
+  "description": "List of incidents by dates, types, status and locations including PECS incidents.",
+  "metadata": {
+    "author": "Michael Willis",
+    "version": "1.0.1",
+    "owner": "Managing Safety"
+  },
+  "datasource": [
+    {
+      "id" : "datamart",
+      "name" : "datamart"
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "INCIDENT_REPORTS__RO",
+                "INCIDENT_REPORTS__RW",
+                "INCIDENT_REPORTS__APPROVE"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "dataset": [
+    {
+      "id": "pecs-summary",
+      "name": "PECS incident reports",
+      "datasource": "datamart",
+      "query": "SELECT \n    r.id,\n    r.report_reference,\n    ctf.code AS type,\n    ctf.description AS type_description,\n    r.status,\n    cs.description AS status_description,\n    r.incident_date_and_time,\n    r.reported_at,\n    r.reported_by,\n    r.title,\n    r.description,\n    r.location,\n    al.description AS location_name,\n    al.noms_region_code AS region_code,\n    area.description AS region_name,\n    r.modified_at,\n    -- Apply the CAST to prevent the 65k VARCHAR overflow error\n    (SELECT CAST(LISTAGG(prisoner_number || ' (' || cr.description || ')', ', ') \n            WITHIN GROUP (ORDER BY prisoner_number ASC) AS VARCHAR(4000))\n     FROM prisons.incidentreporting_prisoner_involvement pi \n     JOIN prisons.incidentreporting_constant_prisoner_role cr ON pi.prisoner_role = cr.code\n     WHERE pi.report_id = r.id) AS prisoners_involved,\n    (CASE \n        WHEN r.location IN ('NORTH', 'SOUTH') THEN 'PECS' \n        ELSE 'Prison' \n     END) AS pecs_or_prison_type\nFROM prisons.incidentreporting_report r\nJOIN prisons.incidentreporting_constant_status cs ON r.status = cs.code\nJOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\nJOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\nJOIN prisons.nomis_AGENCY_LOCATIONS al ON al.agy_loc_id = r.location\nLEFT JOIN prisons.nomis_areas area ON area.area_class = 'REGION' AND area.area_code = al.noms_region_code\nWHERE r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')",
+      "schema": {
+        "field": [
+          {
+            "name": "id",
+            "type": "string"
+          },
+          {
+            "name": "report_reference",
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "type": "string"
+          },
+          {
+            "name": "type_description",
+            "type": "string"
+          },
+          {
+            "name": "status_description",
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "type": "string"
+          },
+          {
+            "name": "incident_date_and_time",
+            "type": "datetime"
+          },
+          {
+            "name": "pecs_or_prison_type",
+            "type": "string",
+            "filter": {
+              "type": "multiselect",
+              "interactive": true,
+              "staticoptions": [
+                {"name": "Prison","display": "Prisons"},
+                {"name": "PECS","display": "PECS"}
+              ]
+            }
+          },
+          {
+            "name": "location",
+            "type": "string"
+          },
+          {
+            "name": "location_name",
+            "type": "string"
+          },
+          {
+            "name": "region_code",
+            "type": "string"
+          },
+          {
+            "name": "region_name",
+            "type": "string"
+          },
+          {
+            "name": "reported_at",
+            "type": "datetime"
+          },
+          {
+            "name": "reported_by",
+            "type": "string"
+          },
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "modified_at",
+            "type": "datetime"
+          },
+          {
+            "name": "prisoners_involved",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "types",
+      "name": "Incident Types",
+      "datasource": "datamart",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_type_family order by description",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Type code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Type description",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "status",
+      "name": "Incident Status",
+      "datasource": "datamart",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_status where code NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT') order by description",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Status code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Status description",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "regionCodes",
+      "name": "Region Codes",
+      "datasource": "datamart",
+      "query": "select area_code as code, description from prisons.nomis_areas where area_class = 'REGION' and active_flag = 'Y' and area_code NOT IN ('CT', 'HS', 'KSE', 'MID', 'WM', 'YP') order by description",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Description",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisons",
+      "name": "Prisons",
+      "datasource": "datamart",
+      "query": "select agy_loc_id prison_id, description prison_name FROM prisons.nomis_agency_locations al \nwhere al.agency_location_type = 'INST'\nand al.active_flag = 'Y' AND al.agy_loc_id NOT IN ('TRN', 'OUT')\norder by description",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_id",
+            "display": "Prison Id",
+            "type": "string"
+          },
+          {
+            "name": "prison_name",
+            "display": "Prison name",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ],
+  "report": [
+    {
+      "id": "incident-report-pecs",
+      "name": "PECS incident reports",
+      "description": "List of all incidents (including PECS) filtered by dates, types, status and locations.",
+      "version": "1.0.0",
+      "dataset": "$ref:pecs-summary",
+      "policy": [],
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:report_reference",
+            "display": "Incident number",
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports/${id}',${report_reference},TRUE)",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:pecs_or_prison_type",
+            "display": "PECS/Prison",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:location",
+            "display": "Location",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 140,
+                "returnAsStaticOptions": true,
+                "dataset": "prisons",
+                "name": "prison_id",
+                "display": "prison_name"
+              }
+            }
+          },
+          {
+            "name": "$ref:location_name",
+            "display": "Location name",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:region_code",
+            "display": "Region",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 20,
+                "returnAsStaticOptions": true,
+                "dataset": "regionCodes",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "$ref:region_name",
+            "display": "Region",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:type",
+            "display": "Type code",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 60,
+                "returnAsStaticOptions": true,
+                "dataset": "types",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "$ref:type_description",
+            "display": "Incident type",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:status",
+            "display": "Status code",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "interactive": true,
+              "dynamicoptions": {
+                "maximumOptions": 10,
+                "returnAsStaticOptions": true,
+                "dataset": "status",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "$ref:status_description",
+            "display": "Incident status",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:incident_date_and_time",
+            "display": "Occurrence at",
+            "formula": "format_date(${incident_date_and_time}, 'dd/MM/yyyy HH:mm')",
+            "sortable": true,
+            "type": "datetime",
+            "visible": "true",
+            "defaultsort": true,
+            "sortdirection": "desc",
+            "filter": {
+              "mandatory": false,
+              "type": "daterange",
+              "default": "today(-1,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:reported_at",
+            "formula": "format_date(${reported_at}, 'dd/MM/yyyy')",
+            "display": "Reported on",
+            "sortable": true,
+            "type": "date",
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "mandatory": false,
+              "type": "daterange",
+              "default": "today(-12,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:title",
+            "display": "Incident title",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:description",
+            "display": "Incident description",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "wordwrap": "break-words"
+          },
+          {
+            "name": "$ref:reported_by",
+            "display": "Reported by",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "interactive": true,
+              "type": "text"
+            }
+          },
+          {
+            "name": "$ref:modified_at",
+            "display": "Last Updated",
+            "formula": "format_date(${modified_at}, 'dd/MM/yyyy HH:mm')",
+            "type": "date",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:prisoners_involved",
+            "display": "Prisoners involved",
+            "sortable": false,
+            "visible": "true",
+            "defaultsort": false
+          }
+        ]
+      },
+      "destination": []
+    }
+  ]
+}
