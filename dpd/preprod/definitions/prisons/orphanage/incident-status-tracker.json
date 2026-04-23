@@ -28,7 +28,7 @@
     {
       "id": "inc0022-1",
       "name": "Incidents",
-      "description": "MIS Incidents",
+      "description": "Incident summary by location, type and status",
       "datasource": "athena",
       "query": "SELECT \n    format_datetime((SELECT START_DATE from prompt_), 'dd/MM/yyyy') start_date,\n    format_datetime((SELECT END_DATE from prompt_), 'dd/MM/yyyy') end_date,\n    r.location, \n    p.name AS location_name, \n    ctf.code AS incident_code, \n    ctf.description AS incident_type, \n    cs.code AS status_code, \n    cs.description AS status, COUNT(r.id) AS TOTAL \nFROM prisons.incidentreporting_report r \nJOIN prisons.incidentreporting_constant_type ct \n    ON r.type = ct.code \nJOIN prisons.incidentreporting_constant_type_family ctf \n    ON ctf.code = ct.family_code \nJOIN prisons.incidentreporting_constant_status cs \n    ON cs.code = r.status \nJOIN prisons.prisonregister_prison p \n    ON p.prison_id = r.location\nWHERE cs.code NOT IN ('DUPLICATE', 'NOT_REPORTABLE')\nand date(r.incident_date_and_time) >= (SELECT START_DATE from prompt_) and date(r.incident_date_and_time) <= (SELECT END_DATE from prompt_) \nGROUP BY GROUPING SETS (\n    (r.location, p.name, ctf.code, ctf.description, cs.code, cs.description), \n    (r.location, p.name, ctf.code, ctf.description), \n    (r.location, p.name, cs.code, cs.description), \n    (r.location, p.name),\n    (ctf.code, ctf.description), \n    (cs.code, cs.description) \n)\nORDER BY p.name, ctf.description, cs.description",
       "parameters": [
@@ -101,6 +101,77 @@
           },
           {
             "index": 8,
+            "name": "TOTAL",
+            "type": "int",
+            "display": "Total"
+          }
+        ]
+      }
+    },
+    {
+      "id": "type-status-summary",
+      "name": "Incident counts by status and type",
+      "description": "Incident counts by location, type and status",
+      "datasource": "athena",
+      "query": "SELECT \n    format_datetime(min(r.incident_date_and_time), 'dd/MM/yyyy') start_date,\n    format_datetime(max(r.incident_date_and_time), 'dd/MM/yyyy') end_date,\n    r.location as location,\n    p.name AS location_name, \n    ctf.code as raw_code,\n    COALESCE( ctf.code, '1-ALL') AS incident_code, \n    COALESCE(ctf.description, 'All incident types') AS incident_type, \n    cs.code AS status_code, \n    cs.description  AS status, \n    COUNT(r.id) AS TOTAL \nFROM prisons.incidentreporting_report r \nJOIN prisons.incidentreporting_constant_type ct \n    ON r.type = ct.code \nJOIN prisons.incidentreporting_constant_type_family ctf \n    ON ctf.code = ct.family_code \nJOIN prisons.incidentreporting_constant_status cs \n    ON cs.code = r.status \nJOIN prisons.prisonregister_prison p \n    ON p.prison_id = r.location and p.active = true\nWHERE cs.code NOT IN ('DUPLICATE', 'NOT_REPORTABLE')\nGROUP BY GROUPING SETS (\n    (r.location, p.name, ctf.code, ctf.description, cs.code, cs.description), \n    (r.location, p.name, cs.code, cs.description)\n)\nORDER BY p.name, ctf.description, cs.description",
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "start_date",
+            "type": "date",
+            "display": "Start incident date"
+          },
+          {
+            "index": 1,
+            "name": "end_date",
+            "type": "date",
+            "display": "End incident date"
+          },
+          {
+            "index": 2,
+            "name": "location",
+            "type": "string",
+            "display": "Prison ID"
+          },
+          {
+            "index": 3,
+            "name": "location_name",
+            "type": "string",
+            "display": "Prison Name"
+          },
+          {
+            "index": 4,
+            "name": "raw_code",
+            "type": "string",
+            "display": "Code"
+          },
+          {
+            "index": 5,
+            "name": "incident_code",
+            "type": "string",
+            "display": "Incident Code"
+          },
+          {
+            "index": 6,
+            "name": "incident_type",
+            "type": "string",
+            "display": "Incident Type"
+          },
+          {
+            "index": 7,
+            "name": "status_code",
+            "type": "string",
+            "display": "Status Code"
+          },
+          {
+            "index": 8,
+            "name": "status",
+            "type": "string",
+            "display": "Status"
+          },
+          {
+            "index": 9,
             "name": "TOTAL",
             "type": "int",
             "display": "Total"
@@ -184,10 +255,30 @@
       }
     },
     {
-      "id": "types",
+      "id": "types-without-all-incident-types",
       "name": "Incident Types",
       "datasource": "datamart",
       "query": "SELECT code, description FROM prisons.incidentreporting_constant_type_family order by description",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Type code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Type description",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "types",
+      "name": "Incident Types",
+      "datasource": "datamart",
+      "query": "SELECT code, description \nFROM prisons.incidentreporting_constant_type_family \nUNION \nSELECT '1-ALL' as code, '--- All incident types ---' as description\norder by description",
       "schema": {
         "field": [
           {
@@ -271,7 +362,7 @@
       "classification": "OFFICIAL",
       "version": "1.0.0",
       "render": "HTML",
-      "dataset": "inc0022-1",
+      "dataset": "type-status-summary",
       "feature": [
         {
           "type": "print"
@@ -322,8 +413,9 @@
               "type": "multiselect",
               "interactive": true,
               "mandatory": false,
+              "default": "1-ALL",
               "dynamicoptions": {
-                "maximumOptions": 60,
+                "maximumOptions": 40,
                 "returnAsStaticOptions": true,
                 "dataset": "types",
                 "name": "code",
@@ -368,9 +460,9 @@
             "name": "$ref:TOTAL",
             "display": "Number of Incidents",
             "visible": "true",
-            "sortable": false,
+            "sortable": true,
             "defaultsort": false,
-            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?fromDate=${start_date}&toDate=${end_date}&location=${location}&typeFamily=${incident_code}&incidentStatuses=${status_code}',${TOTAL},TRUE)"
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?fromDate=${start_date}&toDate=${end_date}&location=${location}&typeFamily=${raw_code}&incidentStatuses=${status_code}',${TOTAL},TRUE)"
           }
         ]
       }
@@ -466,7 +558,7 @@
               "dynamicoptions": {
                 "maximumOptions": 60,
                 "returnAsStaticOptions": true,
-                "dataset": "types",
+                "dataset": "types-without-all-incident-types",
                 "name": "code",
                 "display": "description"
               }
