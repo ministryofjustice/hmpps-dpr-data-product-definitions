@@ -27,10 +27,7 @@
             {
               "match": [
                 "${role}",
-                "INCIDENT_REPORTS__RO",
-                "INCIDENT_REPORTS__RW",
-                "INCIDENT_REPORTS__PECS",
-                "INCIDENT_REPORTS__APPROVE"
+                "INCIDENT_REPORTS__PECS"
               ]
             }
           ]
@@ -43,7 +40,7 @@
       "id": "pecs-summary",
       "name": "PECS incident reports",
       "datasource": "datamart",
-      "query": "SELECT \n    r.id,\n    r.report_reference,\n    ctf.code AS type,\n    ctf.description AS type_description,\n    r.status,\n    cs.description AS status_description,\n    r.incident_date_and_time,\n    r.reported_at,\n    r.reported_by,\n    r.title,\n    r.description,\n    r.location,\n    p.name AS location_name,\n    al.noms_region_code AS region_code,\n    area.description AS region_name,\n    r.modified_at,\n    -- Apply the CAST to prevent the 65k VARCHAR overflow error\n    (SELECT CAST(LISTAGG(prisoner_number || ' (' || cr.description || ')', ', ') \n            WITHIN GROUP (ORDER BY prisoner_number ASC) AS VARCHAR(4000))\n     FROM prisons.incidentreporting_prisoner_involvement pi \n     JOIN prisons.incidentreporting_constant_prisoner_role cr ON pi.prisoner_role = cr.code\n     WHERE pi.report_id = r.id) AS prisoners_involved,\n    (CASE \n        WHEN r.location IN ('NORTH', 'SOUTH') THEN 'PECS' \n        ELSE 'Prison' \n     END) AS pecs_or_prison_type\nFROM prisons.incidentreporting_report r\nJOIN prisons.incidentreporting_constant_status cs ON r.status = cs.code\nJOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\nJOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\nJOIN prisons.prisonregister_prison p on p.prison_id = r.location\nJOIN prisons.nomis_agency_locations al ON al.agy_loc_id = p.prison_id\nLEFT JOIN prisons.nomis_areas area ON area.area_class = 'REGION' AND area.area_code = al.noms_region_code\nWHERE r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')",
+      "query": "SELECT \n    r.id,\n    r.report_reference,\n    ctf.code AS type,\n    ctf.description AS type_description,\n    r.status,\n    cs.description AS status_description,\n    r.incident_date_and_time,\n    r.reported_at,\n    r.reported_by,\n    r.title,\n    r.description,\n    r.location,\n    coalesce(p.name, al.description) AS location_name,\n    al.noms_region_code AS region_code,\n    area.description AS region_name,\n    r.modified_at,\n    -- Apply the CAST to prevent the 65k VARCHAR overflow error\n    (SELECT CAST(LISTAGG(prisoner_number || ' (' || cr.description || ')', ', ') \n            WITHIN GROUP (ORDER BY prisoner_number ASC) AS VARCHAR(4000))\n     FROM prisons.incidentreporting_prisoner_involvement pi \n     JOIN prisons.incidentreporting_constant_prisoner_role cr ON pi.prisoner_role = cr.code\n     WHERE pi.report_id = r.id) AS prisoners_involved,\n    (CASE \n        WHEN p.prison_id IS NULL THEN 'PECS' \n        ELSE 'Prison' \n     END) AS pecs_or_prison_type\nFROM prisons.incidentreporting_report r\nJOIN prisons.incidentreporting_constant_status cs ON r.status = cs.code\nJOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\nJOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\nJOIN prisons.nomis_agency_locations al ON al.agy_loc_id = r.location\nLEFT JOIN prisons.prisonregister_prison p on p.prison_id = r.location\nLEFT JOIN prisons.nomis_areas area ON area.area_class = 'REGION' AND area.area_code = al.noms_region_code\nWHERE r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')",
       "schema": {
         "field": [
           {
