@@ -1,10 +1,10 @@
 
 {
   "id": "inc002",
-  "name": "MIS DARU Incident Tracker",
-  "description": "The report is used by the Data Analysis and Reporting Unit (DARU) to monitor, assure and report against the volume and quality of Incidents data.<br/>INC0022 - v00.00.01  Last Modified: 24/05/18",
+  "name": "Incident Tracker Reports",
+  "description": "The report is used by the Data Analysis and Reporting Unit (DARU) to monitor, assure and report against the volume and quality of Incidents data.<br/>INC0022 - v00.00.01  Last Modified: 15/04/26",
   "metadata": {
-    "version": "1.1.0",
+    "version": "1.2.0",
     "tags": [
       "INC0022  v00.00.01",
       "DPS", "Incident Reporting"
@@ -12,98 +12,322 @@
   },
   "datasource": [
     {
-      "id": "athena_dps_inc_reporting",
-      "name": "Athena DPS Incident Reporting",
-      "database": "public",
-      "catalog": "dps_inc_reporting",
-      "connection": "federated",
+      "id": "athena",
+      "name": "athena",
+      "database": "prisons",
+      "catalog": "AwsDataCatalog",
+      "connection": "awsdatacatalog",
       "dialect": "postgres/19"
     },
     {
-      "id": "nomis",
-      "name": "NOMIS",
-      "database": "DIGITAL_PRISON_REPORTING",
-      "catalog": "nomis",
-      "connection": "federated",
-      "dialect": "oracle/11g"
-    },
-    {
-      "id": "athena",
-      "name": "athena",
-      "database": "reports",
-      "catalog": "AwsDataCatalog",
-      "connection": "awsdatacatalog"
+      "id": "datamart",
+      "name": "datamart"
     }
   ],
   "dataset": [
     {
       "id": "inc0022-1",
       "name": "Incidents",
-      "description": "MIS Incidents",
-      "datasource": "athena_dps_inc_reporting",
-      "query": [
+      "description": "Incident summary by location, type and status",
+      "datasource": "athena",
+      "query": "SELECT \n    format_datetime((SELECT START_DATE from prompt_), 'dd/MM/yyyy') start_date,\n    format_datetime((SELECT END_DATE from prompt_), 'dd/MM/yyyy') end_date,\n    r.location, \n    p.name AS location_name, \n    ctf.code AS incident_code, \n    ctf.description AS incident_type, \n    cs.code AS status_code, \n    cs.description AS status, COUNT(r.id) AS TOTAL \nFROM prisons.incidentreporting_report r \nJOIN prisons.incidentreporting_constant_type ct \n    ON r.type = ct.code \nJOIN prisons.incidentreporting_constant_type_family ctf \n    ON ctf.code = ct.family_code \nJOIN prisons.incidentreporting_constant_status cs \n    ON cs.code = r.status \nJOIN prisons.prisonregister_prison p \n    ON p.prison_id = r.location\nWHERE cs.code NOT IN ('DUPLICATE', 'NOT_REPORTABLE')\nand date(r.incident_date_and_time) >= (SELECT START_DATE from prompt_) and date(r.incident_date_and_time) <= (SELECT END_DATE from prompt_) \nGROUP BY GROUPING SETS (\n    (r.location, p.name, ctf.code, ctf.description, cs.code, cs.description), \n    (r.location, p.name, ctf.code, ctf.description), \n    (r.location, p.name, cs.code, cs.description), \n    (r.location, p.name),\n    (ctf.code, ctf.description), \n    (cs.code, cs.description) \n)\nORDER BY p.name, ctf.description, cs.description",
+      "parameters": [
         {
           "index": 0,
-          "datasource": "nomis",
-          "query": "SELECT AGENCY_LOCATIONS.agy_loc_id as establishment_code, AGENCY_LOCATIONS.description as establishment_name FROM OMS_OWNER.AGENCY_LOCATIONS"
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Start incident date",
+          "mandatory": "true"
         },
         {
           "index": 1,
-          "datasource": "athena_dps_inc_reporting",
-          "query": "SELECT location, ctf.description incident_type, COUNT(id) as TOTAL FROM report r join constant_type ct ON r.type = ct.code join constant_type_family ctf ON ctf.code = ct.family_code WHERE date(incident_date_and_time) >= (SELECT START_DATE from prompt_) and date(incident_date_and_time) <= (SELECT END_DATE from prompt_) GROUP BY GROUPING SETS ( (location, ctf.description), (location), (ctf.description) ) ORDER BY location",
-          "parameters": [
-            {
-              "index": 0,
-              "name": "start_date",
-              "filterType": "date",
-              "reportFieldType": "date",
-              "display": "Enter Incident Date (Start)",
-              "description": "",
-              "mandatory": "true"
-            },
-            {
-              "index": 1,
-              "name": "end_date",
-              "filterType": "date",
-              "reportFieldType": "date",
-              "display": "Enter Incident Date (End)",
-              "description": "",
-              "mandatory": "true"
-            }
-          ]
-
-        },
-        {
-          "index": 2,
-          "datasource": "athena",
-          "query": "SELECT LOCATION, ESTABLISHMENT_NAME, incident_type, TOTAL from AwsDataCatalog.reports.${table[1]} LEFT JOIN AwsDataCatalog.reports.${table[0]} on AwsDataCatalog.reports.${table[1]}.LOCATION=AwsDataCatalog.reports.${table[0]}.establishment_code"
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "End incident date",
+          "mandatory": "true"
         }
       ],
       "schema": {
         "field": [
           {
             "index": 0,
-            "name": "LOCATION",
-            "type": "string",
-            "display": "LOCATION"
+            "name": "start_date",
+            "type": "date",
+            "display": "Start incident date"
           },
           {
             "index": 1,
-            "name": "ESTABLISHMENT_NAME",
-            "type": "string",
-            "display": "Name"
+            "name": "end_date",
+            "type": "date",
+            "display": "End incident date"
           },
           {
             "index": 2,
+            "name": "location",
+            "type": "string",
+            "display": "Prison ID"
+          },
+          {
+            "index": 3,
+            "name": "location_name",
+            "type": "string",
+            "display": "Prison Name"
+          },
+          {
+            "index": 4,
+            "name": "incident_code",
+            "type": "string",
+            "display": "Incident Code"
+          },
+          {
+            "index": 5,
             "name": "incident_type",
             "type": "string",
             "display": "Incident Type"
           },
           {
-            "index": 3,
-            "name": "TOTAL",
+            "index": 6,
+            "name": "status_code",
             "type": "string",
+            "display": "Status Code"
+          },
+          {
+            "index": 7,
+            "name": "status",
+            "type": "string",
+            "display": "Status"
+          },
+          {
+            "index": 8,
+            "name": "TOTAL",
+            "type": "int",
             "display": "Total"
+          }
+        ]
+      }
+    },
+    {
+      "id": "type-status-summary",
+      "name": "Incident counts by status and type",
+      "description": "Incident counts by location, type and status",
+      "datasource": "athena",
+      "query": "SELECT \n    format_datetime(min(r.incident_date_and_time), 'dd/MM/yyyy') start_date,\n    format_datetime(max(r.incident_date_and_time), 'dd/MM/yyyy') end_date,\n    r.location as location,\n    p.name AS location_name, \n    ctf.code as raw_code,\n    COALESCE( ctf.code, '1-ALL') AS incident_code, \n    COALESCE(ctf.description, 'All incident types') AS incident_type, \n    cs.code AS status_code, \n    cs.description  AS status, \n    COUNT(r.id) AS TOTAL \nFROM prisons.incidentreporting_report r \nJOIN prisons.incidentreporting_constant_type ct \n    ON r.type = ct.code \nJOIN prisons.incidentreporting_constant_type_family ctf \n    ON ctf.code = ct.family_code \nJOIN prisons.incidentreporting_constant_status cs \n    ON cs.code = r.status \nJOIN prisons.prisonregister_prison p \n    ON p.prison_id = r.location and p.active = true\nWHERE cs.code NOT IN ('DUPLICATE', 'NOT_REPORTABLE')\n and date(r.incident_date_and_time) >= (SELECT START_DATE from prompt_) and date(r.incident_date_and_time) <= (SELECT END_DATE from prompt_) \nGROUP BY GROUPING SETS (\n    (r.location, p.name, ctf.code, ctf.description, cs.code, cs.description), \n    (r.location, p.name, cs.code, cs.description)\n)\nORDER BY p.name, ctf.description, cs.description",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Start incident date",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "End incident date",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "start_date",
+            "type": "date",
+            "display": "Start incident date"
+          },
+          {
+            "index": 1,
+            "name": "end_date",
+            "type": "date",
+            "display": "End incident date"
+          },
+          {
+            "index": 2,
+            "name": "location",
+            "type": "string",
+            "display": "Prison ID"
+          },
+          {
+            "index": 3,
+            "name": "location_name",
+            "type": "string",
+            "display": "Prison Name"
+          },
+          {
+            "index": 4,
+            "name": "raw_code",
+            "type": "string",
+            "display": "Code"
+          },
+          {
+            "index": 5,
+            "name": "incident_code",
+            "type": "string",
+            "display": "Incident Code"
+          },
+          {
+            "index": 6,
+            "name": "incident_type",
+            "type": "string",
+            "display": "Incident Type"
+          },
+          {
+            "index": 7,
+            "name": "status_code",
+            "type": "string",
+            "display": "Status Code"
+          },
+          {
+            "index": 8,
+            "name": "status",
+            "type": "string",
+            "display": "Status"
+          },
+          {
+            "index": 9,
+            "name": "TOTAL",
+            "type": "int",
+            "display": "Total"
+          }
+        ]
+      }
+    },
+    {
+      "id": "incident-history",
+      "name": "Incident History - Summary",
+      "description": "Incident History - Summary",
+      "datasource": "datamart",
+      "query": "SELECT pr.prison_id         as location,\n       pr.name              as location_name,\n       r.id,\n       r.status,\n       cs.description              as status_description,\n       r.report_reference,\n       ctf.code                    as type,\n       ctf.description             as type_description,\n       r.incident_date_and_time,\n       r.reported_at\nFROM prisons.incidentreporting_report r\n       JOIN prisons.incidentreporting_constant_status cs ON r.status = cs.code\n       JOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\n       JOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\n       JOIN prisons.prisonregister_prison pr ON pr.prison_id = r.location\nWHERE r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE')",
+      "schema": {
+        "field": [
+          {
+            "name": "id",
+            "type": "string"
+          },
+          {
+            "name": "report_reference",
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "type": "string"
+          },
+          {
+            "name": "type_description",
+            "type": "string"
+          },
+          {
+            "name": "status_description",
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "type": "string"
+          },
+          {
+            "name": "incident_date_and_time",
+            "type": "datetime"
+          },
+          {
+            "name": "location",
+            "type": "string"
+          },
+          {
+            "name": "location_name",
+            "type": "string"
+          },
+          {
+            "name": "reported_at",
+            "type": "datetime"
+          },
+          {
+            "name": "reported_by",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisons",
+      "name": "Prisons",
+      "datasource": "datamart",
+      "query": "select prison_id, name prison_name FROM prisons.prisonregister_prison p where p.active = true order by name",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_id",
+            "display": "Prison Id",
+            "type": "string"
+          },
+          {
+            "name": "prison_name",
+            "display": "Prison name",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "types-without-all-incident-types",
+      "name": "Incident Types",
+      "datasource": "datamart",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_type_family order by description",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Type code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Type description",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "types",
+      "name": "Incident Types",
+      "datasource": "datamart",
+      "query": "SELECT code, description \nFROM prisons.incidentreporting_constant_type_family \nUNION \nSELECT '1-ALL' as code, '--- All incident types ---' as description\norder by description",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Type code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Type description",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "status",
+      "name": "Incident Status",
+      "datasource": "datamart",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_status where code NOT IN ('DUPLICATE', 'NOT_REPORTABLE') order by description",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Status code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Status description",
+            "type": "string"
           }
         ]
       }
@@ -152,85 +376,262 @@
   "report": [
     {
       "id": "116773.RS",
-      "name": "Incident Tracker",
+      "name": "DARU Incident Tracker",
       "classification": "OFFICIAL",
       "version": "1.0.0",
       "render": "HTML",
-      "dataset": "inc0022-1",
+      "dataset": "type-status-summary",
       "feature": [
         {
           "type": "print"
         }
       ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
       "specification": {
         "template": "list",
         "field": [
           {
-            "name": "$ref:ESTABLISHMENT_NAME",
+            "name": "$ref:location",
+            "display": "Prison",
+            "visible": "false",
+            "sortable": false,
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "interactive": true,
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 130,
+                "returnAsStaticOptions": true,
+                "dataset": "prisons",
+                "name": "prison_id",
+                "display": "prison_name"
+              }
+            }
+          },
+          {
+            "name": "$ref:location_name",
             "display": "Prison Name",
-            "formula": "",
             "visible": "true",
             "sortable": true,
             "defaultsort": true,
-            "legacyId": "DP2.DO20",
             "sortdirection": "asc"
+          },
+          {
+            "name": "$ref:incident_code",
+            "display": "Incident type code",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "interactive": true,
+              "mandatory": false,
+              "default": "1-ALL",
+              "dynamicoptions": {
+                "maximumOptions": 40,
+                "returnAsStaticOptions": true,
+                "dataset": "types",
+                "name": "code",
+                "display": "description"
+              }
+            }
           },
           {
             "name": "$ref:incident_type",
             "display": "Incident Type",
-            "formula": "",
             "visible": "true",
             "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:status_code",
+            "display": "Status code",
+            "sortable": false,
+            "visible": "false",
             "defaultsort": false,
-            "legacyId": "DP2.DO20"
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "interactive": true,
+              "dynamicoptions": {
+                "maximumOptions": 10,
+                "returnAsStaticOptions": true,
+                "dataset": "status",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "$ref:status",
+            "display": "Incident status",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
           },
           {
             "name": "$ref:TOTAL",
             "display": "Number of Incidents",
-            "formula": "",
             "visible": "true",
-            "sortable": false,
+            "sortable": true,
             "defaultsort": false,
-            "legacyId": "DP2.DOc9"
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?fromDate=${start_date}&toDate=${end_date}&location=${location}&typeFamily=${raw_code}&incidentStatuses=${status_code}',${TOTAL},TRUE)"
           }
         ]
       }
+    },
+    {
+      "id": "incident-history",
+      "name": "Incident History - Incident Details",
+      "description": "List of all incidents filtered by dates, status and locations.",
+      "version": "1.0.0",
+      "dataset": "$ref:incident-history",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:location",
+            "display": "Location",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 140,
+                "returnAsStaticOptions": true,
+                "dataset": "prisons",
+                "name": "prison_id",
+                "display": "prison_name"
+              }
+            }
+          },
+          {
+            "name": "$ref:location_name",
+            "display": "Location name",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": true
+          },
+          {
+            "name": "$ref:report_reference",
+            "display": "Incident number",
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports/${id}',${report_reference},TRUE)",
+            "sortable": false,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:status",
+            "display": "Status code",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 10,
+                "returnAsStaticOptions": true,
+                "dataset": "status",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "$ref:status_description",
+            "display": "Incident status",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:type",
+            "display": "Type code",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "interactive": true,
+              "dynamicoptions": {
+                "maximumOptions": 60,
+                "returnAsStaticOptions": true,
+                "dataset": "types-without-all-incident-types",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "$ref:type_description",
+            "display": "Incident type",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:incident_date_and_time",
+            "display": "Occurrence at",
+            "formula": "format_date(${incident_date_and_time}, 'dd/MM/yyyy HH:mm')",
+            "sortable": true,
+            "type": "datetime",
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "mandatory": false,
+              "type": "daterange",
+              "default": "today(-1,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:reported_at",
+            "formula": "format_date(${reported_at}, 'dd/MM/yyyy')",
+            "display": "Reported on",
+            "sortable": true,
+            "type": "date",
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "interactive": true,
+              "mandatory": false,
+              "type": "daterange"
+            }
+          }
+        ]
+      },
+      "destination": []
     }
   ],
   "dashboard": [{
-    "id": "incident-type-location",
-    "name": "Incident Type/Location Breakdown",
-    "description": "Incident Type/Location Breakdown",
+    "id": "incident-type-status-location",
+    "name": "Incident Type, Status and Location Breakdown",
+    "description": "Dashboard to show the breakdown of incidents by location, type and status",
     "dataset": "inc0022-1",
     "section": [
       {
-        "id": "type-breakdown",
-        "display": "Type breakdown",
+        "id": "location-breakdown",
+        "display": "Location breakdown",
         "visualisation": [
-          {
-            "id": "total-incidents",
-            "type": "list",
-            "display": "Total Incidents By Type",
-            "column": {
-              "key": [
-                {
-                  "id": "$ref:incident_type",
-                  "display": "Incident Type"
-                }
-              ],
-              "measure": [
-                {
-                  "id": "$ref:incident_type",
-                  "display": "Incident Type"
-                },
-                {
-                  "id": "$ref:TOTAL",
-                  "display": "Total Incidents"
-                }
-              ],
-              "expectNull": true
-            }
-          },
           {
             "id": "incidents-by-location",
             "type": "list",
@@ -238,18 +639,70 @@
             "column": {
               "key": [
                 {
-                  "id": "$ref:LOCATION",
+                  "id": "$ref:location",
                   "display": "Location"
+                },
+                {
+                  "id": "$ref:start_date",
+                  "display": "Start date"
+                },
+                {
+                  "id": "$ref:end_date",
+                  "display": "End date"
                 }
               ],
               "measure": [
                 {
-                  "id": "$ref:ESTABLISHMENT_NAME",
+                  "id": "$ref:location_name",
                   "display": "Name"
                 },
                 {
                   "id": "$ref:TOTAL",
-                  "display": "Total Incidents"
+                  "display": "Total Incidents",
+                  "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?fromDate=${start_date}&toDate=${end_date}&location=${location}',${TOTAL},TRUE)"
+                }
+              ],
+              "expectNull": true
+            }
+          }
+        ]
+      },
+      {
+        "id": "type-breakdown",
+        "display": "Type breakdown",
+        "visualisation": [
+          {
+            "id": "total-incidents-by-type",
+            "type": "list",
+            "display": "Total Incidents By Type",
+            "column": {
+              "key": [
+                {
+                  "id": "$ref:incident_code",
+                  "display": "Incident Code"
+                },
+                {
+                  "id": "$ref:incident_type",
+                  "display": "Incident Type"
+                },
+                {
+                  "id": "$ref:start_date",
+                  "display": "Start date"
+                },
+                {
+                  "id": "$ref:end_date",
+                  "display": "End date"
+                }
+              ],
+              "measure": [
+                {
+                  "id": "$ref:incident_type",
+                  "display": "Incident Type"
+                },
+                {
+                  "id": "$ref:TOTAL",
+                  "display": "Total Incidents",
+                  "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?fromDate=${start_date}&toDate=${end_date}&typeFamily=${incident_code}',${TOTAL},TRUE)"
                 }
               ],
               "expectNull": true
@@ -262,16 +715,29 @@
             "column": {
               "key": [
                 {
-                  "id": "$ref:LOCATION",
+                  "id": "$ref:location",
                   "display": "Location"
-                },                {
+                },
+                {
+                  "id": "$ref:incident_code",
+                  "display": "Incident Code"
+                },
+                {
                   "id": "$ref:incident_type",
                   "display": "Incident Type"
+                },
+                {
+                  "id": "$ref:start_date",
+                  "display": "Start date"
+                },
+                {
+                  "id": "$ref:end_date",
+                  "display": "End date"
                 }
               ],
               "measure": [
                 {
-                  "id": "$ref:ESTABLISHMENT_NAME",
+                  "id": "$ref:location_name",
                   "display": "Name"
                 },
                 {
@@ -280,10 +746,94 @@
                 },
                 {
                   "id": "$ref:TOTAL",
-                  "display": "Total Incidents"
+                  "display": "Total Incidents",
+                  "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?fromDate=${start_date}&toDate=${end_date}&location=${location}&typeFamily=${incident_code}',${TOTAL},TRUE)"
                 }
               ],
-              "expectNull": false
+              "expectNull": true
+            }
+          }
+        ]
+      },
+      {
+        "id": "status-breakdown",
+        "display": "Status breakdown",
+        "visualisation": [
+          {
+            "id": "total-incidents-by-status",
+            "type": "list",
+            "display": "Total Incidents By Status",
+            "column": {
+              "key": [
+                {
+                  "id": "$ref:status_code",
+                  "display": "Incident Code"
+                },
+                {
+                  "id": "$ref:status",
+                  "display": "Incident Status"
+                },
+                {
+                  "id": "$ref:start_date",
+                  "display": "Start date"
+                },
+                {
+                  "id": "$ref:end_date",
+                  "display": "End date"
+                }
+              ],
+              "measure": [
+                {
+                  "id": "$ref:status",
+                  "display": "Incident Status"
+                },
+                {
+                  "id": "$ref:TOTAL",
+                  "display": "Total Incidents",
+                  "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?fromDate=${start_date}&toDate=${end_date}&incidentStatuses=${status_code}',${TOTAL},TRUE)"
+                }
+              ],
+              "expectNull": true
+            }
+          },
+          {
+            "id": "incidents-by-location-status",
+            "type": "list",
+            "display": "Total Incidents By Location & Status",
+            "column": {
+              "key": [
+                {
+                  "id": "$ref:location",
+                  "display": "Location"
+                },                {
+                  "id": "$ref:status_code",
+                  "display": "Incident Status"
+                },
+                {
+                  "id": "$ref:start_date",
+                  "display": "Start date"
+                },
+                {
+                  "id": "$ref:end_date",
+                  "display": "End date"
+                }
+              ],
+              "measure": [
+                {
+                  "id": "$ref:location_name",
+                  "display": "Name"
+                },
+                {
+                  "id": "$ref:status",
+                  "display": "Incident Status"
+                },
+                {
+                  "id": "$ref:TOTAL",
+                  "display": "Total Incidents",
+                  "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports?fromDate=${start_date}&toDate=${end_date}&location=${location}&incidentStatuses=${status_code}',${TOTAL},TRUE)"
+                }
+              ],
+              "expectNull": true
             }
           }
         ]

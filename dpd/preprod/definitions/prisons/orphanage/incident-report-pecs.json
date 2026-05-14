@@ -5,7 +5,10 @@
   "metadata": {
     "author": "Michael Willis",
     "version": "1.0.1",
-    "owner": "Managing Safety"
+    "owner": "Managing Safety",
+    "tags": [
+      "DPS", "Incident Reporting"
+    ]
   },
   "datasource": [
     {
@@ -24,10 +27,26 @@
             {
               "match": [
                 "${role}",
-                "INCIDENT_REPORTS__RO",
-                "INCIDENT_REPORTS__RW",
-                "INCIDENT_REPORTS__PECS",
-                "INCIDENT_REPORTS__APPROVE"
+                "INCIDENT_REPORTS__PECS"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseloads",
+      "type": "row-level",
+      "action": [
+        "location IN (${caseloads}) OR location IN (SELECT agy_loc_id FROM prisons.nomis_agency_locations WHERE agency_location_type = 'PECS')"
+      ],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": [
+                "${caseloads}"
               ]
             }
           ]
@@ -40,7 +59,7 @@
       "id": "pecs-summary",
       "name": "PECS incident reports",
       "datasource": "datamart",
-      "query": "SELECT \n    r.id,\n    r.report_reference,\n    ctf.code AS type,\n    ctf.description AS type_description,\n    r.status,\n    cs.description AS status_description,\n    r.incident_date_and_time,\n    r.reported_at,\n    r.reported_by,\n    r.title,\n    r.description,\n    r.location,\n    al.description AS location_name,\n    al.noms_region_code AS region_code,\n    area.description AS region_name,\n    r.modified_at,\n    -- Apply the CAST to prevent the 65k VARCHAR overflow error\n    (SELECT CAST(LISTAGG(prisoner_number || ' (' || cr.description || ')', ', ') \n            WITHIN GROUP (ORDER BY prisoner_number ASC) AS VARCHAR(4000))\n     FROM prisons.incidentreporting_prisoner_involvement pi \n     JOIN prisons.incidentreporting_constant_prisoner_role cr ON pi.prisoner_role = cr.code\n     WHERE pi.report_id = r.id) AS prisoners_involved,\n    (CASE \n        WHEN r.location IN ('NORTH', 'SOUTH') THEN 'PECS' \n        ELSE 'Prison' \n     END) AS pecs_or_prison_type\nFROM prisons.incidentreporting_report r\nJOIN prisons.incidentreporting_constant_status cs ON r.status = cs.code\nJOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\nJOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\nJOIN prisons.nomis_AGENCY_LOCATIONS al ON al.agy_loc_id = r.location\nLEFT JOIN prisons.nomis_areas area ON area.area_class = 'REGION' AND area.area_code = al.noms_region_code\nWHERE r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')",
+      "query": "SELECT \n    r.id,\n    r.report_reference,\n    ctf.code AS type,\n    ctf.description AS type_description,\n    r.status,\n    cs.description AS status_description,\n    r.incident_date_and_time,\n    r.reported_at,\n    r.reported_by,\n    r.title,\n    r.description,\n    r.location,\n    coalesce(p.name, al.description) AS location_name,\n    al.noms_region_code AS region_code,\n    area.description AS region_name,\n    r.modified_at,\n    -- Apply the CAST to prevent the 65k VARCHAR overflow error\n    (SELECT CAST(LISTAGG(prisoner_number || ' (' || cr.description || ')', ', ') \n            WITHIN GROUP (ORDER BY prisoner_number ASC) AS VARCHAR(4000))\n     FROM prisons.incidentreporting_prisoner_involvement pi \n     JOIN prisons.incidentreporting_constant_prisoner_role cr ON pi.prisoner_role = cr.code\n     WHERE pi.report_id = r.id) AS prisoners_involved,\n    (CASE \n        WHEN p.prison_id IS NULL THEN 'PECS' \n        ELSE 'Prison' \n     END) AS pecs_or_prison_type\nFROM prisons.incidentreporting_report r\nJOIN prisons.incidentreporting_constant_status cs ON r.status = cs.code\nJOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\nJOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\nJOIN prisons.nomis_agency_locations al ON al.agy_loc_id = r.location\nLEFT JOIN prisons.prisonregister_prison p on p.prison_id = r.location\nLEFT JOIN prisons.nomis_areas area ON area.area_class = 'REGION' AND area.area_code = al.noms_region_code\nWHERE r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')",
       "schema": {
         "field": [
           {
@@ -129,8 +148,8 @@
     {
       "id": "types",
       "name": "Incident Types",
-      "datasource": "replicaDataSource",
-      "query": "SELECT code, description FROM prisons.incidentreporting_constant_type_family order by sequence",
+      "datasource": "datamart",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_type_family order by description",
       "schema": {
         "field": [
           {
@@ -149,8 +168,8 @@
     {
       "id": "status",
       "name": "Incident Status",
-      "datasource": "replicaDataSource",
-      "query": "SELECT code, description FROM prisons.incidentreporting_constant_status where code NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT') order by sequence",
+      "datasource": "datamart",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_status where code NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT') order by description",
       "schema": {
         "field": [
           {
@@ -190,7 +209,7 @@
       "id": "prisons",
       "name": "Prisons",
       "datasource": "datamart",
-      "query": "select agy_loc_id prison_id, description prison_name FROM prisons.nomis_agency_locations al \nwhere al.agency_location_type = 'INST'\nand al.active_flag = 'Y' AND al.agy_loc_id NOT IN ('TRN', 'OUT')\norder by description",
+      "query": "select prison_id, name prison_name FROM prisons.prisonregister_prison p where p.active = true union SELECT agy_loc_id prison_id, initcap(description) prison_name FROM prisons.nomis_agency_locations WHERE agency_location_type = 'PECS' and active_flag = 'Y' and agy_loc_id != 'NOU' order by prison_name",
       "schema": {
         "field": [
           {
@@ -221,6 +240,11 @@
           "type": "print"
         }
       ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
       "specification": {
         "template": "list",
         "field": [
@@ -298,7 +322,6 @@
             "filter": {
               "type": "multiselect",
               "mandatory": false,
-              "interactive": true,
               "dynamicoptions": {
                 "maximumOptions": 60,
                 "returnAsStaticOptions": true,
@@ -363,7 +386,12 @@
             "sortable": true,
             "type": "date",
             "visible": "false",
-            "defaultsort": false
+            "defaultsort": false,
+            "filter": {
+              "mandatory": false,
+              "type": "daterange",
+              "default": "today(-12,months) - today()"
+            }
           },
           {
             "name": "$ref:title",

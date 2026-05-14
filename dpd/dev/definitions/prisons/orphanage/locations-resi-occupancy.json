@@ -1,35 +1,19 @@
 {
-  "id": "residential-location-reports",
-  "name": "Residential location reports",
-  "description": "Reports on residential locations",
+  "id": "residential-location-occupancy",
+  "name": "Residential location occupancy",
+  "description": "Residential location occupancy",
   "metadata": {
     "author": "Michael Willis",
     "version": "1.0.0",
-    "owner": "Move a prisoner team"
+    "owner": "Move a prisoner team",
+    "tags": [
+      "DPS", "Residential", "Capacity"
+    ]
   },
   "datasource": [
     {
-      "id": "dps_locations",
-      "name": "DPS Residential locations",
-      "database": "public",
-      "catalog": "dps_locations",
-      "connection": "federated",
-      "dialect": "postgres/19"
-    },
-    {
-      "id": "nomis",
-      "name": "NOMIS",
-      "database": "DIGITAL_PRISON_REPORTING",
-      "catalog": "nomis",
-      "connection": "federated",
-      "dialect": "oracle/11g"
-    },
-    {
-      "id": "athena",
-      "name": "athena",
-      "database": "reports",
-      "catalog": "AwsDataCatalog",
-      "connection": "awsdatacatalog"
+      "id" : "datamart",
+      "name" : "datamart"
     }
   ],
   "policy": [
@@ -43,7 +27,8 @@
             {
               "match": [
                 "${role}",
-                "MANAGE_RES_LOCATIONS_OP_CAP"
+                "MANAGE_RES_LOCATIONS_OP_CAP",
+                "RESI__CERT_REVIEWER"
               ]
             }
           ]
@@ -56,28 +41,7 @@
       "id": "cell-details",
       "name": "List of cell details",
       "datasource": "dps_locations",
-      "query": [
-        {
-          "index": 0,
-          "datasource": "dps_locations",
-          "query": "select l.id, l.prison_id, concat(l.prison_id, '-', l.path_hierarchy) as path_hierarchy, initcap(l.local_name) as local_name, l.cell_mark,\n       (CHAR_LENGTH(l.path_hierarchy) - CHAR_LENGTH(REPLACE(l.path_hierarchy, '-', ''))) / CHAR_LENGTH('-') +1 as level,\n       c.certified_normal_accommodation,\n       c.working_capacity,\n       c.max_capacity,\n       initcap(l.location_type) as location_type,\n       initcap(l.status) as status,\n       (select string_agg( distinct INITCAP(replace(uf.used_for, '_', ' ')), ',') from cell_used_for uf where l.id = uf.location_id) used_for,\n       (select string_agg( distinct INITCAP(replace(sc.specialist_cell_type, '_', ' ')), ',') from specialist_cell sc where l.id = sc.location_id) specialist_types\nfrom public.location l left join public.capacity c on l.capacity_id = c.id\nwhere l.location_type_discriminator = 'CELL' and l.status <> 'ARCHIVED'"
-        },
-        {
-          "index": 1,
-          "datasource": "nomis",
-          "query": "SELECT al.agy_loc_id  AS prison_id,\n       al.description AS path_hierarchy,\n       count(*)       as num_of_occupants\nFROM oms_owner.agency_internal_locations al\n         JOIN oms_owner.offender_bookings ob on ob.booking_seq = 1\n    AND ob.active_flag = 'Y' and ob.living_unit_id = al.internal_location_id\nGROUP BY al.agy_loc_id, al.description"
-        },
-        {
-          "index": 2,
-          "datasource": "nomis",
-          "query": "SELECT al.agy_loc_id AS prison_id, al.description AS prison_name FROM oms_owner.agency_locations al where al.agency_location_type = 'INST' and al.active_flag = 'Y'"
-        },
-        {
-          "index": 3,
-          "datasource": "athena",
-          "query": "SELECT id,\n       l.prison_id,\n       a.prison_name,  l.path_hierarchy,\n       local_name,\n       cell_mark,\n       level,\n       status,\n       certified_normal_accommodation,\n       working_capacity,\n       max_capacity,\n       COALESCE(num_of_occupants, 0) as num_of_occupants,\n       (case when working_capacity = 0 then max_capacity else working_capacity end) - COALESCE(num_of_occupants, 0) as spaces_available,\n       (case when COALESCE(num_of_occupants, 0) - coalesce(certified_normal_accommodation,0) > 0 then 'Y' else 'N' end) as crowded,\n       (case when COALESCE(num_of_occupants, 0) - coalesce(certified_normal_accommodation,0) > 0 then COALESCE(num_of_occupants, 0) - coalesce(certified_normal_accommodation,0) else null end) as amount_over_capacity,\n       location_type,\n       used_for,\n       specialist_types\nfrom AwsDataCatalog.reports.${table[0]} l join AwsDataCatalog.reports.${table[2]} a on a.prison_id = l.prison_id left join AwsDataCatalog.reports.${table[1]} p on p.path_hierarchy = l.path_hierarchy"
-        }
-      ],
+      "query": "WITH used_for_agg AS (\n    SELECT \n        location_id,\n        CAST(LISTAGG(usage_type, ', ') WITHIN GROUP (ORDER BY usage_type) AS VARCHAR(4000)) as used_for_list\n    FROM (\n        SELECT DISTINCT location_id, INITCAP(REPLACE(used_for, '_', ' ')) as usage_type\n        FROM prisons.locationsinsideprison_cell_used_for\n    )\n    GROUP BY 1\n),\n\nspecialist_agg AS (\n    SELECT \n        location_id,\n        CAST(LISTAGG(spec_type, ', ') WITHIN GROUP (ORDER BY spec_type) AS VARCHAR(4000)) as specialist_list\n    FROM (\n        SELECT DISTINCT location_id, INITCAP(REPLACE(specialist_cell_type, '_', ' ')) as spec_type\n        FROM prisons.locationsinsideprison_specialist_cell\n    )\n    GROUP BY 1\n),\npopulation as (\n    SELECT ail2.agy_loc_id  AS prison_id,\n           ail2.description AS path_hierarchy,\n           count(*)         as no_of_occupant\n     FROM prisons.nomis_agency_internal_locations ail2\n     JOIN prisons.nomis_offender_bookings ob on ob.booking_seq = 1 AND ob.active_flag = 'Y' and ob.living_unit_id = ail2.internal_location_id\n     GROUP BY ail2.agy_loc_id, ail2.description\n)\nSELECT \n    l.id, \n    l.prison_id, \n    p.name AS prison_name,\n    l.path_hierarchy AS path_hierarchy, \n    INITCAP(l.local_name) AS local_name, \n    l.cell_mark,\n    (length(l.path_hierarchy) - length(replace(l.path_hierarchy, '-', ''))) + 1 AS level,\n    c.certified_normal_accommodation,\n    c.working_capacity,\n    c.max_capacity,\n    COALESCE(pop.no_of_occupant, 0) AS num_of_occupants,\n    -- Capacity logic\n    (CASE WHEN c.working_capacity = 0 THEN c.max_capacity ELSE c.working_capacity END) - COALESCE(pop.no_of_occupant, 0) AS spaces_available,\n    -- Crowding indicators\n    (CASE WHEN COALESCE(pop.no_of_occupant, 0) - COALESCE(c.certified_normal_accommodation, 0) > 0 THEN 'Y' ELSE 'N' END) AS crowded,\n    (CASE WHEN COALESCE(pop.no_of_occupant, 0) - COALESCE(c.certified_normal_accommodation, 0) > 0 \n          THEN COALESCE(pop.no_of_occupant, 0) - COALESCE(c.certified_normal_accommodation, 0) \n          ELSE NULL END) AS amount_over_capacity,\n    INITCAP(l.location_type) AS location_type,\n    INITCAP(l.status) AS status,\n    uf.used_for_list AS used_for,\n    sc.specialist_list AS specialist_types\nFROM \n    prisons.locationsinsideprison_location l \nJOIN \n    prisons.prisonregister_prison p ON p.prison_id = l.prison_id\nLEFT JOIN \n    population pop ON pop.path_hierarchy = l.prison_id || '-' || l.path_hierarchy AND pop.prison_id = l.prison_id\nLEFT JOIN \n    prisons.locationsinsideprison_capacity c ON l.capacity_id = c.id\nLEFT JOIN \n    used_for_agg uf ON l.id = uf.location_id\nLEFT JOIN \n    specialist_agg sc ON l.id = sc.location_id\nWHERE \n    l.location_type_discriminator = 'CELL' and l.converted_cell_type is null\n    AND l.status <> 'ARCHIVED'\n    AND p.active = true",
       "schema": {
         "field": [
           {
@@ -159,7 +123,7 @@
       "id": "prisons",
       "name": "Prisons",
       "datasource": "athena_redshift",
-      "query": "select agy_loc_id prison_id, initcap(description) prison_name FROM prisons.nomis_agency_locations al \nwhere al.agency_location_type = 'INST'\nand al.active_flag = 'Y'\norder by description",
+      "query": "select prison_id, name prison_name FROM prisons.prisonregister_prison p where p.active = true order by name",
       "schema": {
         "field": [
           {
@@ -189,6 +153,11 @@
           "type": "print"
         }
       ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
       "specification": {
         "template": "list",
         "field": [
@@ -219,7 +188,7 @@
           },
           {
             "name": "$ref:path_hierarchy",
-            "display": "Location path",
+            "display": "Cell Ref",
             "formula": "make_url('https://locations-inside-prison-${env}.hmpps.service.justice.gov.uk/view-and-update-locations/${prison_id}/${id}',${path_hierarchy},TRUE)",
             "sortable": true,
             "visible": "true",
@@ -278,6 +247,13 @@
           {
             "name": "$ref:spaces_available",
             "display": "Spaces",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:amount_over_capacity",
+            "display": "Over capacity",
             "sortable": true,
             "visible": "true",
             "defaultsort": false

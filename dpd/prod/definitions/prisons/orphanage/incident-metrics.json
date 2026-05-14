@@ -257,7 +257,7 @@
       "id": "report-actions-per-week",
       "name": "Report actions / week",
       "datasource": "datamart",
-      "query": "SELECT result.*, COALESCE(al.location_name, 'All locations') AS location_name from (SELECT \n    CAST(date_trunc('week', cr.correction_requested_at) AS DATE) AS week, \n    to_char(MIN(cr.correction_requested_at), 'DD/MM/YYYY') AS min_date, \n    to_char(MAX(cr.correction_requested_at), 'DD/MM/YYYY') AS max_date, \n    COALESCE(r.location, 'All locations') AS location_id,\n    COALESCE(ct.description, 'All incident types') AS incident_type, \n    count(DISTINCT(cr.report_id)) AS num_reports, \n    count(cr.id) AS total_actions, \n    ROUND(CAST(count(cr.id) AS decimal(18,2))/NULLIF(CAST(count(DISTINCT(cr.report_id)) AS decimal(18,2)), 0), 1) AS avg_actions_per_report, \n    count(CASE WHEN user_action = 'REQUEST_REVIEW' AND last_status = 'DRAFT' THEN cr.id END) AS num_first_submissions, \n    count(CASE WHEN user_action = 'REQUEST_DUPLICATE' AND last_status = 'DRAFT' THEN cr.id END) AS num_first_req_dup, \n    count(CASE WHEN user_action = 'REQUEST_NOT_REPORTABLE' AND last_status = 'DRAFT' THEN cr.id END) AS num_first_req_nr, \n    count(CASE WHEN user_action = 'REQUEST_CORRECTION' AND last_status = 'DRAFT' THEN cr.id END) AS num_sent_back, \n    count(CASE WHEN user_action = 'HOLD' THEN cr.id END) AS num_held, \n    count(CASE WHEN user_action = 'REQUEST_REVIEW' AND last_status <> 'DRAFT' THEN cr.id END) AS num_resubmissions, \n    count(CASE WHEN user_action = 'REQUEST_DUPLICATE' AND last_status <> 'DRAFT' THEN cr.id END) AS num_add_req_dup, \n    count(CASE WHEN user_action = 'REQUEST_NOT_REPORTABLE' AND last_status <> 'DRAFT' THEN cr.id END) AS num_add_req_nr, \n    count(CASE WHEN user_action = 'REQUEST_CORRECTION' AND last_status <> 'DRAFT' THEN cr.id END) AS num_sent_back_again, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'REPORTING_OFFICER' AND last_status NOT IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE') THEN cr.id END) AS num_recalled_ro, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'DATA_WARDEN' AND last_status NOT IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE')  THEN cr.id END) AS num_recalled_dw, \n    count(CASE WHEN user_action = 'CLOSE' THEN cr.id END) AS num_closed, \n    count(CASE WHEN user_action = 'MARK_DUPLICATE' THEN cr.id END) AS num_mark_dup, \n    count(CASE WHEN user_action = 'MARK_NOT_REPORTABLE' THEN cr.id END) AS num_mark_nr, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'REPORTING_OFFICER' AND last_status IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE') THEN cr.id END) AS num_reopened_ro, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'DATA_WARDEN' AND last_status IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE')  THEN cr.id END) AS num_reopened_dw \nFROM prisons.incidentreporting_correction_request AS cr \nLEFT JOIN (\n    SELECT location, id, type, source \n    FROM prisons.incidentreporting_report\n) AS r ON cr.report_id = r.id \nLEFT JOIN (\n    SELECT \n        report_id, \n        status AS new_status, \n        changed_by, \n        lag(status) OVER (PARTITION BY report_id ORDER BY changed_at) AS last_status, \n        -- Added explicit frame clause for Redshift compatibility\n        count(status) OVER (\n            PARTITION BY report_id \n            ORDER BY changed_at \n            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n        ) - 2 AS sh_sequence \n    FROM prisons.incidentreporting_status_history\n) AS sh ON cr.report_id = sh.report_id AND cr.sequence = sh.sh_sequence AND cr.correction_requested_by = sh.changed_by \nLEFT JOIN (\n    SELECT code, description \n    FROM prisons.incidentreporting_constant_type\n) AS ct ON r.type = ct.code\nWHERE r.source = 'DPS' \nGROUP BY 1, ROLLUP(r.location), ROLLUP(ct.description)) as result\n LEFT JOIN (select agy_loc_id location_id, description location_name\nFROM prisons.nomis_agency_locations) as al\n ON result.location_id = al.location_id",
+      "query": "SELECT result.*, COALESCE(al.location_name, 'All locations') AS location_name from (SELECT \n    CAST(date_trunc('week', cr.correction_requested_at) AS DATE) AS week, \n    to_char(MIN(cr.correction_requested_at), 'DD/MM/YYYY') AS min_date, \n    to_char(MAX(cr.correction_requested_at), 'DD/MM/YYYY') AS max_date, \n    COALESCE(r.location, 'All locations') AS location_id,\n    COALESCE(ct.description, 'All incident types') AS incident_type, \n    count(DISTINCT(cr.report_id)) AS num_reports, \n    count(cr.id) AS total_actions, \n    ROUND(CAST(count(cr.id) AS decimal(18,2))/NULLIF(CAST(count(DISTINCT(cr.report_id)) AS decimal(18,2)), 0), 1) AS avg_actions_per_report, \n    count(CASE WHEN user_action = 'REQUEST_REVIEW' THEN cr.id END) AS submissions,\n    count(CASE WHEN user_action = 'REQUEST_DUPLICATE' THEN cr.id END) AS dup_requests,\n    count(CASE WHEN user_action = 'REQUEST_NOT_REPORTABLE' THEN cr.id END) AS nr_requests,\n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'REPORTING_OFFICER' AND last_status = 'AWAITING_REVIEW' THEN cr.id END) AS num_recalled_before_review,\n    count(CASE WHEN user_action = 'REQUEST_CORRECTION' THEN cr.id END) AS num_sent_back,\n    count(CASE WHEN user_action = 'HOLD' THEN cr.id END) AS num_held,\n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'REPORTING_OFFICER' AND last_status NOT IN ('AWAITING_REVIEW', 'CLOSED', 'DUPLICATE', 'NOT_REPORTABLE') THEN cr.id END) AS num_recalled_ro_after_review,\n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'DATA_WARDEN' AND last_status NOT IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE')  THEN cr.id END) AS num_recalled_dw,\n    count(CASE WHEN user_action = 'CLOSE' THEN cr.id END) AS num_closed,\n    count(CASE WHEN user_action = 'MARK_DUPLICATE' THEN cr.id END) AS num_mark_dup,\n    count(CASE WHEN user_action = 'MARK_NOT_REPORTABLE' THEN cr.id END) AS num_mark_nr,\n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'REPORTING_OFFICER' AND last_status IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE') THEN cr.id END) AS num_reopened_ro,\n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'DATA_WARDEN' AND last_status IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE')  THEN cr.id END) AS num_reopened_dw \nFROM prisons.incidentreporting_correction_request AS cr \nLEFT JOIN (\n    SELECT location, id, type, source \n    FROM prisons.incidentreporting_report\n) AS r ON cr.report_id = r.id \nLEFT JOIN (\n    SELECT \n        report_id, \n        status AS new_status, \n        changed_by, \n        lag(status) OVER (PARTITION BY report_id ORDER BY changed_at) AS last_status, \n        -- Added explicit frame clause for Redshift compatibility\n        count(status) OVER (\n            PARTITION BY report_id \n            ORDER BY changed_at \n            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n        ) - 2 AS sh_sequence \n    FROM prisons.incidentreporting_status_history\n) AS sh ON cr.report_id = sh.report_id AND cr.sequence = sh.sh_sequence AND cr.correction_requested_by = sh.changed_by \nLEFT JOIN (\n    SELECT code, description \n    FROM prisons.incidentreporting_constant_type\n) AS ct ON r.type = ct.code\nWHERE r.source = 'DPS' \nGROUP BY 1, ROLLUP(r.location), ROLLUP(ct.description)) as result\n LEFT JOIN (select agy_loc_id location_id, description location_name\nFROM prisons.nomis_agency_locations) as al\n ON result.location_id = al.location_id",
       "schema": {
         "field": [
           {
@@ -293,15 +293,19 @@
             "type": "float"
           },
           {
-            "name": "num_first_submissions",
+            "name": "submissions",
             "type": "long"
           },
           {
-            "name": "num_first_req_dup",
+            "name": "dup_requests",
             "type": "long"
           },
           {
-            "name": "num_first_req_nr",
+            "name": "nr_requests",
+            "type": "long"
+          },
+          {
+            "name": "num_recalled_before_review",
             "type": "long"
           },
           {
@@ -313,23 +317,7 @@
             "type": "long"
           },
           {
-            "name": "num_resubmissions",
-            "type": "long"
-          },
-          {
-            "name": "num_add_req_dup",
-            "type": "long"
-          },
-          {
-            "name": "num_add_req_nr",
-            "type": "long"
-          },
-          {
-            "name": "num_sent_back_again",
-            "type": "long"
-          },
-          {
-            "name": "num_recalled_ro",
+            "name": "num_recalled_ro_after_review",
             "type": "long"
           },
           {
@@ -367,7 +355,7 @@
       "id": "report-actions-per-month",
       "name": "Report actions / month",
       "datasource": "datamart",
-      "query": "SELECT result.*, COALESCE(al.location_name, 'All locations') AS location_name from (SELECT \n    CAST(date_trunc('month', cr.correction_requested_at) AS DATE) AS month, \n    to_char(MIN(cr.correction_requested_at), 'DD/MM/YYYY') AS min_date, \n    to_char(MAX(cr.correction_requested_at), 'DD/MM/YYYY') AS max_date, \n    COALESCE(r.location, 'All locations') AS location_id,\n    COALESCE(ct.description, 'All incident types') AS incident_type, \n    count(DISTINCT(cr.report_id)) AS num_reports, \n    count(cr.id) AS total_actions, \n    ROUND(CAST(count(cr.id) AS decimal(18,2))/NULLIF(CAST(count(DISTINCT(cr.report_id)) AS decimal(18,2)), 0), 1) AS avg_actions_per_report, \n    count(CASE WHEN user_action = 'REQUEST_REVIEW' AND last_status = 'DRAFT' THEN cr.id END) AS num_first_submissions, \n    count(CASE WHEN user_action = 'REQUEST_DUPLICATE' AND last_status = 'DRAFT' THEN cr.id END) AS num_first_req_dup, \n    count(CASE WHEN user_action = 'REQUEST_NOT_REPORTABLE' AND last_status = 'DRAFT' THEN cr.id END) AS num_first_req_nr, \n    count(CASE WHEN user_action = 'REQUEST_CORRECTION' AND last_status = 'DRAFT' THEN cr.id END) AS num_sent_back, \n    count(CASE WHEN user_action = 'HOLD' THEN cr.id END) AS num_held, \n    count(CASE WHEN user_action = 'REQUEST_REVIEW' AND last_status <> 'DRAFT' THEN cr.id END) AS num_resubmissions, \n    count(CASE WHEN user_action = 'REQUEST_DUPLICATE' AND last_status <> 'DRAFT' THEN cr.id END) AS num_add_req_dup, \n    count(CASE WHEN user_action = 'REQUEST_NOT_REPORTABLE' AND last_status <> 'DRAFT' THEN cr.id END) AS num_add_req_nr, \n    count(CASE WHEN user_action = 'REQUEST_CORRECTION' AND last_status <> 'DRAFT' THEN cr.id END) AS num_sent_back_again, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'REPORTING_OFFICER' AND last_status NOT IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE') THEN cr.id END) AS num_recalled_ro, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'DATA_WARDEN' AND last_status NOT IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE')  THEN cr.id END) AS num_recalled_dw, \n    count(CASE WHEN user_action = 'CLOSE' THEN cr.id END) AS num_closed, \n    count(CASE WHEN user_action = 'MARK_DUPLICATE' THEN cr.id END) AS num_mark_dup, \n    count(CASE WHEN user_action = 'MARK_NOT_REPORTABLE' THEN cr.id END) AS num_mark_nr, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'REPORTING_OFFICER' AND last_status IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE') THEN cr.id END) AS num_reopened_ro, \n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'DATA_WARDEN' AND last_status IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE')  THEN cr.id END) AS num_reopened_dw \nFROM prisons.incidentreporting_correction_request AS cr \nLEFT JOIN (\n    SELECT location, id, type, source \n    FROM prisons.incidentreporting_report\n) AS r ON cr.report_id = r.id \nLEFT JOIN (\n    SELECT \n        report_id, \n        status AS new_status, \n        changed_by, \n        lag(status) OVER (PARTITION BY report_id ORDER BY changed_at) AS last_status, \n        -- Added explicit frame clause for Redshift compatibility\n        count(status) OVER (\n            PARTITION BY report_id \n            ORDER BY changed_at \n            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n        ) - 2 AS sh_sequence \n    FROM prisons.incidentreporting_status_history\n) AS sh ON cr.report_id = sh.report_id AND cr.sequence = sh.sh_sequence AND cr.correction_requested_by = sh.changed_by \nLEFT JOIN (\n    SELECT code, description \n    FROM prisons.incidentreporting_constant_type\n) AS ct ON r.type = ct.code\nWHERE r.source = 'DPS' \nGROUP BY 1, ROLLUP(r.location), ROLLUP(ct.description)) as result\n LEFT JOIN (select agy_loc_id location_id, description location_name\nFROM prisons.nomis_agency_locations) as al\n ON result.location_id = al.location_id",
+      "query": "SELECT result.*, COALESCE(al.location_name, 'All locations') AS location_name from (SELECT \n    CAST(date_trunc('month', cr.correction_requested_at) AS DATE) AS month, \n    to_char(MIN(cr.correction_requested_at), 'DD/MM/YYYY') AS min_date, \n    to_char(MAX(cr.correction_requested_at), 'DD/MM/YYYY') AS max_date, \n    COALESCE(r.location, 'All locations') AS location_id,\n    COALESCE(ct.description, 'All incident types') AS incident_type, \n    count(DISTINCT(cr.report_id)) AS num_reports, \n    count(cr.id) AS total_actions, \n    ROUND(CAST(count(cr.id) AS decimal(18,2))/NULLIF(CAST(count(DISTINCT(cr.report_id)) AS decimal(18,2)), 0), 1) AS avg_actions_per_report, \n    count(CASE WHEN user_action = 'REQUEST_REVIEW' THEN cr.id END) AS submissions,\n    count(CASE WHEN user_action = 'REQUEST_DUPLICATE' THEN cr.id END) AS dup_requests,\n    count(CASE WHEN user_action = 'REQUEST_NOT_REPORTABLE' THEN cr.id END) AS nr_requests,\n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'REPORTING_OFFICER' AND last_status = 'AWAITING_REVIEW' THEN cr.id END) AS num_recalled_before_review,\n    count(CASE WHEN user_action = 'REQUEST_CORRECTION' THEN cr.id END) AS num_sent_back,\n    count(CASE WHEN user_action = 'HOLD' THEN cr.id END) AS num_held,\n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'REPORTING_OFFICER' AND last_status NOT IN ('AWAITING_REVIEW', 'CLOSED', 'DUPLICATE', 'NOT_REPORTABLE') THEN cr.id END) AS num_recalled_ro_after_review,\n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'DATA_WARDEN' AND last_status NOT IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE')  THEN cr.id END) AS num_recalled_dw,\n    count(CASE WHEN user_action = 'CLOSE' THEN cr.id END) AS num_closed,\n    count(CASE WHEN user_action = 'MARK_DUPLICATE' THEN cr.id END) AS num_mark_dup,\n    count(CASE WHEN user_action = 'MARK_NOT_REPORTABLE' THEN cr.id END) AS num_mark_nr,\n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'REPORTING_OFFICER' AND last_status IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE') THEN cr.id END) AS num_reopened_ro,\n    count(CASE WHEN user_action = 'RECALL' AND user_type = 'DATA_WARDEN' AND last_status IN ('CLOSED', 'DUPLICATE', 'NOT_REPORTABLE')  THEN cr.id END) AS num_reopened_dw \nFROM prisons.incidentreporting_correction_request AS cr \nLEFT JOIN (\n    SELECT location, id, type, source \n    FROM prisons.incidentreporting_report\n) AS r ON cr.report_id = r.id \nLEFT JOIN (\n    SELECT \n        report_id, \n        status AS new_status, \n        changed_by, \n        lag(status) OVER (PARTITION BY report_id ORDER BY changed_at) AS last_status, \n        -- Added explicit frame clause for Redshift compatibility\n        count(status) OVER (\n            PARTITION BY report_id \n            ORDER BY changed_at \n            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n        ) - 2 AS sh_sequence \n    FROM prisons.incidentreporting_status_history\n) AS sh ON cr.report_id = sh.report_id AND cr.sequence = sh.sh_sequence AND cr.correction_requested_by = sh.changed_by \nLEFT JOIN (\n    SELECT code, description \n    FROM prisons.incidentreporting_constant_type\n) AS ct ON r.type = ct.code\nWHERE r.source = 'DPS' \nGROUP BY 1, ROLLUP(r.location), ROLLUP(ct.description)) as result\n LEFT JOIN (select agy_loc_id location_id, description location_name\nFROM prisons.nomis_agency_locations) as al\n ON result.location_id = al.location_id",
       "schema": {
         "field": [
           {
@@ -403,15 +391,19 @@
             "type": "float"
           },
           {
-            "name": "num_first_submissions",
+            "name": "submissions",
             "type": "long"
           },
           {
-            "name": "num_first_req_dup",
+            "name": "dup_requests",
             "type": "long"
           },
           {
-            "name": "num_first_req_nr",
+            "name": "nr_requests",
+            "type": "long"
+          },
+          {
+            "name": "num_recalled_before_review",
             "type": "long"
           },
           {
@@ -423,23 +415,7 @@
             "type": "long"
           },
           {
-            "name": "num_resubmissions",
-            "type": "long"
-          },
-          {
-            "name": "num_add_req_dup",
-            "type": "long"
-          },
-          {
-            "name": "num_add_req_nr",
-            "type": "long"
-          },
-          {
-            "name": "num_sent_back_again",
-            "type": "long"
-          },
-          {
-            "name": "num_recalled_ro",
+            "name": "num_recalled_ro_after_review",
             "type": "long"
           },
           {
@@ -763,9 +739,14 @@
       "render": "HTML",
       "feature": [
         {
-          "type": "print"
+           "type": "print"
         }
       ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
       "specification": {
         "template": "list",
         "field": [
@@ -862,9 +843,14 @@
       "render": "HTML",
       "feature": [
         {
-          "type": "print"
+           "type": "print"
         }
       ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
       "specification": {
         "template": "list",
         "field": [
@@ -961,9 +947,14 @@
       "render": "HTML",
       "feature": [
         {
-          "type": "print"
+           "type": "print"
         }
       ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
       "specification": {
         "template": "list",
         "field": [
@@ -1074,9 +1065,14 @@
       "render": "HTML",
       "feature": [
         {
-          "type": "print"
+           "type": "print"
         }
       ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
       "specification": {
         "template": "list",
         "field": [
@@ -1180,9 +1176,14 @@
       "render": "HTML",
       "feature": [
         {
-          "type": "print"
+           "type": "print"
         }
       ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
       "specification": {
         "template": "list",
         "field": [
@@ -1265,22 +1266,29 @@
             "defaultsort": false
           },
           {
-            "name": "$ref:num_first_submissions",
-            "display": "Initial reviews requested",
+            "name": "$ref:submissions",
+            "display": "Submissions",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
           },
           {
-            "name": "$ref:num_first_req_dup",
-            "display": "Initial duplicate requests",
+            "name": "$ref:dup_requests",
+            "display": "Duplicate requests",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
           },
           {
-            "name": "$ref:num_first_req_nr",
-            "display": "Initial not reportable requests",
+            "name": "$ref:nr_requests",
+            "display": "Not reportable requests",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:num_recalled_before_review",
+            "display": "RO recalls before review",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
@@ -1294,49 +1302,21 @@
           },
           {
             "name": "$ref:num_held",
-            "display": "Reports held",
+            "display": "Held",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
           },
           {
-            "name": "$ref:num_resubmissions",
-            "display": "Resubmissions",
-            "sortable": true,
-            "visible": "true",
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:num_add_req_dup",
-            "display": "Later requests for duplicate",
-            "sortable": true,
-            "visible": "true",
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:num_add_req_nr",
-            "display": "Later requests not reportable",
-            "sortable": true,
-            "visible": "true",
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:num_sent_back_again",
-            "display": "Sent back again",
-            "sortable": true,
-            "visible": "true",
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:num_recalled_ro",
-            "display": "Recalled   by RO",
+            "name": "$ref:num_recalled_ro_after_review",
+            "display": "RO recalls after review",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
           },
           {
             "name": "$ref:num_recalled_dw",
-            "display": "Recalled   by DW",
+            "display": "DW recalls",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
@@ -1350,28 +1330,28 @@
           },
           {
             "name": "$ref:num_mark_dup",
-            "display": "Marked as  duplicate",
+            "display": "Marked as duplicate",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
           },
           {
             "name": "$ref:num_mark_nr",
-            "display": "Marked as  not reportable",
+            "display": "Marked as not reportable",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
           },
           {
             "name": "$ref:num_reopened_ro",
-            "display": "Reopened  by RO",
+            "display": "Reopened by RO",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
           },
           {
             "name": "$ref:num_reopened_dw",
-            "display": "Reopened  by DW",
+            "display": "Reopened by DW",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
@@ -1390,9 +1370,14 @@
       "render": "HTML",
       "feature": [
         {
-          "type": "print"
+           "type": "print"
         }
       ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
       "specification": {
         "template": "list",
         "field": [
@@ -1475,78 +1460,57 @@
             "defaultsort": false
           },
           {
-            "name": "$ref:num_first_submissions",
-            "display": "Initial reviews requested",
+            "name": "$ref:submissions",
+            "display": "Submissions",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
           },
           {
-            "name": "$ref:num_first_req_dup",
-            "display": "Initial duplicate requests",
+            "name": "$ref:dup_requests",
+            "display": "Duplicate requests",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
           },
           {
-            "name": "$ref:num_first_req_nr",
-            "display": "Initial not reportable requests",
+            "name": "$ref:nr_requests",
+            "display": "Not reportable requests",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:num_recalled_before_review",
+            "display": "RO recalls before review",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
           },
           {
             "name": "$ref:num_sent_back",
-            "display": "1st line Sent back",
+            "display": "Sent back",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
           },
           {
             "name": "$ref:num_held",
-            "display": "Reports held",
+            "display": "Held",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
           },
           {
-            "name": "$ref:num_resubmissions",
-            "display": "Resubmissions",
-            "sortable": true,
-            "visible": "true",
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:num_add_req_dup",
-            "display": "Later requests for duplicate",
-            "sortable": true,
-            "visible": "true",
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:num_add_req_nr",
-            "display": "Later requests not reportable",
-            "sortable": true,
-            "visible": "true",
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:num_sent_back_again",
-            "display": "Sent back again",
-            "sortable": true,
-            "visible": "true",
-            "defaultsort": false
-          },
-          {
-            "name": "$ref:num_recalled_ro",
-            "display": "Recalled   by RO",
+            "name": "$ref:num_recalled_ro_after_review",
+            "display": "RO recalls after review",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
           },
           {
             "name": "$ref:num_recalled_dw",
-            "display": "Recalled   by DW",
+            "display": "DW recalls",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
@@ -1560,28 +1524,28 @@
           },
           {
             "name": "$ref:num_mark_dup",
-            "display": "Marked as  duplicate",
+            "display": "Marked as duplicate",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
           },
           {
             "name": "$ref:num_mark_nr",
-            "display": "Marked as  not reportable",
+            "display": "Marked as not reportable",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
           },
           {
             "name": "$ref:num_reopened_ro",
-            "display": "Reopened  by RO",
+            "display": "Reopened by RO",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
           },
           {
             "name": "$ref:num_reopened_dw",
-            "display": "Reopened  by DW",
+            "display": "Reopened by DW",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
@@ -1600,9 +1564,14 @@
       "render": "HTML",
       "feature": [
         {
-          "type": "print"
+           "type": "print"
         }
       ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
       "specification": {
         "template": "list",
         "field": [
@@ -1730,9 +1699,14 @@
       "render": "HTML",
       "feature": [
         {
-          "type": "print"
+           "type": "print"
         }
       ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
       "specification": {
         "template": "list",
         "field": [
@@ -1831,9 +1805,14 @@
       "render": "HTML",
       "feature": [
         {
-          "type": "print"
+           "type": "print"
         }
       ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
       "specification": {
         "template": "list",
         "field": [
@@ -1915,9 +1894,14 @@
       "render": "HTML",
       "feature": [
         {
-          "type": "print"
+           "type": "print"
         }
       ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
       "specification": {
         "template": "list",
         "field": [

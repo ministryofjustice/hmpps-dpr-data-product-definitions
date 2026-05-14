@@ -1,7 +1,7 @@
 {
   "id": "act006-appointment-attendance-by-caseload",
-  "name": "Activity Appointment attendance",
-  "description": "View Appointment attendance by date range",
+  "name": "Appointments attendance",
+  "description": "Appointments attendance by date range",
   "metadata": {
     "author": "Zahoor Hussain",
     "owner": "Claire Morgan",
@@ -19,7 +19,7 @@
       "id": "appointment-attendance",
       "name": "Appointment attendance by date",
       "datasource": "datamart",
-      "query": "SELECT prison_code, par.name AS parent_name, cat.description AS category_description, category_code, custom_name, NVL (custom_name, '') || ' ( ' || cat.description || ' )' AS appointment_name, att.appointment_id, appointment_tier_id AS appointment_tier, start_date, substring(start_time, 0, 6) || ' - ' || substring(end_time, 0, 6) AS start_to_end, att.prisoner_number, dm.name, substring(dm.cell_location, 5, 10) AS cell_location, CASE WHEN app.cancellation_reason_id IS NOT NULL THEN 'Cancelled' WHEN attended IS NULL THEN 'Not recorded yet' WHEN attended = false THEN 'Did not attend' WHEN attended THEN 'Attended' END AS attended FROM datamart.prisons.activities_appointment_attendee att LEFT JOIN datamart.prisons.activities_appointment app USING (appointment_id) LEFT JOIN datamart.prisons.activities_appointment_category cat ON cat.code = category_code LEFT JOIN datamart.prisons.activities_appointment_parent_category par USING (appointment_parent_category_id) LEFT JOIN datamart.person.prisoner dm USING (prisoner_number) WHERE appointment_tier_id in (1, 2) AND (dm.prison_id NOT IN ('OUT', 'ZZGHI')) AND NOT app.is_deleted ORDER by start_date, start_time",
+      "query": "SELECT prison_code, par.name AS parent_name, cat.description AS category_description, category_code, custom_name, NVL (custom_name, '') || ' ( ' || cat.description || ' )' AS appointment_name, att.appointment_id, appointment_tier_id AS appointment_tier, start_date, substring(start_time, 0, 6) || ' - ' || substring(end_time, 0, 6) AS start_to_end, att.prisoner_number, dm.name, substring(dm.cell_location, 5, 10) AS cell_location, CASE WHEN app.cancellation_reason_id IS NOT NULL THEN 'Cancelled' WHEN attended IS NULL THEN 'Not recorded' WHEN attended = false THEN 'Did not attend' WHEN attended THEN 'Attended' END AS attended FROM datamart.prisons.activities_appointment_attendee att LEFT JOIN datamart.prisons.activities_appointment app USING (appointment_id) LEFT JOIN datamart.prisons.activities_appointment_category cat ON cat.code = category_code LEFT JOIN datamart.prisons.activities_appointment_parent_category par USING (appointment_parent_category_id) LEFT JOIN datamart.person.prisoner dm USING (prisoner_number) WHERE appointment_tier_id in (1, 2) AND (dm.prison_id NOT IN ('ZZGHI')) AND NOT app.is_deleted AND NOT att.is_deleted ORDER by start_date, start_time",
       "schema": {
         "field": [
           {
@@ -99,7 +99,7 @@
       "id": "appointment-summary",
       "name": "Appointment attendance summary for visualisation",
       "datasource": "datamart",
-      "query": "SELECT start_date AS ts, prison_code, CASE WHEN att.is_deleted THEN 'Cancelled' WHEN attended IS NULL THEN 'Not recorded yet' WHEN attended = false THEN 'Did not attend' WHEN attended THEN 'Attended' WHEN appointment_tier_id = 1 THEN 'Tier 1' WHEN appointment_tier_id = 2 THEN 'Tier 2' WHEN appointment_tier_id = 3 THEN 'Routine' END AS type, count(*) FROM datamart.prisons.activities_appointment_attendee att LEFT JOIN datamart.prisons.activities_appointment app USING (appointment_id) LEFT JOIN datamart.person.prisoner dm USING (prisoner_number) WHERE appointment_tier_id in (1, 2) AND (dm.prison_id IN ('LEI')) GROUP BY ts, prison_code,type ORDER by ts",
+      "query": "SELECT start_date AS ts, prison_code, CASE WHEN att.is_deleted THEN 'Cancelled' WHEN attended IS NULL THEN 'Not recorded' WHEN attended = false THEN 'Did not attend' WHEN attended THEN 'Attended' WHEN appointment_tier_id = 1 THEN 'Tier 1' WHEN appointment_tier_id = 2 THEN 'Tier 2' WHEN appointment_tier_id = 3 THEN 'Routine' END AS type, count(*) FROM datamart.prisons.activities_appointment_attendee att LEFT JOIN datamart.prisons.activities_appointment app USING (appointment_id) LEFT JOIN datamart.person.prisoner dm USING (prisoner_number) WHERE appointment_tier_id in (1, 2) AND (dm.prison_id IN ('LEI')) GROUP BY ts, prison_code,type ORDER by ts",
       "schema": {
         "field": [
           {
@@ -129,13 +129,14 @@
       "id": "appointment-summary-by-date",
       "name": "Appointment attendance summary by date range",
       "datasource": "datamart",
-      "query": "SELECT a.start_date AS ts, a.prison_code, count(distinct a.appointment_id) AS appointment_count, count(aa.appointment_attendee_id) AS attendee_count, sum( CASE WHEN aa.attended IS TRUE THEN 1 ELSE 0 END ) AS attended_count, sum( CASE WHEN aa.attended IS FALSE THEN 1 ELSE 0 END ) AS non_attended_count, sum( CASE WHEN aa.attended IS NULL AND a.cancellation_reason_id IS NULL THEN 1 ELSE 0 END ) AS not_recorded_count, sum( CASE WHEN a.cancellation_reason_id THEN 1 ELSE 0 END ) AS cancelled_count, sum( CASE WHEN a.is_deleted THEN 1 ELSE 0 END ) AS deleted_count, CASE WHEN appointment_count THEN appointment_count - cancelled_count ELSE 0 END AS appointments, CASE WHEN attendee_count THEN attendee_count - cancelled_count ELSE 0 END AS attendees, CASE WHEN cancelled_count THEN cancelled_count - deleted_count ELSE 0 END AS cancellations, CASE WHEN attendees THEN round(attended_count / attendees::FLOAT * 100, 0) ELSE 0 END AS attended_pct, CASE WHEN attendees THEN round(non_attended_count / attendees::FLOAT * 100, 0) ELSE 0 END AS non_attended_pct, CASE WHEN attendees THEN round(not_recorded_count / attendees::FLOAT * 100, 0) ELSE 0 END AS not_recorded_pct, count( CASE WHEN appointment_tier_id = 1 AND attended THEN appointment_tier_id END ) AS tier1, count( CASE WHEN appointment_tier_id = 2 AND attended THEN appointment_tier_id END ) AS tier2, CASE WHEN attendees THEN round(tier1 / attendees::FLOAT * 100, 0) ELSE 0 END AS tier1_pct, CASE WHEN attendees THEN round(tier2 / attendees::FLOAT * 100, 0) ELSE 0 END AS tier2_pct FROM datamart.prisons.activities_appointment_attendee aa LEFT JOIN datamart.prisons.activities_appointment a ON a.appointment_id = aa.appointment_id WHERE aa.removal_reason_id IS NULL AND ts IS NOT NULL AND NOT a.is_deleted AND appointment_tier_id in (1, 2) GROUP BY GROUPING SETS ((ts, a.prison_code), ()) ORDER by ts, a.prison_code",
+      "query": "SELECT a.start_date AS ts, a.prison_code, count(distinct a.appointment_id) AS appointment_count, count(aa.appointment_attendee_id) AS attendee_count, sum( CASE WHEN aa.attended IS TRUE THEN 1 ELSE 0 END ) AS attended_count, sum( CASE WHEN aa.attended IS FALSE THEN 1 ELSE 0 END ) AS non_attended_count, sum( CASE WHEN aa.attended IS NULL AND a.cancellation_reason_id IS NULL THEN 1 ELSE 0 END ) AS not_recorded_count, sum( CASE WHEN a.cancellation_reason_id THEN 1 ELSE 0 END ) AS cancelled_count, sum( CASE WHEN a.is_deleted THEN 1 ELSE 0 END ) AS deleted_count, CASE WHEN appointment_count THEN appointment_count - cancelled_count ELSE 0 END AS appointments, CASE WHEN attendee_count THEN attendee_count - cancelled_count ELSE 0 END AS attendees, CASE WHEN cancelled_count THEN cancelled_count - deleted_count ELSE 0 END AS cancellations, CASE WHEN attendees THEN round(attended_count / attendees::FLOAT * 100, 0) ELSE 0 END AS attended_pct, CASE WHEN attendees THEN round(non_attended_count / attendees::FLOAT * 100, 0) ELSE 0 END AS non_attended_pct, CASE WHEN attendees THEN round(not_recorded_count / attendees::FLOAT * 100, 0) ELSE 0 END AS not_recorded_pct, count( CASE WHEN appointment_tier_id = 1 AND attended THEN appointment_tier_id END ) AS tier1, count( CASE WHEN appointment_tier_id = 2 AND attended THEN appointment_tier_id END ) AS tier2, CASE WHEN attendees THEN round(tier1 / attendees::FLOAT * 100, 0) ELSE 0 END AS tier1_pct, CASE WHEN attendees THEN round(tier2 / attendees::FLOAT * 100, 0) ELSE 0 END AS tier2_pct FROM datamart.prisons.activities_appointment_attendee aa LEFT JOIN datamart.prisons.activities_appointment a ON a.appointment_id = aa.appointment_id WHERE aa.removal_reason_id IS NULL AND ts IS NOT NULL AND NOT a.is_deleted AND NOT aa.is_deleted AND appointment_tier_id in (1, 2) GROUP BY GROUPING SETS ((ts, a.prison_code), ()) ORDER by ts, a.prison_code",
       "schema": {
         "field": [
           {
             "name": "ts",
             "type": "date",
             "display": "Date",
+            "formula": "format_date(${ts}, 'dd MMMM yyyy')",
             "filter": {
               "index": 0,
               "type": "daterange",
@@ -248,7 +249,8 @@
             {
               "match": [
                 "${role}",
-                "ROLE_ACTIVITY_HUB"
+                "ROLE_ACTIVITY_HUB",
+                "ROLE_PRISONS_REPORTING_USER"
               ]
             }
           ]
@@ -259,7 +261,7 @@
       "id": "caseload",
       "type": "row-level",
       "action": [
-        "prison_code = '${caseload}'"
+        "prison_code = '${caseload}' OR prison_code = 'OUT'"
       ],
       "rule": [
         {
@@ -278,8 +280,8 @@
   "report": [
     {
       "id": "appointment-attendance-by-date-range",
-      "name": "Appointment attendance by date range.",
-      "description": "Appointment attendance by date range.",
+      "name": "Appointments attendance by date range.",
+      "description": "Appointments attendance by date range.",
       "classification": "Official",
       "version": "1.0.0",
       "render": "HTML",
@@ -300,7 +302,6 @@
           {
             "name": "$ref:start_date",
             "display": "Date",
-            "formula": "format_date(${start_date}, 'dd MMMM yyyy')",
             "visible": "true",
             "sortable": true,
             "defaultsort": true,
@@ -308,7 +309,7 @@
               "index": 0,
               "type": "daterange",
               "interactive": "true",
-              "default": "today() - today()"
+              "default": "today(-1, months) - today()"
             }
           },
           {
@@ -394,14 +395,6 @@
             "visible": "true",
             "sortable": true,
             "defaultsort": false
-          },
-          {
-            "name": "$ref:cell_location",
-            "display": "Cell location",
-            "formula": "",
-            "visible": "true",
-            "sortable": true,
-            "defaultsort": false
           }
         ]
       }
@@ -410,8 +403,8 @@
   "dashboard": [
     {
       "id": "appointment-summary-by-date-range",
-      "name": "Appointment attendance summary by date range",
-      "description": "Tier 1 and Tier 2 appointments are included in this report, foundational (Tier 3) appointments are excluded so the figures will not match other reports where foundational appointments are included.",
+      "name": "Appointments attendance summary by date range",
+      "description": "This report only counts Tier 1 and Tier 2 appointments. Foundational appointments are not counted, so figures will not match other reports.",
       "dataset": "appointment-summary-by-date",
       "section": [
         {
@@ -455,15 +448,15 @@
                   },
                   {
                     "id": "$ref:attended_pct",
-                    "display": "Attended %"
+                    "display": "Attended Percentage"
                   },
                   {
                     "id": "$ref:non_attended_count",
-                    "display": "Non Attended"
+                    "display": "Did not attend"
                   },
                   {
                     "id": "$ref:non_attended_pct",
-                    "display": "Non Attended %"
+                    "display": "Did not attend Percentage"
                   },
                   {
                     "id": "$ref:not_recorded_count",
@@ -471,19 +464,19 @@
                   },
                   {
                     "id": "$ref:not_recorded_pct",
-                    "display": "Not recorded %"
+                    "display": "Not recorded Percentage"
                   },
                   {
                     "id": "$ref:tier1",
-                    "display": "Tier 1"
+                    "display": "Attended Tier 1"
                   },
                   {
                     "id": "$ref:tier2",
-                    "display": "Tier 2"
+                    "display": "Attended Tier 2"
                   },
                   {
                     "id": "$ref:cancellations",
-                    "display": "Cancellations"
+                    "display": "Cancelled appointments"
                   }
                 ],
                 "expectNull": false
@@ -546,7 +539,7 @@
             {
               "id": "pc4",
               "type": "line-timeseries",
-              "display": "Attendance Recorded %",
+              "display": "Attendance Recorded Percentage",
               "column": {
                 "key": [
                   {
@@ -561,7 +554,7 @@
                   },
                   {
                     "id": "$ref:attended_pct",
-                    "display": "%"
+                    "display": "Percentage"
                   }
                 ],
                 "expectNull": false
@@ -570,7 +563,7 @@
             {
               "id": "pc5",
               "type": "line-timeseries",
-              "display": "Non Attended recorded %",
+              "display": "Non Attended recorded Percentage",
               "column": {
                 "key": [
                   {
@@ -585,7 +578,7 @@
                   },
                   {
                     "id": "$ref:non_attended_pct",
-                    "display": "%"
+                    "display": "Percentage"
                   }
                 ],
                 "expectNull": false
@@ -594,7 +587,7 @@
             {
               "id": "pc6",
               "type": "line-timeseries",
-              "display": "Not Recorded %",
+              "display": "Not Recorded Percentage",
               "column": {
                 "key": [
                   {
@@ -609,7 +602,7 @@
                   },
                   {
                     "id": "$ref:not_recorded_pct",
-                    "display": "%"
+                    "display": "Percentage"
                   }
                 ],
                 "expectNull": false
@@ -618,7 +611,7 @@
             {
               "id": "pc7",
               "type": "line-timeseries",
-              "display": "Tier 1 attended as %",
+              "display": "Tier 1 attended as Percentage",
               "column": {
                 "key": [
                   {
@@ -633,7 +626,7 @@
                   },
                   {
                     "id": "$ref:tier1_pct",
-                    "display": "%"
+                    "display": "Percentage"
                   }
                 ],
                 "expectNull": false
@@ -642,7 +635,7 @@
             {
               "id": "pc8",
               "type": "line-timeseries",
-              "display": "Tier 2 attendence as %",
+              "display": "Tier 2 attendence as Percentage",
               "column": {
                 "key": [
                   {
@@ -657,7 +650,7 @@
                   },
                   {
                     "id": "$ref:tier2_pct",
-                    "display": "%"
+                    "display": "Percentage"
                   }
                 ],
                 "expectNull": false
@@ -666,7 +659,7 @@
             {
               "id": "pc9",
               "type": "line-timeseries",
-              "display": "Cancellations count",
+              "display": "Cancelled appointments count",
               "column": {
                 "key": [
                   {
@@ -681,7 +674,7 @@
                   },
                   {
                     "id": "$ref:cancellations",
-                    "display": "Cancellations"
+                    "display": "Cancelled appointments"
                   }
                 ],
                 "expectNull": false
