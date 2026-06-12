@@ -1,6 +1,6 @@
 {
   "id": "incident-finds",
-  "name": "Finds Reports",
+  "name": "Incident Reports - Finds",
   "description": "Finds incidents recorded at an establishment for a given date range. Provides a Finds Detail list (every find, with prisoner involvement where recorded) and Finds Summary dashboards aggregating totals by find type, prisoners involved and drug type.<br/>IR-1575",
   "metadata": {
     "version": "1.0.0",
@@ -138,11 +138,11 @@
       }
     },
     {
-      "id": "finds-summary-category",
-      "name": "Finds by type",
-      "description": "Per find type: number of incidents recorded and number of prisoners involved (incl. nil).",
+      "id": "finds-summary-incidents",
+      "name": "Finds incidents by establishment and type",
+      "description": "Per establishment and find type: number of incidents recorded (incl. nil).",
       "datasource": "athena",
-      "query": "WITH find_reports_raw AS (\n  SELECT\n    r.id AS report_id,\n    r.location,\n    p.name AS location_name,\n    MAX(CASE WHEN q.code IN ('67187','65187') THEN\n  CASE res.code\n    WHEN '218783' THEN 'Multiple types'\n    WHEN '216784' THEN 'Multiple types'\n    WHEN '218784' THEN 'Alcohol / hooch / distilling equipment'\n    WHEN '216785' THEN 'Alcohol / hooch / distilling equipment'\n    WHEN '218785' THEN 'Drug / drug equipment'\n    WHEN '216786' THEN 'Drug / drug equipment'\n    WHEN '218786' THEN 'Mobile phone / mobile related item'\n    WHEN '216787' THEN 'Mobile phone / mobile related item'\n    WHEN '218787' THEN 'Digital find (excluding mobile phones)'\n    WHEN '216788' THEN 'Digital find (excluding mobile phones)'\n    WHEN '218788' THEN 'Tobacco / tobacco related items'\n    WHEN '216789' THEN 'Tobacco / tobacco related items'\n    WHEN '218789' THEN 'Weapon'\n    WHEN '216790' THEN 'Weapon'\n    WHEN '218790' THEN 'Other reportable items'\n    WHEN '216791' THEN 'Other reportable items'\n  END\nEND) AS find_category_new,\n    MAX(CASE WHEN q.code IN ('49265','51234','51188','57288') AND res.code IN ('195011','198731','196731','209156') THEN 1 ELSE 0 END) AS found_drug,\nMAX(CASE WHEN q.code IN ('49274','51242','51196','57296') AND res.code IN ('195045','198783','196783','209208') THEN 1 ELSE 0 END) AS found_mobile,\nMAX(CASE WHEN q.code IN ('49289','51255','51209','57309') AND res.code IN ('195084','198874','196875','209297') THEN 1 ELSE 0 END) AS found_alcohol\n  FROM prisons.incidentreporting_report r\n    JOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\n    JOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\n    JOIN prisons.prisonregister_prison p ON p.prison_id = r.location\n    LEFT JOIN prisons.incidentreporting_question q ON q.report_id = r.id\n    LEFT JOIN prisons.incidentreporting_response res ON res.question_id = q.id\n  WHERE ctf.code = 'FIND'\n    AND r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')\n    AND date(r.incident_date_and_time) >= (SELECT START_DATE from prompt_)\n    AND date(r.incident_date_and_time) <= (SELECT END_DATE from prompt_)\n  GROUP BY r.id, r.location, p.name\n),\nfind_reports AS (\n  SELECT report_id, location, location_name,\n    COALESCE(find_category_new, CASE\n  WHEN (COALESCE(found_drug,0) + COALESCE(found_mobile,0) + COALESCE(found_alcohol,0)) > 1 THEN 'Multiple types'\n  WHEN found_drug = 1 THEN 'Drug / drug equipment'\n  WHEN found_mobile = 1 THEN 'Mobile phone / mobile related item'\n  WHEN found_alcohol = 1 THEN 'Alcohol / hooch / distilling equipment'\nEND) AS category\n  FROM find_reports_raw\n),\nincidents AS (\n  SELECT location, location_name, category, COUNT(*) AS incidents_recorded\n  FROM find_reports\n  GROUP BY location, location_name, category\n  UNION ALL\n  SELECT CAST(NULL AS varchar), CAST(NULL AS varchar), category, COUNT(*)\n  FROM find_reports\n  GROUP BY category\n),\nprisoners AS (\n  SELECT fr.location AS location, fr.category, COUNT(DISTINCT pi.prisoner_number) AS prisoners_involved\n  FROM find_reports fr\n    JOIN prisons.incidentreporting_prisoner_involvement pi ON pi.report_id = fr.report_id\n  GROUP BY fr.location, fr.category\n  UNION ALL\n  SELECT CAST(NULL AS varchar), fr.category, COUNT(DISTINCT pi.prisoner_number)\n  FROM find_reports fr\n    JOIN prisons.incidentreporting_prisoner_involvement pi ON pi.report_id = fr.report_id\n  GROUP BY fr.category\n),\ncombined AS (\n  SELECT i.location, i.location_name, i.category,\n    i.incidents_recorded,\n    COALESCE(pr.prisoners_involved, 0) AS prisoners_involved\n  FROM incidents i\n    LEFT JOIN prisoners pr ON pr.category = i.category AND pr.location IS NOT DISTINCT FROM i.location\n)\nSELECT\n  format_datetime((SELECT START_DATE from prompt_), 'dd/MM/yyyy') AS start_date,\n  format_datetime((SELECT END_DATE from prompt_), 'dd/MM/yyyy') AS end_date,\n  c.location,\n  c.location_name,\n  cat.label AS find_category,\n  COALESCE(c.incidents_recorded, 0) AS incidents_recorded,\n  COALESCE(c.prisoners_involved, 0) AS prisoners_involved\nFROM (VALUES ('Alcohol / hooch / distilling equipment'), ('Drug / drug equipment'), ('Mobile phone / mobile related item'), ('Digital find (excluding mobile phones)'), ('Tobacco / tobacco related items'), ('Weapon'), ('Other reportable items'), ('Multiple types')) AS cat (label)\n  LEFT JOIN combined c ON c.category = cat.label\nORDER BY c.location_name, cat.label",
+      "query": "WITH find_reports_raw AS (\n  SELECT\n    r.id AS report_id,\n    r.location,\n    p.name AS location_name,\n    MAX(CASE WHEN q.code IN ('67187','65187') THEN\n  CASE res.code\n    WHEN '218783' THEN 'Multiple types'\n    WHEN '216784' THEN 'Multiple types'\n    WHEN '218784' THEN 'Alcohol / hooch / distilling equipment'\n    WHEN '216785' THEN 'Alcohol / hooch / distilling equipment'\n    WHEN '218785' THEN 'Drug / drug equipment'\n    WHEN '216786' THEN 'Drug / drug equipment'\n    WHEN '218786' THEN 'Mobile phone / mobile related item'\n    WHEN '216787' THEN 'Mobile phone / mobile related item'\n    WHEN '218787' THEN 'Digital find (excluding mobile phones)'\n    WHEN '216788' THEN 'Digital find (excluding mobile phones)'\n    WHEN '218788' THEN 'Tobacco / tobacco related items'\n    WHEN '216789' THEN 'Tobacco / tobacco related items'\n    WHEN '218789' THEN 'Weapon'\n    WHEN '216790' THEN 'Weapon'\n    WHEN '218790' THEN 'Other reportable items'\n    WHEN '216791' THEN 'Other reportable items'\n  END\nEND) AS find_category_new,\n    MAX(CASE WHEN q.code IN ('49265','51234','51188','57288') AND res.code IN ('195011','198731','196731','209156') THEN 1 ELSE 0 END) AS found_drug,\nMAX(CASE WHEN q.code IN ('49274','51242','51196','57296') AND res.code IN ('195045','198783','196783','209208') THEN 1 ELSE 0 END) AS found_mobile,\nMAX(CASE WHEN q.code IN ('49289','51255','51209','57309') AND res.code IN ('195084','198874','196875','209297') THEN 1 ELSE 0 END) AS found_alcohol\n  FROM prisons.incidentreporting_report r\n    JOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\n    JOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\n    JOIN prisons.prisonregister_prison p ON p.prison_id = r.location\n    LEFT JOIN prisons.incidentreporting_question q ON q.report_id = r.id\n    LEFT JOIN prisons.incidentreporting_response res ON res.question_id = q.id\n  WHERE ctf.code = 'FIND'\n    AND r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')\n    AND date(r.incident_date_and_time) >= (SELECT START_DATE from prompt_)\n    AND date(r.incident_date_and_time) <= (SELECT END_DATE from prompt_)\n  GROUP BY r.id, r.location, p.name\n),\nfind_reports AS (\n  SELECT report_id, location, location_name,\n    COALESCE(find_category_new, CASE\n  WHEN (COALESCE(found_drug,0) + COALESCE(found_mobile,0) + COALESCE(found_alcohol,0)) > 1 THEN 'Multiple types'\n  WHEN found_drug = 1 THEN 'Drug / drug equipment'\n  WHEN found_mobile = 1 THEN 'Mobile phone / mobile related item'\n  WHEN found_alcohol = 1 THEN 'Alcohol / hooch / distilling equipment'\nEND) AS category\n  FROM find_reports_raw\n),\nlocs AS (SELECT DISTINCT location, location_name FROM find_reports),\ncat (label) AS (VALUES ('Alcohol / hooch / distilling equipment'), ('Drug / drug equipment'), ('Mobile phone / mobile related item'), ('Digital find (excluding mobile phones)'), ('Tobacco / tobacco related items'), ('Weapon'), ('Other reportable items'), ('Multiple types')),\nskeleton AS (SELECT l.location, l.location_name, c.label AS category FROM locs l CROSS JOIN cat c),\ncounts AS (\n  SELECT location, category, COUNT(*) AS incidents_recorded\n  FROM find_reports\n  GROUP BY location, category\n),\ncombined AS (\n  SELECT s.location, s.location_name, s.category,\n    COALESCE(ct.incidents_recorded, 0) AS incidents_recorded\n  FROM skeleton s\n    LEFT JOIN counts ct ON ct.location = s.location AND ct.category = s.category\n)\nSELECT\n  format_datetime((SELECT START_DATE from prompt_), 'dd/MM/yyyy') AS start_date,\n  format_datetime((SELECT END_DATE from prompt_), 'dd/MM/yyyy') AS end_date,\n  c.location,\n  c.location_name,\n  c.category AS find_category,\n  c.incidents_recorded AS incidents_recorded\nFROM combined c\nORDER BY c.location_name, c.category",
       "parameters": [
         {
           "index": 0,
@@ -198,9 +198,68 @@
             "name": "incidents_recorded",
             "type": "int",
             "display": "Number of incidents recorded"
+          }
+        ]
+      }
+    },
+    {
+      "id": "finds-summary-prisoners",
+      "name": "Finds prisoners by establishment and type",
+      "description": "Per establishment and find type: number of prisoners involved (incl. nil).",
+      "datasource": "athena",
+      "query": "WITH find_reports_raw AS (\n  SELECT\n    r.id AS report_id,\n    r.location,\n    p.name AS location_name,\n    MAX(CASE WHEN q.code IN ('67187','65187') THEN\n  CASE res.code\n    WHEN '218783' THEN 'Multiple types'\n    WHEN '216784' THEN 'Multiple types'\n    WHEN '218784' THEN 'Alcohol / hooch / distilling equipment'\n    WHEN '216785' THEN 'Alcohol / hooch / distilling equipment'\n    WHEN '218785' THEN 'Drug / drug equipment'\n    WHEN '216786' THEN 'Drug / drug equipment'\n    WHEN '218786' THEN 'Mobile phone / mobile related item'\n    WHEN '216787' THEN 'Mobile phone / mobile related item'\n    WHEN '218787' THEN 'Digital find (excluding mobile phones)'\n    WHEN '216788' THEN 'Digital find (excluding mobile phones)'\n    WHEN '218788' THEN 'Tobacco / tobacco related items'\n    WHEN '216789' THEN 'Tobacco / tobacco related items'\n    WHEN '218789' THEN 'Weapon'\n    WHEN '216790' THEN 'Weapon'\n    WHEN '218790' THEN 'Other reportable items'\n    WHEN '216791' THEN 'Other reportable items'\n  END\nEND) AS find_category_new,\n    MAX(CASE WHEN q.code IN ('49265','51234','51188','57288') AND res.code IN ('195011','198731','196731','209156') THEN 1 ELSE 0 END) AS found_drug,\nMAX(CASE WHEN q.code IN ('49274','51242','51196','57296') AND res.code IN ('195045','198783','196783','209208') THEN 1 ELSE 0 END) AS found_mobile,\nMAX(CASE WHEN q.code IN ('49289','51255','51209','57309') AND res.code IN ('195084','198874','196875','209297') THEN 1 ELSE 0 END) AS found_alcohol\n  FROM prisons.incidentreporting_report r\n    JOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\n    JOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\n    JOIN prisons.prisonregister_prison p ON p.prison_id = r.location\n    LEFT JOIN prisons.incidentreporting_question q ON q.report_id = r.id\n    LEFT JOIN prisons.incidentreporting_response res ON res.question_id = q.id\n  WHERE ctf.code = 'FIND'\n    AND r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')\n    AND date(r.incident_date_and_time) >= (SELECT START_DATE from prompt_)\n    AND date(r.incident_date_and_time) <= (SELECT END_DATE from prompt_)\n  GROUP BY r.id, r.location, p.name\n),\nfind_reports AS (\n  SELECT report_id, location, location_name,\n    COALESCE(find_category_new, CASE\n  WHEN (COALESCE(found_drug,0) + COALESCE(found_mobile,0) + COALESCE(found_alcohol,0)) > 1 THEN 'Multiple types'\n  WHEN found_drug = 1 THEN 'Drug / drug equipment'\n  WHEN found_mobile = 1 THEN 'Mobile phone / mobile related item'\n  WHEN found_alcohol = 1 THEN 'Alcohol / hooch / distilling equipment'\nEND) AS category\n  FROM find_reports_raw\n),\nlocs AS (SELECT DISTINCT location, location_name FROM find_reports),\ncat (label) AS (VALUES ('Alcohol / hooch / distilling equipment'), ('Drug / drug equipment'), ('Mobile phone / mobile related item'), ('Digital find (excluding mobile phones)'), ('Tobacco / tobacco related items'), ('Weapon'), ('Other reportable items'), ('Multiple types')),\nskeleton AS (SELECT l.location, l.location_name, c.label AS category FROM locs l CROSS JOIN cat c),\ncounts AS (\n  SELECT fr.location, fr.category, COUNT(DISTINCT pi.prisoner_number) AS prisoners_involved\n  FROM find_reports fr\n    JOIN prisons.incidentreporting_prisoner_involvement pi ON pi.report_id = fr.report_id\n  GROUP BY fr.location, fr.category\n),\ncombined AS (\n  SELECT s.location, s.location_name, s.category,\n    COALESCE(ct.prisoners_involved, 0) AS prisoners_involved\n  FROM skeleton s\n    LEFT JOIN counts ct ON ct.location = s.location AND ct.category = s.category\n)\nSELECT\n  format_datetime((SELECT START_DATE from prompt_), 'dd/MM/yyyy') AS start_date,\n  format_datetime((SELECT END_DATE from prompt_), 'dd/MM/yyyy') AS end_date,\n  c.location,\n  c.location_name,\n  c.category AS find_category,\n  c.prisoners_involved AS prisoners_involved\nFROM combined c\nORDER BY c.location_name, c.category",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Start incident date",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "End incident date",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "start_date",
+            "type": "date",
+            "display": "Start incident date"
           },
           {
-            "index": 6,
+            "index": 1,
+            "name": "end_date",
+            "type": "date",
+            "display": "End incident date"
+          },
+          {
+            "index": 2,
+            "name": "location",
+            "type": "string",
+            "display": "Establishment ID"
+          },
+          {
+            "index": 3,
+            "name": "location_name",
+            "type": "string",
+            "display": "Establishment"
+          },
+          {
+            "index": 4,
+            "name": "find_category",
+            "type": "string",
+            "display": "Find type"
+          },
+          {
+            "index": 5,
             "name": "prisoners_involved",
             "type": "int",
             "display": "Number of prisoners involved"
@@ -210,10 +269,10 @@
     },
     {
       "id": "finds-summary-drug",
-      "name": "Drug finds by type",
-      "description": "Per drug type: number of incidents where that drug was found (incl. nil).",
+      "name": "Drug finds by establishment and type",
+      "description": "Per establishment and drug type: number of incidents where that drug was found (incl. nil).",
       "datasource": "athena",
-      "query": "WITH drug_rows AS (\n  SELECT\n    r.id AS report_id,\n    r.location,\n    p.name AS location_name,\n    CASE res.code\n      WHEN '218802' THEN 'Unknown'\n      WHEN '218966' THEN 'Unknown'\n      WHEN '218804' THEN 'Amphetamines'\n      WHEN '218967' THEN 'Amphetamines'\n      WHEN '218805' THEN 'Barbiturates'\n      WHEN '218968' THEN 'Barbiturates'\n      WHEN '218806' THEN 'Benzodiazepines'\n      WHEN '218969' THEN 'Benzodiazepines'\n      WHEN '218807' THEN 'Buprenorphine/subutex'\n      WHEN '218970' THEN 'Buprenorphine/subutex'\n      WHEN '218808' THEN 'Cannabis'\n      WHEN '218971' THEN 'Cannabis'\n      WHEN '218809' THEN 'Cannabis plant'\n      WHEN '218972' THEN 'Cannabis plant'\n      WHEN '218810' THEN 'Cocaine'\n      WHEN '218973' THEN 'Cocaine'\n      WHEN '218811' THEN 'Crack'\n      WHEN '218974' THEN 'Crack'\n      WHEN '218812' THEN 'Gabapentin'\n      WHEN '218975' THEN 'Gabapentin'\n      WHEN '218813' THEN 'Heroin'\n      WHEN '218976' THEN 'Heroin'\n      WHEN '218814' THEN 'Ketamine'\n      WHEN '218977' THEN 'Ketamine'\n      WHEN '218815' THEN 'LSD'\n      WHEN '218978' THEN 'LSD'\n      WHEN '218816' THEN 'Methadone'\n      WHEN '218979' THEN 'Methadone'\n      WHEN '218817' THEN 'NPS (new psychoactive substances)'\n      WHEN '218980' THEN 'NPS (new psychoactive substances)'\n      WHEN '218818' THEN 'Pregabalin'\n      WHEN '218981' THEN 'Pregabalin'\n      WHEN '218819' THEN 'Steroids'\n      WHEN '218982' THEN 'Steroids'\n      WHEN '218820' THEN 'Tramadol'\n      WHEN '218983' THEN 'Tramadol'\n      WHEN '218821' THEN 'Tranquilisers'\n      WHEN '218984' THEN 'Tranquilisers'\n      WHEN '218822' THEN 'Other'\n      WHEN '218985' THEN 'Other'\n    END AS drug\n  FROM prisons.incidentreporting_report r\n    JOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\n    JOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\n    JOIN prisons.prisonregister_prison p ON p.prison_id = r.location\n    JOIN prisons.incidentreporting_question q ON q.report_id = r.id\n    JOIN prisons.incidentreporting_response res ON res.question_id = q.id\n  WHERE ctf.code = 'FIND'\n    AND r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')\n    AND q.code IN ('67190', '67208')\n    AND res.code IN ('218802', '218966', '218804', '218967', '218805', '218968', '218806', '218969', '218807', '218970', '218808', '218971', '218809', '218972', '218810', '218973', '218811', '218974', '218812', '218975', '218813', '218976', '218814', '218977', '218815', '218978', '218816', '218979', '218817', '218980', '218818', '218981', '218819', '218982', '218820', '218983', '218821', '218984', '218822', '218985')\n    AND date(r.incident_date_and_time) >= (SELECT START_DATE from prompt_)\n    AND date(r.incident_date_and_time) <= (SELECT END_DATE from prompt_)\n),\nagg AS (\n  SELECT location, location_name, drug,\n    COUNT(DISTINCT report_id) AS incidents_recorded\n  FROM drug_rows\n  GROUP BY GROUPING SETS ((location, location_name, drug), (drug))\n)\nSELECT\n  format_datetime((SELECT START_DATE from prompt_), 'dd/MM/yyyy') AS start_date,\n  format_datetime((SELECT END_DATE from prompt_), 'dd/MM/yyyy') AS end_date,\n  agg.location,\n  agg.location_name,\n  drug.label AS drug_type,\n  COALESCE(agg.incidents_recorded, 0) AS incidents_recorded\nFROM (VALUES ('Amphetamines'), ('Barbiturates'), ('Benzodiazepines'), ('Buprenorphine/subutex'), ('Cannabis'), ('Cannabis plant'), ('Cocaine'), ('Crack'), ('Gabapentin'), ('Heroin'), ('Ketamine'), ('LSD'), ('Methadone'), ('NPS (new psychoactive substances)'), ('Pregabalin'), ('Steroids'), ('Tramadol'), ('Tranquilisers'), ('Other'), ('Unknown')) AS drug (label)\n  LEFT JOIN agg ON agg.drug = drug.label\nORDER BY agg.location_name, drug.label",
+      "query": "WITH drug_rows AS (\n  SELECT\n    r.id AS report_id,\n    r.location,\n    p.name AS location_name,\n    CASE res.code\n      WHEN '218802' THEN 'Unknown'\n      WHEN '218966' THEN 'Unknown'\n      WHEN '218804' THEN 'Amphetamines'\n      WHEN '218967' THEN 'Amphetamines'\n      WHEN '218805' THEN 'Barbiturates'\n      WHEN '218968' THEN 'Barbiturates'\n      WHEN '218806' THEN 'Benzodiazepines'\n      WHEN '218969' THEN 'Benzodiazepines'\n      WHEN '218807' THEN 'Buprenorphine/subutex'\n      WHEN '218970' THEN 'Buprenorphine/subutex'\n      WHEN '218808' THEN 'Cannabis'\n      WHEN '218971' THEN 'Cannabis'\n      WHEN '218809' THEN 'Cannabis plant'\n      WHEN '218972' THEN 'Cannabis plant'\n      WHEN '218810' THEN 'Cocaine'\n      WHEN '218973' THEN 'Cocaine'\n      WHEN '218811' THEN 'Crack'\n      WHEN '218974' THEN 'Crack'\n      WHEN '218812' THEN 'Gabapentin'\n      WHEN '218975' THEN 'Gabapentin'\n      WHEN '218813' THEN 'Heroin'\n      WHEN '218976' THEN 'Heroin'\n      WHEN '218814' THEN 'Ketamine'\n      WHEN '218977' THEN 'Ketamine'\n      WHEN '218815' THEN 'LSD'\n      WHEN '218978' THEN 'LSD'\n      WHEN '218816' THEN 'Methadone'\n      WHEN '218979' THEN 'Methadone'\n      WHEN '218817' THEN 'NPS (new psychoactive substances)'\n      WHEN '218980' THEN 'NPS (new psychoactive substances)'\n      WHEN '218818' THEN 'Pregabalin'\n      WHEN '218981' THEN 'Pregabalin'\n      WHEN '218819' THEN 'Steroids'\n      WHEN '218982' THEN 'Steroids'\n      WHEN '218820' THEN 'Tramadol'\n      WHEN '218983' THEN 'Tramadol'\n      WHEN '218821' THEN 'Tranquilisers'\n      WHEN '218984' THEN 'Tranquilisers'\n      WHEN '218822' THEN 'Other'\n      WHEN '218985' THEN 'Other'\n    END AS drug\n  FROM prisons.incidentreporting_report r\n    JOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\n    JOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\n    JOIN prisons.prisonregister_prison p ON p.prison_id = r.location\n    JOIN prisons.incidentreporting_question q ON q.report_id = r.id\n    JOIN prisons.incidentreporting_response res ON res.question_id = q.id\n  WHERE ctf.code = 'FIND'\n    AND r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')\n    AND q.code IN ('67190', '67208')\n    AND res.code IN ('218802', '218966', '218804', '218967', '218805', '218968', '218806', '218969', '218807', '218970', '218808', '218971', '218809', '218972', '218810', '218973', '218811', '218974', '218812', '218975', '218813', '218976', '218814', '218977', '218815', '218978', '218816', '218979', '218817', '218980', '218818', '218981', '218819', '218982', '218820', '218983', '218821', '218984', '218822', '218985')\n    AND date(r.incident_date_and_time) >= (SELECT START_DATE from prompt_)\n    AND date(r.incident_date_and_time) <= (SELECT END_DATE from prompt_)\n),\nlocs AS (SELECT DISTINCT location, location_name FROM drug_rows),\ndrug (label) AS (VALUES ('Amphetamines'), ('Barbiturates'), ('Benzodiazepines'), ('Buprenorphine/subutex'), ('Cannabis'), ('Cannabis plant'), ('Cocaine'), ('Crack'), ('Gabapentin'), ('Heroin'), ('Ketamine'), ('LSD'), ('Methadone'), ('NPS (new psychoactive substances)'), ('Pregabalin'), ('Steroids'), ('Tramadol'), ('Tranquilisers'), ('Other'), ('Unknown')),\nskeleton AS (SELECT l.location, l.location_name, d.label AS drug FROM locs l CROSS JOIN drug d),\ncounts AS (SELECT location, drug, COUNT(DISTINCT report_id) AS incidents_recorded FROM drug_rows GROUP BY location, drug),\ncombined AS (\n  SELECT s.location, s.location_name, s.drug,\n    COALESCE(ct.incidents_recorded, 0) AS incidents_recorded\n  FROM skeleton s\n    LEFT JOIN counts ct ON ct.location = s.location AND ct.drug = s.drug\n)\nSELECT\n  format_datetime((SELECT START_DATE from prompt_), 'dd/MM/yyyy') AS start_date,\n  format_datetime((SELECT END_DATE from prompt_), 'dd/MM/yyyy') AS end_date,\n  c.location,\n  c.location_name,\n  c.drug AS drug_type,\n  c.incidents_recorded\nFROM combined c\nORDER BY c.location_name, c.drug",
       "parameters": [
         {
           "index": 0,
@@ -378,7 +437,7 @@
       "id": "caseloads",
       "type": "row-level",
       "action": [
-        "location IN (${caseloads}) OR location IS NULL"
+        "location IN (${caseloads})"
       ],
       "rule": [
         {
@@ -553,23 +612,27 @@
   "dashboard": [
     {
       "id": "finds-summary",
-      "name": "Finds Summary",
-      "description": "Summary of finds for the selected establishment(s) and date range: totals by find type and number of prisoners involved per type.",
-      "dataset": "finds-summary-category",
+      "name": "Finds Summary - incidents by type",
+      "description": "Number of finds incidents recorded per establishment and find type, for the selected date range.",
+      "dataset": "finds-summary-incidents",
       "section": [
         {
-          "id": "finds-by-type",
-          "display": "Finds by type",
+          "id": "incidents-by-establishment-and-type-section",
+          "display": "Number of incidents recorded by find type",
           "visualisation": [
             {
-              "id": "incidents-recorded-by-type",
+              "id": "incidents-by-establishment-and-type",
               "type": "list",
               "display": "Number of incidents recorded by find type",
               "column": {
                 "key": [
                   {
+                    "id": "$ref:location",
+                    "display": "Establishment ID"
+                  },
+                  {
                     "id": "$ref:find_category",
-                    "display": "Find type"
+                    "display": "Type"
                   },
                   {
                     "id": "$ref:start_date",
@@ -582,8 +645,12 @@
                 ],
                 "measure": [
                   {
+                    "id": "$ref:location_name",
+                    "display": "Establishment"
+                  },
+                  {
                     "id": "$ref:find_category",
-                    "display": "Find type"
+                    "display": "Type"
                   },
                   {
                     "id": "$ref:incidents_recorded",
@@ -592,16 +659,34 @@
                 ],
                 "expectNull": true
               }
-            },
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "finds-prisoners-summary",
+      "name": "Finds Summary - prisoners by type",
+      "description": "Number of prisoners involved in finds per establishment and find type, for the selected date range.",
+      "dataset": "finds-summary-prisoners",
+      "section": [
+        {
+          "id": "prisoners-by-establishment-and-type-section",
+          "display": "Number of prisoners involved by find type",
+          "visualisation": [
             {
-              "id": "prisoners-involved-by-type",
+              "id": "prisoners-by-establishment-and-type",
               "type": "list",
               "display": "Number of prisoners involved by find type",
               "column": {
                 "key": [
                   {
+                    "id": "$ref:location",
+                    "display": "Establishment ID"
+                  },
+                  {
                     "id": "$ref:find_category",
-                    "display": "Find type"
+                    "display": "Type"
                   },
                   {
                     "id": "$ref:start_date",
@@ -614,8 +699,12 @@
                 ],
                 "measure": [
                   {
+                    "id": "$ref:location_name",
+                    "display": "Establishment"
+                  },
+                  {
                     "id": "$ref:find_category",
-                    "display": "Find type"
+                    "display": "Type"
                   },
                   {
                     "id": "$ref:prisoners_involved",
@@ -631,23 +720,27 @@
     },
     {
       "id": "finds-drug-summary",
-      "name": "Finds Summary - Drugs",
-      "description": "Summary of drug finds for the selected establishment(s) and date range: number of incidents per drug type.",
+      "name": "Finds Summary - drugs by type",
+      "description": "Number of drug find incidents per establishment and drug type, for the selected date range.",
       "dataset": "finds-summary-drug",
       "section": [
         {
-          "id": "drug-finds-by-type",
-          "display": "Drug finds by type",
+          "id": "incidents-by-establishment-and-drug-type-section",
+          "display": "Number of drug find incidents by drug type",
           "visualisation": [
             {
-              "id": "incidents-by-drug-type",
+              "id": "incidents-by-establishment-and-drug-type",
               "type": "list",
               "display": "Number of drug find incidents by drug type",
               "column": {
                 "key": [
                   {
+                    "id": "$ref:location",
+                    "display": "Establishment ID"
+                  },
+                  {
                     "id": "$ref:drug_type",
-                    "display": "Drug found"
+                    "display": "Type"
                   },
                   {
                     "id": "$ref:start_date",
@@ -660,8 +753,12 @@
                 ],
                 "measure": [
                   {
+                    "id": "$ref:location_name",
+                    "display": "Establishment"
+                  },
+                  {
                     "id": "$ref:drug_type",
-                    "display": "Drug found"
+                    "display": "Type"
                   },
                   {
                     "id": "$ref:incidents_recorded",
