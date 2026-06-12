@@ -1,0 +1,673 @@
+{
+  "id": "incident-finds",
+  "name": "Finds Reports",
+  "description": "Finds incidents recorded at an establishment for a given date range. Provides a Finds Detail list (every find, with prisoner involvement where recorded) and Finds Summary dashboards aggregating totals by find type, prisoners involved and drug type.<br/>IR-1575",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": [
+      "DPS",
+      "Incident Reporting",
+      "Finds"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "athena",
+      "name": "athena",
+      "database": "prisons",
+      "catalog": "AwsDataCatalog",
+      "connection": "awsdatacatalog",
+      "dialect": "postgres/19"
+    },
+    {
+      "id": "datamart",
+      "name": "datamart"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "finds-detail",
+      "name": "Finds Incident Detail",
+      "description": "Every FIND incident in the date range, including finds with no prisoner involvement.",
+      "datasource": "datamart",
+      "query": "WITH qa_pivoted AS (\n  SELECT\n    q.report_id,\n    MAX(CASE WHEN q.code IN ('67187','65187') THEN\n  CASE res.code\n    WHEN '218783' THEN 'Multiple types'\n    WHEN '216784' THEN 'Multiple types'\n    WHEN '218784' THEN 'Alcohol / hooch / distilling equipment'\n    WHEN '216785' THEN 'Alcohol / hooch / distilling equipment'\n    WHEN '218785' THEN 'Drug / drug equipment'\n    WHEN '216786' THEN 'Drug / drug equipment'\n    WHEN '218786' THEN 'Mobile phone / mobile related item'\n    WHEN '216787' THEN 'Mobile phone / mobile related item'\n    WHEN '218787' THEN 'Digital find (excluding mobile phones)'\n    WHEN '216788' THEN 'Digital find (excluding mobile phones)'\n    WHEN '218788' THEN 'Tobacco / tobacco related items'\n    WHEN '216789' THEN 'Tobacco / tobacco related items'\n    WHEN '218789' THEN 'Weapon'\n    WHEN '216790' THEN 'Weapon'\n    WHEN '218790' THEN 'Other reportable items'\n    WHEN '216791' THEN 'Other reportable items'\n  END\nEND) AS find_category_new,\n    MAX(CASE WHEN q.code IN ('49265','51234','51188','57288') AND res.code IN ('195011','198731','196731','209156') THEN 1 ELSE 0 END) AS found_drug,\nMAX(CASE WHEN q.code IN ('49274','51242','51196','57296') AND res.code IN ('195045','198783','196783','209208') THEN 1 ELSE 0 END) AS found_mobile,\nMAX(CASE WHEN q.code IN ('49289','51255','51209','57309') AND res.code IN ('195084','198874','196875','209297') THEN 1 ELSE 0 END) AS found_alcohol,\n    CAST(LISTAGG(CASE WHEN q.code IN ('67190','67208') THEN\n  CASE res.code\n    WHEN '218802' THEN 'Unknown'\n    WHEN '218966' THEN 'Unknown'\n    WHEN '218804' THEN 'Amphetamines'\n    WHEN '218967' THEN 'Amphetamines'\n    WHEN '218805' THEN 'Barbiturates'\n    WHEN '218968' THEN 'Barbiturates'\n    WHEN '218806' THEN 'Benzodiazepines'\n    WHEN '218969' THEN 'Benzodiazepines'\n    WHEN '218807' THEN 'Buprenorphine/subutex'\n    WHEN '218970' THEN 'Buprenorphine/subutex'\n    WHEN '218808' THEN 'Cannabis'\n    WHEN '218971' THEN 'Cannabis'\n    WHEN '218809' THEN 'Cannabis plant'\n    WHEN '218972' THEN 'Cannabis plant'\n    WHEN '218810' THEN 'Cocaine'\n    WHEN '218973' THEN 'Cocaine'\n    WHEN '218811' THEN 'Crack'\n    WHEN '218974' THEN 'Crack'\n    WHEN '218812' THEN 'Gabapentin'\n    WHEN '218975' THEN 'Gabapentin'\n    WHEN '218813' THEN 'Heroin'\n    WHEN '218976' THEN 'Heroin'\n    WHEN '218814' THEN 'Ketamine'\n    WHEN '218977' THEN 'Ketamine'\n    WHEN '218815' THEN 'LSD'\n    WHEN '218978' THEN 'LSD'\n    WHEN '218816' THEN 'Methadone'\n    WHEN '218979' THEN 'Methadone'\n    WHEN '218817' THEN 'NPS (new psychoactive substances)'\n    WHEN '218980' THEN 'NPS (new psychoactive substances)'\n    WHEN '218818' THEN 'Pregabalin'\n    WHEN '218981' THEN 'Pregabalin'\n    WHEN '218819' THEN 'Steroids'\n    WHEN '218982' THEN 'Steroids'\n    WHEN '218820' THEN 'Tramadol'\n    WHEN '218983' THEN 'Tramadol'\n    WHEN '218821' THEN 'Tranquilisers'\n    WHEN '218984' THEN 'Tranquilisers'\n    WHEN '218822' THEN 'Other'\n    WHEN '218985' THEN 'Other'\n  END\nEND, ', ') WITHIN GROUP (ORDER BY res.code) AS VARCHAR(4000)) AS drug_types,\n    CAST(LISTAGG(CASE WHEN q.code = '67203' THEN\n  CASE res.code\n    WHEN '218947' THEN 'Blunt instrument (cosh, item in sock, etc)'\n    WHEN '218948' THEN 'Firearm (fake guns, ammunition, chemical incapacitant etc)'\n    WHEN '218949' THEN 'Knife/bladed article'\n    WHEN '218950' THEN 'Other'\n  END\nEND, ', ') WITHIN GROUP (ORDER BY res.code) AS VARCHAR(4000)) AS weapon_types,\n    MAX(CASE WHEN q.code = '67204' AND res.code = '218952' THEN NULLIF(res.additional_information, '') END) AS other_reportable_comment,\n    MAX(CASE WHEN q.code = '67204' AND res.code = '218951' THEN 'Noose / ligature' END) AS other_reportable_noose,\n    MAX(CASE WHEN q.code = '67181' THEN\n  CASE res.code\n    WHEN '218712' THEN 'Administration'\n    WHEN '218713' THEN 'Association area' || COALESCE(' (' || NULLIF(res.additional_information, '') || ')', '')\n    WHEN '218714' THEN 'Cell' || COALESCE(' (' || NULLIF(res.additional_information, '') || ')', '')\n    WHEN '218715' THEN 'Chapel'\n    WHEN '218716' THEN 'Court'\n    WHEN '218717' THEN 'Dining room' || COALESCE(' (' || NULLIF(res.additional_information, '') || ')', '')\n    WHEN '218718' THEN 'Dormitory' || COALESCE(' (' || NULLIF(res.additional_information, '') || ')', '')\n    WHEN '218719' THEN 'Education'\n    WHEN '218720' THEN 'Exercise yard' || COALESCE(' (' || NULLIF(res.additional_information, '') || ')', '')\n    WHEN '218721' THEN 'Gate/gate lodge'\n    WHEN '218722' THEN 'Gym'\n    WHEN '218723' THEN 'Health care centre'\n    WHEN '218724' THEN 'Hospital outside (patient)'\n    WHEN '218725' THEN 'Hospital outside (visiting)'\n    WHEN '218726' THEN 'Induction/first night centre'\n    WHEN '218727' THEN 'Kitchen'\n    WHEN '218728' THEN 'Mail room'\n    WHEN '218729' THEN 'Office'\n    WHEN '218730' THEN 'Outside working party'\n    WHEN '218731' THEN 'Reception'\n    WHEN '218732' THEN 'Recess/ roof void'\n    WHEN '218733' THEN 'Segregation unit' || COALESCE(' (' || NULLIF(res.additional_information, '') || ')', '')\n    WHEN '218734' THEN 'Showers/changing room' || COALESCE(' (' || NULLIF(res.additional_information, '') || ')', '')\n    WHEN '218735' THEN 'Vehicle used for court/transfer'\n    WHEN '218736' THEN 'Visits'\n    WHEN '218737' THEN 'Vulnerable prisoners unit (VPU)' || COALESCE(' (' || NULLIF(res.additional_information, '') || ')', '')\n    WHEN '218738' THEN 'Wing' || COALESCE(' (' || NULLIF(res.additional_information, '') || ')', '')\n    WHEN '218739' THEN 'Workshop'\n    WHEN '218740' THEN 'Other' || COALESCE(' (' || NULLIF(res.additional_information, '') || ')', '')\n  END\nEND) AS incident_location\n  FROM prisons.incidentreporting_question q\n    JOIN prisons.incidentreporting_response res ON res.question_id = q.id\n  GROUP BY q.report_id\n)\nSELECT\n  r.location,\n  p.name AS location_name,\n  r.id,\n  r.report_reference,\n  r.incident_date_and_time,\n  r.title AS incident_title,\n  r.description AS incident_details,\n  pi.prisoner_number,\n  INITCAP(pi.first_name) AS first_name,\n  INITCAP(pi.last_name) AS last_name,\n  cpr.description AS prisoner_role,\n  COALESCE(qa.find_category_new, CASE\n  WHEN (COALESCE(qa.found_drug,0) + COALESCE(qa.found_mobile,0) + COALESCE(qa.found_alcohol,0)) > 1 THEN 'Multiple types'\n  WHEN qa.found_drug = 1 THEN 'Drug / drug equipment'\n  WHEN qa.found_mobile = 1 THEN 'Mobile phone / mobile related item'\n  WHEN qa.found_alcohol = 1 THEN 'Alcohol / hooch / distilling equipment'\nEND) AS find_category,\n  CASE qa.find_category_new\n    WHEN 'Drug / drug equipment' THEN qa.drug_types\n    WHEN 'Weapon' THEN qa.weapon_types\n    WHEN 'Other reportable items' THEN COALESCE(qa.other_reportable_comment, qa.other_reportable_noose)\n    WHEN 'Multiple types' THEN NULLIF(REGEXP_REPLACE(COALESCE(qa.drug_types || ', ', '') || COALESCE(qa.weapon_types, ''), ', $', ''), '')\n    ELSE NULL\n  END AS find_detail,\n  qa.incident_location,\n  r.status,\n  cs.description AS status_description\nFROM prisons.incidentreporting_report r\n  JOIN prisons.incidentreporting_constant_status cs ON r.status = cs.code\n  JOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\n  JOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\n  JOIN prisons.prisonregister_prison p ON p.prison_id = r.location\n  LEFT JOIN prisons.incidentreporting_prisoner_involvement pi ON pi.report_id = r.id\n  LEFT JOIN prisons.incidentreporting_constant_prisoner_role cpr ON cpr.code = pi.prisoner_role\n  LEFT JOIN qa_pivoted qa ON qa.report_id = r.id\nWHERE ctf.code = 'FIND' AND r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')",
+      "schema": {
+        "field": [
+          {
+            "name": "location",
+            "type": "string",
+            "display": "Establishment ID"
+          },
+          {
+            "name": "location_name",
+            "type": "string",
+            "display": "Establishment"
+          },
+          {
+            "name": "id",
+            "type": "string",
+            "display": "Id"
+          },
+          {
+            "name": "report_reference",
+            "type": "string",
+            "display": "Incident number"
+          },
+          {
+            "name": "incident_date_and_time",
+            "type": "datetime",
+            "display": "Incident date"
+          },
+          {
+            "name": "incident_title",
+            "type": "string",
+            "display": "Title"
+          },
+          {
+            "name": "incident_details",
+            "type": "string",
+            "display": "Incident details"
+          },
+          {
+            "name": "prisoner_number",
+            "type": "string",
+            "display": "Prison number"
+          },
+          {
+            "name": "first_name",
+            "type": "string",
+            "display": "Forename"
+          },
+          {
+            "name": "last_name",
+            "type": "string",
+            "display": "Surname"
+          },
+          {
+            "name": "prisoner_role",
+            "type": "string",
+            "display": "Prisoner role"
+          },
+          {
+            "name": "find_category",
+            "type": "string",
+            "display": "Find type",
+            "filter": {
+              "type": "multiselect",
+              "dynamicoptions": {
+                "maximumOptions": 20,
+                "returnAsStaticOptions": true,
+                "dataset": "find_categories",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "find_detail",
+            "type": "string",
+            "display": "Find detail"
+          },
+          {
+            "name": "incident_location",
+            "type": "string",
+            "display": "Location"
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "display": "Status code",
+            "filter": {
+              "type": "multiselect",
+              "interactive": true,
+              "dynamicoptions": {
+                "maximumOptions": 20,
+                "returnAsStaticOptions": true,
+                "dataset": "status",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "status_description",
+            "type": "string",
+            "display": "Report status"
+          }
+        ]
+      }
+    },
+    {
+      "id": "finds-summary-category",
+      "name": "Finds by type",
+      "description": "Per find type: number of incidents recorded and number of prisoners involved (incl. nil).",
+      "datasource": "athena",
+      "query": "WITH find_reports_raw AS (\n  SELECT\n    r.id AS report_id,\n    r.location,\n    p.name AS location_name,\n    MAX(CASE WHEN q.code IN ('67187','65187') THEN\n  CASE res.code\n    WHEN '218783' THEN 'Multiple types'\n    WHEN '216784' THEN 'Multiple types'\n    WHEN '218784' THEN 'Alcohol / hooch / distilling equipment'\n    WHEN '216785' THEN 'Alcohol / hooch / distilling equipment'\n    WHEN '218785' THEN 'Drug / drug equipment'\n    WHEN '216786' THEN 'Drug / drug equipment'\n    WHEN '218786' THEN 'Mobile phone / mobile related item'\n    WHEN '216787' THEN 'Mobile phone / mobile related item'\n    WHEN '218787' THEN 'Digital find (excluding mobile phones)'\n    WHEN '216788' THEN 'Digital find (excluding mobile phones)'\n    WHEN '218788' THEN 'Tobacco / tobacco related items'\n    WHEN '216789' THEN 'Tobacco / tobacco related items'\n    WHEN '218789' THEN 'Weapon'\n    WHEN '216790' THEN 'Weapon'\n    WHEN '218790' THEN 'Other reportable items'\n    WHEN '216791' THEN 'Other reportable items'\n  END\nEND) AS find_category_new,\n    MAX(CASE WHEN q.code IN ('49265','51234','51188','57288') AND res.code IN ('195011','198731','196731','209156') THEN 1 ELSE 0 END) AS found_drug,\nMAX(CASE WHEN q.code IN ('49274','51242','51196','57296') AND res.code IN ('195045','198783','196783','209208') THEN 1 ELSE 0 END) AS found_mobile,\nMAX(CASE WHEN q.code IN ('49289','51255','51209','57309') AND res.code IN ('195084','198874','196875','209297') THEN 1 ELSE 0 END) AS found_alcohol\n  FROM prisons.incidentreporting_report r\n    JOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\n    JOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\n    JOIN prisons.prisonregister_prison p ON p.prison_id = r.location\n    LEFT JOIN prisons.incidentreporting_question q ON q.report_id = r.id\n    LEFT JOIN prisons.incidentreporting_response res ON res.question_id = q.id\n  WHERE ctf.code = 'FIND'\n    AND r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')\n    AND date(r.incident_date_and_time) >= (SELECT START_DATE from prompt_)\n    AND date(r.incident_date_and_time) <= (SELECT END_DATE from prompt_)\n  GROUP BY r.id, r.location, p.name\n),\nfind_reports AS (\n  SELECT report_id, location, location_name,\n    COALESCE(find_category_new, CASE\n  WHEN (COALESCE(found_drug,0) + COALESCE(found_mobile,0) + COALESCE(found_alcohol,0)) > 1 THEN 'Multiple types'\n  WHEN found_drug = 1 THEN 'Drug / drug equipment'\n  WHEN found_mobile = 1 THEN 'Mobile phone / mobile related item'\n  WHEN found_alcohol = 1 THEN 'Alcohol / hooch / distilling equipment'\nEND) AS category\n  FROM find_reports_raw\n),\nlocs AS (SELECT DISTINCT location, location_name FROM find_reports),\ncat (label) AS (VALUES ('Alcohol / hooch / distilling equipment'), ('Drug / drug equipment'), ('Mobile phone / mobile related item'), ('Digital find (excluding mobile phones)'), ('Tobacco / tobacco related items'), ('Weapon'), ('Other reportable items'), ('Multiple types')),\nskeleton AS (SELECT l.location, l.location_name, c.label AS find_category FROM locs l CROSS JOIN cat c),\nagg AS (\n  SELECT fr.location, fr.category,\n    COUNT(DISTINCT fr.report_id) AS incidents_recorded,\n    COUNT(DISTINCT pi.prisoner_number) AS prisoners_involved\n  FROM find_reports fr\n    LEFT JOIN prisons.incidentreporting_prisoner_involvement pi ON pi.report_id = fr.report_id\n  GROUP BY fr.location, fr.category\n)\nSELECT\n  format_datetime((SELECT START_DATE from prompt_), 'dd/MM/yyyy') AS start_date,\n  format_datetime((SELECT END_DATE from prompt_), 'dd/MM/yyyy') AS end_date,\n  s.location,\n  s.location_name,\n  s.find_category,\n  COALESCE(a.incidents_recorded, 0) AS incidents_recorded,\n  COALESCE(a.prisoners_involved, 0) AS prisoners_involved\nFROM skeleton s\n  LEFT JOIN agg a ON a.location = s.location AND a.category = s.find_category\nORDER BY s.location_name, s.find_category",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Start incident date",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "End incident date",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "start_date",
+            "type": "date",
+            "display": "Start incident date"
+          },
+          {
+            "index": 1,
+            "name": "end_date",
+            "type": "date",
+            "display": "End incident date"
+          },
+          {
+            "index": 2,
+            "name": "location",
+            "type": "string",
+            "display": "Establishment ID"
+          },
+          {
+            "index": 3,
+            "name": "location_name",
+            "type": "string",
+            "display": "Establishment"
+          },
+          {
+            "index": 4,
+            "name": "find_category",
+            "type": "string",
+            "display": "Find type"
+          },
+          {
+            "index": 5,
+            "name": "incidents_recorded",
+            "type": "int",
+            "display": "Number of incidents recorded"
+          },
+          {
+            "index": 6,
+            "name": "prisoners_involved",
+            "type": "int",
+            "display": "Number of prisoners involved"
+          }
+        ]
+      }
+    },
+    {
+      "id": "finds-summary-drug",
+      "name": "Drug finds by type",
+      "description": "Per drug type: number of incidents where that drug was found (incl. nil).",
+      "datasource": "athena",
+      "query": "WITH drug_rows AS (\n  SELECT\n    r.id AS report_id,\n    r.location,\n    p.name AS location_name,\n    CASE res.code\n      WHEN '218802' THEN 'Unknown'\n      WHEN '218966' THEN 'Unknown'\n      WHEN '218804' THEN 'Amphetamines'\n      WHEN '218967' THEN 'Amphetamines'\n      WHEN '218805' THEN 'Barbiturates'\n      WHEN '218968' THEN 'Barbiturates'\n      WHEN '218806' THEN 'Benzodiazepines'\n      WHEN '218969' THEN 'Benzodiazepines'\n      WHEN '218807' THEN 'Buprenorphine/subutex'\n      WHEN '218970' THEN 'Buprenorphine/subutex'\n      WHEN '218808' THEN 'Cannabis'\n      WHEN '218971' THEN 'Cannabis'\n      WHEN '218809' THEN 'Cannabis plant'\n      WHEN '218972' THEN 'Cannabis plant'\n      WHEN '218810' THEN 'Cocaine'\n      WHEN '218973' THEN 'Cocaine'\n      WHEN '218811' THEN 'Crack'\n      WHEN '218974' THEN 'Crack'\n      WHEN '218812' THEN 'Gabapentin'\n      WHEN '218975' THEN 'Gabapentin'\n      WHEN '218813' THEN 'Heroin'\n      WHEN '218976' THEN 'Heroin'\n      WHEN '218814' THEN 'Ketamine'\n      WHEN '218977' THEN 'Ketamine'\n      WHEN '218815' THEN 'LSD'\n      WHEN '218978' THEN 'LSD'\n      WHEN '218816' THEN 'Methadone'\n      WHEN '218979' THEN 'Methadone'\n      WHEN '218817' THEN 'NPS (new psychoactive substances)'\n      WHEN '218980' THEN 'NPS (new psychoactive substances)'\n      WHEN '218818' THEN 'Pregabalin'\n      WHEN '218981' THEN 'Pregabalin'\n      WHEN '218819' THEN 'Steroids'\n      WHEN '218982' THEN 'Steroids'\n      WHEN '218820' THEN 'Tramadol'\n      WHEN '218983' THEN 'Tramadol'\n      WHEN '218821' THEN 'Tranquilisers'\n      WHEN '218984' THEN 'Tranquilisers'\n      WHEN '218822' THEN 'Other'\n      WHEN '218985' THEN 'Other'\n    END AS drug\n  FROM prisons.incidentreporting_report r\n    JOIN prisons.incidentreporting_constant_type ct ON r.type = ct.code\n    JOIN prisons.incidentreporting_constant_type_family ctf ON ctf.code = ct.family_code\n    JOIN prisons.prisonregister_prison p ON p.prison_id = r.location\n    JOIN prisons.incidentreporting_question q ON q.report_id = r.id\n    JOIN prisons.incidentreporting_response res ON res.question_id = q.id\n  WHERE ctf.code = 'FIND'\n    AND r.status NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT')\n    AND q.code IN ('67190', '67208')\n    AND res.code IN ('218802', '218966', '218804', '218967', '218805', '218968', '218806', '218969', '218807', '218970', '218808', '218971', '218809', '218972', '218810', '218973', '218811', '218974', '218812', '218975', '218813', '218976', '218814', '218977', '218815', '218978', '218816', '218979', '218817', '218980', '218818', '218981', '218819', '218982', '218820', '218983', '218821', '218984', '218822', '218985')\n    AND date(r.incident_date_and_time) >= (SELECT START_DATE from prompt_)\n    AND date(r.incident_date_and_time) <= (SELECT END_DATE from prompt_)\n),\nlocs AS (SELECT DISTINCT location, location_name FROM drug_rows),\ndrug (label) AS (VALUES ('Amphetamines'), ('Barbiturates'), ('Benzodiazepines'), ('Buprenorphine/subutex'), ('Cannabis'), ('Cannabis plant'), ('Cocaine'), ('Crack'), ('Gabapentin'), ('Heroin'), ('Ketamine'), ('LSD'), ('Methadone'), ('NPS (new psychoactive substances)'), ('Pregabalin'), ('Steroids'), ('Tramadol'), ('Tranquilisers'), ('Other'), ('Unknown')),\nskeleton AS (SELECT l.location, l.location_name, d.label AS drug_type FROM locs l CROSS JOIN drug d),\nagg AS (SELECT location, drug, COUNT(DISTINCT report_id) AS incidents_recorded FROM drug_rows GROUP BY location, drug)\nSELECT\n  format_datetime((SELECT START_DATE from prompt_), 'dd/MM/yyyy') AS start_date,\n  format_datetime((SELECT END_DATE from prompt_), 'dd/MM/yyyy') AS end_date,\n  s.location,\n  s.location_name,\n  s.drug_type,\n  COALESCE(a.incidents_recorded, 0) AS incidents_recorded\nFROM skeleton s\n  LEFT JOIN agg a ON a.location = s.location AND a.drug = s.drug_type\nORDER BY s.location_name, s.drug_type",
+      "parameters": [
+        {
+          "index": 0,
+          "name": "start_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "Start incident date",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "end_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "End incident date",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "start_date",
+            "type": "date",
+            "display": "Start incident date"
+          },
+          {
+            "index": 1,
+            "name": "end_date",
+            "type": "date",
+            "display": "End incident date"
+          },
+          {
+            "index": 2,
+            "name": "location",
+            "type": "string",
+            "display": "Establishment ID"
+          },
+          {
+            "index": 3,
+            "name": "location_name",
+            "type": "string",
+            "display": "Establishment"
+          },
+          {
+            "index": 4,
+            "name": "drug_type",
+            "type": "string",
+            "display": "Drug found"
+          },
+          {
+            "index": 5,
+            "name": "incidents_recorded",
+            "type": "int",
+            "display": "Number of incidents"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisons",
+      "name": "Prisons",
+      "datasource": "datamart",
+      "query": "select prison_id, name prison_name FROM prisons.prisonregister_prison p where p.active = true order by name",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_id",
+            "display": "Prison Id",
+            "type": "string"
+          },
+          {
+            "name": "prison_name",
+            "display": "Prison name",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "status",
+      "name": "Incident Status",
+      "datasource": "datamart",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_status where code NOT IN ('DUPLICATE', 'NOT_REPORTABLE', 'DRAFT') order by description",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Status code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Status description",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisoner_role",
+      "name": "Prisoner role",
+      "datasource": "datamart",
+      "query": "SELECT code, description FROM prisons.incidentreporting_constant_prisoner_role order by description",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Role code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Role description",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "find_categories",
+      "name": "Find categories",
+      "datasource": "datamart",
+      "query": "SELECT 'Alcohol / hooch / distilling equipment' AS code, 'Alcohol / hooch / distilling equipment' AS description\nUNION ALL\nSELECT 'Drug / drug equipment' AS code, 'Drug / drug equipment' AS description\nUNION ALL\nSELECT 'Mobile phone / mobile related item' AS code, 'Mobile phone / mobile related item' AS description\nUNION ALL\nSELECT 'Digital find (excluding mobile phones)' AS code, 'Digital find (excluding mobile phones)' AS description\nUNION ALL\nSELECT 'Tobacco / tobacco related items' AS code, 'Tobacco / tobacco related items' AS description\nUNION ALL\nSELECT 'Weapon' AS code, 'Weapon' AS description\nUNION ALL\nSELECT 'Other reportable items' AS code, 'Other reportable items' AS description\nUNION ALL\nSELECT 'Multiple types' AS code, 'Multiple types' AS description\nORDER BY description",
+      "schema": {
+        "field": [
+          {
+            "name": "code",
+            "display": "Find type code",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "display": "Find type",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "INCIDENT_REPORTS__RO",
+                "INCIDENT_REPORTS__RW",
+                "INCIDENT_REPORTS__APPROVE"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseloads",
+      "type": "row-level",
+      "action": [
+        "location IN (${caseloads})"
+      ],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": [
+                "${caseloads}"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "finds-detail",
+      "name": "Finds Detail",
+      "description": "List of FIND incidents for the selected establishment(s) and date range, including finds not associated with a prisoner.",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "$ref:finds-detail",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:location",
+            "display": "Establishment ID",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 140,
+                "returnAsStaticOptions": true,
+                "dataset": "prisons",
+                "name": "prison_id",
+                "display": "prison_name"
+              }
+            }
+          },
+          {
+            "name": "$ref:location_name",
+            "display": "Establishment",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": true,
+            "sortdirection": "asc"
+          },
+          {
+            "name": "$ref:report_reference",
+            "display": "Incident number",
+            "sortable": false,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://incident-reporting-${env}.hmpps.service.justice.gov.uk/reports/${id}',${report_reference},TRUE)"
+          },
+          {
+            "name": "$ref:incident_date_and_time",
+            "display": "Incident date",
+            "type": "datetime",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "format_date(${incident_date_and_time}, 'dd/MM/yyyy HH:mm')",
+            "filter": {
+              "type": "daterange",
+              "mandatory": false,
+              "default": "today(-1,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:prisoner_number",
+            "display": "Prison number",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:first_name",
+            "display": "Forename",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:last_name",
+            "display": "Surname",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:prisoner_role",
+            "display": "Prisoner role",
+            "sortable": false,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 20,
+                "returnAsStaticOptions": true,
+                "dataset": "prisoner_role",
+                "name": "code",
+                "display": "description"
+              }
+            }
+          },
+          {
+            "name": "$ref:find_category",
+            "display": "Find type",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:find_detail",
+            "display": "Find detail",
+            "sortable": false,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:incident_location",
+            "display": "Location",
+            "sortable": false,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:incident_details",
+            "display": "Incident details",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:status",
+            "display": "Status code",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:status_description",
+            "display": "Report status",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          }
+        ]
+      },
+      "destination": []
+    }
+  ],
+  "dashboard": [
+    {
+      "id": "finds-summary",
+      "name": "Finds Summary",
+      "description": "Summary of finds for the selected establishment(s) and date range: totals by find type and number of prisoners involved per type.",
+      "dataset": "finds-summary-category",
+      "section": [
+        {
+          "id": "finds-by-type",
+          "display": "Finds by type",
+          "visualisation": [
+            {
+              "id": "incidents-recorded-by-type",
+              "type": "list",
+              "display": "Number of incidents recorded by find type",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:find_category",
+                    "display": "Find type"
+                  },
+                  {
+                    "id": "$ref:start_date",
+                    "display": "Start date"
+                  },
+                  {
+                    "id": "$ref:end_date",
+                    "display": "End date"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:incidents_recorded",
+                    "display": "Number of incidents recorded",
+                    "aggregate": "sum",
+                    "unit": "number"
+                  }
+                ],
+                "expectNull": true
+              }
+            },
+            {
+              "id": "prisoners-involved-by-type",
+              "type": "list",
+              "display": "Number of prisoners involved by find type",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:find_category",
+                    "display": "Find type"
+                  },
+                  {
+                    "id": "$ref:start_date",
+                    "display": "Start date"
+                  },
+                  {
+                    "id": "$ref:end_date",
+                    "display": "End date"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:prisoners_involved",
+                    "display": "Number of prisoners involved",
+                    "aggregate": "sum",
+                    "unit": "number"
+                  }
+                ],
+                "expectNull": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "finds-drug-summary",
+      "name": "Finds Summary - Drugs",
+      "description": "Summary of drug finds for the selected establishment(s) and date range: number of incidents per drug type.",
+      "dataset": "finds-summary-drug",
+      "section": [
+        {
+          "id": "drug-finds-by-type",
+          "display": "Drug finds by type",
+          "visualisation": [
+            {
+              "id": "incidents-by-drug-type",
+              "type": "list",
+              "display": "Number of drug find incidents by drug type",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:drug_type",
+                    "display": "Drug found"
+                  },
+                  {
+                    "id": "$ref:start_date",
+                    "display": "Start date"
+                  },
+                  {
+                    "id": "$ref:end_date",
+                    "display": "End date"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:incidents_recorded",
+                    "display": "Number of incidents",
+                    "aggregate": "sum",
+                    "unit": "number"
+                  }
+                ],
+                "expectNull": true
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
