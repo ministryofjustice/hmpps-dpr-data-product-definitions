@@ -84,9 +84,59 @@
       "id": "resettlement-by-date",
       "name": "Resettlement Summary By Date",
       "datasource": "redshift",
-      "query": "SELECT TO_CHAR(MOVEMENT_DATE, 'dd/mm/yyyy') AS MOVEMENT_DATE, COUNT(1) AS DISCHARGED_COUNT, SUM(NFA) AS NFA_COUNT, SUM(FT_EMPLOYMENT) AS FT_EMPLOYMENT_COUNT, SUM(ADDRESS_FLAG) AS ADDRESS_COUNT, SUM(ACTIVE_TRAINING_ADDRESS_FLAG) AS TRAINING_COUNT FROM ${tableId} GROUP BY TO_CHAR(MOVEMENT_DATE, 'dd/mm/yyyy')",
+      "query": "SELECT TO_CHAR(MOVEMENT_DATE, 'W') AS WEEK_OF_MONTH, TO_CHAR(MOVEMENT_DATE, 'dd/mm/yyyy') AS MOVEMENT_DATE, COUNT(1) AS DISCHARGED_COUNT, SUM(NFA) AS NFA_COUNT, SUM(FT_EMPLOYMENT) AS FT_EMPLOYMENT_COUNT, SUM(ADDRESS_FLAG) AS ADDRESS_COUNT, SUM(ACTIVE_TRAINING_ADDRESS_FLAG) AS TRAINING_COUNT FROM ${tableId} GROUP BY TO_CHAR(MOVEMENT_DATE, 'W'), TO_CHAR(MOVEMENT_DATE, 'dd/mm/yyyy'), TRUNC(MOVEMENT_DATE) ORDER BY TRUNC(MOVEMENT_DATE) ASC",
       "schema": {
         "field": [
+          {
+            "name": "WEEK_OF_MONTH",
+            "type": "string",
+            "display": "Week No"
+          },
+          {
+            "name": "MOVEMENT_DATE",
+            "type": "string",
+            "display": "Movement Date"
+          },
+          {
+            "name": "DISCHARGED_COUNT",
+            "type": "int",
+            "display": "Prisoners Discharged"
+          },
+          {
+            "name": "FT_EMPLOYMENT_COUNT",
+            "type": "int",
+            "display": "Prisoners Discharged With FT Employment"
+          },
+          {
+            "name": "ADDRESS_COUNT",
+            "type": "int",
+            "display": "Prisoners Discharged With Address"
+          },
+          {
+            "name": "NFA_COUNT",
+            "type": "int",
+            "display": "Prisoners Discharged NFA"
+          },
+          {
+            "name": "TRAINING_COUNT",
+            "type": "int",
+            "display": "Prisoners Discharged to Training"
+          }
+        ]
+      }
+    },
+    {
+      "id": "resettlement-total-by-weekly-date",
+      "name": "Resettlement Total and Running total By Weekly Date",
+      "datasource": "redshift",
+      "query": "SELECT WEEK_OF_MONTH, MOVEMENT_DATE, DISCHARGED_COUNT, NFA_COUNT, FT_EMPLOYMENT_COUNT, ADDRESS_COUNT, TRAINING_COUNT FROM (SELECT WEEK_OF_MONTH, 'Weekly Total' AS MOVEMENT_DATE, DISCHARGED_COUNT, NFA_COUNT, FT_EMPLOYMENT_COUNT, ADDRESS_COUNT, TRAINING_COUNT FROM (SELECT TO_CHAR(MOVEMENT_DATE, 'W') AS WEEK_OF_MONTH, COUNT(1) AS DISCHARGED_COUNT, SUM(NFA) AS NFA_COUNT, SUM(FT_EMPLOYMENT) AS FT_EMPLOYMENT_COUNT, SUM(ADDRESS_FLAG) AS ADDRESS_COUNT, SUM(ACTIVE_TRAINING_ADDRESS_FLAG) AS TRAINING_COUNT FROM ${tableId} WHERE MOVEMENT_DATE >= DATE_TRUNC('month', GETDATE ()) AND MOVEMENT_DATE < DATEADD (MONTH, 1, DATE_TRUNC('month', GETDATE ())) GROUP BY TO_CHAR(MOVEMENT_DATE, 'W') ) WeeklyAggregates UNION ALL SELECT WEEK_OF_MONTH, 'Running Total' AS MOVEMENT_DATE, SUM(DISCHARGED_COUNT) OVER (ORDER BY WEEK_OF_MONTH ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS DISCHARGED_COUNT, SUM(NFA_COUNT) OVER (ORDER BY WEEK_OF_MONTH ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS NFA_COUNT, SUM(FT_EMPLOYMENT_COUNT) OVER (ORDER BY WEEK_OF_MONTH ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS FT_EMPLOYMENT_COUNT, SUM(ADDRESS_COUNT) OVER (ORDER BY WEEK_OF_MONTH ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS ADDRESS_COUNT, SUM(TRAINING_COUNT) OVER (ORDER BY WEEK_OF_MONTH ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS TRAINING_COUNT FROM (SELECT TO_CHAR(MOVEMENT_DATE, 'W') AS WEEK_OF_MONTH, COUNT(1) AS DISCHARGED_COUNT, SUM(NFA) AS NFA_COUNT, SUM(FT_EMPLOYMENT) AS FT_EMPLOYMENT_COUNT, SUM(ADDRESS_FLAG) AS ADDRESS_COUNT, SUM(ACTIVE_TRAINING_ADDRESS_FLAG) AS TRAINING_COUNT FROM ${tableId} WHERE MOVEMENT_DATE >= DATE_TRUNC('month', GETDATE ()) AND MOVEMENT_DATE < DATEADD (MONTH, 1, DATE_TRUNC('month', GETDATE ())) GROUP BY TO_CHAR(MOVEMENT_DATE, 'W') ) RunningAggregates ) SeparatedMetrics ORDER BY WEEK_OF_MONTH ASC, CASE WHEN MOVEMENT_DATE = 'Weekly Total' THEN 0 ELSE 1 END",
+      "schema": {
+        "field": [
+          {
+            "name": "WEEK_OF_MONTH",
+            "type": "string",
+            "display": "Week No"
+          },
           {
             "name": "MOVEMENT_DATE",
             "type": "string",
@@ -124,7 +174,7 @@
       "id": "resettlement-total",
       "name": "Resettlement Summary",
       "datasource": "redshift",
-      "query": "SELECT 'Total' AS DESCRIPTION, COUNT(1) AS DISCHARGED_COUNT, SUM(NFA) AS NFA_COUNT, SUM(FT_EMPLOYMENT) AS FT_EMPLOYMENT_COUNT, SUM(ADDRESS_FLAG) AS ADDRESS_COUNT, SUM(ACTIVE_TRAINING_ADDRESS_FLAG) AS TRAINING_COUNT FROM ${tableId} UNION SELECT '% of Discharges', 100 AS DISCHARGED_COUNT, (SUM(NFA) *100 / COUNT(1)) AS NFA_COUNT, (SUM(FT_EMPLOYMENT) *100 / COUNT(1)) AS FT_EMPLOYMENT_COUNT, (SUM(ADDRESS_FLAG) *100 / COUNT(1)) AS ADDRESS_COUNT, (SUM(ACTIVE_TRAINING_ADDRESS_FLAG) *100 / COUNT(1)) AS TRAINING_COUNT FROM ${tableId}",
+      "query": "SELECT 'Total' AS DESCRIPTION, COUNT(1) AS DISCHARGED_COUNT, SUM(NFA) AS NFA_COUNT, SUM(FT_EMPLOYMENT) AS FT_EMPLOYMENT_COUNT, SUM(ADDRESS_FLAG) AS ADDRESS_COUNT, SUM(ACTIVE_TRAINING_ADDRESS_FLAG) AS TRAINING_COUNT FROM ${tableId} UNION SELECT '% of Discharges', 100 AS DISCHARGED_COUNT, ROUND(SUM(NFA) *100.0 / COUNT(1), 1) AS NFA_COUNT, ROUND(SUM(FT_EMPLOYMENT) *100.0 / COUNT(1), 1) AS FT_EMPLOYMENT_COUNT, ROUND(SUM(ADDRESS_FLAG) *100.0 / COUNT(1), 1) AS ADDRESS_COUNT, ROUND(SUM(ACTIVE_TRAINING_ADDRESS_FLAG) *100.0 / COUNT(1), 1) AS TRAINING_COUNT FROM ${tableId}",
       "schema": {
         "field": [
           {
@@ -188,8 +238,13 @@
       "summary": [
         {
           "id": "resettlement-by-date",
-          "template": "page-header",
+          "template": "section-header",
           "dataset": "$ref:resettlement-by-date"
+        },
+        {
+          "id": "resettlement-total-by-weekly-date",
+          "template": "section-header",
+          "dataset": "$ref:resettlement-total-by-weekly-date"
         },
         {
           "id": "resettlement-total",
@@ -203,8 +258,10 @@
         }
       ],
       "specification": {
-        "template": "summary",
-        "field": []
+        "template": "summary-section",
+        "section": ["WEEK_OF_MONTH"],
+        "field": [
+        ]
       }
     }
   ]
