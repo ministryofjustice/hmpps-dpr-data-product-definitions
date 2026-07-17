@@ -1,7 +1,7 @@
 {
-  "id": "residential-certified-capacity",
-  "name": "Operational cell capacity",
-  "description": "Cells and capacity for every prison with active certification, taken from the current live snapshot of locations. Supports the Capacity Management team.",
+  "id": "residential-cell-certificate",
+  "name": "Certified cell capacity",
+  "description": "Cells and certified capacity for every prison with an active certification requirement and a current cell certificate, taken from the approved cell certificate (the certified snapshot of accommodation). Supports the Capacity Management team.",
   "metadata": {
     "author": "Michael Willis",
     "version": "1.0.0",
@@ -29,7 +29,8 @@
             {
               "match": [
                 "${role}",
-                "ROLE_PRISONS_REPORTING_USER"
+                "MANAGE_RES_LOCATIONS_OP_CAP",
+                "RESI__CERT_VIEWER"
               ]
             }
           ]
@@ -58,11 +59,11 @@
   ],
   "dataset": [
     {
-      "id": "certified-cells",
-      "name": "Certified cell list",
-      "description": "One row per live cell plus its wing/landing/spur parents (with rolled-up figures) for each prison with active certification, from the current snapshot of locations.",
+      "id": "certificate-cells",
+      "name": "Cell certificate list",
+      "description": "One row per certified location (wings, landings, spurs and cells) for every prison with an active certification requirement and a current cell certificate. Figures are already rolled up in the certificate. Only the top-level locations link to the certificate directly (cell_certificate_id); descendants are gathered by walking parent_location_id down up to 6 levels.",
       "datasource": "dps_locations",
-      "query": "WITH cfg AS (\n    SELECT p.prison_id, p.name AS prison_name\n    FROM prisons.prisonregister_prison p\n    JOIN prisons.locationsinsideprison_prison_configuration pc ON pc.prison_id = p.prison_id\n    WHERE p.active = true AND pc.certification_approval_required = true\n),\ncells AS (\n    SELECT l.id, l.prison_id, l.path_hierarchy, l.accommodation_type,\n           c.certified_normal_accommodation AS cna, c.working_capacity, c.max_capacity\n    FROM prisons.locationsinsideprison_location l\n    JOIN cfg ON cfg.prison_id = l.prison_id\n    LEFT JOIN prisons.locationsinsideprison_capacity c ON c.id = l.capacity_id\n    WHERE l.location_type_discriminator = 'CELL' AND l.converted_cell_type IS NULL\n),\nused AS (SELECT location_id, INITCAP(REPLACE(used_for, '_', ' ')) AS val\n         FROM prisons.locationsinsideprison_cell_used_for),\nspec AS (SELECT location_id, INITCAP(REPLACE(specialist_cell_type, '_', ' ')) AS val\n         FROM prisons.locationsinsideprison_specialist_cell),\nlocs AS (\n    SELECT l.id AS loc_id, l.prison_id, l.code, l.path_hierarchy, l.local_name, l.status,\n           l.location_type, l.cell_mark, l.in_cell_sanitation, l.location_type_discriminator\n    FROM prisons.locationsinsideprison_location l\n    JOIN cfg ON cfg.prison_id = l.prison_id\n    WHERE l.location_type_discriminator = 'CELL' AND l.converted_cell_type IS NULL\n    UNION ALL\n    SELECT l.id, l.prison_id, l.code, l.path_hierarchy, l.local_name, l.status,\n           l.location_type, l.cell_mark, l.in_cell_sanitation, l.location_type_discriminator\n    FROM prisons.locationsinsideprison_location l\n    JOIN cfg ON cfg.prison_id = l.prison_id\n    WHERE l.location_type IN ('WING', 'LANDING', 'SPUR')\n      AND EXISTS (SELECT 1 FROM cells cc WHERE cc.prison_id = l.prison_id\n                  AND cc.path_hierarchy LIKE l.path_hierarchy || '-%')\n),\nrow_cells AS (\n    SELECT r.loc_id, cc.id AS cell_id, cc.cna, cc.working_capacity, cc.max_capacity, cc.accommodation_type\n    FROM locs r\n    JOIN cells cc ON cc.prison_id = r.prison_id\n      AND (cc.path_hierarchy = r.path_hierarchy OR cc.path_hierarchy LIKE r.path_hierarchy || '-%')\n),\ncap_roll AS (\n    SELECT loc_id, SUM(cna) AS cna, SUM(working_capacity) AS working_capacity, SUM(max_capacity) AS max_capacity,\n           LISTAGG(DISTINCT INITCAP(REPLACE(accommodation_type, '_', ' ')), ', ')\n             WITHIN GROUP (ORDER BY INITCAP(REPLACE(accommodation_type, '_', ' '))) AS accommodation_type\n    FROM row_cells GROUP BY loc_id\n),\nused_roll AS (\n    SELECT rc.loc_id, LISTAGG(DISTINCT u.val, ', ') WITHIN GROUP (ORDER BY u.val) AS used_for\n    FROM row_cells rc JOIN used u ON u.location_id = rc.cell_id GROUP BY rc.loc_id\n),\nspec_roll AS (\n    SELECT rc.loc_id, LISTAGG(DISTINCT s.val, ', ') WITHIN GROUP (ORDER BY s.val) AS cell_type\n    FROM row_cells rc JOIN spec s ON s.location_id = rc.cell_id GROUP BY rc.loc_id\n)\nSELECT\n    r.prison_id,\n    cfg.prison_name,\n    cfg.prison_name || '-' || LPAD(SPLIT_PART(r.path_hierarchy, '-', 1), 6, '0') || '-' || LPAD(SPLIT_PART(r.path_hierarchy, '-', 2), 6, '0') || '-' || LPAD(SPLIT_PART(r.path_hierarchy, '-', 3), 6, '0') || '-' || LPAD(SPLIT_PART(r.path_hierarchy, '-', 4), 6, '0') || '-' || LPAD(SPLIT_PART(r.path_hierarchy, '-', 5), 6, '0') || '-' || LPAD(SPLIT_PART(r.path_hierarchy, '-', 6), 6, '0') AS sort_key,\n    r.loc_id AS id,\n    r.code AS location_code,\n    r.path_hierarchy,\n    INITCAP(r.local_name) AS local_name,\n    r.cell_mark,\n    (length(r.path_hierarchy) - length(replace(r.path_hierarchy, '-', ''))) + 1 AS level,\n    INITCAP(REPLACE(r.location_type, '_', ' ')) AS location_type,\n    INITCAP(r.status) AS status,\n    (CASE WHEN r.location_type_discriminator = 'CELL'\n          THEN (CASE WHEN r.in_cell_sanitation THEN 'Yes' ELSE 'No' END) END) AS sanitation,\n    cap.cna,\n    cap.working_capacity,\n    cap.max_capacity,\n    soc.signed_operation_capacity,\n    cap.accommodation_type,\n    sr.cell_type,\n    ur.used_for\nFROM locs r\nJOIN cfg ON cfg.prison_id = r.prison_id\nLEFT JOIN cap_roll cap ON cap.loc_id = r.loc_id\nLEFT JOIN used_roll ur ON ur.loc_id = r.loc_id\nLEFT JOIN spec_roll sr ON sr.loc_id = r.loc_id\nLEFT JOIN prisons.locationsinsideprison_signed_operation_capacity soc ON soc.prison_id = r.prison_id\nORDER BY cfg.prison_name, r.path_hierarchy",
+      "query": "WITH roots AS (\n    SELECT l.id AS loc_id, c.prison_id, c.signed_operation_capacity\n    FROM prisons.locationsinsideprison_cell_certificate c\n    JOIN prisons.locationsinsideprison_prison_configuration pc ON pc.prison_id = c.prison_id\n    JOIN prisons.locationsinsideprison_cell_certificate_location l ON l.cell_certificate_id = c.id\n    WHERE c.current = true AND pc.certification_approval_required = true\n),\nn2 AS (SELECT l.id AS loc_id, r.prison_id, r.signed_operation_capacity FROM prisons.locationsinsideprison_cell_certificate_location l JOIN roots r ON l.parent_location_id = r.loc_id),\nn3 AS (SELECT l.id AS loc_id, r.prison_id, r.signed_operation_capacity FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n2 r ON l.parent_location_id = r.loc_id),\nn4 AS (SELECT l.id AS loc_id, r.prison_id, r.signed_operation_capacity FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n3 r ON l.parent_location_id = r.loc_id),\nn5 AS (SELECT l.id AS loc_id, r.prison_id, r.signed_operation_capacity FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n4 r ON l.parent_location_id = r.loc_id),\nn6 AS (SELECT l.id AS loc_id, r.prison_id, r.signed_operation_capacity FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n5 r ON l.parent_location_id = r.loc_id),\nids AS (\n    SELECT loc_id, prison_id, signed_operation_capacity FROM roots\n    UNION ALL SELECT loc_id, prison_id, signed_operation_capacity FROM n2\n    UNION ALL SELECT loc_id, prison_id, signed_operation_capacity FROM n3\n    UNION ALL SELECT loc_id, prison_id, signed_operation_capacity FROM n4\n    UNION ALL SELECT loc_id, prison_id, signed_operation_capacity FROM n5\n    UNION ALL SELECT loc_id, prison_id, signed_operation_capacity FROM n6\n)\nSELECT\n    ids.prison_id,\n    p.name AS prison_name,\n    p.name || '-' || LPAD(SPLIT_PART(l.path_hierarchy, '-', 1), 6, '0') || '-' || LPAD(SPLIT_PART(l.path_hierarchy, '-', 2), 6, '0') || '-' || LPAD(SPLIT_PART(l.path_hierarchy, '-', 3), 6, '0') || '-' || LPAD(SPLIT_PART(l.path_hierarchy, '-', 4), 6, '0') || '-' || LPAD(SPLIT_PART(l.path_hierarchy, '-', 5), 6, '0') || '-' || LPAD(SPLIT_PART(l.path_hierarchy, '-', 6), 6, '0') AS sort_key,\n    l.location_code,\n    l.path_hierarchy,\n    INITCAP(l.local_name) AS local_name,\n    l.cell_mark,\n    l.level,\n    INITCAP(REPLACE(l.location_type, '_', ' ')) AS location_type,\n    (CASE WHEN l.location_type = 'CELL' THEN (CASE WHEN l.in_cell_sanitation THEN 'Yes' ELSE 'No' END) END) AS sanitation,\n    l.certified_normal_accommodation AS cna,\n    l.working_capacity,\n    l.max_capacity,\n    ids.signed_operation_capacity,\n    INITCAP(REPLACE(REPLACE(l.accommodation_types, '_', ' '), ',', ', ')) AS accommodation_type,\n    INITCAP(REPLACE(REPLACE(l.specialist_cell_types, '_', ' '), ',', ', ')) AS cell_type,\n    INITCAP(REPLACE(REPLACE(l.used_for_types, '_', ' '), ',', ', ')) AS used_for\nFROM ids\nJOIN prisons.locationsinsideprison_cell_certificate_location l ON l.id = ids.loc_id\nJOIN prisons.prisonregister_prison p ON p.prison_id = ids.prison_id\nWHERE p.active = true\nORDER BY p.name, l.path_hierarchy",
       "schema": {
         "field": [
           {
@@ -75,10 +76,6 @@
           },
           {
             "name": "sort_key",
-            "type": "string"
-          },
-          {
-            "name": "id",
             "type": "string"
           },
           {
@@ -103,10 +100,6 @@
           },
           {
             "name": "location_type",
-            "type": "string"
-          },
-          {
-            "name": "status",
             "type": "string"
           },
           {
@@ -148,7 +141,7 @@
       "id": "prisons",
       "name": "Prisons",
       "datasource": "athena_redshift",
-      "query": "SELECT p.prison_id, p.name AS prison_name FROM prisons.prisonregister_prison p JOIN prisons.locationsinsideprison_prison_configuration pc ON pc.prison_id = p.prison_id WHERE p.active = true AND pc.certification_approval_required = true ORDER BY p.name",
+      "query": "SELECT DISTINCT c.prison_id, p.name AS prison_name FROM prisons.locationsinsideprison_cell_certificate c JOIN prisons.locationsinsideprison_prison_configuration pc ON pc.prison_id = c.prison_id JOIN prisons.prisonregister_prison p ON p.prison_id = c.prison_id WHERE c.current = true AND pc.certification_approval_required = true AND p.active = true ORDER BY p.name",
       "schema": {
         "field": [
           {
@@ -189,7 +182,7 @@
           {
             "name": "working_capacity",
             "type": "int",
-            "display": "Working capacity"
+            "display": "Certified working capacity"
           },
           {
             "name": "max_capacity",
@@ -219,7 +212,7 @@
           {
             "name": "working_capacity",
             "type": "int",
-            "display": "Total working capacity"
+            "display": "Total certified working capacity"
           },
           {
             "name": "max_capacity",
@@ -231,9 +224,9 @@
     },
     {
       "id": "capacity-by-establishment",
-      "name": "Capacity totals by establishment",
+      "name": "Certified capacity totals by establishment",
       "datasource": "dps_locations",
-      "query": "SELECT\n    l.prison_id,\n    p.name AS prison_name,\n    COUNT(*) AS number_of_cells,\n    SUM(c.certified_normal_accommodation) AS cna,\n    SUM(c.working_capacity) AS working_capacity,\n    SUM(c.max_capacity) AS max_capacity,\n    MAX(soc.signed_operation_capacity) AS signed_operational_capacity,\n    SUM(CASE WHEN c.max_capacity = 1 AND l.status = 'ACTIVE' THEN 1 ELSE 0 END) AS active_single_cells,\n    SUM(CASE WHEN c.max_capacity = 1 AND l.status <> 'ACTIVE' THEN 1 ELSE 0 END) AS inactive_single_cells,\n    SUM(CASE WHEN c.max_capacity = 2 AND l.status = 'ACTIVE' THEN 1 ELSE 0 END) AS active_double_cells,\n    SUM(CASE WHEN c.max_capacity = 2 AND l.status <> 'ACTIVE' THEN 1 ELSE 0 END) AS inactive_double_cells,\n    SUM(CASE WHEN l.in_cell_sanitation THEN 1 ELSE 0 END) AS cells_with_sanitation,\n    SUM(CASE WHEN NOT l.in_cell_sanitation OR l.in_cell_sanitation IS NULL THEN 1 ELSE 0 END) AS cells_without_sanitation\nFROM prisons.locationsinsideprison_location l\nJOIN prisons.prisonregister_prison p ON p.prison_id = l.prison_id\nJOIN prisons.locationsinsideprison_prison_configuration pc ON pc.prison_id = l.prison_id\nLEFT JOIN prisons.locationsinsideprison_capacity c ON l.capacity_id = c.id\nLEFT JOIN prisons.locationsinsideprison_signed_operation_capacity soc ON soc.prison_id = l.prison_id\nWHERE l.location_type_discriminator = 'CELL'\n  AND l.converted_cell_type IS NULL\n  AND pc.certification_approval_required = true\n  AND p.active = true\nGROUP BY l.prison_id, p.name",
+      "query": "WITH roots AS (\n    SELECT l.id AS loc_id, c.prison_id, c.signed_operation_capacity\n    FROM prisons.locationsinsideprison_cell_certificate c\n    JOIN prisons.locationsinsideprison_prison_configuration pc ON pc.prison_id = c.prison_id\n    JOIN prisons.locationsinsideprison_cell_certificate_location l ON l.cell_certificate_id = c.id\n    WHERE c.current = true AND pc.certification_approval_required = true\n),\nn2 AS (SELECT l.id AS loc_id, r.prison_id, r.signed_operation_capacity FROM prisons.locationsinsideprison_cell_certificate_location l JOIN roots r ON l.parent_location_id = r.loc_id),\nn3 AS (SELECT l.id AS loc_id, r.prison_id, r.signed_operation_capacity FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n2 r ON l.parent_location_id = r.loc_id),\nn4 AS (SELECT l.id AS loc_id, r.prison_id, r.signed_operation_capacity FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n3 r ON l.parent_location_id = r.loc_id),\nn5 AS (SELECT l.id AS loc_id, r.prison_id, r.signed_operation_capacity FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n4 r ON l.parent_location_id = r.loc_id),\nn6 AS (SELECT l.id AS loc_id, r.prison_id, r.signed_operation_capacity FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n5 r ON l.parent_location_id = r.loc_id),\nids AS (\n    SELECT loc_id, prison_id, signed_operation_capacity FROM roots\n    UNION ALL SELECT loc_id, prison_id, signed_operation_capacity FROM n2\n    UNION ALL SELECT loc_id, prison_id, signed_operation_capacity FROM n3\n    UNION ALL SELECT loc_id, prison_id, signed_operation_capacity FROM n4\n    UNION ALL SELECT loc_id, prison_id, signed_operation_capacity FROM n5\n    UNION ALL SELECT loc_id, prison_id, signed_operation_capacity FROM n6\n)\nSELECT\n    ids.prison_id,\n    p.name AS prison_name,\n    COUNT(*) AS number_of_cells,\n    SUM(l.certified_normal_accommodation) AS cna,\n    SUM(l.working_capacity) AS working_capacity,\n    SUM(l.max_capacity) AS max_capacity,\n    MAX(ids.signed_operation_capacity) AS signed_operational_capacity,\n    SUM(CASE WHEN l.max_capacity = 1 THEN 1 ELSE 0 END) AS single_cells,\n    SUM(CASE WHEN l.max_capacity = 2 THEN 1 ELSE 0 END) AS double_cells,\n    SUM(CASE WHEN l.in_cell_sanitation THEN 1 ELSE 0 END) AS cells_with_sanitation,\n    SUM(CASE WHEN NOT l.in_cell_sanitation OR l.in_cell_sanitation IS NULL THEN 1 ELSE 0 END) AS cells_without_sanitation\nFROM ids\nJOIN prisons.locationsinsideprison_cell_certificate_location l ON l.id = ids.loc_id\nJOIN prisons.prisonregister_prison p ON p.prison_id = ids.prison_id\nWHERE p.active = true AND l.location_type = 'CELL'\nGROUP BY ids.prison_id, p.name",
       "schema": {
         "field": [
           {
@@ -258,7 +251,7 @@
           {
             "name": "working_capacity",
             "type": "int",
-            "display": "Working capacity"
+            "display": "Certified working capacity"
           },
           {
             "name": "max_capacity",
@@ -271,24 +264,14 @@
             "display": "Signed operational capacity"
           },
           {
-            "name": "active_single_cells",
+            "name": "single_cells",
             "type": "int",
-            "display": "Active single cells"
+            "display": "Single cells"
           },
           {
-            "name": "inactive_single_cells",
+            "name": "double_cells",
             "type": "int",
-            "display": "Inactive single cells"
-          },
-          {
-            "name": "active_double_cells",
-            "type": "int",
-            "display": "Active double cells"
-          },
-          {
-            "name": "inactive_double_cells",
-            "type": "int",
-            "display": "Inactive double cells"
+            "display": "Double cells"
           },
           {
             "name": "cells_with_sanitation",
@@ -307,7 +290,7 @@
       "id": "accommodation-type-breakdown",
       "name": "Cells by accommodation type",
       "datasource": "dps_locations",
-      "query": "SELECT\n    l.prison_id,\n    p.name AS prison_name,\n    INITCAP(REPLACE(COALESCE(NULLIF(l.accommodation_type, ''), 'Unspecified'), '_', ' ')) AS accommodation_type,\n    COUNT(*) AS cell_count\nFROM prisons.locationsinsideprison_location l\nJOIN prisons.prisonregister_prison p ON p.prison_id = l.prison_id\nJOIN prisons.locationsinsideprison_prison_configuration pc ON pc.prison_id = l.prison_id\nWHERE l.location_type_discriminator = 'CELL'\n  AND l.converted_cell_type IS NULL\n  AND pc.certification_approval_required = true\n  AND p.active = true\nGROUP BY l.prison_id, p.name, 3",
+      "query": "WITH roots AS (\n    SELECT l.id AS loc_id, c.prison_id\n    FROM prisons.locationsinsideprison_cell_certificate c\n    JOIN prisons.locationsinsideprison_prison_configuration pc ON pc.prison_id = c.prison_id\n    JOIN prisons.locationsinsideprison_cell_certificate_location l ON l.cell_certificate_id = c.id\n    WHERE c.current = true AND pc.certification_approval_required = true\n),\nn2 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN roots r ON l.parent_location_id = r.loc_id),\nn3 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n2 r ON l.parent_location_id = r.loc_id),\nn4 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n3 r ON l.parent_location_id = r.loc_id),\nn5 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n4 r ON l.parent_location_id = r.loc_id),\nn6 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n5 r ON l.parent_location_id = r.loc_id),\nids AS (\n    SELECT loc_id, prison_id FROM roots\n    UNION ALL SELECT loc_id, prison_id FROM n2\n    UNION ALL SELECT loc_id, prison_id FROM n3\n    UNION ALL SELECT loc_id, prison_id FROM n4\n    UNION ALL SELECT loc_id, prison_id FROM n5\n    UNION ALL SELECT loc_id, prison_id FROM n6\n),\nbase AS (\n    SELECT ids.prison_id, p.name AS prison_name, split_to_array(l.accommodation_types, ',') AS arr\n    FROM ids\n    JOIN prisons.locationsinsideprison_cell_certificate_location l ON l.id = ids.loc_id\n    JOIN prisons.prisonregister_prison p ON p.prison_id = ids.prison_id\n    WHERE p.active = true AND l.location_type = 'CELL' AND l.accommodation_types IS NOT NULL AND l.accommodation_types <> ''\n)\nSELECT b.prison_id, b.prison_name,\n       INITCAP(REPLACE(TRIM(CAST(a AS VARCHAR)), '_', ' ')) AS accommodation_type,\n       COUNT(*) AS cell_count\nFROM base b, b.arr AS a\nGROUP BY 1, 2, 3",
       "schema": {
         "field": [
           {
@@ -336,7 +319,7 @@
       "id": "used-for-breakdown",
       "name": "Cells by used for",
       "datasource": "dps_locations",
-      "query": "SELECT\n    l.prison_id,\n    p.name AS prison_name,\n    INITCAP(REPLACE(uf.used_for, '_', ' ')) AS used_for,\n    COUNT(*) AS cell_count\nFROM prisons.locationsinsideprison_location l\nJOIN prisons.prisonregister_prison p ON p.prison_id = l.prison_id\nJOIN prisons.locationsinsideprison_prison_configuration pc ON pc.prison_id = l.prison_id\nJOIN prisons.locationsinsideprison_cell_used_for uf ON uf.location_id = l.id\nWHERE l.location_type_discriminator = 'CELL'\n  AND l.converted_cell_type IS NULL\n  AND pc.certification_approval_required = true\n  AND p.active = true\nGROUP BY l.prison_id, p.name, 3",
+      "query": "WITH roots AS (\n    SELECT l.id AS loc_id, c.prison_id\n    FROM prisons.locationsinsideprison_cell_certificate c\n    JOIN prisons.locationsinsideprison_prison_configuration pc ON pc.prison_id = c.prison_id\n    JOIN prisons.locationsinsideprison_cell_certificate_location l ON l.cell_certificate_id = c.id\n    WHERE c.current = true AND pc.certification_approval_required = true\n),\nn2 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN roots r ON l.parent_location_id = r.loc_id),\nn3 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n2 r ON l.parent_location_id = r.loc_id),\nn4 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n3 r ON l.parent_location_id = r.loc_id),\nn5 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n4 r ON l.parent_location_id = r.loc_id),\nn6 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n5 r ON l.parent_location_id = r.loc_id),\nids AS (\n    SELECT loc_id, prison_id FROM roots\n    UNION ALL SELECT loc_id, prison_id FROM n2\n    UNION ALL SELECT loc_id, prison_id FROM n3\n    UNION ALL SELECT loc_id, prison_id FROM n4\n    UNION ALL SELECT loc_id, prison_id FROM n5\n    UNION ALL SELECT loc_id, prison_id FROM n6\n),\nbase AS (\n    SELECT ids.prison_id, p.name AS prison_name, split_to_array(l.used_for_types, ',') AS arr\n    FROM ids\n    JOIN prisons.locationsinsideprison_cell_certificate_location l ON l.id = ids.loc_id\n    JOIN prisons.prisonregister_prison p ON p.prison_id = ids.prison_id\n    WHERE p.active = true AND l.location_type = 'CELL' AND l.used_for_types IS NOT NULL AND l.used_for_types <> ''\n)\nSELECT b.prison_id, b.prison_name,\n       INITCAP(REPLACE(TRIM(CAST(a AS VARCHAR)), '_', ' ')) AS used_for,\n       COUNT(*) AS cell_count\nFROM base b, b.arr AS a\nGROUP BY 1, 2, 3",
       "schema": {
         "field": [
           {
@@ -365,7 +348,7 @@
       "id": "cell-type-breakdown",
       "name": "Cells by cell type",
       "datasource": "dps_locations",
-      "query": "SELECT\n    l.prison_id,\n    p.name AS prison_name,\n    INITCAP(REPLACE(sc.specialist_cell_type, '_', ' ')) AS cell_type,\n    COUNT(*) AS cell_count\nFROM prisons.locationsinsideprison_location l\nJOIN prisons.prisonregister_prison p ON p.prison_id = l.prison_id\nJOIN prisons.locationsinsideprison_prison_configuration pc ON pc.prison_id = l.prison_id\nJOIN prisons.locationsinsideprison_specialist_cell sc ON sc.location_id = l.id\nWHERE l.location_type_discriminator = 'CELL'\n  AND l.converted_cell_type IS NULL\n  AND pc.certification_approval_required = true\n  AND p.active = true\nGROUP BY l.prison_id, p.name, 3",
+      "query": "WITH roots AS (\n    SELECT l.id AS loc_id, c.prison_id\n    FROM prisons.locationsinsideprison_cell_certificate c\n    JOIN prisons.locationsinsideprison_prison_configuration pc ON pc.prison_id = c.prison_id\n    JOIN prisons.locationsinsideprison_cell_certificate_location l ON l.cell_certificate_id = c.id\n    WHERE c.current = true AND pc.certification_approval_required = true\n),\nn2 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN roots r ON l.parent_location_id = r.loc_id),\nn3 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n2 r ON l.parent_location_id = r.loc_id),\nn4 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n3 r ON l.parent_location_id = r.loc_id),\nn5 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n4 r ON l.parent_location_id = r.loc_id),\nn6 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n5 r ON l.parent_location_id = r.loc_id),\nids AS (\n    SELECT loc_id, prison_id FROM roots\n    UNION ALL SELECT loc_id, prison_id FROM n2\n    UNION ALL SELECT loc_id, prison_id FROM n3\n    UNION ALL SELECT loc_id, prison_id FROM n4\n    UNION ALL SELECT loc_id, prison_id FROM n5\n    UNION ALL SELECT loc_id, prison_id FROM n6\n),\nbase AS (\n    SELECT ids.prison_id, p.name AS prison_name, split_to_array(l.specialist_cell_types, ',') AS arr\n    FROM ids\n    JOIN prisons.locationsinsideprison_cell_certificate_location l ON l.id = ids.loc_id\n    JOIN prisons.prisonregister_prison p ON p.prison_id = ids.prison_id\n    WHERE p.active = true AND l.location_type = 'CELL' AND l.specialist_cell_types IS NOT NULL AND l.specialist_cell_types <> ''\n)\nSELECT b.prison_id, b.prison_name,\n       INITCAP(REPLACE(TRIM(CAST(a AS VARCHAR)), '_', ' ')) AS cell_type,\n       COUNT(*) AS cell_count\nFROM base b, b.arr AS a\nGROUP BY 1, 2, 3",
       "schema": {
         "field": [
           {
@@ -393,11 +376,11 @@
   ],
   "report": [
     {
-      "id": "certified-cell-list",
-      "name": "Operational cells by establishment",
-      "description": "Lists every cell for each prison with active certification, grouped by establishment, with per-establishment and overall totals. All figures are taken from the current live snapshot of locations.",
+      "id": "cell-certificate-list",
+      "name": "Certified cells by establishment",
+      "description": "Lists every certified location (wings, landings, spurs and cells) for each prison with an active certification requirement and a current cell certificate, grouped by establishment, with per-establishment and overall totals. All figures are taken from the approved cell certificate.",
       "version": "1.0.0",
-      "dataset": "$ref:certified-cells",
+      "dataset": "$ref:certificate-cells",
       "render": "HTML",
       "summary": [
         {
@@ -462,7 +445,6 @@
           {
             "name": "$ref:path_hierarchy",
             "display": "Cell Ref",
-            "formula": "make_url('https://locations-inside-prison-${env}.hmpps.service.justice.gov.uk/view-and-update-locations/${prison_id}/${id}',${path_hierarchy},TRUE)",
             "sortable": true,
             "visible": "true",
             "defaultsort": true,
@@ -498,7 +480,7 @@
           },
           {
             "name": "$ref:working_capacity",
-            "display": "Working capacity",
+            "display": "Certified working capacity",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
@@ -516,36 +498,6 @@
             "sortable": true,
             "visible": "false",
             "defaultsort": false
-          },
-          {
-            "name": "$ref:status",
-            "display": "Status",
-            "sortable": true,
-            "visible": "true",
-            "defaultsort": false,
-            "filter": {
-              "type": "multiselect",
-              "mandatory": true,
-              "default": "Active",
-              "staticoptions": [
-                {
-                  "name": "Active",
-                  "display": "Active"
-                },
-                {
-                  "name": "Inactive",
-                  "display": "Inactive"
-                },
-                {
-                  "name": "Archived",
-                  "display": "Archived"
-                },
-                {
-                  "name": "Draft",
-                  "display": "Draft"
-                }
-              ]
-            }
           },
           {
             "name": "$ref:sanitation",
@@ -619,11 +571,11 @@
       "destination": []
     },
     {
-      "id": "certified-cell-list-download",
-      "name": "Operational cells list (for download)",
-      "description": "A flat list of every cell plus its wing/landing/spur parents (with rolled-up figures) for each prison with active certification, ordered by establishment then location. No sections or totals - intended for downloading to Excel, where the Type column can be used to filter to cells only. All figures are taken from the current live snapshot of locations.",
+      "id": "cell-certificate-list-download",
+      "name": "Certified cells list (for download)",
+      "description": "A flat list of every certified location (wings, landings, spurs and cells) for each prison with an active certification requirement and a current cell certificate, ordered by establishment then location. No sections or totals - intended for downloading to Excel, where the Type column can be used to filter to cells only. All figures are taken from the approved cell certificate.",
       "version": "1.0.0",
-      "dataset": "$ref:certified-cells",
+      "dataset": "$ref:certificate-cells",
       "render": "HTML",
       "feature": [
         {
@@ -674,7 +626,6 @@
           {
             "name": "$ref:path_hierarchy",
             "display": "Cell Ref",
-            "formula": "make_url('https://locations-inside-prison-${env}.hmpps.service.justice.gov.uk/view-and-update-locations/${prison_id}/${id}',${path_hierarchy},TRUE)",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
@@ -716,7 +667,7 @@
           },
           {
             "name": "$ref:working_capacity",
-            "display": "Working capacity",
+            "display": "Certified working capacity",
             "sortable": true,
             "visible": "true",
             "defaultsort": false
@@ -734,36 +685,6 @@
             "sortable": true,
             "visible": "false",
             "defaultsort": false
-          },
-          {
-            "name": "$ref:status",
-            "display": "Status",
-            "sortable": true,
-            "visible": "true",
-            "defaultsort": false,
-            "filter": {
-              "type": "multiselect",
-              "mandatory": true,
-              "default": "Active",
-              "staticoptions": [
-                {
-                  "name": "Active",
-                  "display": "Active"
-                },
-                {
-                  "name": "Inactive",
-                  "display": "Inactive"
-                },
-                {
-                  "name": "Archived",
-                  "display": "Archived"
-                },
-                {
-                  "name": "Draft",
-                  "display": "Draft"
-                }
-              ]
-            }
           },
           {
             "name": "$ref:sanitation",
@@ -839,19 +760,19 @@
   ],
   "dashboard": [
     {
-      "id": "certified-capacity-summary",
-      "name": "Operational capacity summary by establishment",
-      "description": "Capacity totals from the current live snapshot of locations for each establishment with active certification.",
+      "id": "cell-certificate-capacity-summary",
+      "name": "Certified capacity summary by establishment",
+      "description": "Certified capacity totals from the current cell certificate for each establishment.",
       "dataset": "capacity-by-establishment",
       "section": [
         {
           "id": "capacity-totals",
-          "display": "Operational capacity totals by establishment",
+          "display": "Certified capacity totals by establishment",
           "visualisation": [
             {
               "id": "capacity-totals-list",
               "type": "list",
-              "display": "Operational capacity totals",
+              "display": "Certified capacity totals",
               "column": {
                 "key": [
                   {
@@ -876,7 +797,7 @@
                   },
                   {
                     "id": "$ref:working_capacity",
-                    "display": "Working capacity",
+                    "display": "Certified working capacity",
                     "aggregate": "sum"
                   },
                   {
@@ -890,23 +811,13 @@
                     "aggregate": "sum"
                   },
                   {
-                    "id": "$ref:active_single_cells",
-                    "display": "Active single cells",
+                    "id": "$ref:single_cells",
+                    "display": "Single cells",
                     "aggregate": "sum"
                   },
                   {
-                    "id": "$ref:inactive_single_cells",
-                    "display": "Inactive single cells",
-                    "aggregate": "sum"
-                  },
-                  {
-                    "id": "$ref:active_double_cells",
-                    "display": "Active double cells",
-                    "aggregate": "sum"
-                  },
-                  {
-                    "id": "$ref:inactive_double_cells",
-                    "display": "Inactive double cells",
+                    "id": "$ref:double_cells",
+                    "display": "Double cells",
                     "aggregate": "sum"
                   },
                   {
@@ -928,9 +839,9 @@
       ]
     },
     {
-      "id": "accommodation-type-breakdown",
+      "id": "cell-certificate-accommodation-type-breakdown",
       "name": "Cells by accommodation type",
-      "description": "Number of cells for each accommodation type.",
+      "description": "Number of certified cells for each accommodation type.",
       "dataset": "accommodation-type-breakdown",
       "section": [
         {
@@ -971,9 +882,9 @@
       ]
     },
     {
-      "id": "used-for-breakdown",
+      "id": "cell-certificate-used-for-breakdown",
       "name": "Cells by used for",
-      "description": "Number of cells for each 'used for' type. Cells with multiple used-for types are counted once per type.",
+      "description": "Number of certified cells for each 'used for' type. Cells with multiple used-for types are counted once per type.",
       "dataset": "used-for-breakdown",
       "section": [
         {
@@ -1014,9 +925,9 @@
       ]
     },
     {
-      "id": "cell-type-breakdown",
+      "id": "cell-certificate-cell-type-breakdown",
       "name": "Cells by cell type",
-      "description": "Number of cells for each specialist cell type. Cells with multiple cell types are counted once per type.",
+      "description": "Number of certified cells for each specialist cell type. Cells with multiple cell types are counted once per type.",
       "dataset": "cell-type-breakdown",
       "section": [
         {
