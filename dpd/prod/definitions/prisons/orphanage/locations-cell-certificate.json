@@ -1,0 +1,971 @@
+{
+  "id": "residential-cell-certificate",
+  "name": "Cell certificate capacity",
+  "description": "Cells and certified capacity for every prison with a current cell certificate, taken from the approved cell certificate (the certified snapshot of accommodation). Supports the Capacity Management team.",
+  "metadata": {
+    "author": "Michael Willis",
+    "version": "1.0.0",
+    "owner": "Capacity Management team",
+    "tags": [
+      "DPS",
+      "Residential",
+      "Capacity"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "datamart",
+      "name": "datamart"
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "MANAGE_RES_LOCATIONS_OP_CAP",
+                "RESI__CERT_VIEWER"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseloads",
+      "type": "row-level",
+      "action": [
+        "prison_id IN (${caseloads})"
+      ],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": [
+                "${caseloads}"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "dataset": [
+    {
+      "id": "certificate-cells",
+      "name": "Cell certificate list",
+      "description": "One row per certified cell plus its wing/landing/spur parents (with figures already rolled up in the certificate) for every prison with a current cell certificate.",
+      "datasource": "dps_locations",
+      "query": "SELECT\n    c.prison_id,\n    p.name AS prison_name,\n    p.name || '-' || LPAD(SPLIT_PART(l.path_hierarchy, '-', 1), 6, '0') || '-' || LPAD(SPLIT_PART(l.path_hierarchy, '-', 2), 6, '0') || '-' || LPAD(SPLIT_PART(l.path_hierarchy, '-', 3), 6, '0') || '-' || LPAD(SPLIT_PART(l.path_hierarchy, '-', 4), 6, '0') || '-' || LPAD(SPLIT_PART(l.path_hierarchy, '-', 5), 6, '0') || '-' || LPAD(SPLIT_PART(l.path_hierarchy, '-', 6), 6, '0') AS sort_key,\n    l.location_code,\n    l.path_hierarchy,\n    INITCAP(l.local_name) AS local_name,\n    l.cell_mark,\n    l.level,\n    INITCAP(REPLACE(l.location_type, '_', ' ')) AS location_type,\n    (CASE WHEN l.location_type = 'CELL' THEN (CASE WHEN l.in_cell_sanitation THEN 'Yes' ELSE 'No' END) END) AS sanitation,\n    l.certified_normal_accommodation AS cna,\n    l.working_capacity,\n    l.max_capacity,\n    c.signed_operation_capacity,\n    INITCAP(REPLACE(REPLACE(l.accommodation_types, '_', ' '), ',', ', ')) AS accommodation_type,\n    INITCAP(REPLACE(REPLACE(l.specialist_cell_types, '_', ' '), ',', ', ')) AS cell_type,\n    INITCAP(REPLACE(REPLACE(l.used_for_types, '_', ' '), ',', ', ')) AS used_for\nFROM prisons.locationsinsideprison_cell_certificate c\nJOIN prisons.locationsinsideprison_cell_certificate_location l ON l.cell_certificate_id = c.id\nJOIN prisons.prisonregister_prison p ON p.prison_id = c.prison_id\nWHERE c.current = true AND p.active = true\nORDER BY p.name, l.path_hierarchy",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_id",
+            "type": "string"
+          },
+          {
+            "name": "prison_name",
+            "type": "string"
+          },
+          {
+            "name": "sort_key",
+            "type": "string"
+          },
+          {
+            "name": "location_code",
+            "type": "string"
+          },
+          {
+            "name": "path_hierarchy",
+            "type": "string"
+          },
+          {
+            "name": "local_name",
+            "type": "string"
+          },
+          {
+            "name": "cell_mark",
+            "type": "string"
+          },
+          {
+            "name": "level",
+            "type": "int"
+          },
+          {
+            "name": "location_type",
+            "type": "string"
+          },
+          {
+            "name": "sanitation",
+            "type": "string"
+          },
+          {
+            "name": "cna",
+            "type": "int"
+          },
+          {
+            "name": "working_capacity",
+            "type": "int"
+          },
+          {
+            "name": "max_capacity",
+            "type": "int"
+          },
+          {
+            "name": "signed_operation_capacity",
+            "type": "int"
+          },
+          {
+            "name": "accommodation_type",
+            "type": "string"
+          },
+          {
+            "name": "cell_type",
+            "type": "string"
+          },
+          {
+            "name": "used_for",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prisons",
+      "name": "Prisons",
+      "datasource": "athena_redshift",
+      "query": "SELECT DISTINCT c.prison_id, p.name AS prison_name FROM prisons.locationsinsideprison_cell_certificate c JOIN prisons.prisonregister_prison p ON p.prison_id = c.prison_id WHERE c.current = true AND p.active = true ORDER BY p.name",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_id",
+            "type": "string",
+            "display": "Prison Id"
+          },
+          {
+            "name": "prison_name",
+            "type": "string",
+            "display": "Prison name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "establishment-summary",
+      "name": "Establishment totals",
+      "datasource": "redshift",
+      "query": "SELECT prison_name,\n       COUNT(*) AS cell_count,\n       SUM(cna) AS cna,\n       SUM(working_capacity) AS working_capacity,\n       SUM(max_capacity) AS max_capacity\nFROM ${tableId}\nWHERE location_type = 'Cell'\nGROUP BY prison_name",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_name",
+            "type": "string",
+            "display": "Establishment"
+          },
+          {
+            "name": "cell_count",
+            "type": "int",
+            "display": "Number of cells"
+          },
+          {
+            "name": "cna",
+            "type": "int",
+            "display": "CNA"
+          },
+          {
+            "name": "working_capacity",
+            "type": "int",
+            "display": "Certified working capacity"
+          },
+          {
+            "name": "max_capacity",
+            "type": "int",
+            "display": "Max capacity"
+          }
+        ]
+      }
+    },
+    {
+      "id": "grand-total-summary",
+      "name": "Grand totals",
+      "datasource": "redshift",
+      "query": "SELECT COUNT(*) AS cell_count,\n       SUM(cna) AS cna,\n       SUM(working_capacity) AS working_capacity,\n       SUM(max_capacity) AS max_capacity\nFROM ${tableId}\nWHERE location_type = 'Cell'",
+      "schema": {
+        "field": [
+          {
+            "name": "cell_count",
+            "type": "int",
+            "display": "Total number of cells"
+          },
+          {
+            "name": "cna",
+            "type": "int",
+            "display": "Total CNA"
+          },
+          {
+            "name": "working_capacity",
+            "type": "int",
+            "display": "Total certified working capacity"
+          },
+          {
+            "name": "max_capacity",
+            "type": "int",
+            "display": "Total max capacity"
+          }
+        ]
+      }
+    },
+    {
+      "id": "capacity-by-establishment",
+      "name": "Certified capacity totals by establishment",
+      "datasource": "dps_locations",
+      "query": "SELECT\n    c.prison_id,\n    p.name AS prison_name,\n    COUNT(*) AS number_of_cells,\n    SUM(l.certified_normal_accommodation) AS cna,\n    SUM(l.working_capacity) AS working_capacity,\n    SUM(l.max_capacity) AS max_capacity,\n    MAX(c.signed_operation_capacity) AS signed_operational_capacity,\n    SUM(CASE WHEN l.max_capacity = 1 THEN 1 ELSE 0 END) AS single_cells,\n    SUM(CASE WHEN l.max_capacity = 2 THEN 1 ELSE 0 END) AS double_cells,\n    SUM(CASE WHEN l.in_cell_sanitation THEN 1 ELSE 0 END) AS cells_with_sanitation,\n    SUM(CASE WHEN NOT l.in_cell_sanitation OR l.in_cell_sanitation IS NULL THEN 1 ELSE 0 END) AS cells_without_sanitation\nFROM prisons.locationsinsideprison_cell_certificate c\nJOIN prisons.locationsinsideprison_cell_certificate_location l ON l.cell_certificate_id = c.id\nJOIN prisons.prisonregister_prison p ON p.prison_id = c.prison_id\nWHERE c.current = true AND p.active = true AND l.location_type = 'CELL'\nGROUP BY c.prison_id, p.name",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_id",
+            "type": "string"
+          },
+          {
+            "name": "prison_name",
+            "type": "string",
+            "display": "Establishment"
+          },
+          {
+            "name": "number_of_cells",
+            "type": "int",
+            "display": "Number of cells"
+          },
+          {
+            "name": "cna",
+            "type": "int",
+            "display": "CNA"
+          },
+          {
+            "name": "working_capacity",
+            "type": "int",
+            "display": "Certified working capacity"
+          },
+          {
+            "name": "max_capacity",
+            "type": "int",
+            "display": "Maximum capacity"
+          },
+          {
+            "name": "signed_operational_capacity",
+            "type": "int",
+            "display": "Signed operational capacity"
+          },
+          {
+            "name": "single_cells",
+            "type": "int",
+            "display": "Single cells"
+          },
+          {
+            "name": "double_cells",
+            "type": "int",
+            "display": "Double cells"
+          },
+          {
+            "name": "cells_with_sanitation",
+            "type": "int",
+            "display": "Cells with sanitation"
+          },
+          {
+            "name": "cells_without_sanitation",
+            "type": "int",
+            "display": "Cells without sanitation"
+          }
+        ]
+      }
+    },
+    {
+      "id": "accommodation-type-breakdown",
+      "name": "Cells by accommodation type",
+      "datasource": "dps_locations",
+      "query": "WITH base AS (\n    SELECT c.prison_id, p.name AS prison_name, split_to_array(l.accommodation_types, ',') AS arr\n    FROM prisons.locationsinsideprison_cell_certificate c\n    JOIN prisons.locationsinsideprison_cell_certificate_location l ON l.cell_certificate_id = c.id\n    JOIN prisons.prisonregister_prison p ON p.prison_id = c.prison_id\n    WHERE c.current = true AND p.active = true AND l.location_type = 'CELL'\n      AND l.accommodation_types IS NOT NULL AND l.accommodation_types <> ''\n)\nSELECT b.prison_id, b.prison_name,\n       INITCAP(REPLACE(TRIM(CAST(t AS VARCHAR)), '_', ' ')) AS accommodation_type,\n       COUNT(*) AS cell_count\nFROM base b, b.arr AS t\nGROUP BY 1, 2, 3",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_id",
+            "type": "string"
+          },
+          {
+            "name": "prison_name",
+            "type": "string",
+            "display": "Establishment"
+          },
+          {
+            "name": "accommodation_type",
+            "type": "string",
+            "display": "Accommodation type"
+          },
+          {
+            "name": "cell_count",
+            "type": "int",
+            "display": "Number of cells"
+          }
+        ]
+      }
+    },
+    {
+      "id": "used-for-breakdown",
+      "name": "Cells by used for",
+      "datasource": "dps_locations",
+      "query": "WITH base AS (\n    SELECT c.prison_id, p.name AS prison_name, split_to_array(l.used_for_types, ',') AS arr\n    FROM prisons.locationsinsideprison_cell_certificate c\n    JOIN prisons.locationsinsideprison_cell_certificate_location l ON l.cell_certificate_id = c.id\n    JOIN prisons.prisonregister_prison p ON p.prison_id = c.prison_id\n    WHERE c.current = true AND p.active = true AND l.location_type = 'CELL'\n      AND l.used_for_types IS NOT NULL AND l.used_for_types <> ''\n)\nSELECT b.prison_id, b.prison_name,\n       INITCAP(REPLACE(TRIM(CAST(t AS VARCHAR)), '_', ' ')) AS used_for,\n       COUNT(*) AS cell_count\nFROM base b, b.arr AS t\nGROUP BY 1, 2, 3",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_id",
+            "type": "string"
+          },
+          {
+            "name": "prison_name",
+            "type": "string",
+            "display": "Establishment"
+          },
+          {
+            "name": "used_for",
+            "type": "string",
+            "display": "Used for"
+          },
+          {
+            "name": "cell_count",
+            "type": "int",
+            "display": "Number of cells"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cell-type-breakdown",
+      "name": "Cells by cell type",
+      "datasource": "dps_locations",
+      "query": "WITH base AS (\n    SELECT c.prison_id, p.name AS prison_name, split_to_array(l.specialist_cell_types, ',') AS arr\n    FROM prisons.locationsinsideprison_cell_certificate c\n    JOIN prisons.locationsinsideprison_cell_certificate_location l ON l.cell_certificate_id = c.id\n    JOIN prisons.prisonregister_prison p ON p.prison_id = c.prison_id\n    WHERE c.current = true AND p.active = true AND l.location_type = 'CELL'\n      AND l.specialist_cell_types IS NOT NULL AND l.specialist_cell_types <> ''\n)\nSELECT b.prison_id, b.prison_name,\n       INITCAP(REPLACE(TRIM(CAST(t AS VARCHAR)), '_', ' ')) AS cell_type,\n       COUNT(*) AS cell_count\nFROM base b, b.arr AS t\nGROUP BY 1, 2, 3",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_id",
+            "type": "string"
+          },
+          {
+            "name": "prison_name",
+            "type": "string",
+            "display": "Establishment"
+          },
+          {
+            "name": "cell_type",
+            "type": "string",
+            "display": "Cell type"
+          },
+          {
+            "name": "cell_count",
+            "type": "int",
+            "display": "Number of cells"
+          }
+        ]
+      }
+    }
+  ],
+  "report": [
+    {
+      "id": "cell-certificate-list",
+      "name": "Certified cells by establishment",
+      "description": "Lists every certified cell for each prison with a current cell certificate, grouped by establishment, with per-establishment and overall totals. All figures are taken from the approved cell certificate.",
+      "version": "1.0.0",
+      "dataset": "$ref:certificate-cells",
+      "render": "HTML",
+      "summary": [
+        {
+          "id": "establishment-summary",
+          "template": "section-footer",
+          "dataset": "$ref:establishment-summary"
+        },
+        {
+          "id": "grand-total-summary",
+          "template": "page-footer",
+          "dataset": "$ref:grand-total-summary"
+        }
+      ],
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
+      "specification": {
+        "template": "list-section",
+        "section": [
+          "prison_name"
+        ],
+        "field": [
+          {
+            "name": "$ref:prison_id",
+            "display": "Prison",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 140,
+                "returnAsStaticOptions": true,
+                "dataset": "prisons",
+                "name": "prison_id",
+                "display": "prison_name"
+              }
+            }
+          },
+          {
+            "name": "$ref:prison_name",
+            "display": "Establishment",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:location_code",
+            "display": "Location code (Cell)",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:path_hierarchy",
+            "display": "Cell Ref",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": true,
+            "sortorder": "ascending"
+          },
+          {
+            "name": "$ref:location_type",
+            "display": "Type",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:local_name",
+            "display": "Local name",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:cell_mark",
+            "display": "Door mark",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:cna",
+            "display": "CNA",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:working_capacity",
+            "display": "Certified working capacity",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:max_capacity",
+            "display": "Max capacity",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:signed_operation_capacity",
+            "display": "Signed operational capacity",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:sanitation",
+            "display": "Sanitation",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "radio",
+              "mandatory": false,
+              "staticoptions": [
+                {
+                  "name": "Yes",
+                  "display": "Yes"
+                },
+                {
+                  "name": "No",
+                  "display": "No"
+                }
+              ]
+            }
+          },
+          {
+            "name": "$ref:accommodation_type",
+            "display": "Accommodation type",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "staticoptions": [
+                {
+                  "name": "Care And Separation",
+                  "display": "Care And Separation"
+                },
+                {
+                  "name": "Healthcare Inpatients",
+                  "display": "Healthcare Inpatients"
+                },
+                {
+                  "name": "Normal Accommodation",
+                  "display": "Normal Accommodation"
+                },
+                {
+                  "name": "Other Non Residential",
+                  "display": "Other Non Residential"
+                }
+              ]
+            },
+            "wordwrap": "break-words"
+          },
+          {
+            "name": "$ref:cell_type",
+            "display": "Cell type",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "wordwrap": "break-words"
+          },
+          {
+            "name": "$ref:used_for",
+            "display": "Used for",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "wordwrap": "break-words"
+          }
+        ]
+      },
+      "destination": []
+    },
+    {
+      "id": "cell-certificate-list-download",
+      "name": "Certified cells list (for download)",
+      "description": "A flat list of every certified cell plus its wing/landing/spur parents (with figures already rolled up in the certificate) for each prison with a current cell certificate, ordered by establishment then location. No sections or totals - intended for downloading to Excel, where the Type column can be used to filter to cells only. All figures are taken from the approved cell certificate.",
+      "version": "1.0.0",
+      "dataset": "$ref:certificate-cells",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:prison_id",
+            "display": "Prison",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 140,
+                "returnAsStaticOptions": true,
+                "dataset": "prisons",
+                "name": "prison_id",
+                "display": "prison_name"
+              }
+            }
+          },
+          {
+            "name": "$ref:sort_key",
+            "display": "Sort order",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": true,
+            "sortorder": "ascending"
+          },
+          {
+            "name": "$ref:prison_name",
+            "display": "Establishment",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:path_hierarchy",
+            "display": "Cell Ref",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:location_code",
+            "display": "Location code (Cell)",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:location_type",
+            "display": "Type",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:local_name",
+            "display": "Local name",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:cell_mark",
+            "display": "Door mark",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:cna",
+            "display": "CNA",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:working_capacity",
+            "display": "Certified working capacity",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:max_capacity",
+            "display": "Max capacity",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:signed_operation_capacity",
+            "display": "Signed operational capacity",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:sanitation",
+            "display": "Sanitation",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "radio",
+              "mandatory": false,
+              "staticoptions": [
+                {
+                  "name": "Yes",
+                  "display": "Yes"
+                },
+                {
+                  "name": "No",
+                  "display": "No"
+                }
+              ]
+            }
+          },
+          {
+            "name": "$ref:accommodation_type",
+            "display": "Accommodation type",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "staticoptions": [
+                {
+                  "name": "Care And Separation",
+                  "display": "Care And Separation"
+                },
+                {
+                  "name": "Healthcare Inpatients",
+                  "display": "Healthcare Inpatients"
+                },
+                {
+                  "name": "Normal Accommodation",
+                  "display": "Normal Accommodation"
+                },
+                {
+                  "name": "Other Non Residential",
+                  "display": "Other Non Residential"
+                }
+              ]
+            },
+            "wordwrap": "break-words"
+          },
+          {
+            "name": "$ref:cell_type",
+            "display": "Cell type",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "wordwrap": "break-words"
+          },
+          {
+            "name": "$ref:used_for",
+            "display": "Used for",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "wordwrap": "break-words"
+          }
+        ]
+      },
+      "destination": []
+    }
+  ],
+  "dashboard": [
+    {
+      "id": "cell-certificate-capacity-summary",
+      "name": "Certified capacity summary by establishment",
+      "description": "Certified capacity totals from the current cell certificate for each establishment.",
+      "dataset": "capacity-by-establishment",
+      "section": [
+        {
+          "id": "capacity-totals",
+          "display": "Certified capacity totals by establishment",
+          "visualisation": [
+            {
+              "id": "capacity-totals-list",
+              "type": "list",
+              "display": "Certified capacity totals",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:prison_id",
+                    "display": "Establishment"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:prison_name",
+                    "display": "Establishment"
+                  },
+                  {
+                    "id": "$ref:number_of_cells",
+                    "display": "Number of cells",
+                    "aggregate": "sum"
+                  },
+                  {
+                    "id": "$ref:cna",
+                    "display": "CNA",
+                    "aggregate": "sum"
+                  },
+                  {
+                    "id": "$ref:working_capacity",
+                    "display": "Certified working capacity",
+                    "aggregate": "sum"
+                  },
+                  {
+                    "id": "$ref:max_capacity",
+                    "display": "Maximum capacity",
+                    "aggregate": "sum"
+                  },
+                  {
+                    "id": "$ref:signed_operational_capacity",
+                    "display": "Signed operational capacity",
+                    "aggregate": "sum"
+                  },
+                  {
+                    "id": "$ref:single_cells",
+                    "display": "Single cells",
+                    "aggregate": "sum"
+                  },
+                  {
+                    "id": "$ref:double_cells",
+                    "display": "Double cells",
+                    "aggregate": "sum"
+                  },
+                  {
+                    "id": "$ref:cells_with_sanitation",
+                    "display": "Cells with sanitation",
+                    "aggregate": "sum"
+                  },
+                  {
+                    "id": "$ref:cells_without_sanitation",
+                    "display": "Cells without sanitation",
+                    "aggregate": "sum"
+                  }
+                ],
+                "expectNull": false
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cell-certificate-accommodation-type-breakdown",
+      "name": "Cells by accommodation type",
+      "description": "Number of certified cells for each accommodation type.",
+      "dataset": "accommodation-type-breakdown",
+      "section": [
+        {
+          "id": "accommodation-type-breakdown-section",
+          "display": "Cells by accommodation type",
+          "visualisation": [
+            {
+              "id": "accommodation-type-breakdown-list",
+              "type": "list",
+              "display": "Cells by accommodation type",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:accommodation_type",
+                    "display": "Accommodation type"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:prison_name",
+                    "display": "Establishment"
+                  },
+                  {
+                    "id": "$ref:accommodation_type",
+                    "display": "Accommodation type"
+                  },
+                  {
+                    "id": "$ref:cell_count",
+                    "display": "Number of cells",
+                    "aggregate": "sum"
+                  }
+                ],
+                "expectNull": false
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cell-certificate-used-for-breakdown",
+      "name": "Cells by used for",
+      "description": "Number of certified cells for each 'used for' type. Cells with multiple used-for types are counted once per type.",
+      "dataset": "used-for-breakdown",
+      "section": [
+        {
+          "id": "used-for-breakdown-section",
+          "display": "Cells by used for",
+          "visualisation": [
+            {
+              "id": "used-for-breakdown-list",
+              "type": "list",
+              "display": "Cells by used for",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:used_for",
+                    "display": "Used for"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:prison_name",
+                    "display": "Establishment"
+                  },
+                  {
+                    "id": "$ref:used_for",
+                    "display": "Used for"
+                  },
+                  {
+                    "id": "$ref:cell_count",
+                    "display": "Number of cells",
+                    "aggregate": "sum"
+                  }
+                ],
+                "expectNull": false
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cell-certificate-cell-type-breakdown",
+      "name": "Cells by cell type",
+      "description": "Number of certified cells for each specialist cell type. Cells with multiple cell types are counted once per type.",
+      "dataset": "cell-type-breakdown",
+      "section": [
+        {
+          "id": "cell-type-breakdown-section",
+          "display": "Cells by cell type",
+          "visualisation": [
+            {
+              "id": "cell-type-breakdown-list",
+              "type": "list",
+              "display": "Cells by cell type",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:cell_type",
+                    "display": "Cell type"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:prison_name",
+                    "display": "Establishment"
+                  },
+                  {
+                    "id": "$ref:cell_type",
+                    "display": "Cell type"
+                  },
+                  {
+                    "id": "$ref:cell_count",
+                    "display": "Number of cells",
+                    "aggregate": "sum"
+                  }
+                ],
+                "expectNull": false
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
