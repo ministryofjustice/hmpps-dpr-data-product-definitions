@@ -47,6 +47,9 @@ jobs:
       - name: Delete DPDs from DynamoDB
         shell: bash
         run: |
+          failed=0
+          failedDpds=()
+
           IFS=',' read -ra dpdIds <<< "${{ inputs.dpdIds }}"
 
           for dpdId in "${dpdIds[@]}"; do
@@ -60,10 +63,23 @@ jobs:
 
             echo "Deleting DPD: $dpdId (category: ${{ inputs.category }})"
 
-            aws dynamodb delete-item \
+            if ! aws dynamodb delete-item \
               --table-name dpr-data-product-definition \
               --key "{
                 \"data-product-id\": { \"S\": \"$dpdId\" },
                 \"category\": { \"S\": \"${{ inputs.category }}\" }
-              }"
+              }"; then
+                echo "Failed to delete DPD: $dpdId"
+                failed=1
+                failedDpds+=("$dpdId")
+            fi
           done
+
+          if [[ $failed -ne 0 ]]; then
+            echo ""
+            echo "The following DPDs failed to delete:"
+            printf '%s\n' "${failedDpds[@]}"
+            exit 1
+          fi
+
+          echo "All DPDs deleted successfully."
