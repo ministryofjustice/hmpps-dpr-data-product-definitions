@@ -1,53 +1,35 @@
 {
-  "id": "test-only-bulk-delete-Fk37agC6QA4ASyoPAADHD2IAACJIAGc1",
-  "name": "Test only National Social Visit Report",
-  "description": "Social visits for establishments between the dates specified at runtime HQ0028 v1.0- Last Modified: 20/06/2022",
+  "id": "test-only-bulk-delete-FisOdANu7Q0AAxEgAADn7bX.ACJIAGE1",
+  "name": "test-only-bulk-delete ORS A and O Contingency Report",
+  "description": "All Prisoners in all Establishment. NAT0015 - v1.0 Last Modified: 21/08/2024",
   "metadata": {
     "version": "1.0.0",
-    "tags": ["HQ0028 v1.0 Social Visits"]
+    "tags": ["NAT0015", "A and O extract"]
   },
   "datasource": [
     {
-      "id": "bodmis",
-      "name": "BODMIS",
+      "id": "nomis",
+      "name": "NOMIS",
       "database": "DIGITAL_PRISON_REPORTING",
-      "catalog": "bodmis"
+      "catalog": "nomis"
     }
   ],
   "dataset": [
     {
-      "id": "3375956/DP2",
-      "name": "Main Data",
-      "description": "MIS - Visits",
-      "datasource": "bodmis",
-      "query": "dataset_base_ AS (SELECT DISTINCT AT_VISIT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION AS ESTABLISHMENT_DESCRIPTION, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, AT_VISIT_DATE.DAY_DATE AS DAY_DATE, AT_VISIT_STATUS.CODE AS CODE, AT_VISIT_STATUS.DESCRIPTION AS DESCRIPTION, COUNT(DISTINCT (BODIMIS.FACT_OFFENDER_VISIT.OFFENDER_VISIT_ID)) AS COUNT_OF_VISIT_ID, AT_VISIT_TYPE.CODE AS VISIT_TYPE FROM BODIMIS.DIM_DATE AT_VISIT_DATE, BODIMIS.DIM_REFERENCE_CODES AT_VISIT_STATUS, BODIMIS.DIM_REFERENCE_CODES AT_VISIT_TYPE, BODIMIS.DIM_ESTABLISHMENT AT_VISIT_ESTABLISHMENT, BODIMIS.DIM_OFFENDER_BOOKING AT_OFFENDER_BOOKING, BODIMIS.FACT_OFFENDER_VISIT WHERE (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK = BODIMIS.FACT_OFFENDER_VISIT.OFFENDER_BOOKING_SK) AND (BODIMIS.FACT_OFFENDER_VISIT.ESTABLISHMENT_SK = AT_VISIT_ESTABLISHMENT.ESTABLISHMENT_SK) AND (BODIMIS.FACT_OFFENDER_VISIT.VISIT_DATE_SK = AT_VISIT_DATE.DATE_SK) AND (AT_VISIT_TYPE.REFERENCE_CODE_SK = BODIMIS.FACT_OFFENDER_VISIT.VISIT_TYPE_SK) AND (AT_VISIT_STATUS.REFERENCE_CODE_SK = BODIMIS.FACT_OFFENDER_VISIT.VISIT_STATUS_SK) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOKING_SK IN (SELECT CSL.OFFENDER_BOOKING_SK FROM BODIMIS.DIM_STAFF_ACCESSIBLE_CASELOAD SAC, BODIMIS.DIM_CASELOAD_SECURITY_LIST CSL WHERE SAC.CASELOAD_ID = CSL.CASELOAD_CODE AND SAC.USERNAME = UPPER((SELECT username FROM context_ /* = #Variable('BOUSER') */)) AND CSL.ENDYEAR >= TO_CHAR(CURRENT_TIMESTAMP, 'YYYY') - 6)) AND (AT_VISIT_DATE.DAY_DATE BETWEEN (SELECT START_DATE FROM prompt_ /* = #prompt('Enter Visit Date (Start):','D',,Mono,Free,Not_Persistent,,User:0) */) AND (SELECT END_DATE FROM prompt_ /* = #prompt('Enter Visit Date (End):','D',,Mono,Free,Not_Persistent,,User:1) */) AND AT_VISIT_ESTABLISHMENT.ESTABLISHMENT_CODE_NK IN (SELECT ESTABLISHMENT_CODE FROM prompt_ /* = #prompt('Enter value for Visit Establishment Code','A','Visits\\Visit Establishment Code',Multi,Free,Not_Persistent,,User:2) */) AND AT_VISIT_TYPE.CODE = 'SCON') GROUP BY AT_VISIT_ESTABLISHMENT.ESTABLISHMENT_DESCRIPTION, AT_OFFENDER_BOOKING.OFFENDER_ID_DISPLAY, AT_VISIT_DATE.DAY_DATE, AT_VISIT_STATUS.CODE, AT_VISIT_STATUS.DESCRIPTION, AT_VISIT_TYPE.CODE), dataset_ AS (SELECT ESTABLISHMENT_DESCRIPTION, OFFENDER_ID_DISPLAY, DAY_DATE, CODE, DESCRIPTION, COUNT_OF_VISIT_ID, VISIT_TYPE FROM dataset_base_)",
+      "id": "3376286/DP0",
+      "name": "Offender",
+      "description": "OR - Sentence",
+      "datasource": "nomis",
+      "query": "DP7_ AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY, COALESCE( AT_EXT_MOV_FROM_AGY.DESCRIPTION, AT_FROM_CITY_CODES.DESCRIPTION, AT_FROM_ADDRESS_ATTENDED.STREET || ' ' || AT_FROM_ADDRESS_ATTENDED.LOCALITY || ' ' || AT_FROM_ADDRESS_ATTENDED.POSTAL_CODE ), COALESCE( AT_EXT_MOV_TO_AGY.DESCRIPTION, AT_TO_CITY_CODES.DESCRIPTION, AT_TO_ADDRESS_ATTENDED.STREET || ' ' || AT_TO_ADDRESS_ATTENDED.LOCALITY || ' ' || AT_TO_ADDRESS_ATTENDED.POSTAL_CODE ), AT_OFFENDER_EXTERNAL_MOVEMENTS.FROM_AGY_LOC_ID, AT_OFFENDER_EXTERNAL_MOVEMENTS.TO_AGY_LOC_ID, AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_SEQ FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_FROM_CITY_CODES, OMS_OWNER.REFERENCE_CODES AT_TO_CITY_CODES, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_EXT_MOV_FROM_AGY, OMS_OWNER.AGENCY_LOCATIONS AT_EXT_MOV_TO_AGY, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS AT_OFFENDER_EXTERNAL_MOVEMENTS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, ADDRESSES AT_FROM_ADDRESS_ATTENDED, ADDRESSES AT_TO_ADDRESS_ATTENDED, USER_ACCESSIBLE_CASELOADS, ( /* SELECT OFFENDER_BOOK_ID, max(MOVEMENT_SEQ) AS MOVEMENT_SEQ FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS GROUP BY OFFENDER_BOOK_ID */ SELECT OFFENDER_BOOK_ID, MOVEMENT_SEQ, MAX(MOVEMENT_TIME) over (partition by offender_book_id) AS MOVEMENT_TIME FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS WHERE ACTIVE_FLAG = 'Y' ) DT_LATEST_EXTERNAL_MOVEMENT WHERE ( DT_LATEST_EXTERNAL_MOVEMENT.OFFENDER_BOOK_ID = AT_OFFENDER_EXTERNAL_MOVEMENTS.OFFENDER_BOOK_ID and DT_LATEST_EXTERNAL_MOVEMENT.MOVEMENT_SEQ = AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_SEQ ) AND ( AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_EXTERNAL_MOVEMENTS.OFFENDER_BOOK_ID(+) ) AND ( AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST' ) AND ( USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_) ) AND ( AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID(+) ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID NOT IN ('OUT', 'TRN') AND AT_CASELOAD_LOCATIONS.CASELOAD_ID NOT IN ('ADMINC', 'CADM_I', 'MULTI') ) AND ( AT_OFFENDER_EXTERNAL_MOVEMENTS.TO_AGY_LOC_ID = AT_EXT_MOV_TO_AGY.AGY_LOC_ID(+) ) AND ( AT_OFFENDER_EXTERNAL_MOVEMENTS.FROM_AGY_LOC_ID = AT_EXT_MOV_FROM_AGY.AGY_LOC_ID(+) ) AND ( AT_OFFENDER_EXTERNAL_MOVEMENTS.TO_CITY = AT_TO_CITY_CODES.CODE(+) ) AND ( AT_TO_CITY_CODES.DOMAIN = 'CITY' or AT_TO_CITY_CODES.DOMAIN is null ) AND ( AT_OFFENDER_EXTERNAL_MOVEMENTS.FROM_CITY = AT_FROM_CITY_CODES.CODE(+) ) AND ( AT_FROM_CITY_CODES.DOMAIN = 'CITY' or AT_FROM_CITY_CODES.DOMAIN is null ) AND ( AT_OFFENDER_EXTERNAL_MOVEMENTS.TO_ADDRESS_ID = AT_TO_ADDRESS_ATTENDED.ADDRESS_ID(+) ) AND ( AT_OFFENDER_EXTERNAL_MOVEMENTS.FROM_ADDRESS_ID = AT_FROM_ADDRESS_ATTENDED.ADDRESS_ID(+) ) AND ( (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND ( AT_OFFENDERS_LOCATIONS.AGY_LOC_ID in ((SELECT establishment_code FROM prompt_)) or 'All' in ((SELECT establishment_code FROM prompt_)) ) AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID <> 'ZZGHI' AND ( USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_) ) AND ( DT_LATEST_EXTERNAL_MOVEMENT.OFFENDER_BOOK_ID = AT_OFFENDER_EXTERNAL_MOVEMENTS.OFFENDER_BOOK_ID and DT_LATEST_EXTERNAL_MOVEMENT.MOVEMENT_TIME = AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_TIME ) ) ), DP6_ AS ( SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY, DT_OFFENDER_CSR_ASSESSMENT.ASSESSMENT_DATE, DT_OFFENDER_CSR_ASSESSMENT.APPROVED_RESULT, DT_OFFENDER_CSR_ASSESSMENT.CALC_SUP_LEVEL_TYPE, DT_OFFENDER_CSR_ASSESSMENT.NEXT_REVIEW_DATE, DT_OFFENDER_CSR_ASSESSMENT.OVERRIDED_SUP_LEVEL_TYPE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, ( SELECT offender_book_id, assessment_date, assessment_type, calc_sup_level_type, overrided_sup_level_type, approved_result, authority, next_review_date, assessment_seq, assess_status, score, coalesced_result, coalesced_result_description, row_seq_filter FROM ( SELECT v.*, rc.description coalesced_result_description FROM ( SELECT offender_book_id, assessment_date, assessment_type, calc_sup_level_type, overrided_sup_level_type, approved_result, authority, next_review_date, assessment_seq, assess_status, score, coalesced_result, CASE WHEN row_seq_filter_latest = 1 THEN 1 ELSE row_seq_filter_previous END row_seq_filter FROM ( SELECT offender_book_id, assessment_date, assessment_type, calc_sup_level_type, overrided_sup_level_type, approved_result, authority, next_review_date, assessment_seq, assess_status, score, coalesced_result, CASE WHEN row_seq_filter_latest = 1 AND assess_status = 'A' THEN 1 ELSE 0 END row_seq_filter_latest, COUNT( CASE WHEN row_seq_filter_previous = 1 AND assess_status <> 'A' THEN 1 END ) OVER (PARTITION BY offender_book_id) + row_seq_filter_previous row_seq_filter_previous FROM ( SELECT oa.offender_book_id, oa.assessment_date, a.description assessment_type, oa.calc_sup_level_type, oa.overrided_sup_level_type, oa.review_sup_level_type approved_result, oa.review_committe_code authority, oa.next_review_date, oa.assessment_seq, oa.assess_status, oa.score, COALESCE( oa.review_sup_level_type, oa.overrided_sup_level_type, oa.calc_sup_level_type ) coalesced_result, ROW_NUMBER() OVER ( PARTITION BY oa.offender_book_id ORDER BY oa.assess_status, oa.assessment_date DESC, oa.assessment_seq DESC ) row_seq_filter_latest, ROW_NUMBER() OVER ( PARTITION BY oa.offender_book_id ORDER BY oa.assessment_date DESC, oa.assessment_seq DESC ) row_seq_filter_previous FROM offender_assessments oa INNER JOIN assessments a ON a.assessment_id = oa.assessment_type_id AND a.assessment_class = 'TYPE' AND a.cell_sharing_alert_flag = 'Y' ) ) ) v LEFT OUTER JOIN reference_codes rc ON rc.code = v.coalesced_result AND rc.domain = 'SUP_LVL_TYPE' ) ) DT_OFFENDER_CSR_ASSESSMENT, USER_ACCESSIBLE_CASELOADS WHERE ( AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID ) AND ( AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST' ) AND ( USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_) ) AND ( AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID(+) ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID NOT IN ('OUT', 'TRN') AND AT_CASELOAD_LOCATIONS.CASELOAD_ID NOT IN ('ADMINC', 'CADM_I', 'MULTI') ) AND ( AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_OFFENDER_CSR_ASSESSMENT.OFFENDER_BOOK_ID(+) ) AND ( (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND ( DT_OFFENDER_CSR_ASSESSMENT.row_seq_filter = 1 or DT_OFFENDER_CSR_ASSESSMENT.row_seq_filter is null ) AND ( AT_OFFENDERS_LOCATIONS.AGY_LOC_ID in ((SELECT establishment_code FROM prompt_)) or 'All' in ((SELECT establishment_code FROM prompt_)) ) AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID <> 'ZZGHI' AND ( USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_) ) ) ), dataset_base_ AS( SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, AT_OFFENDER.BIRTH_DATE, AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, AT_OFFENDER_BOOKING.IN_OUT_STATUS, trunc( months_between(sysdate, AT_OFFENDER.BIRTH_DATE) / 12 ) AS AGE, AT_OFFENDERS_LOCATIONS.DESCRIPTION AS ESTABLISHMENT_NAME, AT_OFFENDERS_LOCATIONS.AGY_LOC_ID, sysdate, DP6_.APPROVED_RESULT, DP6_.CALC_SUP_LEVEL_TYPE, DP6_.OVERRIDED_SUP_LEVEL_TYPE, DP7_.FROM_AGY_LOC_ID, DP7_.TO_AGY_LOC_ID FROM DP6_, DP7_, OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY, USER_ACCESSIBLE_CASELOADS WHERE ( AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID ) AND ( AT_OFFENDER.OFFENDER_ID_DISPLAY = DP6_.OFFENDER_ID_DISPLAY ) AND ( AT_OFFENDER.OFFENDER_ID_DISPLAY = DP7_.OFFENDER_ID_DISPLAY ) AND ( AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID ) AND ( AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST' ) AND ( USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_) ) AND ( AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID(+) ) AND ( AT_CASELOAD_LOCATIONS.AGY_LOC_ID NOT IN ('OUT', 'TRN') AND AT_CASELOAD_LOCATIONS.CASELOAD_ID NOT IN ('ADMINC', 'CADM_I', 'MULTI') ) AND ( AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID ) AND ( AT_WING_ESTABLISHMENT.AGY_LOC_ID = WING_CASELOAD_SECURITY.CASELOAD_ID ) AND ( WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_) ) AND ( USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_) ) AND ( USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_) ) AND ( (AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND ( AT_OFFENDERS_LOCATIONS.AGY_LOC_ID in ((SELECT establishment_code FROM prompt_)) or 'All' in ((SELECT establishment_code FROM prompt_)) ) AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID <> 'ZZGHI' AND ( USER_ACCESSIBLE_CASELOADS.USERNAME = (SELECT username FROM context_) ) ) ), dataset_ AS ( select OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, BIRTH_DATE, DESCRIPTION, IN_OUT_STATUS, AGE, ESTABLISHMENT_NAME, AGY_LOC_ID, APPROVED_RESULT, FROM_AGY_LOC_ID, TO_AGY_LOC_ID, SYSDATE AS TODAY_, CASE WHEN NOT(APPROVED_RESULT IS NULL) THEN CASE WHEN APPROVED_RESULT='HI' THEN 'HIGH' ELSE APPROVED_RESULT END WHEN NOT(OVERRIDED_SUP_LEVEL_TYPE IS NULL) THEN CASE WHEN OVERRIDED_SUP_LEVEL_TYPE='HI' THEN 'HIGH' ELSE OVERRIDED_SUP_LEVEL_TYPE END ELSE CASE WHEN CALC_SUP_LEVEL_TYPE='HI' THEN 'HIGH' ELSE CALC_SUP_LEVEL_TYPE END END AS V_CSRA from dataset_base_)",
       "parameters": [
         {
           "index": 0,
-          "name": "start_date",
-          "filterType": "text",
-          "reportFieldType": "date",
-          "display": "Enter Visit Date (Start):",
-          "description": "@prompt('Enter Visit Date (Start):','D',,Mono,Free,Not_Persistent,,User:0)",
-          "mandatory": "true"
-        },
-        {
-          "index": 1,
-          "name": "end_date",
-          "filterType": "text",
-          "reportFieldType": "date",
-          "display": "Enter Visit Date (End):",
-          "description": "@prompt('Enter Visit Date (End):','D',,Mono,Free,Not_Persistent,,User:1)",
-          "mandatory": "true"
-        },
-        {
-          "index": 2,
           "name": "establishment_code",
           "filterType": "autocomplete",
           "referenceType": "establishment",
           "reportFieldType": "string",
-          "display": "Enter value for Visit Establishment",
-          "description": "@prompt('Enter value for Visit Establishment Code','A','Visits\\Visit Establishment Code',Multi,Free,Not_Persistent,,User:2)",
+          "display": "Establishment",
+          "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
           "mandatory": "true"
         }
       ],
@@ -55,78 +37,234 @@
         "field": [
           {
             "index": 0,
-            "name": "ESTABLISHMENT_DESCRIPTION",
+            "name": "OFFENDER_ID_DISPLAY",
             "type": "string",
-            "display": "Visit Establishment Name",
-            "legacyId": "DP2.DO55a",
+            "display": "NOMS Number",
+            "legacyId": "DP0.DO10044",
             "legacySqlClass": "column"
           },
           {
             "index": 1,
-            "name": "OFFENDER_ID_DISPLAY",
+            "name": "LAST_NAME",
             "type": "string",
-            "display": "NOMS Number",
-            "legacyId": "DP2.DO10076",
+            "display": "Last Name",
+            "legacyId": "DP0.DO10045",
             "legacySqlClass": "column"
           },
           {
             "index": 2,
-            "name": "DAY_DATE",
-            "type": "date",
-            "display": "Visit Date",
-            "legacyId": "DP2.DO55d",
+            "name": "FIRST_NAME",
+            "type": "string",
+            "display": "First Name",
+            "legacyId": "DP0.DO10046",
             "legacySqlClass": "column"
           },
           {
             "index": 3,
-            "name": "CODE",
-            "type": "string",
-            "display": "Visit Status",
-            "legacyId": "DP2.DO562",
+            "name": "BIRTH_DATE",
+            "type": "date",
+            "display": "Date of Birth",
+            "legacyId": "DP0.DO10075",
             "legacySqlClass": "column"
           },
           {
             "index": 4,
             "name": "DESCRIPTION",
             "type": "string",
-            "display": "Visit Status Description",
-            "legacyId": "DP2.DO563",
+            "display": "Cell Location",
+            "legacyId": "DP0.DO1042a",
             "legacySqlClass": "column"
           },
           {
             "index": 5,
-            "name": "COUNT_OF_VISIT_ID",
-            "type": "double",
-            "display": "Count of Visit ID",
-            "legacyId": "DP2.DO57e",
+            "name": "IN_OUT_STATUS",
+            "type": "string",
+            "display": "In Out Status",
+            "legacyId": "DP0.DO10cde",
             "legacySqlClass": "column"
           },
           {
             "index": 6,
-            "name": "VISIT_TYPE",
+            "name": "AGE",
+            "type": "double",
+            "display": "Age",
+            "legacyId": "DP0.DO10072",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 7,
+            "name": "ESTABLISHMENT_NAME",
             "type": "string",
-            "display": "Visit Type",
-            "legacyId": "DP2.DO560",
+            "display": "Establishment Name",
+            "legacyId": "DP0.DO1033b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 8,
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment Code",
+            "legacyId": "DP0.DO1043b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 9,
+            "name": "APPROVED_RESULT",
+            "type": "date",
+            "display": "Approved Result",
+            "legacyId": "DP0.DO10edf",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 10,
+            "name": "FROM_AGY_LOC_ID",
+            "type": "string",
+            "display": "V_FROM",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 11,
+            "name": "TO_AGY_LOC_ID",
+            "type": "string",
+            "display": "V_TO",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          },
+          {
+            "index": 12,
+            "name": "TODAY_",
+            "type": "date",
+            "display": "",
+            "legacyId": "DP0.DO10edf",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 13,
+            "name": "V_CSRA",
+            "type": "string",
+            "display": "CSRA",
+            "legacyId": "???",
+            "legacySqlClass": "alias"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3376286/DP6",
+      "name": "CRSA",
+      "description": "OR - Sentence",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, DT_OFFENDER_CSR_ASSESSMENT.ASSESSMENT_DATE AS ASSESSMENT_DATE, DT_OFFENDER_CSR_ASSESSMENT.APPROVED_RESULT AS APPROVED_RESULT, DT_OFFENDER_CSR_ASSESSMENT.CALC_SUP_LEVEL_TYPE AS CALC_SUP_LEVEL_TYPE, DT_OFFENDER_CSR_ASSESSMENT.NEXT_REVIEW_DATE AS NEXT_REVIEW_DATE, DT_OFFENDER_CSR_ASSESSMENT.OVERRIDED_SUP_LEVEL_TYPE AS OVERRIDED_SUP_LEVEL_TYPE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, (SELECT offender_book_id, assessment_date, assessment_type, calc_sup_level_type, overrided_sup_level_type, approved_result, authority, next_review_date, assessment_seq, assess_status, score, coalesced_result, coalesced_result_description, row_seq_filter FROM (SELECT v.*, rc.description AS coalesced_result_description FROM (SELECT offender_book_id, assessment_date, assessment_type, calc_sup_level_type, overrided_sup_level_type, approved_result, authority, next_review_date, assessment_seq, assess_status, score, coalesced_result, CASE WHEN row_seq_filter_latest = 1 THEN 1 ELSE row_seq_filter_previous END AS row_seq_filter FROM (SELECT offender_book_id, assessment_date, assessment_type, calc_sup_level_type, overrided_sup_level_type, approved_result, authority, next_review_date, assessment_seq, assess_status, score, coalesced_result, CASE WHEN row_seq_filter_latest = 1 AND assess_status = 'A' THEN 1 ELSE 0 END AS row_seq_filter_latest, COUNT(CASE WHEN row_seq_filter_previous = 1 AND assess_status <> 'A' THEN 1 END) OVER (PARTITION BY offender_book_id) + row_seq_filter_previous AS row_seq_filter_previous FROM (SELECT oa.offender_book_id, oa.assessment_date, a.description AS assessment_type, oa.calc_sup_level_type, oa.overrided_sup_level_type, oa.review_sup_level_type AS approved_result, oa.review_committe_code AS authority, oa.next_review_date, oa.assessment_seq, oa.assess_status, oa.score, COALESCE(oa.review_sup_level_type, oa.overrided_sup_level_type, oa.calc_sup_level_type) AS coalesced_result, ROW_NUMBER() OVER (PARTITION BY oa.offender_book_id ORDER BY oa.assess_status, oa.assessment_date DESC, oa.assessment_seq DESC) AS row_seq_filter_latest, ROW_NUMBER() OVER (PARTITION BY oa.offender_book_id ORDER BY oa.assessment_date DESC, oa.assessment_seq DESC) AS row_seq_filter_previous FROM offender_assessments oa INNER JOIN assessments a ON a.assessment_id = oa.assessment_type_id AND a.assessment_class = 'TYPE' AND a.cell_sharing_alert_flag = 'Y'))) v LEFT OUTER JOIN reference_codes rc ON rc.code = v.coalesced_result AND rc.domain = 'SUP_LVL_TYPE')) DT_OFFENDER_CSR_ASSESSMENT, USER_ACCESSIBLE_CASELOADS WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('WQB43L')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_OFFENDER_CSR_ASSESSMENT.OFFENDER_BOOK_ID (+)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (DT_OFFENDER_CSR_ASSESSMENT.row_seq_filter = 1 OR DT_OFFENDER_CSR_ASSESSMENT.row_seq_filter IS NULL) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ('ACI') OR 'All' IN ('ACI')) AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID <> 'ZZGHI' AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('WQB43L')))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, ASSESSMENT_DATE, APPROVED_RESULT, CALC_SUP_LEVEL_TYPE, NEXT_REVIEW_DATE, OVERRIDED_SUP_LEVEL_TYPE FROM dataset_base_)",
+      "parameters": [],
+      "schema": {
+        "field": [
+          {
+            "index": 0,
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP6.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "ASSESSMENT_DATE",
+            "type": "date",
+            "display": "CSRA Date",
+            "legacyId": "DP6.DO10c2b",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "APPROVED_RESULT",
+            "type": "string",
+            "display": "CSRA Approved Result",
+            "legacyId": "DP6.DO10c50",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "CALC_SUP_LEVEL_TYPE",
+            "type": "string",
+            "display": "CSRA Calculated Result",
+            "legacyId": "DP6.DO10c2f",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "NEXT_REVIEW_DATE",
+            "type": "date",
+            "display": "CSRA Review Date",
+            "legacyId": "DP6.DO10c30",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "OVERRIDED_SUP_LEVEL_TYPE",
+            "type": "string",
+            "display": "CSRA Override Result",
+            "legacyId": "DP6.DO10c4e",
             "legacySqlClass": "column"
           }
         ]
       }
     },
     {
-      "id": "3376639/DPa",
-      "name": "MIS Load Date",
-      "description": "MIS - Demographics",
-      "datasource": "bodmis",
-      "query": "dataset_base_ AS (SELECT DISTINCT BODIMIS.ETL_LOAD_LOG.BUSINESS_DATE AS BUSINESS_DATE FROM BODIMIS.ETL_LOAD_LOG WHERE (BODIMIS.ETL_LOAD_LOG.LOAD_ID = (SELECT MAX(LOAD_ID) FROM BODIMIS.ETL_LOAD_LOG WHERE NOT LOAD_END_DATETIME IS NULL))), dataset_ AS (SELECT BUSINESS_DATE FROM dataset_base_)",
+      "id": "3376286/DP7",
+      "name": "Movement",
+      "description": "OR - Sentence",
+      "datasource": "nomis",
+      "query": "dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, COALESCE(AT_EXT_MOV_FROM_AGY.DESCRIPTION, AT_FROM_CITY_CODES.DESCRIPTION, AT_FROM_ADDRESS_ATTENDED.STREET || ' ' || AT_FROM_ADDRESS_ATTENDED.LOCALITY || ' ' || AT_FROM_ADDRESS_ATTENDED.POSTAL_CODE) AS FROM_, COALESCE(AT_EXT_MOV_TO_AGY.DESCRIPTION, AT_TO_CITY_CODES.DESCRIPTION, AT_TO_ADDRESS_ATTENDED.STREET || ' ' || AT_TO_ADDRESS_ATTENDED.LOCALITY || ' ' || AT_TO_ADDRESS_ATTENDED.POSTAL_CODE) AS TO_, AT_OFFENDER_EXTERNAL_MOVEMENTS.FROM_AGY_LOC_ID AS FROM_AGY_LOC_ID, AT_OFFENDER_EXTERNAL_MOVEMENTS.TO_AGY_LOC_ID AS TO_AGY_LOC_ID, AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_SEQ AS MOVEMENT_SEQ FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.REFERENCE_CODES AT_FROM_CITY_CODES, OMS_OWNER.REFERENCE_CODES AT_TO_CITY_CODES, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_EXT_MOV_FROM_AGY, OMS_OWNER.AGENCY_LOCATIONS AT_EXT_MOV_TO_AGY, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS AT_OFFENDER_EXTERNAL_MOVEMENTS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, ADDRESSES AT_FROM_ADDRESS_ATTENDED, ADDRESSES AT_TO_ADDRESS_ATTENDED, USER_ACCESSIBLE_CASELOADS, (SELECT OFFENDER_BOOK_ID, MOVEMENT_SEQ, MAX(MOVEMENT_TIME) OVER (PARTITION BY offender_book_id) AS MOVEMENT_TIME FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS WHERE ACTIVE_FLAG = 'Y') DT_LATEST_EXTERNAL_MOVEMENT WHERE (DT_LATEST_EXTERNAL_MOVEMENT.OFFENDER_BOOK_ID = AT_OFFENDER_EXTERNAL_MOVEMENTS.OFFENDER_BOOK_ID AND DT_LATEST_EXTERNAL_MOVEMENT.MOVEMENT_SEQ = AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_SEQ) AND (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_EXTERNAL_MOVEMENTS.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('WQB43L')) AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = USER_ACCESSIBLE_CASELOADS.CASELOAD_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (AT_OFFENDER_EXTERNAL_MOVEMENTS.TO_AGY_LOC_ID = AT_EXT_MOV_TO_AGY.AGY_LOC_ID (+)) AND (AT_OFFENDER_EXTERNAL_MOVEMENTS.FROM_AGY_LOC_ID = AT_EXT_MOV_FROM_AGY.AGY_LOC_ID (+)) AND (AT_OFFENDER_EXTERNAL_MOVEMENTS.TO_CITY = AT_TO_CITY_CODES.CODE (+)) AND (AT_TO_CITY_CODES.DOMAIN = 'CITY' OR AT_TO_CITY_CODES.DOMAIN IS NULL) AND (AT_OFFENDER_EXTERNAL_MOVEMENTS.FROM_CITY = AT_FROM_CITY_CODES.CODE (+)) AND (AT_FROM_CITY_CODES.DOMAIN = 'CITY' OR AT_FROM_CITY_CODES.DOMAIN IS NULL) AND (AT_OFFENDER_EXTERNAL_MOVEMENTS.TO_ADDRESS_ID = AT_TO_ADDRESS_ATTENDED.ADDRESS_ID (+)) AND (AT_OFFENDER_EXTERNAL_MOVEMENTS.FROM_ADDRESS_ID = AT_FROM_ADDRESS_ATTENDED.ADDRESS_ID (+)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID IN ('ACI') OR 'All' IN ('ACI')) AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID <> 'ZZGHI' AND (USER_ACCESSIBLE_CASELOADS.USERNAME = UPPER('WQB43L')) AND (DT_LATEST_EXTERNAL_MOVEMENT.OFFENDER_BOOK_ID = AT_OFFENDER_EXTERNAL_MOVEMENTS.OFFENDER_BOOK_ID AND DT_LATEST_EXTERNAL_MOVEMENT.MOVEMENT_TIME = AT_OFFENDER_EXTERNAL_MOVEMENTS.MOVEMENT_TIME))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, FROM_, TO_, FROM_AGY_LOC_ID, TO_AGY_LOC_ID, MOVEMENT_SEQ FROM dataset_base_)",
       "parameters": [],
       "schema": {
         "field": [
           {
             "index": 0,
-            "name": "BUSINESS_DATE",
-            "type": "date",
-            "display": "Latest Business Date Available",
-            "legacyId": "DPa.DO4dd",
+            "name": "OFFENDER_ID_DISPLAY",
+            "type": "string",
+            "display": "NOMS Number",
+            "legacyId": "DP7.DO10044",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 1,
+            "name": "FROM_",
+            "type": "string",
+            "display": "From",
+            "legacyId": "DP7.DO10d98",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 2,
+            "name": "TO_",
+            "type": "string",
+            "display": "To",
+            "legacyId": "DP7.DO10d99",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 3,
+            "name": "FROM_AGY_LOC_ID",
+            "type": "string",
+            "display": "From Agy Loc ID",
+            "legacyId": "DP7.DO10454",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 4,
+            "name": "TO_AGY_LOC_ID",
+            "type": "string",
+            "display": "To Agy Loc ID",
+            "legacyId": "DP7.DO10455",
+            "legacySqlClass": "column"
+          },
+          {
+            "index": 5,
+            "name": "MOVEMENT_SEQ",
+            "type": "double",
+            "display": "Movement Sequence Number",
+            "legacyId": "DP7.DO1083a",
             "legacySqlClass": "column"
           }
         ]
@@ -151,12 +289,12 @@
   ],
   "report": [
     {
-      "id": "test-only-bulk-delete-119335.RS",
-      "name": "test-only-bulk-delete Social Visits",
+      "id": "178264.RS",
+      "name": "test-only-bulk-delete A and O Report",
       "classification": "OFFICIAL",
       "version": "1.0.0",
       "render": "HTML",
-      "dataset": "3375956/DP2",
+      "dataset": "3376286/DP0",
       "filter": {
         "name": "prefilter_",
         "query": "prefilter_ AS (SELECT * FROM dataset_)"
@@ -170,52 +308,112 @@
         "template": "list",
         "field": [
           {
-            "name": "$ref:ESTABLISHMENT_DESCRIPTION",
-            "display": "Visit Establishment Name",
-            "formula": "",
-            "visible": "true",
-            "sortable": true,
-            "defaultsort": true
-          },
-          {
             "name": "$ref:OFFENDER_ID_DISPLAY",
             "display": "NOMS Number",
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false
+            "defaultsort": true,
+            "legacyId": "DP0.DO10045"
           },
           {
-            "name": "$ref:DAY_DATE",
-            "display": "Visit Date",
+            "name": "$ref:LAST_NAME",
+            "display": "Last Name",
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false
+            "defaultsort": false,
+            "legacyId": "DP0.DO10045"
           },
           {
-            "name": "$ref:CODE",
-            "display": "Visit Status",
+            "name": "$ref:FIRST_NAME",
+            "display": "First Name",
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false
+            "defaultsort": false,
+            "legacyId": "DP0.DO10046"
+          },
+          {
+            "name": "$ref:BIRTH_DATE",
+            "display": "Date of Birth",
+            "formula": "format_date(${BIRTH_DATE}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10075"
+          },
+          {
+            "name": "$ref:IN_OUT_STATUS",
+            "display": "In Out Status",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10cde"
+          },
+          {
+            "name": "$ref:AGY_LOC_ID",
+            "display": "Establishment Code",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1043b"
+          },
+          {
+            "name": "$ref:ESTABLISHMENT_NAME",
+            "display": "Establishment Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "legacyId": "DP0.DO1033b"
           },
           {
             "name": "$ref:DESCRIPTION",
-            "display": "Visit Status Description",
+            "display": "Cell Location",
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false
+            "defaultsort": false,
+            "legacyId": "DP0.DO1042a"
           },
           {
-            "name": "$ref:VISIT_TYPE",
-            "display": "Visit Type",
+            "name": "$ref:V_CSRA",
+            "display": "CSRA",
             "formula": "",
             "visible": "true",
-            "sortable": true,
-            "defaultsort": false
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=If ([v_CSRA_If]=\"HI\") Then \"HIGH\" Else Upper( [v_CSRA_If])"
+          },
+          {
+            "name": "$ref:FROM_AGY_LOC_ID",
+            "display": "From",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[From Agy Loc ID]"
+          },
+          {
+            "name": "$ref:TO_AGY_LOC_ID",
+            "display": "To",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacySql": "=[To Agy Loc ID]"
+          },
+          {
+            "name": "$ref:TODAY_",
+            "display": "Extract Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "legacyId": "DP0.DO10edf"
           }
         ]
       }
