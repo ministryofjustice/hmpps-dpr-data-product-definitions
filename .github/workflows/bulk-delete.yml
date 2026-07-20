@@ -1,0 +1,69 @@
+name: Bulk-Delete
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployEnv:
+        description: "Environment to delete DPDs from"
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - test
+          - preprod
+          - prod
+
+      dpdIds:
+        description: "Comma-separated DPD IDs (e.g. id1,id2,id3)"
+        required: true
+        type: text
+
+      category:
+        description: "DPD Category/Path"
+        required: true
+        type: text
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  delete-dpd:
+    name: Delete DPDs from ${{ inputs.deployEnv }} env
+    environment: ${{ inputs.deployEnv }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
+        with:
+          role-to-assume: "arn:aws:iam::${{ secrets.ACCOUNT_NUMBER }}:role/dpr-dpd-table-github-deploy-role"
+          role-session-name: githubactionsrolesession
+          aws-region: "eu-west-2"
+
+      - name: Delete DPDs from DynamoDB
+        shell: bash
+        run: |
+          IFS=',' read -ra dpdIds <<< "${{ inputs.dpdIds }}"
+
+          for dpdId in "${dpdIds[@]}"; do
+            # Trim leading/trailing whitespace
+            dpdId=$(echo "$dpdId" | xargs)
+
+            # Skip empty values
+            if [[ -z "$dpdId" ]]; then
+              continue
+            fi
+
+            echo "Deleting DPD: $dpdId (category: ${{ inputs.category }})"
+
+            aws dynamodb delete-item \
+              --table-name dpr-data-product-definition \
+              --key "{
+                \"data-product-id\": { \"S\": \"$dpdId\" },
+                \"category\": { \"S\": \"${{ inputs.category }}\" }
+              }"
+          done
