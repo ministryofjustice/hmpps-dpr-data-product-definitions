@@ -1,0 +1,720 @@
+{
+    "id": "sp001-report0",
+    "name": "Sentence Plancount by date range",
+    "description": "Sentence Plan count",
+    "metadata": {
+        "author": "DPR",
+        "owner": "DPR",
+        "version": "0.1"
+    },
+    "datasource": [
+        {
+            "id": "datamart",
+            "name": "datamart"
+        }
+    ],
+    "dataset": [
+        {
+            "id": "sentence-plan-count-by-date-range",
+            "name": "SP summary",
+            "datasource": "datamart",
+            "query": "select trunc(created_at) as ts, '$TBC' AS link, count(*) as daily_count, SUM (daily_count) over (order by ts rows unbounded preceding) AS total_to_date FROM datamart.prisons.sentenceplanassessmentview_sentence_plan group by ts order by ts",
+            "schema": {
+                "field": [
+                    {
+                        "name": "ts",
+                        "type": "timestamp",
+                        "display": "Date",
+                        "filter": {
+                            "index": 0,
+                            "interactive": "true",
+                            "type": "daterange",
+                            "default": "today(-3, months) - today()"
+                        }
+                    },
+                    {
+                        "name": "link",
+                        "type": "int",
+                        "display": "Link",
+                        "formula": "make_url('/dpr/request-report/report/sp001-report0/sentence-plan-by-date-report/filters?filters.created_at.start=${ts}&filters.created_at.end=${ts}',${daily_count},TRUE)"
+                    },
+                    {
+                        "name": "daily_count",
+                        "type": "int",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "total_to_date",
+                        "type": "int",
+                        "display": "Total"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "sentence-plan-by-date",
+            "name": "SP detail",
+            "datasource": "datamart",
+            "query": "SELECT p.id, trunc(p.created_at) AS created_at, trunc(p.updated_at) AS updated_at, CASE WHEN a.status IS NULL THEN 'DRAFT' ELSE a.status END AS status, region_code, COUNT(CASE WHEN g.area_of_need = 'ACCOMMODATION' THEN 1 END) AS accommodation_count, COUNT(CASE WHEN g.area_of_need = 'DRUG_USE' THEN 1 END) AS drug_count, COUNT(CASE WHEN g.area_of_need = 'FINANCES' THEN 1 END) AS finance_count, COUNT(CASE WHEN g.area_of_need = 'ALCOHOL_USE' THEN 1 END) AS alcohol_count, COUNT(CASE WHEN g.area_of_need = 'HEALTH_AND_WELLBEING' THEN 1 END) AS health_count, COUNT(CASE WHEN g.area_of_need = 'PERSONAL_RELATIONSHIPS_AND_COMMUNITY' THEN 1 END) AS personal_count, COUNT(CASE WHEN g.area_of_need = 'EMPLOYMENT_AND_EDUCATION' THEN 1 END) AS employment_count, COUNT(CASE WHEN g.area_of_need = 'THINKING_BEHAVIOURS_AND_ATTITUDES' THEN 1 END) AS thinking_count, count(g.id) as total_goal_count FROM datamart.prisons.sentenceplanassessmentview_sentence_plan p LEFT JOIN datamart.prisons.sentenceplanassessmentview_goal g ON  g.sentence_plan_id = p.snapshot_id LEFT JOIN datamart.prisons.sentenceplanassessmentview_plan_agreement a ON  a.sentence_plan_id = p.snapshot_id GROUP BY  (p.id, p.created_at,p.updated_at, a.status,region_code)",
+            "schema": {
+                "field": [
+                    {
+                        "name": "id",
+                        "type": "string",
+                        "display": "ID"
+                    },
+                    {
+                        "name": "created_at",
+                        "type": "date",
+                        "display": "Created"
+                    },
+                    {
+                        "name": "updated_at",
+                        "type": "string",
+                        "display": "Area of need"
+                    },
+                    {
+                        "name": "status",
+                        "type": "string",
+                        "display": "Status"
+                    },
+                    {
+                        "name": "region_code",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "accommodation_count",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "drug_count",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "finance_count",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "alcohol_count",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "health_count",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "personal_count",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "employment_count",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "thinking_count",
+                        "type": "string",
+                        "display": "thinking_count"
+                    },
+                    {
+                        "name": "total_goal_count",
+                        "type": "int",
+                        "display": "Goals"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "sentence-plan-status-count",
+            "name": "SP status summary",
+            "datasource": "athena_sp",
+            "query": "with sentence_count AS ( SELECT status, count(*) AS sp_count FROM public.sentence_plan group by status ) select status, sp_count, round( sp_count * 1.00 / ( select sum(sp_count) from sentence_count ) * 100.00, 2 ) as sp_percentage from sentence_count",
+            "schema": {
+                "field": [
+                    {
+                        "name": "status",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "sp_count",
+                        "type": "string",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "sp_percentage",
+                        "type": "float",
+                        "display": "Percent"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "sentence-plan-pivot",
+            "name": "SP status summary",
+            "datasource": "athena_sp",
+            "query": "select 'Counts' AS total, COUNT( CASE WHEN status = 'AGREED' THEN 1 END ) AS agreed_count, COUNT( CASE WHEN status = 'DO_NOT_AGREE' THEN 1 END ) AS do_not_agree_count, COUNT( CASE WHEN status = 'DRAFT' THEN 1 END ) AS draft_count, COUNT( CASE WHEN status = 'COULD_NOT_ANSWER' THEN 1 END ) AS could_not_answer_count, COUNT( CASE WHEN status = 'UPDATED_DO_NOT_AGREE' THEN 1 END ) AS updated_do_not_agree_count, COUNT( CASE WHEN status = 'UPDATED_AGREED' THEN 1 END ) AS updated_agreed_count FROM public.sentence_plan",
+            "schema": {
+                "field": [
+                    {
+                        "name": "total",
+                        "type": "string",
+                        "display": "Total"
+                    },
+                    {
+                        "name": "agreed_count",
+                        "type": "string",
+                        "display": "Agreed"
+                    },
+                    {
+                        "name": "do_not_agree_count",
+                        "type": "string",
+                        "display": "DoNotAgree"
+                    },
+                    {
+                        "name": "draft_count",
+                        "type": "string",
+                        "display": "Draft"
+                    },
+                    {
+                        "name": "could_not_answer_count",
+                        "type": "string",
+                        "display": "CNA"
+                    },
+                    {
+                        "name": "updated_do_not_agree_count",
+                        "type": "float",
+                        "display": "Do not agree"
+                    },
+                    {
+                        "name": "updated_agreed_count",
+                        "type": "float",
+                        "display": "Agreed"
+                    }
+                ]
+            }
+        }
+    ],
+    "policy": [
+        {
+            "id": "access",
+            "type": "access",
+            "rule": [
+                {
+                    "effect": "permit",
+                    "condition": [
+                        {
+                            "match": [
+                                "${role}",
+                                "ARNS_REPORTING"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "report": [
+        {
+            "id": "sentence-plan-by-date-report",
+            "name": "Sentence Plan creation date by prefiltered date",
+            "description": "Sentence Plan creation date by date",
+            "classification": "Official",
+            "version": "1.0.0",
+            "render": "HTML",
+            "dataset": "$ref:sentence-plan-by-date",
+            "feature": [
+                {
+                    "type": "share|save|email|print|download"
+                }
+            ],
+            "metadata": {
+                "hints": [
+                    "interactive"
+                ]
+            },
+            "specification": {
+                "template": "list",
+                "field": [
+                    {
+                        "name": "$ref:id",
+                        "display": "ID",
+                        "formula": "",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": true
+                    },
+                    {
+                        "name": "$ref:created_at",
+                        "display": "Created",
+                        "formula": "",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": false,
+                        "filter": {
+                            "index": 1,
+                            "type": "daterange"
+                        }
+                    },
+                    {
+                        "name": "$ref:status",
+                        "display": "Status",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false,
+                        "filter": {
+                            "index": 1,
+                            "type": "multiselect",
+                            "interactive": "true",
+                            "staticoptions": [
+                                {
+                                    "name": "DRAFT",
+                                    "display": "Draft"
+                                },
+                                {
+                                    "name": "AGREED",
+                                    "display": "Agreed"
+                                },
+                                {
+                                    "name": "COULD_NOT_ANSWER",
+                                    "display": "Could not answer"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "$ref:accommodation_count",
+                        "display": "Accommodation",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false,
+                        "filter": {
+                            "index": 1,
+                            "type": "multiselect",
+                            "interactive": "true",
+                            "staticoptions": [
+                                {
+                                    "name": "0",
+                                    "display": "0"
+                                },
+                                {
+                                    "name": "1",
+                                    "display": "1"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "$ref:drug_count",
+                        "display": "Drug",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:finance_count",
+                        "display": "Finance",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:alcohol_count",
+                        "display": "Alcohol",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:health_count",
+                        "display": "Health",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:personal_count",
+                        "display": "Personal",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:employment_count",
+                        "display": "Employment",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:thinking_count",
+                        "display": "Thinking",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:total_goal_count",
+                        "display": "Total",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": false,
+                        "filter": {
+                            "index": 1,
+                            "type": "multiselect",
+                            "interactive": "true",
+                            "staticoptions": [
+                                {
+                                    "name": "0",
+                                    "display": "0 Goals"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "id": "sentence-plan-by-date-range-report",
+            "name": "Sentence Plan creation date by date range",
+            "description": "Sentence Plan creation date by date",
+            "classification": "Official",
+            "version": "1.0.0",
+            "render": "HTML",
+            "dataset": "$ref:sentence-plan-by-date",
+            "feature": [
+                {
+                    "type": "share|save|email|print|download"
+                }
+            ],
+            "metadata": {
+                "hints": [
+                    "interactive"
+                ]
+            },
+            "specification": {
+                "template": "list",
+                "field": [
+                    {
+                        "name": "$ref:id",
+                        "display": "ID",
+                        "formula": "",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": true
+                    },
+                    {
+                        "name": "$ref:created_at",
+                        "display": "Created",
+                        "formula": "",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": false,
+                        "filter": {
+                            "index": 1,
+                            "interactive": "true",
+                            "type": "daterange"
+                        }
+                    },
+                    {
+                        "name": "$ref:updated_at",
+                        "display": "Updated",
+                        "formula": "",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": false,
+                        "filter": {
+                            "index": 1,
+                            "interactive": "true",
+                            "type": "daterange"
+                        }
+                    },
+                    {
+                        "name": "$ref:status",
+                        "display": "Status",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false,
+                        "filter": {
+                            "index": 1,
+                            "type": "multiselect",
+                            "interactive": "true",
+                            "staticoptions": [
+                                {
+                                    "name": "AGREED",
+                                    "display": "Agreed"
+                                },
+                                {
+                                    "name": "COULD_NOT_ANSWER",
+                                    "display": "Could not answer"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "$ref:accommodation_count",
+                        "display": "Accommodation",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:drug_count",
+                        "display": "Drug",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:finance_count",
+                        "display": "Finance",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:alcohol_count",
+                        "display": "Alcohol",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:health_count",
+                        "display": "Health",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:personal_count",
+                        "display": "Personal",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:employment_count",
+                        "display": "Employment",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:thinking_count",
+                        "display": "Thinking",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:total_goal_count",
+                        "display": "Total",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": false
+                    }
+                ]
+            }
+        }
+    ],
+    "dashboard": [
+        {
+            "id": "sentence-plan-by-date",
+            "name": "SP creation summary by date",
+            "description": "Summary by date",
+            "dataset": "sentence-plan-by-date",
+            "section": [
+                {
+                    "id": "plan-summary-by-date",
+                    "display": "Plan summary table",
+                    "visualisation": [
+                        {
+                            "id": "pc1",
+                            "type": "list",
+                            "display": "Plan summary by date range",
+                            "option": {
+                                "showLatest": false
+                            },
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:id",
+                                        "display": "ID"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:id",
+                                        "display": "ID"
+                                    },
+                                    {
+                                        "id": "$ref:area_of_need",
+                                        "display": "Needs"
+                                    }
+                                ],
+                                "expectNull": false
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "plan-charts",
+                    "display": "Goal target date",
+                    "visualisation": [
+                        {
+                            "id": "pc2",
+                            "type": "line-timeseries",
+                            "display": "Plan count",
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:target_date",
+                                        "display": "Date"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:target_date",
+                                        "display": "Date"
+                                    },
+                                    {
+                                        "id": "$ref:goal_count",
+                                        "display": "Count"
+                                    }
+                                ],
+                                "expectNull": false
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "debug",
+                    "display": "Debug",
+                    "visualisation": [
+                        {
+                            "id": "all-data",
+                            "type": "list",
+                            "display": "All data",
+                            "option": {
+                                "showLatest": false
+                            },
+                            "column": {
+                                "measure": [],
+                                "expectNull": true
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "sentence-plan-by-date-range",
+            "name": "Sentence Plan creation date by date range",
+            "description": "Sentence Plan creation by date range.",
+            "dataset": "sentence-plan-count-by-date-range",
+            "section": [
+                {
+                    "id": "sentence-plan-by-date",
+                    "display": "Plan summary table",
+                    "visualisation": [
+                        {
+                            "id": "pc1",
+                            "type": "list",
+                            "display": "Plan summary by date",
+                            "option": {
+                                "showLatest": false
+                            },
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "display": "Region"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "display": "Date"
+                                    },
+                                    {
+                                        "id": "$ref:link",
+                                        "display": "Count"
+                                    }
+                                ],
+                                "expectNull": false
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "plan-charts",
+                    "display": "Plan daily count",
+                    "visualisation": [
+                        {
+                            "id": "pc2",
+                            "type": "line-timeseries",
+                            "display": "Plan daily count",
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "display": "Date"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "display": "Date"
+                                    },
+                                    {
+                                        "id": "$ref:daily_count",
+                                        "display": "Count"
+                                    }
+                                ],
+                                "expectNull": false
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "plan-charts",
+                    "display": "Plan Total to date",
+                    "visualisation": [
+                        {
+                            "id": "pc3",
+                            "type": "line-timeseries",
+                            "display": "Plan Total to date",
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "display": "Date"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "display": "Date"
+                                    },
+                                    {
+                                        "id": "$ref:total_to_date",
+                                        "display": "Total"
+                                    }
+                                ],
+                                "expectNull": false
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
