@@ -372,6 +372,109 @@
           }
         ]
       }
+    },
+    {
+      "id": "certificate-capacity-variance",
+      "name": "Working capacity variance",
+      "description": "One row per cell, in prisons with an active certification requirement and a current cell certificate, where the working capacity held on the approved cell certificate differs from the working capacity the cell is actually operating at today. A cell that is temporarily deactivated - or that sits under a temporarily deactivated wing, landing or spur - operates at a working capacity of zero while the certificate continues to hold its certified figure, so temporary changes show up here as a variance. Cells present live but absent from the certificate, and cells on the certificate that no longer exist, are also listed. Archived (permanently deactivated) cells are excluded because archiving zeroes capacity and removes certification.",
+      "datasource": "dps_locations",
+      "query": "WITH cfg AS (\n    SELECT p.prison_id, p.name AS prison_name\n    FROM prisons.prisonregister_prison p\n    JOIN prisons.locationsinsideprison_prison_configuration pc ON pc.prison_id = p.prison_id\n    WHERE p.active = true AND pc.certification_approval_required = true\n),\nroots AS (\n    SELECT l.id AS loc_id, c.prison_id\n    FROM prisons.locationsinsideprison_cell_certificate c\n    JOIN cfg ON cfg.prison_id = c.prison_id\n    JOIN prisons.locationsinsideprison_cell_certificate_location l ON l.cell_certificate_id = c.id\n    WHERE c.current = true\n),\nn2 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN roots r ON l.parent_location_id = r.loc_id),\nn3 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n2 r ON l.parent_location_id = r.loc_id),\nn4 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n3 r ON l.parent_location_id = r.loc_id),\nn5 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n4 r ON l.parent_location_id = r.loc_id),\nn6 AS (SELECT l.id AS loc_id, r.prison_id FROM prisons.locationsinsideprison_cell_certificate_location l JOIN n5 r ON l.parent_location_id = r.loc_id),\ncert_ids AS (\n    SELECT loc_id, prison_id FROM roots\n    UNION ALL SELECT loc_id, prison_id FROM n2\n    UNION ALL SELECT loc_id, prison_id FROM n3\n    UNION ALL SELECT loc_id, prison_id FROM n4\n    UNION ALL SELECT loc_id, prison_id FROM n5\n    UNION ALL SELECT loc_id, prison_id FROM n6\n),\ncert AS (\n    SELECT ci.prison_id,\n           l.path_hierarchy,\n           l.location_code,\n           l.local_name,\n           l.cell_mark,\n           l.certified_normal_accommodation,\n           l.working_capacity,\n           l.max_capacity\n    FROM cert_ids ci\n    JOIN prisons.locationsinsideprison_cell_certificate_location l ON l.id = ci.loc_id\n    WHERE l.location_type = 'CELL' AND l.converted_cell_type IS NULL\n),\ninactive_ancestors AS (\n    SELECT c.id AS loc_id\n    FROM prisons.locationsinsideprison_location c\n    JOIN cfg ON cfg.prison_id = c.prison_id\n    JOIN prisons.locationsinsideprison_location a\n      ON a.prison_id = c.prison_id\n     AND c.path_hierarchy LIKE a.path_hierarchy || '-%'\n     AND a.status <> 'ACTIVE'\n    WHERE c.location_type_discriminator = 'CELL'\n    GROUP BY c.id\n),\nlive AS (\n    SELECT l.id,\n           l.prison_id,\n           l.path_hierarchy,\n           l.code AS location_code,\n           l.local_name,\n           l.cell_mark,\n           l.status,\n           l.deactivated_reason,\n           CAST(l.deactivated_date AS DATE) AS deactivated_date,\n           l.proposed_reactivation_date,\n           l.temporarily_off_cell_cert,\n           cap.certified_normal_accommodation AS cna,\n           cap.max_capacity,\n           (CASE WHEN l.status = 'ACTIVE' AND ia.loc_id IS NULL THEN TRUE ELSE FALSE END) AS operationally_active,\n           (CASE WHEN l.status = 'ACTIVE' AND ia.loc_id IS NULL THEN COALESCE(cap.working_capacity, 0) ELSE 0 END) AS actual_working_capacity\n    FROM prisons.locationsinsideprison_location l\n    JOIN cfg ON cfg.prison_id = l.prison_id\n    LEFT JOIN prisons.locationsinsideprison_capacity cap ON cap.id = l.capacity_id\n    LEFT JOIN inactive_ancestors ia ON ia.loc_id = l.id\n    WHERE l.location_type_discriminator = 'CELL' AND l.converted_cell_type IS NULL\n),\ncmp AS (\n    SELECT\n        COALESCE(lv.prison_id, ct.prison_id) AS prison_id,\n        COALESCE(lv.path_hierarchy, ct.path_hierarchy) AS path_hierarchy,\n        ct.path_hierarchy AS cert_path_hierarchy,\n        lv.id,\n        COALESCE(lv.location_code, ct.location_code) AS location_code,\n        COALESCE(lv.local_name, ct.local_name) AS local_name,\n        COALESCE(lv.cell_mark, ct.cell_mark) AS cell_mark,\n        lv.status,\n        lv.deactivated_reason,\n        lv.deactivated_date,\n        lv.proposed_reactivation_date,\n        lv.temporarily_off_cell_cert,\n        lv.operationally_active,\n        lv.cna,\n        lv.max_capacity,\n        lv.actual_working_capacity,\n        ct.certified_normal_accommodation AS certified_cna,\n        ct.working_capacity AS certified_working_capacity,\n        ct.max_capacity AS certified_max_capacity\n    FROM live lv\n    FULL OUTER JOIN cert ct ON ct.prison_id = lv.prison_id AND ct.path_hierarchy = lv.path_hierarchy\n)\nSELECT\n    cmp.prison_id,\n    cfg.prison_name,\n    cfg.prison_name || '-' || LPAD(SPLIT_PART(cmp.path_hierarchy, '-', 1), 6, '0') || '-' || LPAD(SPLIT_PART(cmp.path_hierarchy, '-', 2), 6, '0') || '-' || LPAD(SPLIT_PART(cmp.path_hierarchy, '-', 3), 6, '0') || '-' || LPAD(SPLIT_PART(cmp.path_hierarchy, '-', 4), 6, '0') || '-' || LPAD(SPLIT_PART(cmp.path_hierarchy, '-', 5), 6, '0') || '-' || LPAD(SPLIT_PART(cmp.path_hierarchy, '-', 6), 6, '0') AS sort_key,\n    cmp.id,\n    cmp.path_hierarchy,\n    COALESCE(CASE WHEN cmp.id IS NULL THEN '' ELSE cmp.path_hierarchy END, '') AS cell_link_text,\n    'Current cell certificate' AS certificate_link_text,\n    cmp.location_code,\n    INITCAP(cmp.local_name) AS local_name,\n    cmp.cell_mark,\n    cmp.certified_working_capacity,\n    COALESCE(cmp.actual_working_capacity, 0) AS actual_working_capacity,\n    COALESCE(cmp.actual_working_capacity, 0) - COALESCE(cmp.certified_working_capacity, 0) AS variance,\n    (CASE\n        WHEN cmp.cert_path_hierarchy IS NULL THEN 'Not on certificate'\n        WHEN cmp.id IS NULL THEN 'Cell no longer exists'\n        WHEN cmp.operationally_active = FALSE THEN 'Temporarily deactivated'\n        WHEN COALESCE(cmp.actual_working_capacity, 0) < COALESCE(cmp.certified_working_capacity, 0) THEN 'Working capacity reduced'\n        ELSE 'Working capacity increased'\n    END) AS variance_type,\n    INITCAP(cmp.status) AS status,\n    (CASE WHEN cmp.temporarily_off_cell_cert THEN 'Yes' ELSE 'No' END) AS temporarily_off_cell_cert,\n    INITCAP(REPLACE(cmp.deactivated_reason, '_', ' ')) AS deactivated_reason,\n    cmp.deactivated_date,\n    cmp.proposed_reactivation_date,\n    cmp.certified_cna,\n    cmp.cna,\n    cmp.certified_max_capacity,\n    cmp.max_capacity\nFROM cmp\nJOIN cfg ON cfg.prison_id = cmp.prison_id\nWHERE COALESCE(cmp.status, '') <> 'ARCHIVED'\n  AND COALESCE(cmp.actual_working_capacity, 0) <> COALESCE(cmp.certified_working_capacity, 0)\nORDER BY cfg.prison_name, cmp.path_hierarchy",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_id",
+            "type": "string"
+          },
+          {
+            "name": "prison_name",
+            "type": "string"
+          },
+          {
+            "name": "sort_key",
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "type": "string"
+          },
+          {
+            "name": "path_hierarchy",
+            "type": "string"
+          },
+          {
+            "name": "cell_link_text",
+            "type": "string"
+          },
+          {
+            "name": "certificate_link_text",
+            "type": "string"
+          },
+          {
+            "name": "location_code",
+            "type": "string"
+          },
+          {
+            "name": "local_name",
+            "type": "string"
+          },
+          {
+            "name": "cell_mark",
+            "type": "string"
+          },
+          {
+            "name": "certified_working_capacity",
+            "type": "int"
+          },
+          {
+            "name": "actual_working_capacity",
+            "type": "int"
+          },
+          {
+            "name": "variance",
+            "type": "int"
+          },
+          {
+            "name": "variance_type",
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "type": "string"
+          },
+          {
+            "name": "temporarily_off_cell_cert",
+            "type": "string"
+          },
+          {
+            "name": "deactivated_reason",
+            "type": "string"
+          },
+          {
+            "name": "deactivated_date",
+            "type": "date"
+          },
+          {
+            "name": "proposed_reactivation_date",
+            "type": "date"
+          },
+          {
+            "name": "certified_cna",
+            "type": "int"
+          },
+          {
+            "name": "cna",
+            "type": "int"
+          },
+          {
+            "name": "certified_max_capacity",
+            "type": "int"
+          },
+          {
+            "name": "max_capacity",
+            "type": "int"
+          }
+        ]
+      }
     }
   ],
   "report": [
@@ -752,6 +855,258 @@
             "visible": "true",
             "defaultsort": false,
             "wordwrap": "break-words"
+          }
+        ]
+      },
+      "destination": []
+    },
+    {
+      "id": "cell-certificate-capacity-variance",
+      "name": "Working capacity variance (certificate v actual)",
+      "description": "Every cell in a prison with an active certification requirement where the working capacity on the approved cell certificate differs from the working capacity the cell is actually operating at, ordered by establishment then location. A temporarily deactivated cell - or a cell under a temporarily deactivated wing, landing or spur - counts as a working capacity of zero, so temporary changes appear here as a variance. Also lists cells that are not on the certificate and certificate entries whose cell no longer exists. Archived cells are excluded. Each row links to the cell in Locations Inside Prison and to the prison's current cell certificate.",
+      "version": "1.0.0",
+      "dataset": "$ref:certificate-capacity-variance",
+      "render": "HTML",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:prison_id",
+            "display": "Prison",
+            "sortable": false,
+            "visible": "false",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "dynamicoptions": {
+                "maximumOptions": 140,
+                "returnAsStaticOptions": true,
+                "dataset": "prisons",
+                "name": "prison_id",
+                "display": "prison_name"
+              }
+            }
+          },
+          {
+            "name": "$ref:sort_key",
+            "display": "Sort order",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": true,
+            "sortorder": "ascending"
+          },
+          {
+            "name": "$ref:prison_name",
+            "display": "Establishment",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:path_hierarchy",
+            "display": "Cell Ref",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:cell_link_text",
+            "display": "View cell",
+            "sortable": false,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://locations-inside-prison-${env}.hmpps.service.justice.gov.uk/view-and-update-locations/${prison_id}/${id}',${cell_link_text},TRUE)"
+          },
+          {
+            "name": "$ref:certificate_link_text",
+            "display": "Cell certificate",
+            "sortable": false,
+            "visible": "true",
+            "defaultsort": false,
+            "formula": "make_url('https://locations-inside-prison-${env}.hmpps.service.justice.gov.uk/${prison_id}/cell-certificate/current',${certificate_link_text},TRUE)"
+          },
+          {
+            "name": "$ref:certified_working_capacity",
+            "display": "Certified working capacity",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:actual_working_capacity",
+            "display": "Actual working capacity",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:variance",
+            "display": "Difference",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:variance_type",
+            "display": "Reason",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "staticoptions": [
+                {
+                  "name": "Temporarily deactivated",
+                  "display": "Temporarily deactivated"
+                },
+                {
+                  "name": "Working capacity reduced",
+                  "display": "Working capacity reduced"
+                },
+                {
+                  "name": "Working capacity increased",
+                  "display": "Working capacity increased"
+                },
+                {
+                  "name": "Not on certificate",
+                  "display": "Not on certificate"
+                },
+                {
+                  "name": "Cell no longer exists",
+                  "display": "Cell no longer exists"
+                }
+              ]
+            },
+            "wordwrap": "break-words"
+          },
+          {
+            "name": "$ref:status",
+            "display": "Status",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "multiselect",
+              "mandatory": false,
+              "staticoptions": [
+                {
+                  "name": "Active",
+                  "display": "Active"
+                },
+                {
+                  "name": "Inactive",
+                  "display": "Inactive"
+                },
+                {
+                  "name": "Draft",
+                  "display": "Draft"
+                }
+              ]
+            }
+          },
+          {
+            "name": "$ref:temporarily_off_cell_cert",
+            "display": "Temporarily off cell certificate",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "filter": {
+              "type": "radio",
+              "mandatory": false,
+              "staticoptions": [
+                {
+                  "name": "Yes",
+                  "display": "Yes"
+                },
+                {
+                  "name": "No",
+                  "display": "No"
+                }
+              ]
+            }
+          },
+          {
+            "name": "$ref:deactivated_reason",
+            "display": "Deactivation reason",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false,
+            "wordwrap": "break-words"
+          },
+          {
+            "name": "$ref:deactivated_date",
+            "display": "Deactivated on",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:proposed_reactivation_date",
+            "display": "Proposed reactivation date",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:local_name",
+            "display": "Local name",
+            "sortable": true,
+            "visible": "true",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:location_code",
+            "display": "Location code (Cell)",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:cell_mark",
+            "display": "Door mark",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:certified_cna",
+            "display": "Certified CNA",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:cna",
+            "display": "Actual CNA",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:certified_max_capacity",
+            "display": "Certified max capacity",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:max_capacity",
+            "display": "Actual max capacity",
+            "sortable": true,
+            "visible": "false",
+            "defaultsort": false
           }
         ]
       },
