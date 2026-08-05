@@ -1,0 +1,177 @@
+{
+    "id": "san002",
+    "name": "Data Subject Deletion requests",
+    "description": "TBC.",
+    "metadata": {
+        "author": "TBC",
+        "owner": "TBC",
+        "version": "1.0.0"
+    },
+    "datasource": [
+        {
+            "id": "datamart",
+            "name": "datamart"
+        }
+    ],
+    "dataset": [
+        {
+            "id": "san-dataset",
+            "name": "Applications",
+            "datasource": "datamart",
+            "query": "SELECT id as record_deletion_id, prison_number as prisoner_number, reason as reason_for_deletion, CAST(data_deleted_at as DATE) as deletion_date, data_deleted_by, data_deleted_at_prison, initcap(last_name) || ', ' || initcap(first_name) As staff_name FROM prisons.supportforadditionalneeds_data_deletion_event e LEFT JOIN datamart.staff.staff ON username = data_deleted_by",
+            "parameters": [],
+            "schema": {
+                "field": [
+                    {
+                        "name": "record_deletion_id",
+                        "type": "string",
+                        "display": "Deletion ID"
+                    },
+                    {
+                        "name": "prisoner_number",
+                        "type": "string",
+                        "display": "Number"
+                    },
+                    {
+                        "name": "reason_for_deletion",
+                        "type": "string",
+                        "display": "Reason"
+                    },
+                    {
+                        "name": "deletion_date",
+                        "type": "date",
+                        "display": "Date",
+                        "filter": {
+                            "index": 0,
+                            "interactive": "true",
+                            "type": "daterange",
+                            "default": ""
+                        }
+                    },
+                    {
+                        "name": "data_deleted_by",
+                        "type": "string",
+                        "display": "Deleted by"
+                    },
+                    {
+                        "name": "data_deleted_at_prison",
+                        "type": "string",
+                        "display": "Location"
+                    },
+                    {
+                        "name": "staff_name",
+                        "type": "string",
+                        "display": "Staff Name"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "ethnicities",
+            "name": "ethnicities",
+            "datasource": "datamart",
+            "query": "select code, description from prisons.nomis_reference_codes where domain = 'ETHNICITY' and active_flag = 'Y' order by list_seq",
+            "schema": {
+                "field": [
+                    {
+                        "name": "code",
+                        "type": "string"
+                    },
+                    {
+                        "name": "description",
+                        "type": "string"
+                    }
+                ]
+            }
+        }
+    ],
+    "policy": [
+        {
+            "id": "access",
+            "type": "access",
+            "rule": [
+                {
+                    "effect": "permit",
+                    "condition": [
+                        {
+                            "match": [
+                                "${role}",
+                                "ROLE_SAN_EDITOR",
+                                "ROLE_SAN_EDUCATION_MANAGER"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "report": [
+        {
+            "id": "san-deletion-request-report",
+            "name": "Data Subject Deletion requests",
+            "description": "The report returns a list of people in an establishment who have made a deletion request.",
+            "classification": "Official",
+            "version": "1.0.0",
+            "render": "HTML",
+            "dataset": "$ref:san-dataset",
+            "feature": [
+                {
+                    "type": "share|save|email|print|download"
+                }
+            ],
+            "metadata": {
+                "hints": [
+                    "interactive"
+                ]
+            },
+            "specification": {
+                "template": "list",
+                "field": [
+                    {
+                        "name": "deletion_date",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:prisoner_number",
+                        "display": "Prisoner Number",
+                        "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prison_number}','${prisoner_number}',TRUE)",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "record_deletion_id",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "staff_name",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "data_deleted_at_prison",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false,
+                        "filter": {
+                            "index": 1,
+                            "type": "caseloads",
+                            "interactive": "true"
+                        }
+                    },
+                    {
+                        "name": "reason_for_deletion",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    }
+                ]
+            }
+        }
+    ]
+}
