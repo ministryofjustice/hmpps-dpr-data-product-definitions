@@ -1,7 +1,7 @@
 {
     "id": "san002",
-    "name": "Data Subject Deletion requests",
-    "description": "TBC.",
+    "name": "Support for Additional Needs Data Deletion Report",
+    "description": "",
     "metadata": {
         "author": "TBC",
         "owner": "TBC",
@@ -18,15 +18,10 @@
             "id": "san-dataset",
             "name": "Applications",
             "datasource": "datamart",
-            "query": "SELECT id as record_deletion_id, prison_number as prisoner_number, reason as reason_for_deletion, CAST(data_deleted_at as DATE) as deletion_date, data_deleted_by, data_deleted_at_prison, initcap(last_name) || ', ' || initcap(first_name) As staff_name FROM prisons.supportforadditionalneeds_data_deletion_event e LEFT JOIN datamart.staff.staff ON username = data_deleted_by",
+            "query": "SELECT prison_number as prisoner_number, reason as reason_for_deletion, trunc(data_deleted_at) as deletion_date, data_deleted_by, data_deleted_at_prison, prison, initcap(last_name) || ', ' || initcap(first_name) As staff_name FROM prisons.supportforadditionalneeds_data_deletion_event e LEFT JOIN datamart.staff.staff ON username = data_deleted_by LEFT JOIN datamart.prisons.prisonestate_prisons p ON p.prison_code = data_deleted_at_prison",
             "parameters": [],
             "schema": {
                 "field": [
-                    {
-                        "name": "record_deletion_id",
-                        "type": "string",
-                        "display": "Deletion ID"
-                    },
                     {
                         "name": "prisoner_number",
                         "type": "string",
@@ -39,7 +34,7 @@
                     },
                     {
                         "name": "deletion_date",
-                        "type": "date",
+                        "type": "string",
                         "display": "Date",
                         "filter": {
                             "index": 0,
@@ -59,27 +54,14 @@
                         "display": "Location"
                     },
                     {
+                        "name": "prison",
+                        "type": "string",
+                        "display": "Location"
+                    },
+                    {
                         "name": "staff_name",
                         "type": "string",
                         "display": "Staff Name"
-                    }
-                ]
-            }
-        },
-        {
-            "id": "ethnicities",
-            "name": "ethnicities",
-            "datasource": "datamart",
-            "query": "select code, description from prisons.nomis_reference_codes where domain = 'ETHNICITY' and active_flag = 'Y' order by list_seq",
-            "schema": {
-                "field": [
-                    {
-                        "name": "code",
-                        "type": "string"
-                    },
-                    {
-                        "name": "description",
-                        "type": "string"
                     }
                 ]
             }
@@ -108,8 +90,8 @@
     "report": [
         {
             "id": "san-deletion-request-report",
-            "name": "Data Subject Deletion requests",
-            "description": "The report returns a list of people in an establishment who have made a deletion request.",
+            "name": "Support for Additional Needs Data Deletion Report",
+            "description": "This report returns information about data deletion in the Support for Additional Needs service",
             "classification": "Official",
             "version": "1.0.0",
             "render": "HTML",
@@ -131,18 +113,12 @@
                         "name": "deletion_date",
                         "visible": "true",
                         "sortable": false,
-                        "defaultsort": false
+                        "defaultsort": false,
+                        "formula": "format_date(${deletion_date}, 'dd MMMM yyyy')"
                     },
                     {
                         "name": "$ref:prisoner_number",
                         "display": "Prisoner Number",
-                        "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prison_number}','${prisoner_number}',TRUE)",
-                        "visible": "true",
-                        "sortable": false,
-                        "defaultsort": false
-                    },
-                    {
-                        "name": "record_deletion_id",
                         "visible": "true",
                         "sortable": false,
                         "defaultsort": false
@@ -156,6 +132,7 @@
                     {
                         "name": "data_deleted_at_prison",
                         "visible": "true",
+                        "formula": "${prison}",
                         "sortable": false,
                         "defaultsort": false,
                         "filter": {
