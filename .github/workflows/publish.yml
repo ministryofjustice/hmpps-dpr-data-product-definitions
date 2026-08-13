@@ -105,6 +105,44 @@ jobs:
           role-session-name: githubactionsrolesession
           aws-region: "eu-west-2"
 
+      - name: Validate Redshift connectivity
+        run: |
+            echo "Testing Redshift connectivity..."
+            
+            STATEMENT_ID=$(aws redshift-data execute-statement \
+              --cluster-identifier dpr-redshift-development \
+              --database datamart \
+              --db-user dpruser \
+              --sql "SELECT 1;" \
+              --query 'Id' \
+              --output text)
+            
+            echo "Statement ID: $STATEMENT_ID"
+            
+            # Wait for statement to complete
+            for i in {1..30}; do
+              STATUS=$(aws redshift-data describe-statement \
+                --id "$STATEMENT_ID" \
+                --query 'Status' \
+                --output text)
+            
+              echo "Attempt $i/30 - Status: $STATUS"
+            
+              if [ "$STATUS" = "FINISHED" ]; then
+                echo "_____Redshift connectivity validated successfully"
+                exit 0
+              elif [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "ABORTED" ]; then
+                echo "_____Redshift query failed"
+                aws redshift-data describe-statement --id "$STATEMENT_ID"
+                exit 1
+              fi
+            
+              sleep 2
+            done
+            
+            echo "____Timeout waiting for Redshift query"
+            exit 1
+
       - name: Publish to DynamoDB
         shell: bash
         env:
