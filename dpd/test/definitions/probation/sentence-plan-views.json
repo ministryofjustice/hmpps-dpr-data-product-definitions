@@ -1,0 +1,325 @@
+{
+    "id": "sp003-sentence-plan-views",
+    "name": "Sentence Plan data products POC",
+    "description": "Sentence Plan creation count and page view",
+    "metadata": {
+        "author": "DPR",
+        "owner": "DPR",
+        "version": "0.1"
+    },
+    "datasource": [
+        {
+            "id": "datamart",
+            "name": "datamart"
+        }
+    ],
+    "dataset": [
+        {
+            "id": "active-users-page-views",
+            "name": "Page views",
+            "datasource": "datamart",
+            "query": "SELECT date as ts, page_title, validation_error_page, volume_of_views,total_duration_seconds, avg_duration_seconds FROM datamart.prisons.sentenceplanusage_page_views order by ts",
+            "schema": {
+                "field": [
+                    {
+                        "name": "ts",
+                        "type": "timestamp",
+                        "display": "Date"
+                    },
+                    {
+                        "name": "page_title",
+                        "type": "string",
+                        "display": "Page"
+                    },
+                    {
+                        "name": "validation_error_page",
+                        "type": "string",
+                        "display": "Page"
+                    },
+                    {
+                        "name": "volume_of_views",
+                        "type": "string",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "total_duration_seconds",
+                        "type": "int",
+                        "display": "Total"
+                    },
+                    {
+                        "name": "avg_duration_seconds",
+                        "type": "int",
+                        "display": "Avg"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "clicks-count",
+            "name": "Clicks count",
+            "datasource": "datamart",
+            "query": "SELECT date as ts, page_title,event_name,validation_error_page, volume_of_clicks FROM datamart.hmpps_curated_tables.sentenceplanusage_clicks order by ts",
+            "schema": {
+                "field": [
+                    {
+                        "name": "ts",
+                        "type": "timestamp",
+                        "display": "Date"
+                    },
+                    {
+                        "name": "page_title",
+                        "type": "string",
+                        "display": "Page"
+                    },
+                    {
+                        "name": "event_name",
+                        "type": "string",
+                        "display": "Name"
+                    },
+                    {
+                        "name": "validation_error_page",
+                        "type": "string",
+                        "display": "Page"
+                    },
+                    {
+                        "name": "volume_of_clicks",
+                        "type": "string",
+                        "display": "Count"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "sentence-plan-count-by-date-range",
+            "name": "SP summary",
+            "datasource": "datamart",
+            "query": "select trunc(p.created_at) as ts, '$TBC' AS link, count(*) as daily_count, SUM (daily_count) over (order by ts rows unbounded preceding) AS total_to_date FROM datamart.prisons.sentenceplanassessmentview_sentence_plan p LEFT JOIN datamart.prisons.sentenceplanassessmentview_goal g ON g.sentence_plan_id = p.id WHERE exists (select p.id from datamart.prisons.sentenceplanassessmentview_goal AS g) AND ts > '01-08-2026' group by ts order by ts",
+            "schema": {
+                "field": [
+                    {
+                        "name": "ts",
+                        "type": "timestamp",
+                        "display": "Date",
+                        "filter": {
+                            "index": 0,
+                            "interactive": "true",
+                            "type": "daterange",
+                            "default": "today(-3, months) - today()"
+                        }
+                    },
+                    {
+                        "name": "link",
+                        "type": "int",
+                        "display": "Link",
+                        "formula": "make_url('/dpr/request-report/report/dpr_sp001-sentence-plan-volumes/sentence-plan-by-date-report/filters?filters.created_at.start=${ts}&filters.created_at.end=${ts}',${daily_count},TRUE)"
+                    },
+                    {
+                        "name": "daily_count",
+                        "type": "int",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "total_to_date",
+                        "type": "int",
+                        "display": "Total"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "sentence-plan-by-date",
+            "name": "SP detail",
+            "datasource": "datamart",
+            "query": "SELECT p.id, trunc(p.created_at) AS created_at, trunc(p.updated_at) AS updated_at, CASE WHEN a.status IS NULL THEN 'DRAFT' ELSE a.status END AS status, region_code, COUNT(CASE WHEN g.area_of_need = 'ACCOMMODATION' THEN 1 END) AS accommodation_count, COUNT(CASE WHEN g.area_of_need = 'DRUG_USE' THEN 1 END) AS drug_count, COUNT(CASE WHEN g.area_of_need = 'FINANCES' THEN 1 END) AS finance_count, COUNT(CASE WHEN g.area_of_need = 'ALCOHOL_USE' THEN 1 END) AS alcohol_count, COUNT(CASE WHEN g.area_of_need = 'HEALTH_AND_WELLBEING' THEN 1 END) AS health_count, COUNT(CASE WHEN g.area_of_need = 'PERSONAL_RELATIONSHIPS_AND_COMMUNITY' THEN 1 END) AS personal_count, COUNT(CASE WHEN g.area_of_need = 'EMPLOYMENT_AND_EDUCATION' THEN 1 END) AS employment_count, COUNT(CASE WHEN g.area_of_need = 'THINKING_BEHAVIOURS_AND_ATTITUDES' THEN 1 END) AS thinking_count, count(g.id) as total_goal_count FROM datamart.prisons.sentenceplanassessmentview_sentence_plan p LEFT JOIN datamart.prisons.sentenceplanassessmentview_goal g ON  g.sentence_plan_id = p.snapshot_id LEFT JOIN datamart.prisons.sentenceplanassessmentview_plan_agreement a ON  a.sentence_plan_id = p.snapshot_id GROUP BY  (p.id, p.created_at,p.updated_at, a.status,region_code)",
+            "schema": {
+                "field": [
+                    {
+                        "name": "id",
+                        "type": "string",
+                        "display": "ID"
+                    },
+                    {
+                        "name": "created_at",
+                        "type": "date",
+                        "display": "Created"
+                    },
+                    {
+                        "name": "updated_at",
+                        "type": "string",
+                        "display": "Area of need"
+                    },
+                    {
+                        "name": "status",
+                        "type": "string",
+                        "display": "Status"
+                    },
+                    {
+                        "name": "region_code",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "accommodation_count",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "drug_count",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "finance_count",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "alcohol_count",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "health_count",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "personal_count",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "employment_count",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "thinking_count",
+                        "type": "string",
+                        "display": "thinking_count"
+                    },
+                    {
+                        "name": "total_goal_count",
+                        "type": "int",
+                        "display": "Goals"
+                    }
+                ]
+            }
+        }
+    ],
+    "policy": [
+        {
+            "id": "lao",
+            "type": "lao",
+            "rule": [
+                {
+                    "effect": "permit",
+                    "condition": []
+                }
+            ]
+        },
+        {
+            "id": "access",
+            "type": "access",
+            "rule": [
+                {
+                    "effect": "permit",
+                    "condition": [
+                        {
+                            "match": [
+                                "${role}",
+                                "ARNS_DIGITAL_VIEW"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "report": [],
+    "dashboard": [
+        {
+            "id": "page-views",
+            "name": "Page views POC",
+            "description": "Sentence Plan page view",
+            "dataset": "active-users-page-views",
+            "section": [
+                {
+                    "id": "list1",
+                    "display": "Page views",
+                    "visualisation": [
+                        {
+                            "id": "line1",
+                            "type": "line-timeseries",
+                            "display": "Page views",
+                            "option": {
+                                "showLatest": false
+                            },
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:page_title",
+                                        "display": "Type"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "type": "timestamp",
+                                        "display": "Date"
+                                    },
+                                    {
+                                        "id": "$ref:volume_of_views",
+                                        "display": "Count"
+                                    }
+                                ],
+                                "expectNull": false
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "clicks-child",
+            "name": "Clicks count POC",
+            "description": "Clicks by date",
+            "dataset": "clicks-count",
+            "section": [
+                {
+                    "id": "list2",
+                    "display": "Clicks",
+                    "visualisation": [
+                        {
+                            "id": "pc1",
+                            "type": "line-timeseries",
+                            "display": "Clicks",
+                            "option": {
+                                "showLatest": false
+                            },
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:page_title",
+                                        "display": "Region"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "display": "Date"
+                                    },
+                                    {
+                                        "id": "$ref:volume_of_clicks",
+                                        "display": "Count"
+                                    }
+                                ],
+                                "expectNull": false
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
