@@ -15,76 +15,31 @@
     ],
     "dataset": [
         {
-            "id": "active-users-page-views",
-            "name": "Page views",
+            "id": "active-users-count",
+            "name": "Active users",
             "datasource": "datamart",
-            "query": "SELECT date as ts, page_title, validation_error_page, volume_of_views,total_duration_seconds, avg_duration_seconds FROM datamart.prisons.sentenceplanusage_page_views order by ts",
+            "query": "WITH goals AS ( select created_by_user_id, count(*) AS goal_count FROM datamart.prisons.sentenceplanassessmentview_goal group by created_by_user_id ), STEPS AS ( select created_by_user_id, count(*) as step_count FROM datamart.prisons.sentenceplanassessmentview_step group by created_by_user_id ) SELECT a.created_by_user_id, count(a.id) AS agreement_count, goal_count, step_count FROM datamart.prisons.sentenceplanassessmentview_plan_agreement a LEFT JOIN goals g ON g.created_by_user_id = a.created_by_user_id LEFT JOIN steps s ON s.created_by_user_id = a.created_by_user_id GROUP BY a.created_by_user_id, goal_count, step_count ",
             "schema": {
                 "field": [
                     {
-                        "name": "ts",
-                        "type": "timestamp",
-                        "display": "Date"
-                    },
-                    {
-                        "name": "page_title",
+                        "name": "created_by_user_id",
                         "type": "string",
-                        "display": "Page"
+                        "display": "User ID"
                     },
                     {
-                        "name": "validation_error_page",
-                        "type": "string",
-                        "display": "Page"
-                    },
-                    {
-                        "name": "volume_of_views",
-                        "type": "string",
-                        "display": "Count"
-                    },
-                    {
-                        "name": "total_duration_seconds",
+                        "name": "agreement_count",
                         "type": "int",
-                        "display": "Total"
+                        "display": "Agreement"
                     },
                     {
-                        "name": "avg_duration_seconds",
+                        "name": "goal_count",
                         "type": "int",
-                        "display": "Avg"
-                    }
-                ]
-            }
-        },
-        {
-            "id": "clicks-count",
-            "name": "Clicks count",
-            "datasource": "datamart",
-            "query": "SELECT date as ts, page_title,event_name,validation_error_page, volume_of_clicks FROM datamart.hmpps_curated_tables.sentenceplanusage_clicks order by ts",
-            "schema": {
-                "field": [
-                    {
-                        "name": "ts",
-                        "type": "timestamp",
-                        "display": "Date"
+                        "display": "Goal"
                     },
                     {
-                        "name": "page_title",
-                        "type": "string",
-                        "display": "Page"
-                    },
-                    {
-                        "name": "event_name",
-                        "type": "string",
-                        "display": "Name"
-                    },
-                    {
-                        "name": "validation_error_page",
-                        "type": "string",
-                        "display": "Page"
-                    },
-                    {
-                        "name": "volume_of_clicks",
-                        "type": "string",
-                        "display": "Count"
+                        "name": "step_count",
+                        "type": "int",
+                        "display": "Step"
                     }
                 ]
             }
@@ -93,7 +48,7 @@
             "id": "sentence-plan-count-by-date-range",
             "name": "SP summary",
             "datasource": "datamart",
-            "query": "select trunc(created_at) as ts, '$TBC' AS link, count(*) as daily_count, SUM (daily_count) over (order by ts rows unbounded preceding) AS total_to_date FROM datamart.prisons.sentenceplanassessmentview_sentence_plan group by ts order by ts",
+            "query": "select trunc(p.created_at) as ts, '$TBC' AS link, count(*) as daily_count, SUM (daily_count) over (order by ts rows unbounded preceding) AS total_to_date FROM datamart.prisons.sentenceplanassessmentview_sentence_plan p LEFT JOIN datamart.prisons.sentenceplanassessmentview_goal g ON g.sentence_plan_id = p.id WHERE exists (select p.id from datamart.prisons.sentenceplanassessmentview_goal AS g) GROUP BY ts ORDER BY ts",
             "schema": {
                 "field": [
                     {
@@ -111,7 +66,7 @@
                         "name": "link",
                         "type": "int",
                         "display": "Link",
-                        "formula": "make_url('/dpr/request-report/report/sp001-sentence-plan-volumes/sentence-plan-by-date-report/filters?filters.created_at.start=${ts}&filters.created_at.end=${ts}',${daily_count},TRUE)"
+                        "formula": "make_url('/dpr/request-report/report/dpr_sp001-sentence-plan-volumes/sentence-plan-by-date-report/filters?filters.created_at.start=${ts}&filters.created_at.end=${ts}',${daily_count},TRUE)"
                     },
                     {
                         "name": "daily_count",
@@ -395,59 +350,63 @@
                     }
                 ]
             }
+        },
+        {
+            "id": "sentence-plan-by-user-report",
+            "name": "Sentence Plan created by users report",
+            "description": "Sentence Plan agreements, goals and steps created by user report",
+            "classification": "Official",
+            "version": "1.0.0",
+            "render": "HTML",
+            "dataset": "$ref:active-users-count",
+            "feature": [
+                {
+                    "type": "share|save|email|print|download"
+                }
+            ],
+            "metadata": {
+                "hints": [
+                    "interactive"
+                ]
+            },
+            "specification": {
+                "template": "list",
+                "field": [
+                    {
+                        "name": "$ref:created_by_user_id",
+                        "display": "ID",
+                        "formula": "",
+                        "visible": "true",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:agreement_count",
+                        "display": "Agreement",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": true,
+                        "sortdirection": "desc"
+                    },
+                    {
+                        "name": "$ref:goal_count",
+                        "display": "Goals",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:step_count",
+                        "display": "Steps",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": false
+                    }
+                ]
+            }
         }
     ],
     "dashboard": [
-        {
-            "id": "page-views",
-            "name": "Page views",
-            "description": "Sentence Plan page view",
-            "dataset": "active-users-page-views",
-            "child": [
-                {
-                    "dashboardId": "sp-creation-count"
-                },
-                {
-                    "dashboardId": "clicks-child"
-                }
-            ],
-            "section": [
-                {
-                    "id": "list1",
-                    "display": "Page views",
-                    "visualisation": [
-                        {
-                            "id": "line1",
-                            "type": "line-timeseries",
-                            "display": "Page views",
-                            "option": {
-                                "showLatest": false
-                            },
-                            "column": {
-                                "key": [
-                                    {
-                                        "id": "$ref:page_title",
-                                        "display": "Type"
-                                    }
-                                ],
-                                "measure": [
-                                    {
-                                        "id": "$ref:ts",
-                                        "type": "timestamp",
-                                        "display": "Date"
-                                    },
-                                    {
-                                        "id": "$ref:volume_of_views",
-                                        "display": "Count"
-                                    }
-                                ],
-                                "expectNull": false
-                            }
-                        }
-                    ]
-                }
-            ]
-        },
         {
             "id": "sp-creation-count",
             "name": "Sentence Plan creation count",
@@ -469,7 +428,7 @@
                                 "key": [
                                     {
                                         "id": "$ref:ts",
-                                        "display": "Region"
+                                        "display": "Date"
                                     }
                                 ],
                                 "measure": [
@@ -480,6 +439,10 @@
                                     {
                                         "id": "$ref:link",
                                         "display": "Count"
+                                    },
+                                    {
+                                        "id": "$ref:total_to_date",
+                                        "display": "Total to date"
                                     }
                                 ],
                                 "expectNull": false
@@ -490,37 +453,45 @@
             ]
         },
         {
-            "id": "clicks-child",
-            "name": "Clicks count",
-            "description": "Clicks by date",
-            "dataset": "clicks-count",
+            "id": "sp-active-users",
+            "name": "Sentence Plan active users",
+            "description": "Active users by agreement, goals and steps",
+            "dataset": "active-users-count",
             "section": [
                 {
-                    "id": "list2",
-                    "display": "Clicks",
+                    "id": "list3",
+                    "display": "Active users by agreement, goals and steps",
                     "visualisation": [
                         {
                             "id": "pc1",
-                            "type": "line-timeseries",
-                            "display": "Clicks",
+                            "type": "list",
+                            "display": "Active users",
                             "option": {
                                 "showLatest": false
                             },
                             "column": {
                                 "key": [
                                     {
-                                        "id": "$ref:page_title",
-                                        "display": "Region"
+                                        "id": "$ref:created_by_user_id",
+                                        "display": "User ID"
                                     }
                                 ],
                                 "measure": [
                                     {
-                                        "id": "$ref:ts",
-                                        "display": "Date"
+                                        "id": "$ref:created_by_user_id",
+                                        "display": "User ID"
                                     },
                                     {
-                                        "id": "$ref:volume_of_clicks",
-                                        "display": "Count"
+                                        "id": "$ref:agreement_count",
+                                        "display": "Agreements"
+                                    },
+                                    {
+                                        "id": "$ref:goal_count",
+                                        "display": "Goals"
+                                    },
+                                    {
+                                        "id": "$ref:step_count",
+                                        "display": "Steps"
                                     }
                                 ],
                                 "expectNull": false
