@@ -1,0 +1,109 @@
+name: Test Data Generator Script
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual triggering from the GitHub UI
+
+jobs:
+  run-kotlin-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Java (Required by the Kotlin Compiler)
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # Step 3: Install Kotlin Compiler on the runner
+      - name: Set up Kotlin
+        uses: fwilhe2/setup-kotlin@v1
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.ACCOUNT_NUMBER }}:role/dpr-dpd-table-github-deploy-role
+          aws-region: eu-west-2
+
+      - name: Generate SQL
+        id: generate_sql
+        run: |
+          chmod +x ./.github/scripts/script.main.kts
+          
+          SQL=$(kotlin ./.github/scripts/script.main.kts) 
+          
+          echo "sql<<EOF" >> $GITHUB_OUTPUT
+          echo "$SQL" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Execute SQL in Redshift
+        run: |
+            aws redshift-data execute-statement \
+              --cluster-identifier redshift-dev \
+              --database database \
+              --db-user user \
+              --sql "${{ steps.generate_sql.outputs.sql }}"
+    
+
+    generate-test-data:
+      name: Create Redshift table in ${{ inputs.deployEnv || 'dev' }} env
+      environment: ${{ inputs.deployEnv || 'dev' }}
+      runs-on: ubuntu-latest
+
+      steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
+        with:
+          role-to-assume: "arn:aws:iam::${{ secrets.ACCOUNT_NUMBER }}:role/dpr-dpd-table-github-deploy-role"
+          role-session-name: githubactionsrolesession
+          aws-region: "eu-west-2"
+
+      - name: Validate Redshift connectivity
+        run: |
+          echo "Testing Redshift connectivity..."
+
+          STATEMENT_ID=$(aws redshift-data execute-statement \
+            --cluster-identifier dpr-redshift-development \
+            --database datamart \
+            --db-user dpruser \
+            --sql "SELECT 1;" \
+            --query 'Id' \
+            --output text)
+
+          echo "Statement ID: $STATEMENT_ID"
+
+          # Wait for statement to complete
+          for i in {1..30}; do
+            STATUS=$(aws redshift-data describe-statement \
+              --id "$STATEMENT_ID" \
+              --query 'Status' \
+              --output text)
+
+            echo "Attempt $i/30 - Status: $STATUS"
+
+            if [ "$STATUS" = "FINISHED" ]; then
+              echo "_____Redshift connectivity validated successfully"
+              exit 0
+            elif [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "ABORTED" ]; then
+              echo "_____Redshift query failed"
+              aws redshift-data describe-statement --id "$STATEMENT_ID"
+              exit 1
+            fi
+
+            sleep 2
+          done
+
+          echo "____Timeout waiting for Redshift query"
+          exit 1
+
+
+
