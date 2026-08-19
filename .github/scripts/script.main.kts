@@ -98,8 +98,8 @@ object TestDataGenerator {
 // =====================================================
 
 fun main() {
-    println("Hello from Kotlin triggered by GitHub Actions!")
-    println("Working directory = ${System.getProperty("user.dir")}")
+//    println("Hello from Kotlin triggered by GitHub Actions!")
+//    println("Working directory = ${System.getProperty("user.dir")}")
 
     // - Load the DPD from dpd/dev/definitions/prisons/test-resources
     val objectMapper = ObjectMapper()
@@ -112,8 +112,6 @@ fun main() {
         .replace("-", "_")
         .uppercase()
 
-    println(tableName) // ors_prisoner_iep_levels
-
     val reports = root["report"]
 
     val datasetId = reports
@@ -121,13 +119,38 @@ fun main() {
         .get("dataset")
         .asText()
 
-    println(datasetId)
-
     // - create a map with the column name and datatype
+    val redshiftColumns = getRedshiftColumnsMap(root.toString(), datasetId)
+
+// ---- Generate the test data for the column name and datatype for the table
+// ---- Create the CSV
+// ---- upload it in the s3
+
+   val csvFileName = generateTestData(tableName, redshiftColumns as Map<String, String>,  1)
+   println(csvFileName)
+
+// - Generate sql script for, createTable + copySql and pass it on to the Redshift
+//    sqlScriptGeneration(tableName, redshiftColumns,  csvFileName)
+
+}
+
+fun getSchemaFields(json: String, datasetId: String): Map<String, String>? {
+    val mapper = ObjectMapper()
+    val root = mapper.readTree(json)
+
+    val dataset = root["dataset"]
+        ?.firstOrNull { it["id"]?.asText() == datasetId }
+
+    val fieldMap = dataset?.get("schema")["field"]
+        ?.associate { field ->
+            field["name"].asText() to field["type"].asText()
+        }
+
+    return fieldMap
+}
+
+fun getRedshiftColumnsMap (root: String, datasetId: String) : Map<String, String>? {
     val fields = getSchemaFields(root.toString(), datasetId)
-
-    println(fields.toString())
-
     val redshiftTypeMapping = mapOf(
         "string" to "VARCHAR(30)",
         "date" to "DATE",
@@ -138,7 +161,68 @@ fun main() {
     val redshiftColumns = fields?.mapValues { (_, type) ->
         type?.let { redshiftTypeMapping[it.lowercase()] } ?: "VARCHAR(30)"
     }
-    println(redshiftColumns)
+
+    return redshiftColumns
+}
+
+
+fun generateTestData(tableName: String, redshiftColumns:Map<String, String>,   rowCount: Int = 1): String {
+    val workbook = XSSFWorkbook()
+    val sheet = workbook.createSheet(tableName)
+    val headerRow = sheet.createRow(0)
+
+    redshiftColumns.keys.forEachIndexed { index, column ->
+        headerRow.createCell(index).setCellValue(column)
+    }
+
+    repeat(rowCount) { rowIndex ->
+        val row = sheet.createRow(rowIndex + 1)
+        redshiftColumns.entries.forEachIndexed { colIndex, (column, type) ->
+            val value =
+                TestDataGenerator.generate(
+                    columnName = column,
+                    dataType = type,
+                    rowNum = rowIndex + 1
+                )
+            when (value) {
+                is String -> row.createCell(colIndex).setCellValue(value)
+                is Double -> row.createCell(colIndex).setCellValue(value)
+                is Long -> row.createCell(colIndex).setCellValue(value.toDouble())
+                is Int -> row.createCell(colIndex).setCellValue(value.toDouble())
+                else -> row.createCell(colIndex).setCellValue(value.toString())
+            }
+        }
+    }
+
+    redshiftColumns.keys.indices.forEach{
+        sheet.autoSizeColumn(it)
+    }
+
+    val csvFileName = "${tableName}.csv"
+    val outputFile = File(
+        csvFileName
+    )
+//    outputFile.parentFile.mkdirs()
+//    outputFile.createNewFile()
+    FileOutputStream(outputFile).use {
+        workbook.write(it)
+    }
+    workbook.close()
+
+
+    val s3 = S3Client.builder().build()
+    s3.putObject(
+        PutObjectRequest.builder()
+            .bucket("dpr-working-development")
+            .key("datahub-test-data/${tableName}")
+            .build(),
+        RequestBody.fromFile(outputFile)
+    )
+
+    return csvFileName
+}
+
+fun sqlScriptGeneration(tableName: String, redshiftColumns: Map<String, String>, csvFileName: String): String{
 
     // - Create a redshift table with the above details
     val createTable = buildString {
@@ -155,101 +239,15 @@ fun main() {
     println(createTable)
 
 
-// ---- Generate the test data for the column name and datatype for the table
-// ---- Create the CSV
-// ---- upload it in the s3
-// ---- Once uploaded it to s3 + Create a sql script to load redshift table
+//    val copySql = """
+//                  COPY datamart.datahub_test.$tableName
+//                  FROM 's3://dpr-working-development/datahub-test-data/$csvFileName'
+//                  CSV
+//                  IGNOREHEADER 1;
+//                  """.trimIndent()
 
-//   val copySql = generateTestData(redshiftColumns as Map<String, String>, tableName, 1)
-//   println(copySql)
+    return createTable
 
-// - Append createTable + copySql and pass it on to the Redshift
-
-//    createTable + copySql
-}
-
-fun getSchemaFields(json: String, datasetId: String): Map<String?, String?>? {
-    val mapper = ObjectMapper()
-    val root = mapper.readTree(json)
-
-    val dataset = root["dataset"]
-        ?.firstOrNull { it["id"]?.asText() == datasetId }
-
-    val fieldMap = dataset?.get("schema")["field"]
-        ?.associate { field ->
-            field["name"].asText() to field["type"].asText()
-        }
-
-    return fieldMap
-}
-
-fun generateTestData(redshiftColumns:Map<String, String>, tableName: String,  rowCount: Int = 1): String {
-    val workbook = XSSFWorkbook()
-    val sheet = workbook.createSheet(tableName)
-    val headerRow = sheet.createRow(0)
-
-    redshiftColumns.keys.forEachIndexed { index, column ->
-        headerRow.createCell(index).setCellValue(column)
-    }
-
-    repeat(rowCount) { rowIndex ->
-        val row = sheet.createRow(rowIndex + 1)
-        redshiftColumns.entries.forEachIndexed { colIndex, (column, type) ->
-            println(" column: " +  column)
-            val value =
-                TestDataGenerator.generate(
-                    columnName = column,
-                    dataType = type,
-                    rowNum = rowIndex + 1
-                )
-
-            println(" value: " +  value)
-            when (value) {
-                is String -> row.createCell(colIndex).setCellValue(value)
-                is Double -> row.createCell(colIndex).setCellValue(value)
-                is Long -> row.createCell(colIndex).setCellValue(value.toDouble())
-                is Int -> row.createCell(colIndex).setCellValue(value.toDouble())
-                else -> row.createCell(colIndex).setCellValue(value.toString())
-            }
-        }
-    }
-
-    redshiftColumns.keys.indices.forEach{
-        sheet.autoSizeColumn(it)
-    }
-    val csvFileName = "${tableName}.csv"
-    val outputFile = File(
-        csvFileName
-    )
-    outputFile.parentFile.mkdirs()
-    outputFile.createNewFile()
-    FileOutputStream(outputFile).use {
-        workbook.write(it)
-    }
-    workbook.close()
-
-    println("Created: ${outputFile.absolutePath}")
-
-    val s3 = S3Client.builder().build()
-    s3.putObject(
-        PutObjectRequest.builder()
-            .bucket("dpr-working-development")
-            .key("datahub-test-data/${tableName}")
-            .build(),
-        RequestBody.fromFile(outputFile)
-    )
-
-    println("Generated $csvFileName")
-
-    val copySql = """
-                        COPY datamart.datahub_test.$tableName
-                        FROM 's3://dpr-working-development/datahub-test-data/$csvFileName'
-                        IAM_ROLE 'role'
-                        CSV
-                        IGNOREHEADER 1;
-                        """.trimIndent()
-
-    return copySql
 }
 
 main()
