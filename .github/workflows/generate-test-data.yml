@@ -6,6 +6,10 @@ on:
       - DPR2-2833-Test-Data-generation-script
   workflow_dispatch: # Allows manual triggering from the GitHub UI
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   run-kotlin-job:
     name: Upload to s3 ${{ inputs.deployEnv || 'dev' }} env
@@ -32,6 +36,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6
         with:
           role-to-assume: arn:aws:iam::${{ secrets.ACCOUNT_NUMBER }}:role/dpr-dpd-table-github-deploy-role
+          role-session-name: githubactionsrolesession
           aws-region: eu-west-2
 
       - name: Generate SQL
@@ -44,68 +49,3 @@ jobs:
           echo "sql<<EOF" >> $GITHUB_OUTPUT
           echo "$SQL" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-
-#      - name: Execute SQL in Redshift
-#        run: |
-#            aws redshift-data execute-statement \
-#              --cluster-identifier redshift-dev \
-#              --database database \
-#              --db-user user \
-#              --sql "${{ steps.generate_sql.outputs.sql }}"
-#
-#
-#    generate-test-data:
-#      name: Create Redshift table in ${{ inputs.deployEnv || 'dev' }} env
-#      environment: ${{ inputs.deployEnv || 'dev' }}
-#      runs-on: ubuntu-latest
-#
-#      steps:
-#      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
-#
-#      - name: Configure AWS Credentials
-#        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
-#        with:
-#          role-to-assume: "arn:aws:iam::${{ secrets.ACCOUNT_NUMBER }}:role/dpr-dpd-table-github-deploy-role"
-#          role-session-name: githubactionsrolesession
-#          aws-region: "eu-west-2"
-#
-#      - name: Validate Redshift connectivity
-#        run: |
-#          echo "Testing Redshift connectivity..."
-#
-#          STATEMENT_ID=$(aws redshift-data execute-statement \
-#            --cluster-identifier dpr-redshift-development \
-#            --database datamart \
-#            --db-user dpruser \
-#            --sql "SELECT 1;" \
-#            --query 'Id' \
-#            --output text)
-#
-#          echo "Statement ID: $STATEMENT_ID"
-#
-#          # Wait for statement to complete
-#          for i in {1..30}; do
-#            STATUS=$(aws redshift-data describe-statement \
-#              --id "$STATEMENT_ID" \
-#              --query 'Status' \
-#              --output text)
-#
-#            echo "Attempt $i/30 - Status: $STATUS"
-#
-#            if [ "$STATUS" = "FINISHED" ]; then
-#              echo "_____Redshift connectivity validated successfully"
-#              exit 0
-#            elif [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "ABORTED" ]; then
-#              echo "_____Redshift query failed"
-#              aws redshift-data describe-statement --id "$STATEMENT_ID"
-#              exit 1
-#            fi
-#
-#            sleep 2
-#          done
-#
-#          echo "____Timeout waiting for Redshift query"
-#          exit 1
-#
-
-
