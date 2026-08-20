@@ -127,10 +127,10 @@ fun main() {
 // ---- upload it in the s3
 
    val csvFileName = generateTestData(tableName, redshiftColumns as Map<String, String>,  1)
-   println(csvFileName)
+//   println(csvFileName)
 
 // - Generate sql script for, createTable + copySql and pass it on to the Redshift
-//    sqlScriptGeneration(tableName, redshiftColumns,  csvFileName)
+    sqlScriptGeneration(tableName, redshiftColumns,  csvFileName)
 
 }
 
@@ -202,8 +202,7 @@ fun generateTestData(tableName: String, redshiftColumns:Map<String, String>,   r
     val outputFile = File(
         csvFileName
     )
-//    outputFile.parentFile.mkdirs()
-//    outputFile.createNewFile()
+
     FileOutputStream(outputFile).use {
         workbook.write(it)
     }
