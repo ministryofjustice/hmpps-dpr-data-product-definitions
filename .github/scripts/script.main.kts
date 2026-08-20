@@ -214,7 +214,7 @@ fun generateTestData(tableName: String, redshiftColumns:Map<String, String>,   r
     s3.putObject(
         PutObjectRequest.builder()
             .bucket("dpr-working-development")
-            .key("datahub-test-data/${tableName}")
+            .key("datahub-test-data/${csvFileName}")
             .build(),
         RequestBody.fromFile(outputFile)
     )
