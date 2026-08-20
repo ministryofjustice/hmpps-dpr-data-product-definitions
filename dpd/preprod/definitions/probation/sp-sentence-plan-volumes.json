@@ -48,7 +48,7 @@
             "id": "sentence-plan-count-by-date-range",
             "name": "SP summary",
             "datasource": "datamart",
-            "query": "select trunc(p.created_at) as ts, '$TBC' AS link, count(*) as daily_count, SUM (daily_count) over (order by ts rows unbounded preceding) AS total_to_date FROM datamart.prisons.sentenceplanassessmentview_sentence_plan p LEFT JOIN datamart.prisons.sentenceplanassessmentview_goal g ON g.sentence_plan_id = p.id WHERE exists (select p.id from datamart.prisons.sentenceplanassessmentview_goal AS g) GROUP BY ts ORDER BY ts",
+            "query": "select trunc(p.created_at) as ts, '$TBC' AS link, count(*) as plan_count, count(a.status) as agreement_count, COUNT(CASE WHEN i.type = 'CRN' THEN 1 END) AS crn_count, COUNT(CASE WHEN i.type = 'NOMIS' THEN 1 END) AS nomis_count, COUNT(CASE WHEN a.status = 'AGREED' THEN 1 END) AS agreed_count, plan_count - agreement_count AS draft_count, COUNT(CASE WHEN a.status = 'COULD_NOT_ANSWER' THEN 1 END) AS could_not_answer_count, COUNT(CASE WHEN a.status = 'DO_NOT_AGREE' THEN 1 END) AS not_agreed_count, COUNT(CASE WHEN a.status = 'UPDATED_AGREED' THEN 1 END) AS updated_agreed_count, COUNT(CASE WHEN a.status = 'UPDATED_COULD_NOT_AGREE' THEN 1 END) AS updated_could_not_agree, round(crn_count::FLOAT4/plan_count * 100,1) as crn_pct, round(nomis_count::FLOAT4/plan_count * 100,1) as nomis_pct, round(agreed_count::FLOAT4/NULLIF(agreement_count,0) * 100,1) as agreed_pct, round(draft_count::FLOAT4/plan_count * 100,1) as draft_pct, round(could_not_answer_count::FLOAT4/NULLIF(agreement_count,0) * 100,1) as could_not_answer_pct, round(not_agreed_count::FLOAT4/NULLIF(agreement_count,0) * 100,1) as not_agreed_pct, round(updated_agreed_count::FLOAT4/NULLIF(agreement_count,0) * 100,1) as updated_agreed_count_pct, round(updated_could_not_agree::FLOAT4/NULLIF(agreement_count,0) * 100,1) as updated_could_not_agree_pct, SUM (plan_count) over (order by ts rows unbounded preceding) AS total_to_date FROM datamart.prisons.sentenceplanassessmentview_sentence_plan p LEFT JOIN datamart.prisons.sentenceplanassessmentview_sentence_plan_identifier i ON i.sentence_plan_id = p.snapshot_id LEFT JOIN datamart.prisons.sentenceplanassessmentview_plan_agreement a ON a.sentence_plan_id = p.snapshot_id group by ts order by ts ",
             "schema": {
                 "field": [
                     {
@@ -66,11 +66,96 @@
                         "name": "link",
                         "type": "int",
                         "display": "Link",
-                        "formula": "make_url('/dpr/request-report/report/dpr_sp001-sentence-plan-volumes/sentence-plan-by-date-report/filters?filters.created_at.start=${ts}&filters.created_at.end=${ts}',${daily_count},TRUE)"
+                        "formula": "make_url('/dpr/request-report/report/dpr_sp001-sentence-plan-volumes/sentence-plan-by-date-report/filters?filters.created_at.start=${ts}&filters.created_at.end=${ts}',${plan_count},TRUE)"
                     },
                     {
-                        "name": "daily_count",
+                        "name": "plan_count",
                         "type": "int",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "agreement_count",
+                        "type": "int",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "crn_count",
+                        "type": "int",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "nomis_count",
+                        "type": "int",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "agreed_count",
+                        "type": "int",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "draft_count",
+                        "type": "int",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "could_not_answer_count",
+                        "type": "int",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "not_agreed_count",
+                        "type": "int",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "updated_agreed_count",
+                        "type": "int",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "updated_could_not_agree",
+                        "type": "int",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "crn_pct",
+                        "type": "float",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "nomis_pct",
+                        "type": "float",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "agreed_pct",
+                        "type": "float",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "draft_pct",
+                        "type": "float",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "could_not_answer_pct",
+                        "type": "float",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "not_agreed_pct",
+                        "type": "float",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "updated_agreed_count_pct",
+                        "type": "float",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "updated_could_not_agree_pct",
+                        "type": "float",
                         "display": "Count"
                     },
                     {
@@ -253,8 +338,20 @@
                                     "display": "Agreed"
                                 },
                                 {
+                                    "name": "DO_NOT_AGREE",
+                                    "display": "Do not agree"
+                                },
+                                {
                                     "name": "COULD_NOT_ANSWER",
                                     "display": "Could not answer"
+                                },
+                                {
+                                    "name": "UPDATED_COULD_NOT_AGREE",
+                                    "display": "Updated Not Agree"
+                                },
+                                {
+                                    "name": "UPDATED_AGREED",
+                                    "display": "Updated Agreed"
                                 }
                             ]
                         }
@@ -286,7 +383,22 @@
                         "display": "Drug",
                         "visible": "true",
                         "sortable": false,
-                        "defaultsort": false
+                        "defaultsort": false,
+                        "filter": {
+                            "index": 1,
+                            "type": "multiselect",
+                            "interactive": "true",
+                            "staticoptions": [
+                                {
+                                    "name": "0",
+                                    "display": "0"
+                                },
+                                {
+                                    "name": "1",
+                                    "display": "1"
+                                }
+                            ]
+                        }
                     },
                     {
                         "name": "$ref:finance_count",
@@ -344,6 +456,30 @@
                                 {
                                     "name": "0",
                                     "display": "0 Goals"
+                                },
+                                {
+                                    "name": "1",
+                                    "display": "1 Goals"
+                                },
+                                {
+                                    "name": "2",
+                                    "display": "2 Goals"
+                                },
+                                {
+                                    "name": "3",
+                                    "display": "3 Goals"
+                                },
+                                {
+                                    "name": "4",
+                                    "display": "4 Goals"
+                                },
+                                {
+                                    "name": "5",
+                                    "display": "5 Goals"
+                                },
+                                {
+                                    "name": "6",
+                                    "display": "6 Goals"
                                 }
                             ]
                         }
@@ -441,8 +577,124 @@
                                         "display": "Count"
                                     },
                                     {
+                                        "id": "$ref:draft_count",
+                                        "display": "# No agreement"
+                                    },
+                                    {
+                                        "id": "$ref:crn_pct",
+                                        "display": "CRN %"
+                                    },
+                                    {
+                                        "id": "$ref:nomis_pct",
+                                        "display": "Nomis %"
+                                    },
+                                    {
+                                        "id": "$ref:agreed_pct",
+                                        "display": "Agreed %"
+                                    },
+                                    {
+                                        "id": "$ref:not_agreed_pct",
+                                        "display": "Not agreed %"
+                                    },
+                                    {
+                                        "id": "$ref:could_not_answer_pct",
+                                        "display": "Could not answer %"
+                                    },
+                                    {
+                                        "id": "$ref:updated_agreed_count_pct",
+                                        "display": "Updated Agreed %"
+                                    },
+                                    {
+                                        "id": "$ref:updated_could_not_agree_pct",
+                                        "display": "Updated count not agree %"
+                                    },
+                                    {
                                         "id": "$ref:total_to_date",
                                         "display": "Total to date"
+                                    }
+                                ],
+                                "expectNull": false
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "agree-charts",
+                    "display": "Plans created line charts",
+                    "visualisation": [
+                        {
+                            "id": "pc2",
+                            "type": "line-timeseries",
+                            "display": "Plan created",
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "display": "Code"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "display": "Date"
+                                    },
+                                    {
+                                        "id": "$ref:plan_count",
+                                        "display": "Plan Count"
+                                    }
+                                ],
+                                "expectNull": false
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "agree-charts",
+                    "display": "Plans agreement line charts",
+                    "visualisation": [
+                        {
+                            "id": "pc2",
+                            "type": "line-timeseries",
+                            "display": "Plans agreed",
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "display": "Code"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "display": "Date"
+                                    },
+                                    {
+                                        "id": "$ref:agreed_pct",
+                                        "display": "Agreed %"
+                                    }
+                                ],
+                                "expectNull": false
+                            }
+                        },
+                        {
+                            "id": "pc3",
+                            "type": "line-timeseries",
+                            "display": "Plan not agreed",
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "display": "Code"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "display": "Date"
+                                    },
+                                    {
+                                        "id": "$ref:not_agreed_pct",
+                                        "display": "Agreed %"
                                     }
                                 ],
                                 "expectNull": false
@@ -480,6 +732,10 @@
                                     {
                                         "id": "$ref:created_by_user_id",
                                         "display": "User ID"
+                                    },
+                                    {
+                                        "id": "$ref:plan_count",
+                                        "display": "Created"
                                     },
                                     {
                                         "id": "$ref:agreement_count",
