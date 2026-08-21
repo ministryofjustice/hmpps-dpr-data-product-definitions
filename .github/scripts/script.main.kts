@@ -225,7 +225,7 @@ fun sqlScriptGeneration(tableName: String, redshiftColumns: Map<String, String>,
 
     // - Create a redshift table with the above details
     val createTable = buildString {
-        appendLine("BEGIN; DROP TABLE IF EXISTS $tableName; CREATE TABLE datahub_test.$tableName (")
+        appendLine("BEGIN; DROP TABLE IF EXISTS datahub_test.$tableName; CREATE TABLE datahub_test.$tableName (")
         append(
             redshiftColumns?.entries?.joinToString(",\n") {
                 "    ${it.key} ${it.value}"
