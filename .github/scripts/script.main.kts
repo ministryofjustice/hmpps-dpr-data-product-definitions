@@ -236,12 +236,12 @@ fun sqlScriptGeneration(tableName: String, redshiftColumns: Map<String, String>,
         appendLine()
         appendLine("); ")
         appendLine("""
-                COPY datamart.datahub_test.$tableName
+                COPY datahub_test.$tableName
                 FROM 's3://dpr-working-development/datahub-test-data/$csvFileName'
                 CSV
                 IGNOREHEADER 1;
                 """.trimIndent())
-        appendLine("COMMIT; ")
+        appendLine(" COMMIT; ")
     }
 
     return sqlScript
