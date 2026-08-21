@@ -15,6 +15,7 @@ import kotlin.random.Random
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
+import java.io.OutputStreamWriter
 
 // ==========================================
 // - Input DPD from dpd/dev/definitions/prisons/test-resources
@@ -203,8 +204,20 @@ fun generateTestData(tableName: String, redshiftColumns:Map<String, String>,   r
         csvFileName
     )
 
-    FileOutputStream(outputFile).use {
-        workbook.write(it)
+    FileOutputStream(outputFile).use {fos ->
+        // Wrap the FileOutputStream with an OutputStreamWriter using Charsets.UTF_8
+        OutputStreamWriter(fos, Charsets.UTF_8).use { writer ->
+            // Optional: Write UTF-8 Byte Order Mark (BOM) so Excel reads CSV accents correctly
+            writer.write("\ufeff")
+
+            // Loop rows and cells to generate standard flat text CSV
+            for (sheet in workbook) {
+                for (row in sheet) {
+                    val rowData = row.map { it.toString() }.joinToString(",")
+                    writer.write(rowData + "\n")
+                }
+            }
+        }
     }
     workbook.close()
 
@@ -220,6 +233,8 @@ fun generateTestData(tableName: String, redshiftColumns:Map<String, String>,   r
 
     return csvFileName
 }
+
+
 
 fun sqlScriptGeneration(tableName: String, redshiftColumns: Map<String, String>, csvFileName: String): String{
 
