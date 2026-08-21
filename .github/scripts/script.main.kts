@@ -130,8 +130,8 @@ fun main() {
 //   println(csvFileName)
 
 // - Generate sql script for, createTable + copySql and pass it on to the Redshift
-    sqlScriptGeneration(tableName, redshiftColumns,  csvFileName)
-
+    val sqlScript = sqlScriptGeneration(tableName, redshiftColumns,  csvFileName)
+    println(sqlScript)
 }
 
 fun getSchemaFields(json: String, datasetId: String): Map<String, String>? {
@@ -224,28 +224,27 @@ fun generateTestData(tableName: String, redshiftColumns:Map<String, String>,   r
 fun sqlScriptGeneration(tableName: String, redshiftColumns: Map<String, String>, csvFileName: String): String{
 
     // - Create a redshift table with the above details
-    val createTable = buildString {
-        appendLine("BEGIN; DROP TABLE IF EXISTS datahub_test.$tableName; CREATE TABLE datahub_test.$tableName (")
+    val sqlScript = buildString {
+        appendLine("BEGIN; ")
+        appendLine("DROP TABLE IF EXISTS datahub_test.$tableName; ")
+        appendLine("CREATE TABLE datahub_test.$tableName (")
         append(
             redshiftColumns?.entries?.joinToString(",\n") {
                 "    ${it.key} ${it.value}"
             }
         )
         appendLine()
-        appendLine("); COMMIT;")
+        appendLine("); ")
+        appendLine("""
+                COPY datamart.datahub_test.$csvFileName
+                FROM 's3://dpr-working-development/datahub-test-data/$csvFileName'
+                CSV
+                IGNOREHEADER 1;
+                """.trimIndent())
+        appendLine("COMMIT; ")
     }
 
-    println(createTable)
-
-
-//    val copySql = """
-//                  COPY datamart.datahub_test.$tableName
-//                  FROM 's3://dpr-working-development/datahub-test-data/$csvFileName'
-//                  CSV
-//                  IGNOREHEADER 1;
-//                  """.trimIndent()
-
-    return createTable
+    return sqlScript
 
 }
 
