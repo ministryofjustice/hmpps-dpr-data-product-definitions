@@ -123,7 +123,7 @@ fun main() {
 // ---- Create the CSV
 // ---- upload it in the s3
 
-   val csvFileName = generateTestData(tableName, redshiftColumns as Map<String, String>,  1)
+   val csvFileName = generateTestData(tableName, redshiftColumns as Map<String, String>,  100)
 //   println(csvFileName)
 
 // - Generate sql script for, createTable + copySql and pass it on to the Redshift
