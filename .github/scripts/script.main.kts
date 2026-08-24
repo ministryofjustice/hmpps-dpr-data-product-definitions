@@ -199,6 +199,9 @@ fun generateTestData(tableName: String, redshiftColumns:Map<String, String>,   r
 }
 
 fun sqlScriptGeneration(tableName: String, redshiftColumns: Map<String, String>, csvFileName: String): String{
+    // Get AWS account ID from environment or use default
+    val accountId = System.getenv("AWS_ACCOUNT_ID") ?: "771283872747"
+    val iamRoleArn = "arn:aws:iam::${accountId}:role/dpr-redshift-cluster-role"
 
     // - Create a redshift table with the above details
     val sqlScript = buildString {
@@ -214,6 +217,7 @@ fun sqlScriptGeneration(tableName: String, redshiftColumns: Map<String, String>,
         appendLine("); ")
         appendLine("COPY datahub_test.$tableName ")
         appendLine("FROM 's3://dpr-working-development/datahub-test-data/$csvFileName' ")
+        appendLine("IAM_ROLE '$iamRoleArn' ")
         appendLine("CSV ")
         appendLine("IGNOREHEADER 1;")
         appendLine(" COMMIT; ")
