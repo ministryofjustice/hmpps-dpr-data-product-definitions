@@ -2,20 +2,19 @@
 
 @file:DependsOn("com.google.code.gson:gson:2.10.1")
 @file:DependsOn("com.fasterxml.jackson.core:jackson-databind:2.18.2")
-@file:DependsOn("org.apache.poi:poi-ooxml:5.2.5")
+@file:DependsOn("com.opencsv:opencsv:5.9")
 @file:DependsOn("software.amazon.awssdk:s3:2.25.53")
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import com.opencsv.CSVWriter
 import java.io.File
-import java.io.FileOutputStream
 import java.time.LocalDate
 import kotlin.random.Random
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
-import java.io.OutputStreamWriter
+import java.io.FileWriter
 
 // ==========================================
 // - Input DPD from dpd/dev/definitions/prisons/test-resources
@@ -168,59 +167,28 @@ fun getRedshiftColumnsMap (root: String, datasetId: String) : Map<String, String
 
 
 fun generateTestData(tableName: String, redshiftColumns:Map<String, String>,   rowCount: Int = 1): String {
-    val workbook = XSSFWorkbook()
-    val sheet = workbook.createSheet(tableName)
-    val headerRow = sheet.createRow(0)
+    val csvFileName = "$tableName.csv"
+    val outputFile = File(csvFileName)
 
-    redshiftColumns.keys.forEachIndexed { index, column ->
-        headerRow.createCell(index).setCellValue(column)
-    }
+    CSVWriter(FileWriter(outputFile)).use { writer ->
 
-    repeat(rowCount) { rowIndex ->
-        val row = sheet.createRow(rowIndex + 1)
-        redshiftColumns.entries.forEachIndexed { colIndex, (column, type) ->
-            val value =
+        // Header row
+        writer.writeNext(redshiftColumns.keys.toTypedArray())
+
+        // Data rows
+        repeat(rowCount) { rowIndex ->
+
+            val row = redshiftColumns.entries.map { (column, type) ->
                 TestDataGenerator.generate(
                     columnName = column,
                     dataType = type,
                     rowNum = rowIndex + 1
-                )
-            when (value) {
-                is String -> row.createCell(colIndex).setCellValue(value)
-                is Double -> row.createCell(colIndex).setCellValue(value)
-                is Long -> row.createCell(colIndex).setCellValue(value.toDouble())
-                is Int -> row.createCell(colIndex).setCellValue(value.toDouble())
-                else -> row.createCell(colIndex).setCellValue(value.toString())
+                ).toString()
             }
+
+            writer.writeNext(row.toTypedArray())
         }
     }
-
-    redshiftColumns.keys.indices.forEach{
-        sheet.autoSizeColumn(it)
-    }
-
-    val csvFileName = "${tableName}.csv"
-    val outputFile = File(
-        csvFileName
-    )
-
-    FileOutputStream(outputFile).use {fos ->
-        // Wrap the FileOutputStream with an OutputStreamWriter using Charsets.UTF_8
-        OutputStreamWriter(fos, Charsets.UTF_8).use { writer ->
-            // Optional: Write UTF-8 Byte Order Mark (BOM) so Excel reads CSV accents correctly
-            writer.write("\ufeff")
-
-            // Loop rows and cells to generate standard flat text CSV
-            for (sheet in workbook) {
-                for (row in sheet) {
-                    val rowData = row.map { it.toString() }.joinToString(",")
-                    writer.write(rowData + "\n")
-                }
-            }
-        }
-    }
-    workbook.close()
-
 
     val s3 = S3Client.builder().build()
     s3.putObject(
@@ -233,8 +201,6 @@ fun generateTestData(tableName: String, redshiftColumns:Map<String, String>,   r
 
     return csvFileName
 }
-
-
 
 fun sqlScriptGeneration(tableName: String, redshiftColumns: Map<String, String>, csvFileName: String): String{
 
@@ -260,5 +226,6 @@ fun sqlScriptGeneration(tableName: String, redshiftColumns: Map<String, String>,
     return sqlScript
 
 }
+
 
 main()
