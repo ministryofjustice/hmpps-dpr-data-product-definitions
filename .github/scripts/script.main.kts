@@ -98,9 +98,6 @@ object TestDataGenerator {
 // =====================================================
 
 fun main() {
-//    println("Hello from Kotlin triggered by GitHub Actions!")
-//    println("Working directory = ${System.getProperty("user.dir")}")
-
     // - Load the DPD from dpd/dev/definitions/prisons/test-resources
     val objectMapper = ObjectMapper()
     val file = File(
@@ -114,13 +111,13 @@ fun main() {
 
     val reports = root["report"]
 
-    val datasetId = reports
-        .first { it["name"].asText() == "By IEP Level and IEP Date" }
-        .get("dataset")
-        .asText()
+    val firstDatasetId = reports
+        .map { it["dataset"].asText() }
+        .distinct()
+        .first()
 
     // - create a map with the column name and datatype
-    val redshiftColumns = getRedshiftColumnsMap(root.toString(), datasetId)
+    val redshiftColumns = getRedshiftColumnsMap(root.toString(), firstDatasetId)
 
 // ---- Generate the test data for the column name and datatype for the table
 // ---- Create the CSV
@@ -164,7 +161,6 @@ fun getRedshiftColumnsMap (root: String, datasetId: String) : Map<String, String
 
     return redshiftColumns
 }
-
 
 fun generateTestData(tableName: String, redshiftColumns:Map<String, String>,   rowCount: Int = 1): String {
     val csvFileName = "$tableName.csv"
@@ -224,8 +220,6 @@ fun sqlScriptGeneration(tableName: String, redshiftColumns: Map<String, String>,
     }
 
     return sqlScript
-
 }
-
 
 main()
