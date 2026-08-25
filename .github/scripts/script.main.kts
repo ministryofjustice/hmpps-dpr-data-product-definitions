@@ -120,10 +120,6 @@ fun loadDPDtoGenerateTestData(): Map<String, Map<String, String>> {
                 .distinct()
                 .first()
 
-            println("Processing file: ${file.name}")
-            println("Table Name: $tableName")
-            println("Dataset Id: $firstDatasetId")
-
             val redshiftColumns = getRedshiftColumnsMap(root.toString(), firstDatasetId)
 
             tableName to redshiftColumns
