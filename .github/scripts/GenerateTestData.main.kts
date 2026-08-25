@@ -72,6 +72,7 @@ object TestDataGenerator {
             "VARCHAR(30)", "VARCHAR" -> generateVarchar(dataType)
             "DOUBLE PRECISION" -> (1..100).random().toDouble()
             "BIGINT" -> (1..10000).random().toLong()
+            "INTEGER" -> (1..10000).random()
             "DATE" -> LocalDate.now().minusDays((0..365).random().toLong()).toString()
             else -> ""
         }
@@ -79,9 +80,6 @@ object TestDataGenerator {
 
 // =====================================================
 // 2. MAIN:
-//       - Load the DPD from dpd/dev/definitions/prisons/test-resources
-//       - Generate the test data csv and upload it to S3
-//       - Generate sql script for, createTable + copySql
 // =====================================================
 
 fun main() {
@@ -134,7 +132,8 @@ fun getRedshiftColumnsMap (root: String, datasetId: String) : Map<String, String
         "string" to "VARCHAR(30)",
         "date" to "DATE",
         "double" to "DOUBLE PRECISION",
-        "long" to "BIGINT"
+        "long" to "BIGINT",
+        "int" to "INTEGER"
     )
 
     val redshiftColumns = fields.mapValues { (_, type) ->
