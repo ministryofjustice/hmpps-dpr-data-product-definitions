@@ -16,12 +16,6 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.io.FileWriter
 
-// ==========================================
-// - Input DPD from dpd/dev/definitions/prisons/test-resources
-// - S3 test-data csv Upload
-// - Redshift sql script (Create table + Load the test-data to the table)
-// - Create the Test DPD
-// ==========================================
 
 // ==========================================
 // 1. CONSTANTS
@@ -84,70 +78,62 @@ object TestDataGenerator {
 }
 
 // =====================================================
-// Main
-// - Load the DPD from dpd/dev/definitions/prisons/test-resources
-// - create a map with the column name and datatype
-// - get the Redshift datatypes for the types of the column
-// - Create a redshift table with the above details
-// - Generate the test data for the column name and datatype for the table
-// - Create the CSV
-// - upload it in the s3
-// - Once uploaded it to s3 + Create a sql script to load redshift table
-// - Connect to redshift and execute the above 2 sql script one for creating a redshift table and loading the table
-// - create a test DPD with the redshift table select statement
+// 2. MAIN:
+//       - Load the DPD from dpd/dev/definitions/prisons/test-resources
+//       - Generate the test data csv and upload it to S3
+//       - Generate sql script for, createTable + copySql
 // =====================================================
 
 fun main() {
-    // - Load the DPD from dpd/dev/definitions/prisons/test-resources
-    val objectMapper = ObjectMapper()
-    val file = File(
-        "dpd/dev/definitions/prisons/test-resources/ors-prisoner-iep-levels.json"
-    )
-    val root: JsonNode = objectMapper.readTree(file)
+    // Load the DPD from dpd/dev/definitions/prisons/test-resources
+    val tableToColumnsMap: Map<String, Map<String, String>> = loadDPDtoGenerateTestData()
 
-    val tableName = file.nameWithoutExtension
-        .replace("-", "_")
-        .uppercase()
+    // Generate the test data csv and upload it to S3
+    generateTestData(tableToColumnsMap,  100)
 
-    val reports = root["report"]
-
-    val firstDatasetId = reports
-        .map { it["dataset"].asText() }
-        .distinct()
-        .first()
-
-    // - create a map with the column name and datatype
-    val redshiftColumns = getRedshiftColumnsMap(root.toString(), firstDatasetId)
-
-// ---- Generate the test data for the column name and datatype for the table
-// ---- Create the CSV
-// ---- upload it in the s3
-
-   val csvFileName = generateTestData(tableName, redshiftColumns as Map<String, String>,  100)
-//   println(csvFileName)
-
-// - Generate sql script for, createTable + copySql and pass it on to the Redshift
-    val sqlScript = sqlScriptGeneration(tableName, redshiftColumns,  csvFileName)
+    // Generate sql script for, createTable + copySql
+    val sqlScript = sqlScriptGeneration(tableToColumnsMap)
     println(sqlScript)
 }
 
-fun getSchemaFields(json: String, datasetId: String): Map<String, String>? {
-    val mapper = ObjectMapper()
-    val root = mapper.readTree(json)
+// ==========================================
+// 3. SUPPORTING METHODS for Main
+// ==========================================
 
-    val dataset = root["dataset"]
-        ?.firstOrNull { it["id"]?.asText() == datasetId }
+fun loadDPDtoGenerateTestData(): Map<String, Map<String, String>> {
+    val objectMapper = ObjectMapper()
+    val directory = File("dpd/dev/definitions/prisons/test-resources")
+    val tableToColumnsMap: Map<String, Map<String, String>> = directory
+        .listFiles { file -> file.isFile && file.extension == "json" }
+        ?.associate { file ->
 
-    val fieldMap = dataset?.get("schema")["field"]
-        ?.associate { field ->
-            field["name"].asText() to field["type"].asText()
-        }
+            val root: JsonNode = objectMapper.readTree(file)
 
-    return fieldMap
+            val tableName = file.nameWithoutExtension
+                .replace("-", "_")
+                .uppercase()
+
+            val reports = root["report"]
+
+            val firstDatasetId = reports
+                .map { it["dataset"].asText() }
+                .distinct()
+                .first()
+
+            println("Processing file: ${file.name}")
+            println("Table Name: $tableName")
+            println("Dataset Id: $firstDatasetId")
+
+            val redshiftColumns = getRedshiftColumnsMap(root.toString(), firstDatasetId)
+
+            tableName to redshiftColumns
+        } ?: emptyMap()
+
+    return tableToColumnsMap
 }
 
-fun getRedshiftColumnsMap (root: String, datasetId: String) : Map<String, String>? {
-    val fields = getSchemaFields(root.toString(), datasetId)
+fun getRedshiftColumnsMap (root: String, datasetId: String) : Map<String, String> {
+    val fields = getSchemaFields(root, datasetId)
     val redshiftTypeMapping = mapOf(
         "string" to "VARCHAR(30)",
         "date" to "DATE",
@@ -155,71 +141,95 @@ fun getRedshiftColumnsMap (root: String, datasetId: String) : Map<String, String
         "long" to "BIGINT"
     )
 
-    val redshiftColumns = fields?.mapValues { (_, type) ->
-        type?.let { redshiftTypeMapping[it.lowercase()] } ?: "VARCHAR(30)"
+    val redshiftColumns = fields.mapValues { (_, type) ->
+        redshiftTypeMapping[type.lowercase()] ?: "VARCHAR(30)"
     }
 
     return redshiftColumns
 }
 
-fun generateTestData(tableName: String, redshiftColumns:Map<String, String>,   rowCount: Int = 1): String {
-    val csvFileName = "$tableName.csv"
-    val outputFile = File(csvFileName)
+fun getSchemaFields(json: String, datasetId: String): Map<String, String> {
+    val mapper = ObjectMapper()
+    val root = mapper.readTree(json)
 
-    CSVWriter(FileWriter(outputFile)).use { writer ->
+    val dataset = root["dataset"]
+        ?.firstOrNull { it["id"]?.asText() == datasetId }
+        ?: return emptyMap()
 
-        // Header row
-        writer.writeNext(redshiftColumns.keys.toTypedArray())
-
-        // Data rows
-        repeat(rowCount) { rowIndex ->
-
-            val row = redshiftColumns.entries.map { (column, type) ->
-                TestDataGenerator.generate(
-                    columnName = column,
-                    dataType = type,
-                    rowNum = rowIndex + 1
-                ).toString()
-            }
-
-            writer.writeNext(row.toTypedArray())
+    val fieldMap = dataset.get("schema")["field"]
+        .associate { field ->
+            field["name"].asText() to field["type"].asText()
         }
-    }
 
-    val s3 = S3Client.builder().build()
-    s3.putObject(
-        PutObjectRequest.builder()
-            .bucket("dpr-working-development")
-            .key("datahub-test-data/${csvFileName}")
-            .build(),
-        RequestBody.fromFile(outputFile)
-    )
-
-    return csvFileName
+    return fieldMap
 }
 
-fun sqlScriptGeneration(tableName: String, redshiftColumns: Map<String, String>, csvFileName: String): String{
+fun generateTestData( tableToColumnsMap: Map<String, Map<String, String>>, rowCount: Int = 1) {
+    tableToColumnsMap.forEach { (tableName, redshiftColumns) ->
+        val csvFileName = "$tableName.csv"
+        val outputFile = File(csvFileName)
+
+        CSVWriter(FileWriter(outputFile)).use { writer ->
+
+            // Header row
+            writer.writeNext(redshiftColumns.keys.toTypedArray())
+
+            // Data rows
+            repeat(rowCount) { rowIndex ->
+
+                val row = redshiftColumns.entries.map { (column, type) ->
+                    TestDataGenerator.generate(
+                        columnName = column,
+                        dataType = type,
+                        rowNum = rowIndex + 1
+                    ).toString()
+                }
+
+                writer.writeNext(row.toTypedArray())
+            }
+        }
+
+        val s3 = S3Client.builder().build()
+        s3.putObject(
+            PutObjectRequest.builder()
+                .bucket("dpr-working-development")
+                .key("datahub-test-data/${csvFileName}")
+                .build(),
+            RequestBody.fromFile(outputFile)
+        )
+    }
+}
+
+fun sqlScriptGeneration( tableToColumnsMap: Map<String, Map<String, String>>): String {
     // Get AWS account ID from environment or use default
     val accountId = System.getenv("AWS_ACCOUNT_ID") ?: "771283872747"
     val iamRoleArn = "arn:aws:iam::${accountId}:role/dpr-redshift-cluster-role"
 
-    // - Create a redshift table with the above details
+    // Build sqlScript for all the DPDs
     val sqlScript = buildString {
         appendLine("BEGIN; ")
-        appendLine("DROP TABLE IF EXISTS datahub_test.$tableName; ")
-        appendLine("CREATE TABLE datahub_test.$tableName (")
-        append(
-            redshiftColumns?.entries?.joinToString(",\n") {
-                "    ${it.key} ${it.value}"
-            }
-        )
-        appendLine()
-        appendLine("); ")
-        appendLine("COPY datahub_test.$tableName ")
-        appendLine("FROM 's3://dpr-working-development/datahub-test-data/$csvFileName' ")
-        appendLine("IAM_ROLE '$iamRoleArn' ")
-        appendLine("CSV ")
-        appendLine("IGNOREHEADER 1;")
+
+        tableToColumnsMap.forEach { (tableName, redshiftColumns) ->
+            val csvFileName = "$tableName.csv"
+
+            // Create a redshift table
+            appendLine("DROP TABLE IF EXISTS datahub_test.$tableName; ")
+            appendLine("CREATE TABLE datahub_test.$tableName (")
+            append(
+                redshiftColumns?.entries?.joinToString(",\n") {
+                    "    ${it.key} ${it.value}"
+                }
+            )
+            appendLine()
+            appendLine("); ")
+
+            // Load the S3 csv to Redshift table
+            appendLine("COPY datahub_test.$tableName ")
+            appendLine("FROM 's3://dpr-working-development/datahub-test-data/$csvFileName' ")
+            appendLine("IAM_ROLE '$iamRoleArn' ")
+            appendLine("CSV ")
+            appendLine("IGNOREHEADER 1;")
+        }
         appendLine(" COMMIT; ")
     }
 
