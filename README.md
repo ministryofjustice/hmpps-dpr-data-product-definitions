@@ -51,3 +51,8 @@ As of DPR2-1514, DPDs no longer have a dedicated API. Instead, they are deployed
 To deploy DPDs to an environment, use this GitHub Action (being sure to approve the deployment to the environment): https://github.com/ministryofjustice/hmpps-dpr-data-product-definitions/actions/workflows/publish.yml
 
 To remove an individual DPD from an environment, use this GitHub Action: https://github.com/ministryofjustice/hmpps-dpr-data-product-definitions/actions/workflows/delete.yml
+
+## Test Data Generation
+To generate test data for specific DPDs (i,e from the ../dev/definitions/prisons/test-resources), use this GitHub Action: https://github.com/ministryofjustice/hmpps-dpr-data-product-definitions/actions/workflows/generate-test-data.yml
+This script processes the DPD definitions located in ../dev/definitions/prisons/test-resources and generates a test data CSV file for each DPD. The generated CSV files are uploaded to the s3://dpr-working-development/datahub-test-data S3 location. 
+In addition, the script generates the Redshift SQL required to create the corresponding tables and load the test data from S3 into Redshift, providing an automated process for provisioning and populating test datasets for each DPD.
