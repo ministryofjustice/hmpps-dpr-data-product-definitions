@@ -202,7 +202,6 @@ fun sqlScriptGeneration( tableToColumnsMap: Map<String, Map<String, String>>): S
 
     // Build sqlScript for all the DPDs
     val sqlScript = buildString {
-        appendLine("1")
         appendLine("BEGIN; ")
 
         tableToColumnsMap.forEach { (tableName, redshiftColumns) ->
