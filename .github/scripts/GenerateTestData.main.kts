@@ -83,7 +83,7 @@ object TestDataGenerator {
 // =====================================================
 
 fun main() {
-    // Load the DPD from dpd/dev/definitions/prisons/test-resources
+    // Load the DPD from the environment-specific test-resources folder
     val tableToColumnsMap: Map<String, Map<String, String>> = loadDPDtoGenerateTestData()
 
     // Generate the test data csv and upload it to S3
@@ -100,7 +100,7 @@ fun main() {
 
 fun loadDPDtoGenerateTestData(): Map<String, Map<String, String>> {
     val objectMapper = ObjectMapper()
-    val directory = File("dpd/dev/definitions/prisons/test-resources")
+    val directory = File(System.getenv("DPD_TEST_RESOURCES_PATH") ?: "dpd/dev/definitions/prisons/test-resources")
     val tableToColumnsMap: Map<String, Map<String, String>> = directory
         .listFiles { file -> file.isFile && file.extension == "json" }
         ?.associate { file ->
