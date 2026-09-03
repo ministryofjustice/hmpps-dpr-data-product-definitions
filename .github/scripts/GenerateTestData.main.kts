@@ -9,12 +9,12 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.opencsv.CSVWriter
 import java.io.File
+import java.io.FileWriter
 import java.time.LocalDate
 import kotlin.random.Random
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
-import java.io.FileWriter
 
 
 // ==========================================
@@ -37,7 +37,6 @@ object TestDataConstants {
 
         return "$unitCode-$wing-$cell"
     }
-
 }
 
 object TestDataGenerator {
@@ -73,36 +72,54 @@ object TestDataGenerator {
             "DOUBLE PRECISION" -> (1..100).random().toDouble()
             "BIGINT" -> (1..10000).random().toLong()
             "INTEGER" -> (1..10000).random()
-            "DATE" -> LocalDate.now().minusDays((0..365).random().toLong()).toString()
+            "DATE" -> LocalDate.now()
+                .minusDays((0..365).random().toLong())
+                .toString()
             else -> ""
         }
 }
 
+
 // =====================================================
-// 2. MAIN:
+// 2. MAIN
 // =====================================================
 
 fun main() {
     // Load the DPD from the environment-specific test-resources folder
-    val tableToColumnsMap: Map<String, Map<String, String>> = loadDPDtoGenerateTestData()
+    val tableToColumnsMap: Map<String, Map<String, String>> =
+        loadDPDtoGenerateTestData()
 
-    // Generate the test data csv and upload it to S3
-    generateTestData(tableToColumnsMap,  100)
+    // Read row count supplied by GitHub Actions.
+    // Default to 100 if no value has been provided.
+    val rowCount = System.getenv("TEST_DATA_ROW_COUNT")
+        ?.toIntOrNull()
+        ?: 100
 
-    // Generate sql script for, createTable + copySql
+    // Generate the test data CSV and upload it to S3
+    generateTestData(tableToColumnsMap, rowCount)
+
+    // Generate SQL script for createTable + copySql
     val sqlScript = sqlScriptGeneration(tableToColumnsMap)
     println(sqlScript)
 }
 
+
 // ==========================================
-// 3. SUPPORTING METHODS for Main
+// 3. SUPPORTING METHODS FOR MAIN
 // ==========================================
 
 fun loadDPDtoGenerateTestData(): Map<String, Map<String, String>> {
     val objectMapper = ObjectMapper()
-    val directory = File(System.getenv("DPD_TEST_RESOURCES_PATH") ?: "dpd/dev/definitions/prisons/test-resources")
+
+    val directory = File(
+        System.getenv("DPD_TEST_RESOURCES_PATH")
+            ?: "dpd/dev/definitions/prisons/test-resources"
+    )
+
     val tableToColumnsMap: Map<String, Map<String, String>> = directory
-        .listFiles { file -> file.isFile && file.extension == "json" }
+        .listFiles { file ->
+            file.isFile && file.extension == "json"
+        }
         ?.associate { file ->
 
             val root: JsonNode = objectMapper.readTree(file)
@@ -118,7 +135,8 @@ fun loadDPDtoGenerateTestData(): Map<String, Map<String, String>> {
                 .distinct()
                 .first()
 
-            val redshiftColumns = getRedshiftColumnsMap(root.toString(), firstDatasetId)
+            val redshiftColumns =
+                getRedshiftColumnsMap(root.toString(), firstDatasetId)
 
             tableName to redshiftColumns
         } ?: emptyMap()
@@ -126,8 +144,14 @@ fun loadDPDtoGenerateTestData(): Map<String, Map<String, String>> {
     return tableToColumnsMap
 }
 
-fun getRedshiftColumnsMap (root: String, datasetId: String) : Map<String, String> {
+
+fun getRedshiftColumnsMap(
+    root: String,
+    datasetId: String
+): Map<String, String> {
+
     val fields = getSchemaFields(root, datasetId)
+
     val redshiftTypeMapping = mapOf(
         "string" to "VARCHAR(30)",
         "date" to "DATE",
@@ -143,7 +167,12 @@ fun getRedshiftColumnsMap (root: String, datasetId: String) : Map<String, String
     return redshiftColumns
 }
 
-fun getSchemaFields(json: String, datasetId: String): Map<String, String> {
+
+fun getSchemaFields(
+    json: String,
+    datasetId: String
+): Map<String, String> {
+
     val mapper = ObjectMapper()
     val root = mapper.readTree(json)
 
@@ -151,7 +180,8 @@ fun getSchemaFields(json: String, datasetId: String): Map<String, String> {
         ?.firstOrNull { it["id"]?.asText() == datasetId }
         ?: return emptyMap()
 
-    val fieldMap = dataset.get("schema")["field"]
+    val fieldMap = dataset
+        .get("schema")["field"]
         .associate { field ->
             field["name"].asText() to field["type"].asText()
         }
@@ -159,8 +189,14 @@ fun getSchemaFields(json: String, datasetId: String): Map<String, String> {
     return fieldMap
 }
 
-fun generateTestData( tableToColumnsMap: Map<String, Map<String, String>>, rowCount: Int = 1) {
+
+fun generateTestData(
+    tableToColumnsMap: Map<String, Map<String, String>>,
+    rowCount: Int = 1
+) {
+
     tableToColumnsMap.forEach { (tableName, redshiftColumns) ->
+
         val csvFileName = "$tableName.csv"
         val outputFile = File(csvFileName)
 
@@ -185,50 +221,71 @@ fun generateTestData( tableToColumnsMap: Map<String, Map<String, String>>, rowCo
         }
 
         val s3 = S3Client.builder().build()
+
         s3.putObject(
             PutObjectRequest.builder()
                 .bucket("dpr-working-development")
-                .key("datahub-test-data/${csvFileName}")
+                .key("datahub-test-data/$csvFileName")
                 .build(),
             RequestBody.fromFile(outputFile)
         )
     }
 }
 
-fun sqlScriptGeneration( tableToColumnsMap: Map<String, Map<String, String>>): String {
-    // Get AWS account ID from environment or use default
-    val accountId = System.getenv("AWS_ACCOUNT_ID") ?: "771283872747"
-    val iamRoleArn = "arn:aws:iam::${accountId}:role/dpr-redshift-cluster-role"
 
-    // Build sqlScript for all the DPDs
+fun sqlScriptGeneration(
+    tableToColumnsMap: Map<String, Map<String, String>>
+): String {
+
+    // Get AWS account ID from environment or use default
+    val accountId =
+        System.getenv("AWS_ACCOUNT_ID") ?: "771283872747"
+
+    val iamRoleArn =
+        "arn:aws:iam::${accountId}:role/dpr-redshift-cluster-role"
+
+    // Build SQL script for all the DPDs
     val sqlScript = buildString {
+
         appendLine("BEGIN; ")
 
         tableToColumnsMap.forEach { (tableName, redshiftColumns) ->
+
             val csvFileName = "$tableName.csv"
 
-            // Create a redshift table
+            // Create a Redshift table
             appendLine("DROP TABLE IF EXISTS datahub_test.$tableName; ")
-            appendLine("CREATE TABLE datahub_test.$tableName (")
+
+            appendLine(
+                "CREATE TABLE datahub_test.$tableName ("
+            )
+
             append(
-                redshiftColumns?.entries?.joinToString(",\n") {
+                redshiftColumns.entries.joinToString(",\n") {
                     "    ${it.key} ${it.value}"
                 }
             )
+
             appendLine()
             appendLine("); ")
 
-            // Load the S3 csv to Redshift table
+            // Load the S3 CSV to Redshift table
             appendLine("COPY datahub_test.$tableName ")
-            appendLine("FROM 's3://dpr-working-development/datahub-test-data/$csvFileName' ")
+
+            appendLine(
+                "FROM 's3://dpr-working-development/datahub-test-data/$csvFileName' "
+            )
+
             appendLine("IAM_ROLE '$iamRoleArn' ")
             appendLine("CSV ")
             appendLine("IGNOREHEADER 1;")
         }
+
         appendLine(" COMMIT; ")
     }
 
     return sqlScript
 }
+
 
 main()
