@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - DPR2-2833-Test-Data-generation-script
+
   workflow_dispatch:
     inputs:
       deployEnv:
@@ -14,16 +15,18 @@ on:
         options:
           - dev
           - test
+
       deployFolder:
         description: "Subfolder to generate test data:"
         required: true
         default: test-resources
         type: string
+
       rowCount:
-        description: "Row of test data needs to be added:"
+        description: "Number of test data rows to generate:"
         required: true
         default: 100
-        type: int
+        type: number
 
 permissions:
   id-token: write
@@ -61,59 +64,63 @@ jobs:
       - name: Generate SQL
         id: generate_sql
         env:
-          DPD_TEST_RESOURCES_PATH: dpd/${{ inputs.deployEnv || 'dev' }}/definitions/prisons/test-resources
+          DPD_TEST_RESOURCES_PATH: dpd/${{ inputs.deployEnv || 'dev' }}/definitions/prisons/${{ inputs.deployFolder || 'test-resources' }}
+          TEST_DATA_ROW_COUNT: ${{ inputs.rowCount || 100 }}
         run: |
           chmod +x ./.github/scripts/GenerateTestData.main.kts
-          
+
           # Get AWS account ID from STS
           export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
           echo "Using AWS Account: $AWS_ACCOUNT_ID"
-          
-          SQL=$(kotlin ./.github/scripts/GenerateTestData.main.kts) 
-          
+          echo "Using DPD folder: $DPD_TEST_RESOURCES_PATH"
+          echo "Generating $TEST_DATA_ROW_COUNT rows of test data"
+
+          SQL=$(kotlin ./.github/scripts/GenerateTestData.main.kts)
+
           if [[ ! "$SQL" =~ ^BEGIN\; ]]; then
             echo "::error::Generated SQL script must start with 'BEGIN;'"
             exit 1
           fi
-  
-          echo "sql<<EOF" >> $GITHUB_OUTPUT
-          echo "$SQL" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+
+          echo "sql<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$SQL" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Execute SQL in Redshift
         run: |
           echo "Testing Redshift connectivity..."
-          
+
           STATEMENT_ID=$(aws redshift-data execute-statement \
-              --cluster-identifier dpr-redshift-development \
-              --database datamart \
-              --db-user dpruser \
-              --sql "${{ steps.generate_sql.outputs.sql }}" \
-              --query 'Id' \
-              --output text)
-          
+            --cluster-identifier dpr-redshift-development \
+            --database datamart \
+            --db-user dpruser \
+            --sql "${{ steps.generate_sql.outputs.sql }}" \
+            --query 'Id' \
+            --output text)
+
           echo "Statement ID: $STATEMENT_ID"
-          
+
           # Wait for statement to complete
           for i in {1..30}; do
-          STATUS=$(aws redshift-data describe-statement \
-          --id "$STATEMENT_ID" \
-          --query 'Status' \
-          --output text)
-          
-          echo "Attempt $i/30 - Status: $STATUS"
-          
-          if [ "$STATUS" = "FINISHED" ]; then
-          echo "_____Redshift connectivity validated successfully"
-          exit 0
-          elif [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "ABORTED" ]; then
-          echo "_____Redshift query failed"
-          aws redshift-data describe-statement --id "$STATEMENT_ID"
-          exit 1
-          fi
-          
-          sleep 2
+            STATUS=$(aws redshift-data describe-statement \
+              --id "$STATEMENT_ID" \
+              --query 'Status' \
+              --output text)
+
+            echo "Attempt $i/30 - Status: $STATUS"
+
+            if [ "$STATUS" = "FINISHED" ]; then
+              echo "_____Redshift connectivity validated successfully"
+              exit 0
+            elif [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "ABORTED" ]; then
+              echo "_____Redshift query failed"
+              aws redshift-data describe-statement --id "$STATEMENT_ID"
+              exit 1
+            fi
+
+            sleep 2
           done
-    
+
           echo "____Timeout waiting for Redshift query"
           exit 1
