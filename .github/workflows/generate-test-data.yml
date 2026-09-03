@@ -1,0 +1,128 @@
+name: Test Data Generator Script
+
+on:
+  push:
+    branches:
+      - DPR2-2833-Test-Data-generation-script
+
+  workflow_dispatch:
+    inputs:
+      deployEnv:
+        description: "Generate test data for: dev or test environment"
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - test
+
+      deployFolder:
+        description: "Subfolder to generate test data:"
+        required: true
+        default: test-resources
+        type: string
+
+      rowCount:
+        description: "Number of test data rows to generate:"
+        required: true
+        default: 100
+        type: number
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  run-kotlin-job:
+    name: Generate test data in ${{ inputs.deployEnv || 'dev' }} env
+    environment: ${{ inputs.deployEnv || 'dev' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository code
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # Step 2: Set up Java (Required by the Kotlin Compiler)
+      - name: Set up JDK
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # Step 3: Install Kotlin Compiler on the runner
+      - name: Set up Kotlin
+        uses: fwilhe2/setup-kotlin@c061b2b2664e466684327ec98bd4e6f9aa9c2048 # v1.9
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.ACCOUNT_NUMBER }}:role/dpr-dpd-table-github-deploy-role
+          role-session-name: githubactionsrolesession
+          aws-region: eu-west-2
+
+      - name: Generate SQL
+        id: generate_sql
+        env:
+          DPD_TEST_RESOURCES_PATH: dpd/${{ inputs.deployEnv || 'dev' }}/definitions/prisons/${{ inputs.deployFolder || 'test-resources' }}
+          TEST_DATA_ROW_COUNT: ${{ inputs.rowCount || 100 }}
+        run: |
+          chmod +x ./.github/scripts/GenerateTestData.main.kts
+
+          # Get AWS account ID from STS
+          export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+          echo "Using AWS Account: $AWS_ACCOUNT_ID"
+          echo "Using DPD folder: $DPD_TEST_RESOURCES_PATH"
+          echo "Generating $TEST_DATA_ROW_COUNT rows of test data"
+
+          SQL=$(kotlin ./.github/scripts/GenerateTestData.main.kts)
+
+          if [[ ! "$SQL" =~ ^BEGIN\; ]]; then
+            echo "::error::Generated SQL script must start with 'BEGIN;'"
+            exit 1
+          fi
+
+          echo "sql<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$SQL" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Execute SQL in Redshift
+        env:
+          REDSHIFT_CLUSTER: ${{ inputs.deployEnv == 'test' && 'dpr-redshift-test' || 'dpr-redshift-development'  }}
+        run: |
+          echo "Testing Redshift connectivity..."
+    
+          STATEMENT_ID=$(aws redshift-data execute-statement \
+            --cluster-identifier $REDSHIFT_CLUSTER \
+            --database datamart \
+            --db-user dpruser \
+            --sql "${{ steps.generate_sql.outputs.sql }}" \
+            --query 'Id' \
+            --output text)
+
+          echo "Statement ID: $STATEMENT_ID"
+
+          # Wait for statement to complete
+          for i in {1..30}; do
+            STATUS=$(aws redshift-data describe-statement \
+              --id "$STATEMENT_ID" \
+              --query 'Status' \
+              --output text)
+
+            echo "Attempt $i/30 - Status: $STATUS"
+
+            if [ "$STATUS" = "FINISHED" ]; then
+              echo "_____Redshift connectivity validated successfully"
+              exit 0
+            elif [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "ABORTED" ]; then
+              echo "_____Redshift query failed"
+              aws redshift-data describe-statement --id "$STATEMENT_ID"
+              exit 1
+            fi
+
+            sleep 2
+          done
+
+          echo "____Timeout waiting for Redshift query"
+          exit 1
