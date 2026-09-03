@@ -90,9 +90,15 @@ jobs:
       - name: Execute SQL in Redshift
         run: |
           echo "Testing Redshift connectivity..."
-
+          
+          if [ "${{ inputs.deployEnv }}" = "dev" ]; then
+            echo "REDSHIFT_CLUSTER=dpr-redshift-development" >> $GITHUB_ENV
+          else
+            echo "REDSHIFT_CLUSTER=dpr-redshift-test" >> $GITHUB_ENV
+          fi
+    
           STATEMENT_ID=$(aws redshift-data execute-statement \
-            --cluster-identifier dpr-redshift-development \
+            --cluster-identifier "$REDSHIFT_CLUSTER" \
             --database datamart \
             --db-user dpruser \
             --sql "${{ steps.generate_sql.outputs.sql }}" \
