@@ -226,7 +226,6 @@ fun generateTestData( tableToColumnsMap: Map<String, Map<String, String>>, rowCo
 
 fun sqlScriptGeneration( tableToColumnsMap: Map<String, Map<String, String>>): String {
     // Get AWS account ID from environment or use default
-//    val accountId = System.getenv("AWS_ACCOUNT_ID") ?: "771283872747"
     val iamRoleArn = "arn:aws:iam::***:role/dpr-redshift-cluster-role"
 
     // Build sqlScript for all the DPDs
