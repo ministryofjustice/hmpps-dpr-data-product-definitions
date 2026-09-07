@@ -1,0 +1,213 @@
+{
+  "id": "incident-reporting-data-drift",
+  "name": "Incident reporting data freshness",
+  "description": "Shows how far behind the reporting data is. Compares the latest incident report held in the datamart with the latest held in the live Incident Reporting service (IRS). Both datamart copies are shown because they may be loaded independently.",
+  "product": "Incident Reporting (IRS)",
+  "metadata": {
+    "author": "Michael Willis",
+    "owner": "Managing Safety",
+    "version": "1.0.0",
+    "tags": [
+      "DPS",
+      "Incident Reporting",
+      "Data quality"
+    ]
+  },
+  "datasource": [
+    {
+      "id": "athena_dps_inc_reporting",
+      "name": "athena_dps_inc_reporting",
+      "database": "public",
+      "catalog": "dps_inc_reporting",
+      "connection": "federated",
+      "dialect": "postgres/19"
+    },
+    {
+      "id": "athena_prisons",
+      "name": "athena_prisons",
+      "database": "prisons",
+      "catalog": "AwsDataCatalog",
+      "connection": "awsdatacatalog",
+      "dialect": "athena/3"
+    },
+    {
+      "id": "athena_redshift",
+      "name": "athena_redshift_federated",
+      "database": "datamart",
+      "catalog": "redshift_datamart",
+      "connection": "federated",
+      "dialect": "redshift/4"
+    },
+    {
+      "id": "athena",
+      "name": "athena",
+      "database": "reports",
+      "catalog": "AwsDataCatalog",
+      "connection": "awsdatacatalog",
+      "dialect": "athena/3"
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "INCIDENT_REPORTS__RO",
+                "INCIDENT_REPORTS__RW",
+                "INCIDENT_REPORTS__APPROVE"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "dataset": [
+    {
+      "id": "drift",
+      "name": "Datamart freshness against live IRS",
+      "description": "One row per source: the live service and each datamart copy, with the lag of each copy behind live.",
+      "datasource": "athena",
+      "query": [
+        {
+          "index": 0,
+          "datasource": "athena_dps_inc_reporting",
+          "query": "SELECT MAX(created_at) AS latest_created_at, MAX(CAST(report_reference AS BIGINT)) AS latest_reference, COUNT(*) AS report_count FROM report"
+        },
+        {
+          "index": 1,
+          "datasource": "athena_prisons",
+          "query": "SELECT MAX(created_at) AS latest_created_at, MAX(CAST(report_reference AS BIGINT)) AS latest_reference, COUNT(*) AS report_count FROM AwsDataCatalog.prisons.incidentreporting_report"
+        },
+        {
+          "index": 2,
+          "datasource": "athena_redshift",
+          "query": "SELECT MAX(created_at) AS latest_created_at, MAX(CAST(report_reference AS BIGINT)) AS latest_reference, COUNT(*) AS report_count FROM prisons.incidentreporting_report"
+        },
+        {
+          "index": 3,
+          "datasource": "athena",
+          "query": "SELECT s.sort_order, s.source, s.latest_created_at, s.latest_reference, s.report_count, CASE WHEN s.sort_order = 1 THEN NULL ELSE date_diff('minute', s.latest_created_at, l.latest_created_at) END AS lag_minutes, CASE WHEN s.sort_order = 1 THEN 'n/a' WHEN date_diff('minute', s.latest_created_at, l.latest_created_at) < 60 THEN format('%s min', date_diff('minute', s.latest_created_at, l.latest_created_at)) WHEN date_diff('minute', s.latest_created_at, l.latest_created_at) < 1440 THEN format('%s hr', date_diff('hour', s.latest_created_at, l.latest_created_at)) ELSE format('%s days %s hr', date_diff('day', s.latest_created_at, l.latest_created_at), date_diff('hour', s.latest_created_at, l.latest_created_at) % 24) END AS behind_by, CASE WHEN s.sort_order = 1 THEN NULL ELSE l.report_count - s.report_count END AS missing_reports, CASE WHEN s.sort_order = 1 THEN 'Source' WHEN date_diff('minute', s.latest_created_at, l.latest_created_at) < 60 THEN 'Up to date' WHEN date_diff('minute', s.latest_created_at, l.latest_created_at) < 1440 THEN 'Behind by less than a day' ELSE 'Behind' END AS freshness_status, CAST(current_timestamp AS timestamp) AS checked_at FROM (SELECT 1 AS sort_order, 'Live IRS (source of truth)' AS source, latest_created_at, latest_reference, report_count FROM AwsDataCatalog.reports.${table[0]} UNION ALL SELECT 2, 'Datamart (Athena)', latest_created_at, latest_reference, report_count FROM AwsDataCatalog.reports.${table[1]} UNION ALL SELECT 3, 'Datamart (Redshift)', latest_created_at, latest_reference, report_count FROM AwsDataCatalog.reports.${table[2]}) s CROSS JOIN AwsDataCatalog.reports.${table[0]} l"
+        }
+      ],
+      "schema": {
+        "field": [
+          { "name": "sort_order", "type": "int", "display": "Order" },
+          { "name": "source", "type": "string", "display": "Data source" },
+          { "name": "latest_created_at", "type": "datetime", "display": "Latest incident report held" },
+          { "name": "latest_reference", "type": "long", "display": "Latest incident number held" },
+          { "name": "report_count", "type": "long", "display": "Incident reports held" },
+          { "name": "lag_minutes", "type": "long", "display": "Lag (minutes)" },
+          { "name": "behind_by", "type": "string", "display": "Behind live by" },
+          { "name": "missing_reports", "type": "long", "display": "Incident reports missing" },
+          { "name": "freshness_status", "type": "string", "display": "Status" },
+          { "name": "checked_at", "type": "datetime", "display": "Checked at" }
+        ]
+      }
+    }
+  ],
+  "report": [
+    {
+      "id": "drift-summary",
+      "name": "Incident reporting data freshness",
+      "description": "How far behind live IRS each copy of the reporting data currently is. Run this to check whether the incident reports you are looking at are up to date. If any copy is shown as Behind, raise it with the Digital Prison Reporting team.",
+      "classification": "OFFICIAL",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "$ref:drift",
+      "policy": [],
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:sort_order",
+            "display": "Order",
+            "visible": "false",
+            "sortable": false,
+            "defaultsort": true,
+            "sortdirection": "asc"
+          },
+          {
+            "name": "$ref:source",
+            "display": "Data source",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:freshness_status",
+            "display": "Status",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:behind_by",
+            "display": "Behind live by",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:latest_created_at",
+            "display": "Latest incident report held",
+            "formula": "format_date(${latest_created_at}, 'dd/MM/yyyy HH:mm')",
+            "type": "datetime",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:latest_reference",
+            "display": "Latest incident number held",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:report_count",
+            "display": "Incident reports held",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:missing_reports",
+            "display": "Incident reports missing",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:lag_minutes",
+            "display": "Lag (minutes)",
+            "visible": "false",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:checked_at",
+            "display": "Checked at",
+            "formula": "format_date(${checked_at}, 'dd/MM/yyyy HH:mm')",
+            "type": "datetime",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          }
+        ]
+      },
+      "destination": []
+    }
+  ]
+}
