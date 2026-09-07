@@ -5,7 +5,7 @@
     "metadata": {
         "author": "DPR",
         "owner": "DPR",
-        "version": "0.1"
+        "version": "0.2"
     },
     "datasource": [
         {
@@ -45,10 +45,35 @@
             }
         },
         {
-            "id": "sentence-plan-count-by-date-range",
+            "id": "sp-by-month",
+            "name": "SP by month",
+            "datasource": "datamart",
+            "query": "select trunc(date_trunc('month',p.created_at)) as ts, count(p.id) as monthly_count, SUM (monthly_count) over (order by ts rows unbounded preceding) AS total_to_date FROM datamart.prisons.sentenceplanassessmentview_sentence_plan p LEFT JOIN datamart.prisons.sentenceplanassessmentview_sentence_plan_identifier i ON i.sentence_plan_id = p.id LEFT JOIN datamart.prisons.sentenceplanassessmentview_plan_agreement a ON a.sentence_plan_id = p.snapshot_id WHERE exists ( select 1 from datamart.prisons.sentenceplanassessmentview_goal g ) group by ts order by ts ",
+            "schema": {
+                "field": [
+                    {
+                        "name": "ts",
+                        "type": "timestamp",
+                        "display": "Date"
+                    },
+                    {
+                        "name": "monthly_count",
+                        "type": "int",
+                        "display": "Count"
+                    },
+                    {
+                        "name": "total_to_date",
+                        "type": "int",
+                        "display": "Total"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "sentence-plan-volumes-by-date-range",
             "name": "SP summary",
             "datasource": "datamart",
-            "query": "select trunc(p.created_at) as ts, '$TBC' AS link, count(p.id) as plan_count, count(a.status) as agreement_count, COUNT(CASE WHEN i.type = 'CRN' THEN 1 END) AS crn_count, COUNT(CASE WHEN i.type = 'NOMIS' THEN 1 END) AS nomis_count, COUNT(CASE WHEN a.status = 'AGREED' THEN 1 END) AS agreed_count, plan_count - agreement_count AS draft_count, COUNT(CASE WHEN a.status = 'COULD_NOT_ANSWER' THEN 1 END) AS could_not_answer_count, COUNT(CASE WHEN a.status = 'DO_NOT_AGREE' THEN 1 END) AS not_agreed_count, COUNT(CASE WHEN a.status = 'UPDATED_AGREED' THEN 1 END) AS updated_agreed_count, COUNT(CASE WHEN a.status = 'UPDATED_COULD_NOT_AGREE' THEN 1 END) AS updated_could_not_agree, round(crn_count::FLOAT4/plan_count * 100,1) as crn_pct, round(nomis_count::FLOAT4/plan_count * 100,1) as nomis_pct, round(agreed_count::FLOAT4/NULLIF(agreement_count,0) * 100,1) as agreed_pct, round(draft_count::FLOAT4/plan_count * 100,1) as draft_pct, round(could_not_answer_count::FLOAT4/NULLIF(agreement_count,0) * 100,1) as could_not_answer_pct, round(not_agreed_count::FLOAT4/NULLIF(agreement_count,0) * 100,1) as not_agreed_pct, round(updated_agreed_count::FLOAT4/NULLIF(agreement_count,0) * 100,1) as updated_agreed_count_pct, round(updated_could_not_agree::FLOAT4/NULLIF(agreement_count,0) * 100,1) as updated_could_not_agree_pct, SUM (plan_count) over (order by ts rows unbounded preceding) AS total_to_date FROM datamart.prisons.sentenceplanassessmentview_sentence_plan p LEFT JOIN datamart.prisons.sentenceplanassessmentview_sentence_plan_identifier i ON i.sentence_plan_id = p.id LEFT JOIN datamart.prisons.sentenceplanassessmentview_plan_agreement a ON a.sentence_plan_id = p.snapshot_id group by ts order by ts ",
+            "query": "  SELECT TRUNC(p.created_at) as ts, '$TBC' AS link, COUNT(p.id) as plan_count, COUNT(a.status) as agreement_count, COUNT( CASE WHEN a.status = 'AGREED' THEN 1 END ) AS agreed_count, COUNT( CASE WHEN a.status = 'COULD_NOT_ANSWER' THEN 1 END ) AS could_not_answer_count, COUNT( CASE WHEN a.status = 'DO_NOT_AGREE' THEN 1 END ) AS not_agreed_count, COUNT( CASE WHEN a.status = 'UPDATED_AGREED' THEN 1 END ) AS updated_agreed_count, COUNT( CASE WHEN a.status = 'UPDATED_COULD_NOT_AGREE' THEN 1 END ) AS updated_could_not_agree_count, SUM(plan_count) over ( order by ts rows unbounded preceding ) AS total_to_date, SUM(agreed_count) over ( order by ts rows unbounded preceding ) AS total_agreed, SUM(could_not_answer_count) over ( order by ts rows unbounded preceding ) AS total_could_not_answer, SUM(not_agreed_count) over ( order by ts rows unbounded preceding ) AS total_not_agreed, SUM(updated_agreed_count) over ( order by ts rows unbounded preceding ) AS total_updated_agreed, SUM(updated_could_not_agree_count) over ( order by ts rows unbounded preceding ) AS total_updated_could_not_agree, round( total_not_agreed::FLOAT4 / total_to_date::FLOAT4 * 100, 1 ) AS not_agreed_pct, round( total_agreed::FLOAT4 / total_to_date::FLOAT4 * 100, 1 ) AS agreed_pct, round( total_could_not_answer::FLOAT4 / total_to_date::FLOAT4 * 100, 1 ) AS could_not_answer_pct, round( total_updated_could_not_agree::FLOAT4 / total_to_date::FLOAT4 * 100, 1 ) AS updated_could_not_agree_pct, round( total_updated_agreed::FLOAT4 / total_to_date::FLOAT4 * 100, 1 ) AS updated_agreed_pct, SUM(agreement_count) over ( order by ts rows unbounded preceding ) AS total_agreement, round( total_agreement::FLOAT4 / total_to_date::FLOAT4 * 100, 1 ) AS agreement_pct FROM datamart.prisons.sentenceplanassessmentview_sentence_plan p LEFT JOIN datamart.prisons.sentenceplanassessmentview_sentence_plan_identifier i ON i.sentence_plan_id = p.id LEFT JOIN datamart.prisons.sentenceplanassessmentview_plan_agreement a ON a.sentence_plan_id = p.snapshot_id WHERE exists ( SELECT 1 FROM datamart.prisons.sentenceplanassessmentview_goal g WHERE g.sentence_plan_id = p.snapshot_id ) AND p.deleted = false GROUP BY ts ORDER BY ts",
             "schema": {
                 "field": [
                     {
@@ -79,22 +104,7 @@
                         "display": "Count"
                     },
                     {
-                        "name": "crn_count",
-                        "type": "int",
-                        "display": "Count"
-                    },
-                    {
-                        "name": "nomis_count",
-                        "type": "int",
-                        "display": "Count"
-                    },
-                    {
                         "name": "agreed_count",
-                        "type": "int",
-                        "display": "Count"
-                    },
-                    {
-                        "name": "draft_count",
                         "type": "int",
                         "display": "Count"
                     },
@@ -114,53 +124,73 @@
                         "display": "Count"
                     },
                     {
-                        "name": "updated_could_not_agree",
+                        "name": "updated_could_not_agree_count",
                         "type": "int",
-                        "display": "Count"
-                    },
-                    {
-                        "name": "crn_pct",
-                        "type": "float",
-                        "display": "Count"
-                    },
-                    {
-                        "name": "nomis_pct",
-                        "type": "float",
-                        "display": "Count"
-                    },
-                    {
-                        "name": "agreed_pct",
-                        "type": "float",
-                        "display": "Count"
-                    },
-                    {
-                        "name": "draft_pct",
-                        "type": "float",
-                        "display": "Count"
-                    },
-                    {
-                        "name": "could_not_answer_pct",
-                        "type": "float",
-                        "display": "Count"
-                    },
-                    {
-                        "name": "not_agreed_pct",
-                        "type": "float",
-                        "display": "Count"
-                    },
-                    {
-                        "name": "updated_agreed_count_pct",
-                        "type": "float",
-                        "display": "Count"
-                    },
-                    {
-                        "name": "updated_could_not_agree_pct",
-                        "type": "float",
                         "display": "Count"
                     },
                     {
                         "name": "total_to_date",
                         "type": "int",
+                        "display": "Total"
+                    },
+                    {
+                        "name": "total_agreed",
+                        "type": "int",
+                        "display": "Total"
+                    },
+                    {
+                        "name": "total_not_agreed",
+                        "type": "int",
+                        "display": "Total"
+                    },
+                    {
+                        "name": "total_could_not_answer",
+                        "type": "int",
+                        "display": "Total"
+                    },
+                    {
+                        "name": "total_updated_agreed",
+                        "type": "int",
+                        "display": "Total"
+                    },
+                    {
+                        "name": "total_updated_could_not_agree",
+                        "type": "int",
+                        "display": "Total"
+                    },
+                    {
+                        "name": "not_agreed_pct",
+                        "type": "float",
+                        "display": "Total"
+                    },
+                    {
+                        "name": "agreed_pct",
+                        "type": "float",
+                        "display": "Total"
+                    },
+                    {
+                        "name": "could_not_answer_pct",
+                        "type": "float",
+                        "display": "Total"
+                    },
+                    {
+                        "name": "updated_could_not_agree_pct",
+                        "type": "float",
+                        "display": "Total"
+                    },
+                    {
+                        "name": "updated_agreed_pct",
+                        "type": "float",
+                        "display": "Total"
+                    },
+                    {
+                        "name": "total_agreement",
+                        "type": "int",
+                        "display": "Total"
+                    },
+                    {
+                        "name": "agreement_pct",
+                        "type": "float",
                         "display": "Total"
                     }
                 ]
@@ -545,13 +575,13 @@
     "dashboard": [
         {
             "id": "sp-creation-count",
-            "name": "Sentence Plan creation count",
-            "description": "Sentence Plan creation count",
-            "dataset": "sentence-plan-count-by-date-range",
+            "name": "Sentence Plan creation volumes",
+            "description": "Sentence Plan creation volumes",
+            "dataset": "sentence-plan-volumes-by-date-range",
             "section": [
                 {
                     "id": "list3",
-                    "display": "Sentence plan creation count",
+                    "display": "Sentence plan creation volumes",
                     "visualisation": [
                         {
                             "id": "pc1",
@@ -574,35 +604,35 @@
                                     },
                                     {
                                         "id": "$ref:link",
-                                        "display": "Count"
-                                    },
-                                    {
-                                        "id": "$ref:draft_count",
-                                        "display": "# No agreement"
-                                    },
-                                    {
-                                        "id": "$ref:agreed_pct",
-                                        "display": "Agreed %"
-                                    },
-                                    {
-                                        "id": "$ref:not_agreed_pct",
-                                        "display": "Not agreed %"
-                                    },
-                                    {
-                                        "id": "$ref:could_not_answer_pct",
-                                        "display": "Could not answer %"
-                                    },
-                                    {
-                                        "id": "$ref:updated_agreed_count_pct",
-                                        "display": "Updated Agreed %"
-                                    },
-                                    {
-                                        "id": "$ref:updated_could_not_agree_pct",
-                                        "display": "Updated count not agree %"
+                                        "display": "Created"
                                     },
                                     {
                                         "id": "$ref:total_to_date",
                                         "display": "Total to date"
+                                    },
+                                    {
+                                        "id": "$ref:agreement_pct",
+                                        "display": "Agreement (%)"
+                                    },
+                                    {
+                                        "id": "$ref:agreed_pct",
+                                        "display": "Agreed (%)"
+                                    },
+                                    {
+                                        "id": "$ref:not_agreed_pct",
+                                        "display": "Do not agree (%)"
+                                    },
+                                    {
+                                        "id": "$ref:could_not_answer_pct",
+                                        "display": "Could not answer (%)"
+                                    },
+                                    {
+                                        "id": "$ref:updated_agreed_pct",
+                                        "display": "Updated agreed (%)"
+                                    },
+                                    {
+                                        "id": "$ref:updated_could_not_agree_pct",
+                                        "display": "Updated could not answer (%)"
                                     }
                                 ],
                                 "expectNull": false
@@ -662,7 +692,7 @@
                                     },
                                     {
                                         "id": "$ref:agreed_pct",
-                                        "display": "Agreed %"
+                                        "display": "Agreed (%)"
                                     }
                                 ],
                                 "expectNull": false
@@ -686,7 +716,124 @@
                                     },
                                     {
                                         "id": "$ref:not_agreed_pct",
+                                        "display": "Not agreed (%)"
+                                    }
+                                ],
+                                "expectNull": false
+                            }
+                        },
+                        {
+                            "id": "pc4",
+                            "type": "bar",
+                            "display": "Plans agreed by status",
+                            "options": {
+                                "horizontal": "true",
+                                "xStacked": "true",
+                                "yStacked": "true"
+                            },
+                            "option": {
+                                "showLatest": false
+                            },
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "display": "Code"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:agreed_pct",
                                         "display": "Agreed %"
+                                    },
+                                    {
+                                        "id": "$ref:not_agreed_pct",
+                                        "display": "Not agreed (%)"
+                                    },
+                                    {
+                                        "id": "$ref:could_not_answer_pct",
+                                        "display": "Could not answer (%)"
+                                    },
+                                    {
+                                        "id": "$ref:updated_agreed_pct",
+                                        "display": "Updated agreed (%)"
+                                    },
+                                    {
+                                        "id": "$ref:updated_could_not_agree_pct",
+                                        "display": "Updated could not agree %"
+                                    }
+                                ],
+                                "expectNull": false
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "sp-by-month",
+            "name": "Sentence Plan by month",
+            "description": "Sentence Plan by month",
+            "dataset": "sp-by-month",
+            "section": [
+                {
+                    "id": "list4",
+                    "display": "Plans created by month",
+                    "visualisation": [
+                        {
+                            "id": "pc1",
+                            "type": "list",
+                            "display": "Plans",
+                            "option": {
+                                "showLatest": false
+                            },
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "display": "Month"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "display": "Month"
+                                    },
+                                    {
+                                        "id": "$ref:monthly_count",
+                                        "display": "Monthly Count"
+                                    },
+                                    {
+                                        "id": "$ref:total_to_date",
+                                        "display": "Total"
+                                    }
+                                ],
+                                "expectNull": false
+                            }
+                        },
+                        {
+                            "id": "pc2",
+                            "type": "line-timeseries",
+                            "display": "Plan created",
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "display": "Code"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:ts",
+                                        "display": "Date"
+                                    },
+                                    {
+                                        "id": "$ref:monthly_count",
+                                        "display": "Monthly Count"
+                                    },
+                                    {
+                                        "id": "$ref:total_to_date",
+                                        "display": "Plan Count"
                                     }
                                 ],
                                 "expectNull": false
