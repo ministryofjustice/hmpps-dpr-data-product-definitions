@@ -220,10 +220,11 @@ fun generateTestData(
         }
 
         val s3 = S3Client.builder().build()
+        val s3Path = System.getenv("TEST_DATA_S3_PATH") ?: "dpr-working-development"
 
         s3.putObject(
             PutObjectRequest.builder()
-                .bucket("dpr-working-development")
+                .bucket(s3Path)
                 .key("datahub-test-data/$csvFileName")
                 .build(),
             RequestBody.fromFile(outputFile)
@@ -237,11 +238,9 @@ fun sqlScriptGeneration(
 ): String {
 
     // Get AWS account ID from environment or use default
-    val accountId =
-        System.getenv("AWS_ACCOUNT_ID") ?: "771283872747"
-
-    val iamRoleArn =
-        "arn:aws:iam::${accountId}:role/dpr-redshift-cluster-role"
+    val accountId = System.getenv("AWS_ACCOUNT_ID") ?: "771283872747"
+    val iamRoleArn = "arn:aws:iam::${accountId}:role/dpr-redshift-cluster-role"
+    val s3Path = System.getenv("TEST_DATA_S3_PATH") ?: "dpr-working-development"
 
     // Build SQL script for all the DPDs
     val sqlScript = buildString {
@@ -272,7 +271,7 @@ fun sqlScriptGeneration(
             appendLine("COPY datahub_test.$tableName ")
 
             appendLine(
-                "FROM 's3://dpr-working-development/datahub-test-data/$csvFileName' "
+                "FROM 's3://$s3Path/datahub-test-data/$csvFileName' "
             )
 
             appendLine("IAM_ROLE '$iamRoleArn' ")
