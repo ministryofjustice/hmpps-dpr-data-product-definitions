@@ -3,11 +3,9 @@
   "name": "ORS Prisoner IEP Levels",
   "description": "This report returns information about the IEP levels within a prison population. The report contains multiple tabs giving different groupings/sorts of the same data 1) By IEP Level and IEP Date 2) By Legal Status and IEP Date 3) By Prisoner 4) By Location  5) By NOMS Number 6) By Nationality 7) Simple By Location 8) Simple By Alpha<br/>PDD0029 - v00.00.10 Last Modified: 03/06/2019",
   "metadata": {
-    "version": "1.0.0",
-    "tags": [
-      "PDD0029 v00.00.10",
-      "IEP"
-    ]
+    "author": "madhuri",
+    "owner": "madhuri",
+    "version": "1.0.0"
   },
   "datasource": [
     {
@@ -21,7 +19,6 @@
     {
       "id": "3377299/DP11",
       "name": "Prisoner IEP Levels",
-      "description": "Demographic",
       "datasource": "nomis",
       "query": "DP1b_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS ID, CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END AS CURRENT_RELEASE_DATE, CURR_EFF_SENT_LEN.CURR_EFF_SENT_LEN, DT_ADMISSION.ADMISSION_DATE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDER_RELEASE_DETAILS AT_OFFENDER_RELEASE_DETAILS, (SELECT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID, CASE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE ELSE NULL END AS Last_Rel_Date, EFFECTIVE_SENTENCE_LENGTH FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID ) ) DT_LAST_RELEASE_DATE, (SELECT OFF_BOOK.OFFENDER_BOOK_ID, CASE WHEN LIFE_FLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' ELSE SENT_CALC.EFFECTIVE_SENTENCE_LENGTH END AS CURR_EFF_SENT_LEN FROM (SELECT DISTINCT OFFENDER_SENTENCE_TERMS.OFFENDER_BOOK_ID, OFFENDER_SENTENCE_TERMS.LIFE_SENTENCE_FLAG FROM OFFENDER_SENTENCE_TERMS WHERE OFFENDER_SENTENCE_TERMS.LIFE_SENTENCE_FLAG = 'Y' ) LIFE_FLAG, OMS_OWNER.OFFENDER_SENT_CALCULATIONS SENT_CALC, OMS_OWNER.OFFENDER_BOOKINGS OFF_BOOK WHERE OFF_BOOK.OFFENDER_BOOK_ID = SENT_CALC.OFFENDER_BOOK_ID (+) AND LIFE_FLAG.OFFENDER_BOOK_ID (+) = SENT_CALC.OFFENDER_BOOK_ID AND SENT_CALC.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE SENT_CALC.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID ) ) CURR_EFF_SENT_LEN, (SELECT DISTINCT m.OFFENDER_BOOK_ID, MAX(m.MOVEMENT_TIME) AS ADMISSION_DATE FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS m, OMS_OWNER.offender_bookings h WHERE h.booking_status = 'O' AND h.active_flag = 'Y' AND m.direction_code = 'IN' AND m.Movement_reason_code <> 'R' AND m.Movement_type = 'ADM' AND m.to_agy_loc_id = h.agy_loc_id AND h.offender_book_id = m.offender_book_id GROUP BY m.OFFENDER_BOOK_ID ) DT_ADMISSION WHERE AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID AND AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST' AND AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_RELEASE_DETAILS.OFFENDER_BOOK_ID (+) AND AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_LAST_RELEASE_DATE.OFFENDER_BOOK_ID (+) AND AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID AND AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+) AND NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI') AND CURR_EFF_SENT_LEN.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID AND AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_ADMISSION.OFFENDER_BOOK_ID (+) AND AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_) ), dataset_base_ AS (SELECT DISTINCT AT_OFFENDER.OFFENDER_ID_DISPLAY, AT_OFFENDER.LAST_NAME, AT_OFFENDER.FIRST_NAME, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) = 0 THEN NULL ELSE SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) + 1, CASE WHEN INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) = 0 THEN LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION) ELSE INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 2) - INSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, '-', 1, 1) END - 1 ) END AS UNIT_CODE_1, SUBSTR(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION, 5, LENGTH(AT_AGENCY_INTERNAL_LOCATION_L4.DESCRIPTION)) AS LOCATION, AT_AGENCY_INTERNAL_LOCATION_L4.CAPACITY, COALESCE(DT_IEP_BAND_LAST.DESCRIPTION, 'Missing') AS IEP_LEVEL, AT_OFFENDER_BOOKING.BOOKING_BEGIN_DATE, DT_IEP_BAND_LAST.IEP_DATE, AT_NATIONALITY.PROFILE_CODE, CASE WHEN AT_OFFENDER.RACE_CODE IS NULL THEN '' WHEN AT_OFFENDER.RACE_CODE = 'W8' THEN 'W3' WHEN AT_OFFENDER.RACE_CODE = 'O1' THEN 'A4' ELSE AT_OFFENDER.RACE_CODE END AS ETHNIC_CODE, CASE WHEN AT_OFFENDER.RACE_CODE = 'W8' THEN 'W3' WHEN AT_OFFENDER.RACE_CODE = 'O1' THEN 'A4' ELSE AT_OFFENDER.RACE_CODE END || '-' || CASE WHEN AT_ETHNICITY_DESC.CODE = 'W8' THEN 'White:Gypsy or Irish Traveller' WHEN AT_ETHNICITY_DESC.CODE = 'O1' THEN 'Asian / Asian British:Chinese' ELSE AT_ETHNICITY_DESC.DESCRIPTION END AS ETHNIC_DESCRIPTION, AT_OFFENDER_IMPRISON_STATUSES.EFFECTIVE_DATE, CASE WHEN AT_IMPRISON_STATUSES_SEQ.BAND_CODE IN ('9','10','11','12','13') THEN 'Unconvicted' WHEN AT_IMPRISON_STATUSES_SEQ.IMPRISONMENT_STATUS IN ('SINE DIE','DISCONT','POLICE','DISCHARGED','RX','S48MHA') THEN 'Unconvicted' WHEN AT_IMPRISON_STATUSES_SEQ.IMPRISONMENT_STATUS IN ('UNKNOWN','BOBC','UNFIT','UNK_CUST','DIED') THEN 'Check Record' ELSE 'Convicted' END AS CONVICTED_UNCONVICTED_STATUS, TRUNC(CURRENT_TIMESTAMP) AS TODAY_, TRUNC(MONTHS_BETWEEN(CURRENT_TIMESTAMP, AT_OFFENDER.BIRTH_DATE) / 12) AS AGE_IN_YEARS, AT_OFFENDER_RELIGION.PROFILE_CODE AS RELIGION, DP1b_.ADMISSION_DATE, DP1b_.CURRENT_RELEASE_DATE, DP1b_.CURR_EFF_SENT_LEN FROM OMS_OWNER.OFFENDERS AT_OFFENDER JOIN OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING ON AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID JOIN OMS_OWNER.AGENCY_INTERNAL_LOCATIONS AT_AGENCY_INTERNAL_LOCATION_L4 ON AT_OFFENDER_BOOKING.LIVING_UNIT_ID = AT_AGENCY_INTERNAL_LOCATION_L4.INTERNAL_LOCATION_ID JOIN OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS ON AT_OFFENDER_BOOKING.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID AND AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST' JOIN OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS ON AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID AND NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI') JOIN OMS_OWNER.AGENCY_LOCATIONS AT_WING_ESTABLISHMENT ON AT_AGENCY_INTERNAL_LOCATION_L4.AGY_LOC_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID JOIN USER_ACCESSIBLE_CASELOADS WING_CASELOAD_SECURITY ON WING_CASELOAD_SECURITY.CASELOAD_ID = AT_WING_ESTABLISHMENT.AGY_LOC_ID AND WING_CASELOAD_SECURITY.USERNAME = (SELECT username FROM context_) LEFT JOIN (SELECT iep_level, description, agy_loc_id, offender_book_id, iep_date FROM (SELECT iep.iep_level, rc.description, iep.agy_loc_id, iep.offender_book_id, iep.iep_date, ROW_NUMBER() OVER (PARTITION BY iep.offender_book_id ORDER BY iep.iep_time DESC, iep.iep_level_seq DESC ) AS row_seq_filter FROM oms_owner.offender_iep_levels iep LEFT JOIN oms_owner.reference_codes rc ON rc.domain = 'IEP_LEVEL' AND rc.code   = iep.iep_level ) WHERE row_seq_filter = 1 ) DT_IEP_BAND_LAST ON DT_IEP_BAND_LAST.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID LEFT JOIN OMS_OWNER.OFFENDER_IMPRISON_STATUSES AT_OFFENDER_IMPRISON_STATUSES ON AT_OFFENDER_IMPRISON_STATUSES.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID AND (AT_OFFENDER_IMPRISON_STATUSES.LATEST_STATUS = 'Y' OR AT_OFFENDER_IMPRISON_STATUSES.LATEST_STATUS IS NULL) JOIN OMS_OWNER.OFFENDER_IMPRISON_STATUSES AT_OFFENDER_IMPRISON_STS ON AT_OFFENDER_IMPRISON_STS.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID AND AT_OFFENDER_IMPRISON_STS.LATEST_STATUS = 'Y' JOIN OMS_OWNER.IMPRISONMENT_STATUSES AT_IMPRISON_STATUSES_SEQ ON AT_IMPRISON_STATUSES_SEQ.IMPRISONMENT_STATUS = AT_OFFENDER_IMPRISON_STS.IMPRISONMENT_STATUS LEFT JOIN OMS_OWNER.OFFENDER_PROFILE_DETAILS AT_OFF_PROF_DET_NAT ON AT_OFF_PROF_DET_NAT.OFFENDER_BOOK_ID = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID AND AT_OFF_PROF_DET_NAT.PROFILE_TYPE = 'NAT' LEFT JOIN OMS_OWNER.PROFILE_CODES AT_NATIONALITY ON AT_NATIONALITY.PROFILE_TYPE = 'NAT' AND AT_NATIONALITY.PROFILE_CODE = AT_OFF_PROF_DET_NAT.PROFILE_CODE LEFT JOIN (SELECT offender_book_id, profile_code FROM (SELECT opd.offender_book_id, opd.profile_code, ROW_NUMBER() OVER (PARTITION BY opd.offender_book_id ORDER BY opd.create_datetime DESC NULLS LAST ) rn FROM oms_owner.offender_profile_details opd WHERE opd.profile_type = 'RELF' ) WHERE rn = 1 ) AT_OFFENDER_RELIGION ON AT_OFFENDER_RELIGION.offender_book_id = AT_OFFENDER_BOOKING.offender_book_id LEFT JOIN OMS_OWNER.REFERENCE_CODES AT_ETHNICITY_DESC ON AT_ETHNICITY_DESC.DOMAIN = 'ETHNICITY' AND AT_ETHNICITY_DESC.CODE   = AT_OFFENDER.RACE_CODE JOIN DP1b_ ON DP1b_.ID = AT_OFFENDER.OFFENDER_ID_DISPLAY WHERE AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y' AND AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = (SELECT establishment_code FROM prompt_) ), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, LAST_NAME, FIRST_NAME, UNIT_CODE_1, LOCATION, CAPACITY, IEP_LEVEL, BOOKING_BEGIN_DATE, IEP_DATE, PROFILE_CODE, ETHNIC_CODE, ETHNIC_DESCRIPTION, EFFECTIVE_DATE, CONVICTED_UNCONVICTED_STATUS, TODAY_, AGE_IN_YEARS, RELIGION, ADMISSION_DATE AS V_ADMISSIONDATE, CASE WHEN CURR_EFF_SENT_LEN = '00/00/00' THEN '' ELSE CURR_EFF_SENT_LEN END AS VSENTENCELENGTH, CURRENT_RELEASE_DATE AS VRELEASE, (TODAY_ - IEP_DATE) AS DAYS_ON_IEP FROM dataset_base_ )",
       "parameters": [{
@@ -31,7 +28,6 @@
         "referenceType": "establishment",
         "reportFieldType": "string",
         "display": "Establishment",
-        "description": "@Prompt('Establishment Code','A','Establishment\\Establishment Code',mono,free,,Not_Persistent,,User:3)",
         "mandatory": "true"
       }],
       "schema": {
@@ -41,7 +37,6 @@
             "name": "OFFENDER_ID_DISPLAY",
             "type": "string",
             "display": "NOMS Number",
-            "legacyId": "DP11.DO44",
             "legacySqlClass": "column"
           },
           {
@@ -49,7 +44,6 @@
             "name": "LAST_NAME",
             "type": "string",
             "display": "Last Name",
-            "legacyId": "DP11.DO45",
             "legacySqlClass": "column"
           },
           {
@@ -57,7 +51,6 @@
             "name": "FIRST_NAME",
             "type": "string",
             "display": "First Name",
-            "legacyId": "DP11.DO46",
             "legacySqlClass": "column"
           },
           {
@@ -65,7 +58,6 @@
             "name": "UNIT_CODE_1",
             "type": "string",
             "display": "Unit Code 1",
-            "legacyId": "DP11.DO472",
             "legacySqlClass": "column"
           },
           {
@@ -73,7 +65,6 @@
             "name": "LOCATION",
             "type": "string",
             "display": "Location",
-            "legacyId": "DP11.DO51f",
             "legacySqlClass": "column"
           },
           {
@@ -81,7 +72,6 @@
             "name": "CAPACITY",
             "type": "double",
             "display": "Unit Description 4 Capacity",
-            "legacyId": "DP11.DO1095",
             "legacySqlClass": "column"
           },
           {
@@ -89,7 +79,6 @@
             "name": "IEP_LEVEL",
             "type": "string",
             "display": "IEP Level",
-            "legacyId": "DP11.DO521",
             "legacySqlClass": "column"
           },
           {
@@ -97,7 +86,6 @@
             "name": "BOOKING_BEGIN_DATE",
             "type": "date",
             "display": "Booking Begin Date",
-            "legacyId": "DP11.DOb97",
             "legacySqlClass": "column"
           },
           {
@@ -105,7 +93,6 @@
             "name": "IEP_DATE",
             "type": "date",
             "display": "IEP Date",
-            "legacyId": "DP11.DOe41",
             "legacySqlClass": "column"
           },
           {
@@ -113,7 +100,6 @@
             "name": "PROFILE_CODE",
             "type": "string",
             "display": "Nationality Code",
-            "legacyId": "DP11.DO10d6",
             "legacySqlClass": "column"
           },
           {
@@ -121,7 +107,6 @@
             "name": "ETHNIC_CODE",
             "type": "string",
             "display": "Ethnic Code",
-            "legacyId": "DP11.DO88",
             "legacySqlClass": "column"
           },
           {
@@ -129,7 +114,6 @@
             "name": "ETHNIC_DESCRIPTION",
             "type": "string",
             "display": "Ethnic Description",
-            "legacyId": "DP11.DO9d",
             "legacySqlClass": "column"
           },
           {
@@ -137,7 +121,6 @@
             "name": "EFFECTIVE_DATE",
             "type": "date",
             "display": "Main Legal Status Effective Date",
-            "legacyId": "DP11.DObb5",
             "legacySqlClass": "column"
           },
           {
@@ -145,7 +128,6 @@
             "name": "CONVICTED_UNCONVICTED_STATUS",
             "type": "string",
             "display": "Convicted / Unconvicted Status",
-            "legacyId": "DP11.DO716",
             "legacySqlClass": "column"
           },
           {
@@ -153,7 +135,6 @@
             "name": "TODAY_",
             "type": "date",
             "display": "Today (Date only)",
-            "legacyId": "DP11.DO712",
             "legacySqlClass": "column"
           },
           {
@@ -161,7 +142,6 @@
             "name": "AGE_IN_YEARS",
             "type": "double",
             "display": "Age in Years",
-            "legacyId": "DP11.DOa15",
             "legacySqlClass": "column"
           },
           {
@@ -169,15 +149,13 @@
             "name": "RELIGION",
             "type": "string",
             "display": "Religion",
-            "legacyId": "DP11.DOb0",
             "legacySqlClass": "column"
           },
           {
             "index": 17,
             "name": "V_ADMISSIONDATE",
-            "type": "string",
+            "type": "date",
             "display": "V_ADMISSIONDATE",
-            "legacyId": "???",
             "legacySqlClass": "alias"
           },
           {
@@ -185,15 +163,13 @@
             "name": "VSENTENCELENGTH",
             "type": "string",
             "display": "VSENTENCELENGTH",
-            "legacyId": "???",
             "legacySqlClass": "alias"
           },
           {
             "index": 19,
             "name": "VRELEASE",
-            "type": "string",
+            "type": "date",
             "display": "VRELEASE",
-            "legacyId": "???",
             "legacySqlClass": "alias"
           },
           {
@@ -201,7 +177,6 @@
             "name": "DAYS_ON_IEP",
             "type": "long",
             "display": "Days On IEP",
-            "legacyId": "???",
             "legacySqlClass": "alias"
           }
         ]
@@ -410,7 +385,6 @@
     {
       "id": "3377299/DP1a",
       "name": "All IEP Levels",
-      "description": "Demographic",
       "datasource": "nomis",
       "query": "dataset_base_ AS (SELECT AT_OFFENDER_IEP_LEVEL_DESC.DESCRIPTION AS DESCRIPTION FROM OMS_OWNER.REFERENCE_CODES AT_OFFENDER_IEP_LEVEL_DESC WHERE (AT_OFFENDER_IEP_LEVEL_DESC.DOMAIN (+) = 'IEP_LEVEL')), dataset_ AS (SELECT DESCRIPTION FROM dataset_base_)",
       "parameters": [],
@@ -421,7 +395,6 @@
             "name": "DESCRIPTION",
             "type": "string",
             "display": "IEP Band Description",
-            "legacyId": "DP1a.DO263",
             "legacySqlClass": "column"
           }
         ]
@@ -430,7 +403,6 @@
     {
       "id": "3377299/DP1b",
       "name": "Prisoner Sentence and Admission Dates",
-      "description": "Demographic",
       "datasource": "nomis",
       "query": "dataset_base_ AS (SELECT AT_OFFENDER.OFFENDER_ID_DISPLAY AS OFFENDER_ID_DISPLAY, CASE WHEN NOT AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE WHEN AT_OFFENDER_RELEASE_DETAILS.RELEASE_DATE IS NULL THEN DT_LAST_RELEASE_DATE.LAST_REL_DATE ELSE NULL END AS CURRENT_RELEASE_DATE, CURR_EFF_SENT_LEN.CURR_EFF_SENT_LEN AS CURR_EFF_SENT_LEN, DT_ADMISSION.ADMISSION_DATE AS ADMISSION_DATE FROM OMS_OWNER.OFFENDERS AT_OFFENDER, OMS_OWNER.OFFENDER_BOOKINGS AT_OFFENDER_BOOKING, OMS_OWNER.AGENCY_LOCATIONS AT_OFFENDERS_LOCATIONS, OMS_OWNER.CASELOAD_AGENCY_LOCATIONS AT_CASELOAD_LOCATIONS, OMS_OWNER.OFFENDER_RELEASE_DETAILS AT_OFFENDER_RELEASE_DETAILS, (SELECT AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID, CASE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.HDCAD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.APD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.PRRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.ARD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.CRD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.NPD_CALCULATED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_OVERRIDED_DATE WHEN NOT AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE IS NULL THEN AT_OFFENDER_SENT_CALCULATIONS.MTD_CALCULATED_DATE ELSE NULL END AS Last_Rel_Date, EFFECTIVE_SENTENCE_LENGTH FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS AT_OFFENDER_SENT_CALCULATIONS WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE AT_OFFENDER_SENT_CALCULATIONS.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) DT_LAST_RELEASE_DATE, (SELECT OFF_BOOK.OFFENDER_BOOK_ID, CASE WHEN LIFE_FLAG.LIFE_SENTENCE_FLAG = 'Y' THEN 'Life' ELSE SENT_CALC.EFFECTIVE_SENTENCE_LENGTH END AS CURR_EFF_SENT_LEN FROM (SELECT DISTINCT OFFENDER_SENTENCE_TERMS.OFFENDER_BOOK_ID, OFFENDER_SENTENCE_TERMS.LIFE_SENTENCE_FLAG FROM OFFENDER_SENTENCE_TERMS WHERE OFFENDER_SENTENCE_TERMS.LIFE_SENTENCE_FLAG = 'Y') LIFE_FLAG, OMS_OWNER.OFFENDER_SENT_CALCULATIONS SENT_CALC, OMS_OWNER.OFFENDER_BOOKINGS OFF_BOOK WHERE (OFF_BOOK.OFFENDER_BOOK_ID = SENT_CALC.OFFENDER_BOOK_ID (+)) AND (LIFE_FLAG.OFFENDER_BOOK_ID (+) = SENT_CALC.OFFENDER_BOOK_ID) AND SENT_CALC.OFFENDER_SENT_CALCULATION_ID = (SELECT MAX(A.OFFENDER_SENT_CALCULATION_ID) FROM OMS_OWNER.OFFENDER_SENT_CALCULATIONS A WHERE SENT_CALC.OFFENDER_BOOK_ID = A.OFFENDER_BOOK_ID)) CURR_EFF_SENT_LEN, (SELECT DISTINCT m.OFFENDER_BOOK_ID, MAX(m.MOVEMENT_TIME) AS ADMISSION_DATE FROM OMS_OWNER.OFFENDER_EXTERNAL_MOVEMENTS m, OMS_OWNER.offender_bookings h WHERE h.booking_status = 'O' AND h.active_flag = 'Y' AND m.direction_code = 'IN' AND m.Movement_reason_code <> 'R' AND m.Movement_type = 'ADM' AND m.to_agy_loc_id = h.agy_loc_id AND h.offender_book_id = m.offender_book_id GROUP BY m.OFFENDER_BOOK_ID) DT_ADMISSION WHERE (AT_OFFENDER.OFFENDER_ID = AT_OFFENDER_BOOKING.OFFENDER_ID) AND (AT_OFFENDERS_LOCATIONS.AGENCY_LOCATION_TYPE = 'INST') AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = AT_OFFENDER_RELEASE_DETAILS.OFFENDER_BOOK_ID (+)) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_LAST_RELEASE_DATE.OFFENDER_BOOK_ID (+)) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDER_BOOKING.AGY_LOC_ID) AND (AT_CASELOAD_LOCATIONS.AGY_LOC_ID = AT_OFFENDERS_LOCATIONS.AGY_LOC_ID (+)) AND (NOT AT_CASELOAD_LOCATIONS.AGY_LOC_ID IN ('OUT', 'TRN') AND NOT AT_CASELOAD_LOCATIONS.CASELOAD_ID IN ('ADMINC', 'CADM_I', 'MULTI')) AND (CURR_EFF_SENT_LEN.OFFENDER_BOOK_ID (+) = AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID) AND (AT_OFFENDER_BOOKING.OFFENDER_BOOK_ID = DT_ADMISSION.OFFENDER_BOOK_ID (+)) AND ((AT_OFFENDER_BOOKING.ACTIVE_FLAG = 'Y') AND (AT_OFFENDERS_LOCATIONS.AGY_LOC_ID = 'BFI'))), dataset_ AS (SELECT OFFENDER_ID_DISPLAY, CURRENT_RELEASE_DATE, CURR_EFF_SENT_LEN, ADMISSION_DATE FROM dataset_base_)",
       "parameters": [],
@@ -441,7 +413,6 @@
             "name": "OFFENDER_ID_DISPLAY",
             "type": "string",
             "display": "NOMS Number",
-            "legacyId": "DP1b.DO44",
             "legacySqlClass": "column"
           },
           {
@@ -449,7 +420,6 @@
             "name": "CURRENT_RELEASE_DATE",
             "type": "date",
             "display": "Current Release Date",
-            "legacyId": "DP1b.DOb29",
             "legacySqlClass": "column"
           },
           {
@@ -457,7 +427,6 @@
             "name": "CURR_EFF_SENT_LEN",
             "type": "string",
             "display": "Current Effective Sentence Length",
-            "legacyId": "DP1b.DObf6",
             "legacySqlClass": "column"
           },
           {
@@ -465,7 +434,6 @@
             "name": "ADMISSION_DATE",
             "type": "date",
             "display": "Admission Date",
-            "legacyId": "DP1b.DOc6a",
             "legacySqlClass": "column"
           }
         ]
@@ -503,12 +471,14 @@
         {
           "id": "prisoner-distinct-count-per-location-and-iep-level-non-sectioned",
           "template": "page-header",
-          "dataset": "$ref:prisoner-distinct-count-per-location-and-iep-level-non-sectioned"
+          "dataset": "$ref:prisoner-distinct-count-per-location-and-iep-level-non-sectioned",
+          "field": []
         },
         {
           "id": "prisoner-sum-total-count-per-location-and-iep-level-non-section",
           "template": "page-header",
-          "dataset": "$ref:prisoner-sum-total-count-per-location-and-iep-level-non-section"
+          "dataset": "$ref:prisoner-sum-total-count-per-location-and-iep-level-non-section",
+          "field": []
         }
       ],
       "feature": [
@@ -533,17 +503,20 @@
         {
           "id": "prisoner-distinct-count-by-iep-level",
           "template": "section-header",
-          "dataset": "$ref:prisoner-distinct-count-by-iep-level"
+          "dataset": "$ref:prisoner-distinct-count-by-iep-level",
+          "field": []
         },
         {
           "id": "prisoner-total-row-count-by-iep-level",
           "template": "section-footer",
-          "dataset": "$ref:prisoner-total-row-count-by-iep-level"
+          "dataset": "$ref:prisoner-total-row-count-by-iep-level",
+          "field": []
         },
         {
           "id": "prisoner-grand-total-row-count",
           "template": "page-footer",
-          "dataset": "$ref:prisoner-total-row-count"
+          "dataset": "$ref:prisoner-total-row-count",
+          "field": []
         }
       ],
       "feature": [
@@ -561,8 +534,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO521"
+            "defaultsort": false
           },
           {
             "name": "$ref:OFFENDER_ID_DISPLAY",
@@ -570,8 +542,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacyId": "DP11.DO44"
+            "defaultsort": false
           },
           {
             "name": "$ref:LAST_NAME",
@@ -579,8 +550,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO45"
+            "defaultsort": false
           },
           {
             "name": "$ref:FIRST_NAME",
@@ -588,8 +558,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO46"
+            "defaultsort": false
           },
           {
             "name": "$ref:AGE_IN_YEARS",
@@ -597,8 +566,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOa15"
+            "defaultsort": false
           },
           {
             "name": "$ref:PROFILE_CODE",
@@ -606,8 +574,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO10d6"
+            "defaultsort": false
           },
           {
             "name": "$ref:RELIGION",
@@ -615,8 +582,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOb0"
+            "defaultsort": false
           },
           {
             "name": "$ref:ETHNIC_CODE",
@@ -624,8 +590,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO88"
+            "defaultsort": false
           },
           {
             "name": "$ref:V_ADMISSIONDATE",
@@ -633,8 +598,7 @@
             "formula": "format_date(${V_ADMISSIONDATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=[Admission Date]"
+            "defaultsort": false
           },
           {
             "name": "$ref:CONVICTED_UNCONVICTED_STATUS",
@@ -642,8 +606,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO716"
+            "defaultsort": false
           },
           {
             "name": "$ref:EFFECTIVE_DATE",
@@ -651,8 +614,7 @@
             "formula": "format_date(${EFFECTIVE_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DObb5"
+            "defaultsort": false
           },
           {
             "name": "$ref:VSENTENCELENGTH",
@@ -660,8 +622,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=If([Current Effective Sentence Length]=\"00/00/00\";\"\";[Current Effective Sentence Length])"
+            "defaultsort": false
           },
           {
             "name": "$ref:VRELEASE",
@@ -669,8 +630,7 @@
             "formula": "format_date(${VRELEASE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=[Current Release Date]"
+            "defaultsort": false
           },
           {
             "name": "$ref:LOCATION",
@@ -678,8 +638,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO51f"
+            "defaultsort": false
           },
           {
             "name": "$ref:BOOKING_BEGIN_DATE",
@@ -687,8 +646,7 @@
             "formula": "format_date(${BOOKING_BEGIN_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOb97"
+            "defaultsort": false
           },
           {
             "name": "$ref:IEP_DATE",
@@ -696,8 +654,7 @@
             "formula": "format_date(${IEP_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
-            "defaultsort": true,
-            "legacyId": "DP11.DOe41"
+            "defaultsort": true
           },
           {
             "name": "$ref:DAYS_ON_IEP",
@@ -705,8 +662,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOe41"
+            "defaultsort": false
           }
         ]
       }
@@ -722,7 +678,8 @@
         {
           "id": "prisoner-total-row-count-per-legal-status",
           "template": "section-footer",
-          "dataset": "$ref:prisoner-total-row-count-per-legal-status"
+          "dataset": "$ref:prisoner-total-row-count-per-legal-status",
+          "field": []
         }
       ],
       "feature": [
@@ -740,8 +697,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": true,
-            "legacyId": "DP11.DO716"
+            "defaultsort": true
           },
           {
             "name": "$ref:IEP_LEVEL",
@@ -749,8 +705,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": true,
-            "legacyId": "DP11.DO521"
+            "defaultsort": true
           },
           {
             "name": "$ref:OFFENDER_ID_DISPLAY",
@@ -758,8 +713,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacyId": "DP11.DO44"
+            "defaultsort": false
           },
           {
             "name": "$ref:LAST_NAME",
@@ -767,8 +721,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO45"
+            "defaultsort": false
           },
           {
             "name": "$ref:FIRST_NAME",
@@ -776,8 +729,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO46"
+            "defaultsort": false
           },
           {
             "name": "$ref:AGE_IN_YEARS",
@@ -785,8 +737,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOa15"
+            "defaultsort": false
           },
           {
             "name": "$ref:PROFILE_CODE",
@@ -794,8 +745,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO10d6"
+            "defaultsort": false
           },
           {
             "name": "$ref:ETHNIC_CODE",
@@ -803,8 +753,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO88"
+            "defaultsort": false
           },
           {
             "name": "$ref:V_ADMISSIONDATE",
@@ -812,8 +761,7 @@
             "formula": "format_date(${V_ADMISSIONDATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=[Admission Date]"
+            "defaultsort": false
           },
           {
             "name": "$ref:EFFECTIVE_DATE",
@@ -821,8 +769,7 @@
             "formula": "format_date(${EFFECTIVE_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DObb5"
+            "defaultsort": false
           },
           {
             "name": "$ref:VSENTENCELENGTH",
@@ -830,8 +777,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=If([Current Effective Sentence Length]=\"00/00/00\";\"\";[Current Effective Sentence Length])"
+            "defaultsort": false
           },
           {
             "name": "$ref:VRELEASE",
@@ -839,8 +785,7 @@
             "formula": "format_date(${VRELEASE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=[Current Release Date]"
+            "defaultsort": false
           },
           {
             "name": "$ref:LOCATION",
@@ -848,8 +793,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO51f"
+            "defaultsort": false
           },
           {
             "name": "$ref:BOOKING_BEGIN_DATE",
@@ -857,8 +801,7 @@
             "formula": "format_date(${BOOKING_BEGIN_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOb97"
+            "defaultsort": false
           },
           {
             "name": "$ref:IEP_DATE",
@@ -866,8 +809,7 @@
             "formula": "format_date(${IEP_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOe41"
+            "defaultsort": false
           },
           {
             "name": "$ref:DAYS_ON_IEP",
@@ -875,8 +817,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOe41"
+            "defaultsort": false
           }
         ]
       }
@@ -892,12 +833,14 @@
         {
           "id": "prisoner-distinct-count-per-location-and-iep-level",
           "template": "section-header",
-          "dataset": "$ref:prisoner-distinct-count-per-location-and-iep-level"
+          "dataset": "$ref:prisoner-distinct-count-per-location-and-iep-level",
+          "field": []
         },
         {
           "id": "prisoner-total-row-count-per-location-and-iep-level",
           "template": "section-header",
-          "dataset": "$ref:prisoner-total-row-count-per-location-and-iep-level"
+          "dataset": "$ref:prisoner-total-row-count-per-location-and-iep-level",
+          "field": []
         }
       ],
       "feature": [
@@ -915,8 +858,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO472"
+            "defaultsort": false
           },
           {
             "name": "$ref:OFFENDER_ID_DISPLAY",
@@ -924,8 +866,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacyId": "DP11.DO44"
+            "defaultsort": false
           },
           {
             "name": "$ref:LAST_NAME",
@@ -933,8 +874,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO45"
+            "defaultsort": false
           },
           {
             "name": "$ref:FIRST_NAME",
@@ -942,8 +882,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO46"
+            "defaultsort": false
           },
           {
             "name": "$ref:AGE_IN_YEARS",
@@ -951,8 +890,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOa15"
+            "defaultsort": false
           },
           {
             "name": "$ref:PROFILE_CODE",
@@ -960,8 +898,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO10d6"
+            "defaultsort": false
           },
           {
             "name": "$ref:ETHNIC_CODE",
@@ -969,8 +906,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO88"
+            "defaultsort": false
           },
           {
             "name": "$ref:V_ADMISSIONDATE",
@@ -978,8 +914,7 @@
             "formula": "format_date(${V_ADMISSIONDATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=[Admission Date]"
+            "defaultsort": false
           },
           {
             "name": "$ref:CONVICTED_UNCONVICTED_STATUS",
@@ -987,8 +922,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO716"
+            "defaultsort": false
           },
           {
             "name": "$ref:EFFECTIVE_DATE",
@@ -996,8 +930,7 @@
             "formula": "format_date(${EFFECTIVE_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DObb5"
+            "defaultsort": false
           },
           {
             "name": "$ref:VSENTENCELENGTH",
@@ -1005,8 +938,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=If([Current Effective Sentence Length]=\"00/00/00\";\"\";[Current Effective Sentence Length])"
+            "defaultsort": false
           },
           {
             "name": "$ref:VRELEASE",
@@ -1014,8 +946,7 @@
             "formula": "format_date(${VRELEASE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=[Current Release Date]"
+            "defaultsort": false
           },
           {
             "name": "$ref:LOCATION",
@@ -1023,8 +954,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": true,
-            "legacyId": "DP11.DO51f"
+            "defaultsort": true
           },
           {
             "name": "$ref:CAPACITY",
@@ -1040,8 +970,7 @@
             "formula": "format_date(${BOOKING_BEGIN_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOb97"
+            "defaultsort": false
           },
           {
             "name": "$ref:IEP_LEVEL",
@@ -1049,8 +978,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacyId": "DP11.DO521"
+            "defaultsort": false
           },
           {
             "name": "$ref:IEP_DATE",
@@ -1058,8 +986,7 @@
             "formula": "format_date(${IEP_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOe41"
+            "defaultsort": false
           },
           {
             "name": "$ref:DAYS_ON_IEP",
@@ -1067,8 +994,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOe41"
+            "defaultsort": false
           }
         ]
       }
@@ -1084,7 +1010,8 @@
         {
           "id": "prisoner-total-row-count",
           "template": "page-footer",
-          "dataset": "$ref:prisoner-total-row-count"
+          "dataset": "$ref:prisoner-total-row-count",
+          "field": []
         }
       ],
       "feature": [
@@ -1101,8 +1028,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacyId": "DP11.DO44"
+            "defaultsort": false
           },
           {
             "name": "$ref:LAST_NAME",
@@ -1110,8 +1036,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": true,
-            "legacyId": "DP11.DO45"
+            "defaultsort": true
           },
           {
             "name": "$ref:FIRST_NAME",
@@ -1119,8 +1044,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO46"
+            "defaultsort": false
           },
           {
             "name": "$ref:AGE_IN_YEARS",
@@ -1128,8 +1052,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOa15"
+            "defaultsort": false
           },
           {
             "name": "$ref:PROFILE_CODE",
@@ -1137,8 +1060,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO10d6"
+            "defaultsort": false
           },
           {
             "name": "$ref:ETHNIC_CODE",
@@ -1146,8 +1068,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO88"
+            "defaultsort": false
           },
           {
             "name": "$ref:V_ADMISSIONDATE",
@@ -1155,8 +1076,7 @@
             "formula": "format_date(${V_ADMISSIONDATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=[Admission Date]"
+            "defaultsort": false
           },
           {
             "name": "$ref:CONVICTED_UNCONVICTED_STATUS",
@@ -1164,8 +1084,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO716"
+            "defaultsort": false
           },
           {
             "name": "$ref:EFFECTIVE_DATE",
@@ -1173,8 +1092,7 @@
             "formula": "format_date(${EFFECTIVE_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DObb5"
+            "defaultsort": false
           },
           {
             "name": "$ref:VSENTENCELENGTH",
@@ -1182,8 +1100,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=If([Current Effective Sentence Length]=\"00/00/00\";\"\";[Current Effective Sentence Length])"
+            "defaultsort": false
           },
           {
             "name": "$ref:VRELEASE",
@@ -1191,8 +1108,7 @@
             "formula": "format_date(${VRELEASE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=[Current Release Date]"
+            "defaultsort": false
           },
           {
             "name": "$ref:LOCATION",
@@ -1200,8 +1116,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO51f"
+            "defaultsort": false
           },
           {
             "name": "$ref:BOOKING_BEGIN_DATE",
@@ -1209,8 +1124,7 @@
             "formula": "format_date(${BOOKING_BEGIN_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOb97"
+            "defaultsort": false
           },
           {
             "name": "$ref:IEP_LEVEL",
@@ -1218,8 +1132,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacyId": "DP11.DO521"
+            "defaultsort": false
           },
           {
             "name": "$ref:IEP_DATE",
@@ -1227,8 +1140,7 @@
             "formula": "format_date(${IEP_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOe41"
+            "defaultsort": false
           },
           {
             "name": "$ref:DAYS_ON_IEP",
@@ -1236,8 +1148,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOe41"
+            "defaultsort": false
           }
         ]
       }
@@ -1253,7 +1164,8 @@
         {
           "id": "prisoner-total-row-count",
           "template": "page-footer",
-          "dataset": "$ref:prisoner-total-row-count"
+          "dataset": "$ref:prisoner-total-row-count",
+          "field": []
         }
       ],
       "feature": [
@@ -1270,8 +1182,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": true,
-            "legacyId": "DP11.DO44"
+            "defaultsort": true
           },
           {
             "name": "$ref:LAST_NAME",
@@ -1279,8 +1190,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO45"
+            "defaultsort": false
           },
           {
             "name": "$ref:FIRST_NAME",
@@ -1288,8 +1198,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO46"
+            "defaultsort": false
           },
           {
             "name": "$ref:AGE_IN_YEARS",
@@ -1297,8 +1206,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOa15"
+            "defaultsort": false
           },
           {
             "name": "$ref:PROFILE_CODE",
@@ -1306,8 +1214,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO10d6"
+            "defaultsort": false
           },
           {
             "name": "$ref:ETHNIC_CODE",
@@ -1315,8 +1222,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO88"
+            "defaultsort": false
           },
           {
             "name": "$ref:V_ADMISSIONDATE",
@@ -1324,8 +1230,7 @@
             "formula": "format_date(${V_ADMISSIONDATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=[Admission Date]"
+            "defaultsort": false
           },
           {
             "name": "$ref:CONVICTED_UNCONVICTED_STATUS",
@@ -1333,8 +1238,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO716"
+            "defaultsort": false
           },
           {
             "name": "$ref:EFFECTIVE_DATE",
@@ -1342,8 +1246,7 @@
             "formula": "format_date(${EFFECTIVE_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DObb5"
+            "defaultsort": false
           },
           {
             "name": "$ref:VSENTENCELENGTH",
@@ -1351,8 +1254,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=If([Current Effective Sentence Length]=\"00/00/00\";\"\";[Current Effective Sentence Length])"
+            "defaultsort": false
           },
           {
             "name": "$ref:VRELEASE",
@@ -1360,8 +1262,7 @@
             "formula": "format_date(${VRELEASE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=[Current Release Date]"
+            "defaultsort": false
           },
           {
             "name": "$ref:LOCATION",
@@ -1369,8 +1270,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO51f"
+            "defaultsort": false
           },
           {
             "name": "$ref:BOOKING_BEGIN_DATE",
@@ -1378,8 +1278,7 @@
             "formula": "format_date(${BOOKING_BEGIN_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOb97"
+            "defaultsort": false
           },
           {
             "name": "$ref:IEP_LEVEL",
@@ -1387,8 +1286,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacyId": "DP11.DO521"
+            "defaultsort": false
           },
           {
             "name": "$ref:IEP_DATE",
@@ -1396,8 +1294,7 @@
             "formula": "format_date(${IEP_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOe41"
+            "defaultsort": false
           },
           {
             "name": "$ref:DAYS_ON_IEP",
@@ -1405,8 +1302,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOe41"
+            "defaultsort": false
           }
         ]
       }
@@ -1422,7 +1318,8 @@
         {
           "id": "prisoner-total-row-count",
           "template": "page-footer",
-          "dataset": "$ref:prisoner-total-row-count"
+          "dataset": "$ref:prisoner-total-row-count",
+          "field": []
         }
       ],
       "feature": [
@@ -1439,8 +1336,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacyId": "DP11.DO44"
+            "defaultsort": false
           },
           {
             "name": "$ref:LAST_NAME",
@@ -1448,8 +1344,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO45"
+            "defaultsort": false
           },
           {
             "name": "$ref:FIRST_NAME",
@@ -1457,8 +1352,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO46"
+            "defaultsort": false
           },
           {
             "name": "$ref:AGE_IN_YEARS",
@@ -1466,8 +1360,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOa15"
+            "defaultsort": false
           },
           {
             "name": "$ref:PROFILE_CODE",
@@ -1475,8 +1368,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": true,
-            "legacyId": "DP11.DO10d6"
+            "defaultsort": true
           },
           {
             "name": "$ref:ETHNIC_CODE",
@@ -1484,8 +1376,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO88"
+            "defaultsort": false
           },
           {
             "name": "$ref:V_ADMISSIONDATE",
@@ -1493,8 +1384,7 @@
             "formula": "format_date(${V_ADMISSIONDATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=[Admission Date]"
+            "defaultsort": false
           },
           {
             "name": "$ref:CONVICTED_UNCONVICTED_STATUS",
@@ -1502,8 +1392,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO716"
+            "defaultsort": false
           },
           {
             "name": "$ref:EFFECTIVE_DATE",
@@ -1511,8 +1400,7 @@
             "formula": "format_date(${EFFECTIVE_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=If([Current Effective Sentence Length]=\"00/00/00\";\"\";[Current Effective Sentence Length])"
+            "defaultsort": false
           },
           {
             "name": "$ref:VSENTENCELENGTH",
@@ -1520,8 +1408,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=If([Current Effective Sentence Length]=\"00/00/00\";\"\";[Current Effective Sentence Length])"
+            "defaultsort": false
           },
           {
             "name": "$ref:VRELEASE",
@@ -1529,8 +1416,7 @@
             "formula": "format_date(${VRELEASE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacySql": "=[Current Release Date]"
+            "defaultsort": false
           },
           {
             "name": "$ref:LOCATION",
@@ -1538,8 +1424,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO51f"
+            "defaultsort": false
           },
           {
             "name": "$ref:BOOKING_BEGIN_DATE",
@@ -1547,8 +1432,7 @@
             "formula": "format_date(${BOOKING_BEGIN_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOb97"
+            "defaultsort": false
           },
           {
             "name": "$ref:IEP_LEVEL",
@@ -1556,8 +1440,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacyId": "DP11.DO521"
+            "defaultsort": false
           },
           {
             "name": "$ref:IEP_DATE",
@@ -1565,8 +1448,7 @@
             "formula": "format_date(${IEP_DATE}, 'dd/MM/yyyy')",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOe41"
+            "defaultsort": false
           },
           {
             "name": "$ref:DAYS_ON_IEP",
@@ -1574,8 +1456,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DOe41"
+            "defaultsort": false
           }
         ]
       }
@@ -1591,12 +1472,14 @@
         {
           "id": "prisoner-distinct-count-by-iep-level-non-sectioned",
           "template": "page-header",
-          "dataset": "$ref:prisoner-distinct-count-by-iep-level-non-sectioned"
+          "dataset": "$ref:prisoner-distinct-count-by-iep-level-non-sectioned",
+          "field": []
         },
         {
           "id": "prisoner-grand-total-row-count",
           "template": "page-footer",
-          "dataset": "$ref:prisoner-total-row-count"
+          "dataset": "$ref:prisoner-total-row-count",
+          "field": []
         }
       ],
       "feature": [
@@ -1613,8 +1496,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": true,
-            "legacyId": "DP11.DO51f"
+            "defaultsort": true
           },
           {
             "name": "$ref:LAST_NAME",
@@ -1622,8 +1504,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO45"
+            "defaultsort": false
           },
           {
             "name": "$ref:OFFENDER_ID_DISPLAY",
@@ -1631,8 +1512,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacyId": "DP11.DO44"
+            "defaultsort": false
           },
           {
             "name": "$ref:IEP_LEVEL",
@@ -1640,8 +1520,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacyId": "DP11.DO521"
+            "defaultsort": false
           }
         ]
       }
@@ -1657,12 +1536,14 @@
         {
           "id": "prisoner-distinct-count-by-iep-level-non-sectioned",
           "template": "page-header",
-          "dataset": "$ref:prisoner-distinct-count-by-iep-level-non-sectioned"
+          "dataset": "$ref:prisoner-distinct-count-by-iep-level-non-sectioned",
+          "field": []
         },
         {
           "id": "prisoner-grand-total-row-count",
           "template": "page-footer",
-          "dataset": "$ref:prisoner-total-row-count"
+          "dataset": "$ref:prisoner-total-row-count",
+          "field": []
         }
       ],
       "feature": [
@@ -1679,8 +1560,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false,
-            "legacyId": "DP11.DO51f"
+            "defaultsort": false
           },
           {
             "name": "$ref:LAST_NAME",
@@ -1688,8 +1568,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": true,
-            "legacyId": "DP11.DO45"
+            "defaultsort": true
           },
           {
             "name": "$ref:OFFENDER_ID_DISPLAY",
@@ -1697,8 +1576,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacyId": "DP11.DO44"
+            "defaultsort": false
           },
           {
             "name": "$ref:IEP_LEVEL",
@@ -1706,8 +1584,7 @@
             "formula": "",
             "visible": "true",
             "sortable": false,
-            "defaultsort": false,
-            "legacyId": "DP11.DO521"
+            "defaultsort": false
           }
         ]
       }
