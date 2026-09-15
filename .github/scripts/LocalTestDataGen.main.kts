@@ -130,7 +130,8 @@ fun loadDPDtoGenerateTestData(): Map<String, Map<String, String>> {
 
             // Create new datasource array
             val mutableRoot = root as ObjectNode
-            val sql = "SELECT * FROM datamart.datahub_test.$tableName"
+            val currentName = root.get("name").asText()
+            root.put("name", "Test $currentName")
 
             mutableRoot.set<JsonNode>(
                 "datasource",
@@ -141,6 +142,7 @@ fun loadDPDtoGenerateTestData(): Map<String, Map<String, String>> {
                 )
             )
 
+            val sql = "SELECT * FROM datamart.datahub_test.$tableName"
             mutableRoot["dataset"]
                 ?.firstOrNull { it["id"]?.asText() == firstDatasetId }
                 ?.let { dataset ->
