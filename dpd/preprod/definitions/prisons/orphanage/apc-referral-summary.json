@@ -1,0 +1,1090 @@
+{
+    "id": "apc001-referral-summary",
+    "name": "Referral statistics associated with the Building Choices (BC) programme",
+    "description": "Filter referrals by various associated parameters, So that you can analyse the current state of programme referrals",
+    "metadata": {
+        "author": "DPR",
+        "owner": "DPR",
+        "version": "0.1"
+    },
+    "datasource": [
+        {
+            "id": "athena_apc",
+            "name": "Athena APC",
+            "database": "public",
+            "catalog": "dps_acc_pro_custody",
+            "dialect": "postgres/19"
+        },
+        {
+            "id": "datamart",
+            "name": "datamart"
+        }
+    ],
+    "dataset": [
+        {
+            "id": "referral-summary",
+            "name": "Referral summary",
+            "datasource": "athena_apc",
+            "query": "SELECT c.name AS name, c.audience AS audience, r.status AS status, o.organisation_id, COUNT(r.referral_id) AS referral_count FROM referral r LEFT JOIN offering o ON r.offering_id = o.offering_id LEFT JOIN course c ON o.course_id = c.course_id WHERE r.deleted = FALSE AND (submitted_on) >= (SELECT START_DATE from prompt_) and (submitted_on) <= (SELECT END_DATE from prompt_) GROUP BY CUBE (c.name, c.audience, r.status,o.organisation_id ) ORDER BY c.name",
+            "parameters": [
+                {
+                    "index": 0,
+                    "name": "start_date",
+                    "filterType": "date",
+                    "reportFieldType": "date",
+                    "display": "Enter Start Date",
+                    "mandatory": "true"
+                },
+                {
+                    "index": 1,
+                    "name": "end_date",
+                    "filterType": "date",
+                    "reportFieldType": "date",
+                    "display": "Enter End Date",
+                    "mandatory": "true"
+                }
+            ],
+            "schema": {
+                "field": [
+                    {
+                        "name": "name",
+                        "type": "string",
+                        "display": "Name"
+                    },
+                    {
+                        "name": "audience",
+                        "type": "string",
+                        "display": "Audience",
+                        "filter": {
+                            "index": 1,
+                            "type": "multiselect",
+                            "interactive": "true",
+                            "staticoptions": [
+                                {
+                                    "name": "Sexual offence",
+                                    "display": "Sexual offence"
+                                },
+                                {
+                                    "name": "General violence offence",
+                                    "display": "General violence offence"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "type": "int",
+                        "display": "Status",
+                        "filter": {
+                            "index": 1,
+                            "type": "multiselect",
+                            "interactive": "true",
+                            "staticoptions": [
+                                {
+                                    "name": "DESELECTED",
+                                    "display": "DESELECTED"
+                                },
+                                {
+                                    "name": "WITHDRAWN",
+                                    "display": "WITHDRAWN"
+                                },
+                                {
+                                    "name": "REFERRAL_STARTED",
+                                    "display": "REFERRAL_STARTED"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "organisation_id",
+                        "type": "string",
+                        "display": "Org",
+                        "filter": {
+                            "type": "multiselect",
+                            "interactive": true,
+                            "dynamicoptions": {
+                                "returnAsStaticOptions": true,
+                                "maximumOptions": 130,
+                                "dataset": "$ref:prisons",
+                                "name": "code",
+                                "display": "name"
+                            }
+                        }
+                    },
+                    {
+                        "name": "referral_count",
+                        "type": "string",
+                        "display": "Count"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "courses",
+            "name": "courses",
+            "datasource": "athena_apc",
+            "query": "SELECT name FROM public.course WHERE withdrawn = false",
+            "schema": {
+                "field": [
+                    {
+                        "name": "name",
+                        "type": "string",
+                        "display": ""
+                    }
+                ]
+            }
+        },
+        {
+            "id": "prisons",
+            "name": "prisons",
+            "datasource": "datamart",
+            "query": "SELECT prison_id as code,name FROM establishment.prison WHERE active = TRUE ORDER by name",
+            "schema": {
+                "field": [
+                    {
+                        "name": "code",
+                        "type": "string"
+                    },
+                    {
+                        "name": "name",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "individual-referrals",
+            "name": "individuals",
+            "datasource": "athena_apc",
+            "query": " SELECT r.prison_number, forename, surname, gender, location, earliest_release_date, earliest_release_date_type, CASE WHEN earliest_release_date - current_date > 180 THEN 'No' WHEN earliest_release_date - current_date > 0 THEN 'Yes' ELSE 'N/A' END AS earliest_release_date_indicator, sentence_type, r.status, referral_id, r.submitted_on, r.additional_information, c.name FROM public.referral r LEFT JOIN person p ON p.prison_number = r.prison_number LEFT JOIN offering o ON o.offering_id = r.offering_id LEFT JOIN course c ON c.course_id = o.course_id ",
+            "schema": {
+                "field": [
+                    {
+                        "name": "prison_number",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "forename",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "surname",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "gender",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "location",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "earliest_release_date",
+                        "type": "date",
+                        "display": ""
+                    },
+                    {
+                        "name": "earliest_release_date_type",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "earliest_release_date_indicator",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "sentence_type",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "status",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "referral_id",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "submitted_on",
+                        "type": "date",
+                        "display": ""
+                    },
+                    {
+                        "name": "additional_information",
+                        "type": "string",
+                        "display": ""
+                    },
+                    {
+                        "name": "name",
+                        "type": "string",
+                        "display": ""
+                    }
+                ]
+            }
+        }
+    ],
+    "policy": [
+        {
+            "id": "access",
+            "type": "access",
+            "rule": [
+                {
+                    "effect": "permit",
+                    "condition": [
+                        {
+                            "match": [
+                                "${role}",
+                                "ROLE_PRISONS_REPORTING_USER"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "report": [
+        {
+            "id": "referrals-by-individual",
+            "name": "Table of all referrals",
+            "description": "A table for all referrals, with the ability to subsequently sort and filter the data by any of the fields.",
+            "classification": "Official",
+            "version": "1.0.0",
+            "render": "HTML",
+            "dataset": "$ref:individual-referrals",
+            "feature": [
+                {
+                    "type": "print"
+                }
+            ],
+            "metadata": {
+                "hints": [
+                    "interactive"
+                ]
+            },
+            "specification": {
+                "template": "list",
+                "field": [
+                    {
+                        "name": "$ref:prison_number",
+                        "display": "Prison Number",
+                        "formula": "make_url('https://digital.prison.service.justice.gov.uk/prisoner/${prison_number}/',${prison_number},TRUE)",
+                        "visible": "true",
+                        "sortable": "true",
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:gender",
+                        "display": "Gender",
+                        "formula": "",
+                        "visible": "true",
+                        "sortable": "true",
+                        "defaultsort": false,
+                        "filter": {
+                            "index": 0,
+                            "type": "multiselect",
+                            "interactive": "true",
+                            "staticoptions": [
+                                {
+                                    "name": "Male",
+                                    "display": "Male"
+                                },
+                                {
+                                    "name": "Female",
+                                    "display": "Female"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "$ref:sentence_type",
+                        "display": "Sentence type",
+                        "formula": "",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": false,
+                        "filter": {
+                            "index": 1,
+                            "type": "multiselect",
+                            "interactive": "true",
+                            "staticoptions": [
+                                {
+                                    "name": "Determinate",
+                                    "display": "Determinate"
+                                },
+                                {
+                                    "name": "Determinate and Recall",
+                                    "display": "Determinate and Recall"
+                                },
+                                {
+                                    "name": "Indeterminate",
+                                    "display": "Indeterminate"
+                                },
+                                {
+                                    "name": "Indeterminate and Recall",
+                                    "display": "Indeterminate and Recall"
+                                },
+                                {
+                                    "name": "No active sentences",
+                                    "display": "No active sentences"
+                                },
+                                {
+                                    "name": "Recall",
+                                    "display": "Recall"
+                                },
+                                {
+                                    "name": "Unknown",
+                                    "display": "Unknown"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "$ref:location",
+                        "display": "Location",
+                        "visible": "true",
+                        "sortable": "true",
+                        "defaultsort": false,
+                        "filter": {
+                            "index": 1,
+                            "type": "multiselect",
+                            "interactive": "true",
+                            "staticoptions": [
+                                {
+                                    "name": "Released",
+                                    "display": "Released"
+                                },
+                                {
+                                    "name": "Altcourse (HMP & YOI)",
+                                    "display": "Altcourse (HMP & YOI)"
+                                },
+                                {
+                                    "name": "Ashfield (HMP)",
+                                    "display": "Ashfield (HMP)"
+                                },
+                                {
+                                    "name": "Aylesbury (HMP)",
+                                    "display": "Aylesbury (HMP)"
+                                },
+                                {
+                                    "name": "Belmarsh (HMP)",
+                                    "display": "Belmarsh (HMP)"
+                                },
+                                {
+                                    "name": "Buckley Hall (HMP)",
+                                    "display": "Buckley Hall (HMP)"
+                                },
+                                {
+                                    "name": "Birmingham (HMP)",
+                                    "display": "Birmingham (HMP)"
+                                },
+                                {
+                                    "name": "Bullingdon (HMP)",
+                                    "display": "Bullingdon (HMP)"
+                                },
+                                {
+                                    "name": "Bure (HMP)",
+                                    "display": "Bure (HMP)"
+                                },
+                                {
+                                    "name": "Brinsford (HMP & YOI)",
+                                    "display": "Brinsford (HMP & YOI)"
+                                },
+                                {
+                                    "name": "Berwyn (HMP)",
+                                    "display": "Berwyn (HMP)"
+                                },
+                                {
+                                    "name": "Channings Wood (HMP)",
+                                    "display": "Channings Wood (HMP)"
+                                },
+                                {
+                                    "name": "Dovegate (HMP)",
+                                    "display": "Dovegate (HMP)"
+                                },
+                                {
+                                    "name": "Doncaster (HMP)",
+                                    "display": "Doncaster (HMP)"
+                                },
+                                {
+                                    "name": "Deerbolt (HMP & YOI)",
+                                    "display": "Deerbolt (HMP & YOI)"
+                                },
+                                {
+                                    "name": "Downview (HMP & YOI)",
+                                    "display": "Downview (HMP & YOI)"
+                                },
+                                {
+                                    "name": "Erlestoke (HMP)",
+                                    "display": "Erlestoke (HMP)"
+                                },
+                                {
+                                    "name": "Elmley (HMP)",
+                                    "display": "Elmley (HMP)"
+                                },
+                                {
+                                    "name": "Forest Bank (HMP)",
+                                    "display": "Forest Bank (HMP)"
+                                },
+                                {
+                                    "name": "Fosse Way (HMP & YOI)",
+                                    "display": "Fosse Way (HMP & YOI)"
+                                },
+                                {
+                                    "name": "Foston Hall (HMP & YOI)",
+                                    "display": "Foston Hall (HMP & YOI)"
+                                },
+                                {
+                                    "name": "Frankland (HMP)",
+                                    "display": "Frankland (HMP)"
+                                },
+                                {
+                                    "name": "Feltham B (HMP & YOI)",
+                                    "display": "Feltham B (HMP & YOI)"
+                                },
+                                {
+                                    "name": "Full Sutton (HMP)",
+                                    "display": "Full Sutton (HMP)"
+                                },
+                                {
+                                    "name": "Five Wells (HMP)",
+                                    "display": "Five Wells (HMP)"
+                                },
+                                {
+                                    "name": "Garth (HMP)",
+                                    "display": "Garth (HMP)"
+                                },
+                                {
+                                    "name": "Gartree (HMP)",
+                                    "display": "Gartree (HMP)"
+                                },
+                                {
+                                    "name": "Guys Marsh (HMP)",
+                                    "display": "Guys Marsh (HMP)"
+                                },
+                                {
+                                    "name": "High Down (HMP & YOI) ",
+                                    "display": "High Down (HMP & YOI) "
+                                },
+                                {
+                                    "name": "Highpoint (HMP)",
+                                    "display": "Highpoint (HMP)"
+                                },
+                                {
+                                    "name": "Hindley (HMP & YOI)",
+                                    "display": "Hindley (HMP & YOI)"
+                                },
+                                {
+                                    "name": "Holme House (HMP)",
+                                    "display": "Holme House (HMP)"
+                                },
+                                {
+                                    "name": "Hull (HMP)",
+                                    "display": "Hull (HMP)"
+                                },
+                                {
+                                    "name": "Humber (HMP)",
+                                    "display": "Humber (HMP)"
+                                },
+                                {
+                                    "name": "Isis (HMP & YOI)",
+                                    "display": "Isis (HMP & YOI)"
+                                },
+                                {
+                                    "name": "Isle of Wight (HMP)",
+                                    "display": "Isle of Wight (HMP)"
+                                },
+                                {
+                                    "name": "Lancaster Farms (HMP)",
+                                    "display": "Lancaster Farms (HMP)"
+                                },
+                                {
+                                    "name": "Lindholme (HMP)",
+                                    "display": "Lindholme (HMP)"
+                                },
+                                {
+                                    "name": "Littlehey (HMP)",
+                                    "display": "Littlehey (HMP)"
+                                },
+                                {
+                                    "name": "Liverpool (HMP)",
+                                    "display": "Liverpool (HMP)"
+                                },
+                                {
+                                    "name": "Long Lartin (HMP)",
+                                    "display": "Long Lartin (HMP)"
+                                },
+                                {
+                                    "name": "Low Newton (HMP & YOI)",
+                                    "display": "Low Newton (HMP & YOI)"
+                                },
+                                {
+                                    "name": "Lowdham Grange (HMP)",
+                                    "display": "Lowdham Grange (HMP)"
+                                },
+                                {
+                                    "name": "Manchester (HMP)",
+                                    "display": "Manchester (HMP)"
+                                },
+                                {
+                                    "name": "Millsike (HMP)",
+                                    "display": "Millsike (HMP)"
+                                },
+                                {
+                                    "name": "Moorland (HMP & YOI)",
+                                    "display": "Moorland (HMP & YOI)"
+                                },
+                                {
+                                    "name": "New Hall (HMP & YOI)",
+                                    "display": "New Hall (HMP & YOI)"
+                                },
+                                {
+                                    "name": "Northumberland (HMP)",
+                                    "display": "Northumberland (HMP)"
+                                },
+                                {
+                                    "name": "Oakwood (HMP)",
+                                    "display": "Oakwood (HMP)"
+                                },
+                                {
+                                    "name": "Onley (HMP)",
+                                    "display": "Onley (HMP)"
+                                },
+                                {
+                                    "name": "Parc (HMP)",
+                                    "display": "Parc (HMP)"
+                                },
+                                {
+                                    "name": "Peterborough (HMP & YOI)",
+                                    "display": "Peterborough (HMP & YOI)"
+                                },
+                                {
+                                    "name": "Peterborough Female (HMP & YOI)",
+                                    "display": "Peterborough Female (HMP & YOI)"
+                                },
+                                {
+                                    "name": "Portland (HMP & YOI)",
+                                    "display": "Portland (HMP & YOI)"
+                                },
+                                {
+                                    "name": "Ranby (HMP)",
+                                    "display": "Ranby (HMP)"
+                                },
+                                {
+                                    "name": "Risley (HMP)",
+                                    "display": "Risley (HMP)"
+                                },
+                                {
+                                    "name": "Rochester (HMP & YOI)",
+                                    "display": "Rochester (HMP & YOI)"
+                                },
+                                {
+                                    "name": "Rye Hill (HMP)",
+                                    "display": "Rye Hill (HMP)"
+                                },
+                                {
+                                    "name": "Stafford (HMP)",
+                                    "display": "Stafford (HMP)"
+                                },
+                                {
+                                    "name": "Stocken (HMP)",
+                                    "display": "Stocken (HMP)"
+                                },
+                                {
+                                    "name": "Stoke Heath (HMP & YOI)",
+                                    "display": "Stoke Heath (HMP & YOI)"
+                                },
+                                {
+                                    "name": "Styal (HMP & YOI)",
+                                    "display": "Styal (HMP & YOI)"
+                                },
+                                {
+                                    "name": "Swaleside (HMP)",
+                                    "display": "Swaleside (HMP)"
+                                },
+                                {
+                                    "name": "Swinfen Hall (HMP & YOI)",
+                                    "display": "Swinfen Hall (HMP & YOI)"
+                                },
+                                {
+                                    "name": "The Mount (HMP)",
+                                    "display": "The Mount (HMP)"
+                                },
+                                {
+                                    "name": "The Verne (HMP)",
+                                    "display": "The Verne (HMP)"
+                                },
+                                {
+                                    "name": "Usk (HMP)",
+                                    "display": "Usk (HMP)"
+                                },
+                                {
+                                    "name": "Wakefield (HMP)",
+                                    "display": "Wakefield (HMP)"
+                                },
+                                {
+                                    "name": "Wayland (HMP)",
+                                    "display": "Wayland (HMP)"
+                                },
+                                {
+                                    "name": "Wealstun (HMP)",
+                                    "display": "Wealstun (HMP)"
+                                },
+                                {
+                                    "name": "Whatton (HMP)",
+                                    "display": "Whatton (HMP)"
+                                },
+                                {
+                                    "name": "Whitemoor (HMP)",
+                                    "display": "Whitemoor (HMP)"
+                                },
+                                {
+                                    "name": "Woodhill (HMP & YOI)",
+                                    "display": "Woodhill (HMP & YOI)"
+                                },
+                                {
+                                    "name": "Wymott (HMP)",
+                                    "display": "Wymott (HMP)"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "$ref:earliest_release_date",
+                        "display": "Earliest release date",
+                        "formula": "format_date(${earliest_release_date}, 'dd MMMM yyyy')",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": false,
+                        "filter": {
+                            "index": 0,
+                            "interactive": "true",
+                            "type": "daterange",
+                            "default": ""
+                        }
+                    },
+                    {
+                        "name": "$ref:earliest_release_date_type",
+                        "display": "Release date type",
+                        "formula": "",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:earliest_release_date_indicator",
+                        "display": "Earliest release date indicator",
+                        "formula": "",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": false,
+                        "filter": {
+                            "index": 5,
+                            "type": "multiselect",
+                            "interactive": "true",
+                            "staticoptions": [
+                                {
+                                    "name": "Yes",
+                                    "display": "Yes"
+                                },
+                                {
+                                    "name": "No",
+                                    "display": "No"
+                                },
+                                {
+                                    "name": "N/A",
+                                    "display": "N/A"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "$ref:name",
+                        "display": "Course Name",
+                        "formula": "",
+                        "visible": "false",
+                        "sortable": "true",
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:referral_id",
+                        "display": "Referral ID",
+                        "formula": "",
+                        "visible": "false",
+                        "sortable": false,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "$ref:submitted_on",
+                        "display": "Submitted on",
+                        "formula": "format_date(${submitted_on}, 'dd MMMM yyyy')",
+                        "visible": "true",
+                        "sortable": "true",
+                        "defaultsort": "true",
+                        "filter": {
+                            "index": 3,
+                            "interactive": "true",
+                            "type": "daterange",
+                            "default": ""
+                        }
+                    },
+                    {
+                        "name": "$ref:status",
+                        "display": "Status",
+                        "formula": "",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": false,
+                        "filter": {
+                            "index": 2,
+                            "type": "multiselect",
+                            "interactive": "true",
+                            "staticoptions": [
+                                {
+                                    "name": "AWAITING_ASSESSMENT",
+                                    "display": "AWAITING_ASSESSMENT"
+                                },
+                                {
+                                    "name": "MOVED_TO_BUILDING_CHOICES",
+                                    "display": "MOVED_TO_BUILDING_CHOICES"
+                                },
+                                {
+                                    "name": "PROGRAMME_COMPLETE",
+                                    "display": "PROGRAMME_COMPLETE"
+                                },
+                                {
+                                    "name": "REFERRAL_SUBMITTED",
+                                    "display": "REFERRAL_SUBMITTED"
+                                },
+                                {
+                                    "name": "WITHDRAWN",
+                                    "display": "WITHDRAWN"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "$ref:additional_information",
+                        "display": "Info",
+                        "formula": "",
+                        "visible": "false",
+                        "sortable": false,
+                        "defaultsort": false
+                    }
+                ]
+            }
+        }
+    ],
+    "dashboard": [
+        {
+            "id": "referral-summary",
+            "name": "Referral Summary",
+            "description": "Summary",
+            "dataset": "referral-summary",
+            "section": [
+                {
+                    "id": "referral-name-count",
+                    "display": "Total",
+                    "visualisation": [
+                        {
+                            "id": "list0",
+                            "type": "list",
+                            "display": "Total",
+                            "option": {
+                                "showLatest": false
+                            },
+                            "column": {
+                                "key": [],
+                                "measure": [
+                                    {
+                                        "id": "$ref:referral_count",
+                                        "display": "Total"
+                                    }
+                                ],
+                                "expectNull": true
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "referral-name-count",
+                    "display": "Name Count",
+                    "visualisation": [
+                        {
+                            "id": "referral-name-count",
+                            "type": "list",
+                            "display": "Name Count",
+                            "option": {
+                                "showLatest": false
+                            },
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:name",
+                                        "display": "Name"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:name",
+                                        "display": "Name"
+                                    },
+                                    {
+                                        "id": "$ref:referral_count",
+                                        "display": "Count"
+                                    }
+                                ],
+                                "expectNull": true
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "referral-audience-count",
+                    "display": " Audience  Count",
+                    "visualisation": [
+                        {
+                            "id": "referral-audience-count",
+                            "type": "list",
+                            "display": "Name Count",
+                            "option": {
+                                "showLatest": false
+                            },
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:audience",
+                                        "display": "Name"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:audience",
+                                        "display": "Name"
+                                    },
+                                    {
+                                        "id": "$ref:referral_count",
+                                        "display": "Count"
+                                    }
+                                ],
+                                "expectNull": true
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "referral-status-count",
+                    "display": "Referral Status and Count",
+                    "visualisation": [
+                        {
+                            "id": "statuscount",
+                            "type": "list",
+                            "display": "Status Count",
+                            "option": {
+                                "showLatest": false
+                            },
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:status",
+                                        "display": "Status"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:status",
+                                        "display": "Status"
+                                    },
+                                    {
+                                        "id": "$ref:referral_count",
+                                        "display": "Count"
+                                    }
+                                ],
+                                "expectNull": true
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "referral-summary",
+                    "display": "Referral summary",
+                    "visualisation": [
+                        {
+                            "id": "list1",
+                            "type": "list",
+                            "display": "Referral summary by audience",
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:name",
+                                        "display": "Name"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:name",
+                                        "display": "Name"
+                                    },
+                                    {
+                                        "id": "$ref:audience",
+                                        "display": "Audience"
+                                    },
+                                    {
+                                        "id": "$ref:referral_count",
+                                        "display": "Count"
+                                    }
+                                ],
+                                "expectNull": true
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "referral-summary",
+                    "display": "Referral summary",
+                    "visualisation": [
+                        {
+                            "id": "list1",
+                            "type": "list",
+                            "display": "Referral summary by audience and status",
+                            "option": {
+                                "showLatest": false
+                            },
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:name",
+                                        "display": "Name"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:name",
+                                        "display": "Name"
+                                    },
+                                    {
+                                        "id": "$ref:audience",
+                                        "display": "Audience"
+                                    },
+                                    {
+                                        "id": "$ref:status",
+                                        "display": "Status"
+                                    },
+                                    {
+                                        "id": "$ref:referral_count",
+                                        "display": "Count"
+                                    }
+                                ],
+                                "expectNull": false
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "referral-org-count",
+                    "display": "Referral Organisation",
+                    "visualisation": [
+                        {
+                            "id": "referral-org-count",
+                            "type": "list",
+                            "display": "Org Count",
+                            "option": {
+                                "showLatest": false
+                            },
+                            "column": {
+                                "key": [
+                                    {
+                                        "id": "$ref:organisation_id",
+                                        "display": "Name"
+                                    }
+                                ],
+                                "measure": [
+                                    {
+                                        "id": "$ref:organisation_id",
+                                        "display": "Name"
+                                    },
+                                    {
+                                        "id": "$ref:referral_count",
+                                        "display": "Count"
+                                    }
+                                ],
+                                "expectNull": true
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "bar",
+                    "display": "Bar chart demand by organisation",
+                    "visualisation": [
+                        {
+                            "id": "bar",
+                            "type": "bar",
+                            "display": "",
+                            "option": {
+                                "horizontal": true
+                            },
+                            "column": {
+                                "key": [],
+                                "measure": [
+                                    {
+                                        "id": "$ref:organisation_id",
+                                        "display": "Prison",
+                                        "axis": "x"
+                                    },
+                                    {
+                                        "id": "$ref:referral_count",
+                                        "display": "Count",
+                                        "axis": "y"
+                                    }
+                                ],
+                                "filter": [
+                                    {
+                                        "id": "$ref:audience",
+                                        "equals": null
+                                    },
+                                    {
+                                        "id": "$ref:name",
+                                        "equals": null
+                                    },
+                                    {
+                                        "id": "$ref:status",
+                                        "equals": null
+                                    }
+                                ],
+                                "expectNull": false
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "debug",
+                    "display": "Debug",
+                    "visualisation": [
+                        {
+                            "id": "all-data",
+                            "type": "list",
+                            "display": "All data",
+                            "option": {
+                                "showLatest": false
+                            },
+                            "column": {
+                                "measure": [],
+                                "expectNull": true
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
