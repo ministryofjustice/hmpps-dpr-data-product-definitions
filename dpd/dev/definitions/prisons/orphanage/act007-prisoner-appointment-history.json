@@ -1,0 +1,564 @@
+{
+  "id": "act007-prisoner-appointment-history",
+  "name": "Prisoner appointments",
+  "description": "Historic and future appointments for an individual prisoner over a selected date range. Use a seven-day period for the initial view.",
+  "metadata": {
+    "author": "Martin Lippe",
+    "owner": "Claire Morgan",
+    "version": "0.1.4"
+  },
+  "datasource": [
+    {
+      "id": "athena",
+      "name": "athena",
+      "database": "curated",
+      "catalog": "awsdatacatalog",
+      "connection": "awsdatacatalog",
+      "dialect": "athena/3"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "prisoner-appointments",
+      "name": "Appointments for an individual prisoner",
+      "datasource": "athena",
+      "query": [
+        {
+          "index": 0,
+          "datasource": "athena",
+          "query": "WITH person_prisoner AS (\n  SELECT\n    o.offender_id_display AS prisoner_number,\n    REGEXP_REPLACE(LOWER(o.last_name || ', ' || o.first_name), '(\\b[a-z])', x -> UPPER(x[1])) AS prisoner_name,\n    ob.agy_loc_id AS current_prison_id\n  FROM curated.nomis_offender_bookings ob\n  INNER JOIN curated.nomis_offenders o\n    ON ob.offender_id = o.offender_id\n   AND ob.booking_seq = 1\n)\nSELECT\n  app.prison_code,\n  att.prisoner_number,\n  dm.prisoner_name,\n  app.appointment_id,\n  app.appointment_tier_id AS appointment_tier,\n  app.start_date,\n  SUBSTRING(app.start_time, 1, 5) AS start_time,\n  SUBSTRING(app.end_time, 1, 5) AS end_time,\n  COALESCE(SUBSTRING(app.start_time, 1, 5), '') ||\n    CASE\n      WHEN app.end_time IS NOT NULL THEN ' - ' || SUBSTRING(app.end_time, 1, 5)\n      ELSE ''\n    END AS start_to_end,\n  par.name AS parent_category,\n  cat.description AS appointment_category,\n  app.category_code,\n  app.custom_name AS custom_appointment_name,\n  COALESCE(\n    NULLIF(app.custom_location, ''),\n    dps_loc.local_name,\n    nomis_loc.description,\n    dps_loc.path_hierarchy,\n    'Not recorded'\n  ) AS appointment_location,\n  CASE\n    WHEN app.cancellation_reason_id IS NOT NULL THEN 'Cancelled'\n    WHEN att.removal_reason_id IS NOT NULL OR att.is_deleted THEN 'Removed'\n    WHEN app.start_date > CURRENT_DATE\n      OR (\n        app.start_date = CURRENT_DATE\n        AND COALESCE(SUBSTRING(app.start_time, 1, 5), '23:59') > FORMAT_DATETIME(CURRENT_TIMESTAMP AT TIME ZONE 'Europe/London', 'HH:mm')\n      ) THEN 'Scheduled'\n    WHEN att.attended IS NULL THEN 'Not recorded'\n    WHEN att.attended = FALSE THEN 'Did not attend'\n    WHEN att.attended = TRUE THEN 'Attended'\n  END AS appointment_status,\n  cancellation_reason.description AS cancellation_reason,\n  removal_reason.description AS removal_reason,\n  'Open appointment' AS appointment_link\nFROM curated.activities_appointment_attendee att\nINNER JOIN curated.activities_appointment app\n  ON app.appointment_id = att.appointment_id\nINNER JOIN person_prisoner dm\n  ON dm.prisoner_number = att.prisoner_number\nLEFT JOIN curated.activities_appointment_category cat\n  ON cat.code = app.category_code\nLEFT JOIN curated.activities_appointment_parent_category par\n  ON par.appointment_parent_category_id = cat.appointment_parent_category_id\nLEFT JOIN curated.activities_appointment_cancellation_reason cancellation_reason\n  ON cancellation_reason.appointment_cancellation_reason_id = app.cancellation_reason_id\nLEFT JOIN curated.activities_appointment_attendee_removal_reason removal_reason\n  ON removal_reason.appointment_attendee_removal_reason_id = att.removal_reason_id\nLEFT JOIN curated.nomis_agency_internal_locations nomis_loc\n  ON nomis_loc.internal_location_id = app.internal_location_id\nLEFT JOIN curated.locationsinsideprison_location dps_loc\n  ON dps_loc.id = app.dps_location_id\nWHERE att.prisoner_number = UPPER((SELECT prisoner_number_filter FROM prompt_))\n  AND app.start_date >= (SELECT from_date FROM prompt_)\n  AND app.start_date < (SELECT to_date FROM prompt_) + INTERVAL '1' DAY\n  AND app.appointment_tier_id IN (1, 2)\n  AND NOT app.is_deleted\n  AND app.start_date BETWEEN DATE_ADD('month', -12, CURRENT_DATE) AND DATE_ADD('day', 370, CURRENT_DATE)\nORDER BY app.start_date, app.start_time, app.appointment_id"
+        }
+      ],
+      "parameters": [
+        {
+          "index": 0,
+          "name": "prisoner_number_filter",
+          "filterType": "text",
+          "reportFieldType": "string",
+          "display": "Prisoner number",
+          "description": "Prisoner number used to constrain the initial Athena query",
+          "mandatory": "true"
+        },
+        {
+          "index": 1,
+          "name": "from_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "From date",
+          "description": "First appointment date to include. The earliest supported date is 12 months before today; use a seven-day period for the initial view.",
+          "mandatory": "true"
+        },
+        {
+          "index": 2,
+          "name": "to_date",
+          "filterType": "date",
+          "reportFieldType": "date",
+          "display": "To date",
+          "description": "Last appointment date to include. The latest supported date is 370 days after today.",
+          "mandatory": "true"
+        }
+      ],
+      "schema": {
+        "field": [
+          {
+            "name": "prison_code",
+            "type": "string",
+            "display": "Establishment"
+          },
+          {
+            "name": "prisoner_number",
+            "type": "string",
+            "display": "Prisoner number"
+          },
+          {
+            "name": "prisoner_name",
+            "type": "string",
+            "display": "Prisoner name"
+          },
+          {
+            "name": "appointment_id",
+            "type": "long",
+            "display": "Appointment ID"
+          },
+          {
+            "name": "appointment_tier",
+            "type": "long",
+            "display": "Tier"
+          },
+          {
+            "name": "start_date",
+            "type": "date",
+            "display": "Date"
+          },
+          {
+            "name": "start_time",
+            "type": "string",
+            "display": "Start time"
+          },
+          {
+            "name": "end_time",
+            "type": "string",
+            "display": "End time"
+          },
+          {
+            "name": "start_to_end",
+            "type": "string",
+            "display": "Time"
+          },
+          {
+            "name": "parent_category",
+            "type": "string",
+            "display": "Parent category"
+          },
+          {
+            "name": "appointment_category",
+            "type": "string",
+            "display": "Appointment category"
+          },
+          {
+            "name": "category_code",
+            "type": "string",
+            "display": "Category code"
+          },
+          {
+            "name": "custom_appointment_name",
+            "type": "string",
+            "display": "Custom appointment name"
+          },
+          {
+            "name": "appointment_location",
+            "type": "string",
+            "display": "Location"
+          },
+          {
+            "name": "appointment_status",
+            "type": "string",
+            "display": "Status"
+          },
+          {
+            "name": "cancellation_reason",
+            "type": "string",
+            "display": "Cancellation reason"
+          },
+          {
+            "name": "removal_reason",
+            "type": "string",
+            "display": "Removal reason"
+          },
+          {
+            "name": "appointment_link",
+            "type": "string",
+            "display": "Appointment"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_ACTIVITY_HUB",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseloads",
+      "type": "row-level",
+      "action": ["(prison_code IN (${caseloads}) OR prison_code = 'OUT')"],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": ["${caseloads}"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "prisoner-appointment-history",
+      "name": "Prisoner appointments",
+      "description": "Historic and future appointments for a selected prisoner. Use a seven-day period for the initial view. The self-service window is limited to 12 months historically and 370 days into the future.",
+      "classification": "Official",
+      "version": "0.1.4",
+      "render": "HTML",
+      "dataset": "$ref:prisoner-appointments",
+      "feature": [
+        {
+          "type": "share|save|email|print|download"
+        }
+      ],
+      "metadata": {
+        "hints": ["interactive"]
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:prisoner_number",
+            "display": "Prisoner number",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:prisoner_name",
+            "display": "Prisoner name",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prisoner_number}',${prisoner_name},TRUE)"
+          },
+          {
+            "name": "$ref:start_date",
+            "display": "Date",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "sortdirection": "asc"
+          },
+          {
+            "name": "$ref:start_to_end",
+            "display": "Time",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:appointment_category",
+            "display": "Appointment category",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "index": 3,
+              "type": "multiselect",
+              "mandatory": false,
+              "interactive": true,
+              "staticoptions": [
+                { "name": "Activities", "display": "Activities" },
+                {
+                  "name": "Adjudication Hearing",
+                  "display": "Adjudication Hearing"
+                },
+                { "name": "Age UK Meetings", "display": "Age UK Meetings" },
+                { "name": "Barbers / Haircut", "display": "Barbers / Haircut" },
+                {
+                  "name": "Building Better Relationships",
+                  "display": "Building Better Relationships"
+                },
+                { "name": "Canteen", "display": "Canteen" },
+                {
+                  "name": "Careers Adviser Appointment",
+                  "display": "Careers Adviser Appointment"
+                },
+                { "name": "Case - Bail Apps", "display": "Case - Bail Apps" },
+                { "name": "Case - Benefits", "display": "Case - Benefits" },
+                { "name": "Case - Housing", "display": "Case - Housing" },
+                { "name": "Case - Legal Aid", "display": "Case - Legal Aid" },
+                { "name": "Case - Other", "display": "Case - Other" },
+                { "name": "Case - Probation", "display": "Case - Probation" },
+                { "name": "Case - RAPT", "display": "Case - RAPT" },
+                { "name": "Case - SMS", "display": "Case - SMS" },
+                { "name": "Chaplaincy", "display": "Chaplaincy" },
+                {
+                  "name": "Children and Families",
+                  "display": "Children and Families"
+                },
+                {
+                  "name": "Counselling Session",
+                  "display": "Counselling Session"
+                },
+                { "name": "Education", "display": "Education" },
+                { "name": "Employment Hub", "display": "Employment Hub" },
+                { "name": "Equality Meetings", "display": "Equality Meetings" },
+                { "name": "Exams", "display": "Exams" },
+                { "name": "Finance and ID", "display": "Finance and ID" },
+                { "name": "Focus Groups", "display": "Focus Groups" },
+                { "name": "Governor", "display": "Governor" },
+                {
+                  "name": "Gym - Fitness Suite",
+                  "display": "Gym - Fitness Suite"
+                },
+                { "name": "Gym - Football", "display": "Gym - Football" },
+                {
+                  "name": "Gym - Remedial Physiotherapy",
+                  "display": "Gym - Remedial Physiotherapy"
+                },
+                {
+                  "name": "Gym - Sports Halls Activity",
+                  "display": "Gym - Sports Halls Activity"
+                },
+                {
+                  "name": "Gym - Walking to Health",
+                  "display": "Gym - Walking to Health"
+                },
+                { "name": "Gym - Weights", "display": "Gym - Weights" },
+                { "name": "IMB", "display": "IMB" },
+                {
+                  "name": "Immigration Appointment",
+                  "display": "Immigration Appointment"
+                },
+                { "name": "Induction Meeting", "display": "Induction Meeting" },
+                { "name": "Interventions", "display": "Interventions" },
+                { "name": "Job Centre Plus", "display": "Job Centre Plus" },
+                {
+                  "name": "Key Worker Activity",
+                  "display": "Key Worker Activity"
+                },
+                { "name": "Labour Control", "display": "Labour Control" },
+                { "name": "Library", "display": "Library" },
+                {
+                  "name": "Medical - Aortic aneurysm screening",
+                  "display": "Medical - Aortic aneurysm screening"
+                },
+                {
+                  "name": "Medical - Breast screening",
+                  "display": "Medical - Breast screening"
+                },
+                {
+                  "name": "Medical - Cervical screening",
+                  "display": "Medical - Cervical screening"
+                },
+                { "name": "Medical - Dentist", "display": "Medical - Dentist" },
+                {
+                  "name": "Medical - Diabetic eye screening",
+                  "display": "Medical - Diabetic eye screening"
+                },
+                {
+                  "name": "Medical - Flu vaccine",
+                  "display": "Medical - Flu vaccine"
+                },
+                {
+                  "name": "Medical - GP or nurse triage",
+                  "display": "Medical - GP or nurse triage"
+                },
+                { "name": "Medical - GUM", "display": "Medical - GUM" },
+                {
+                  "name": "Medical - Long Term Conditions",
+                  "display": "Medical - Long Term Conditions"
+                },
+                {
+                  "name": "Medical - Medication collection",
+                  "display": "Medical - Medication collection"
+                },
+                {
+                  "name": "Medical - Mental health service",
+                  "display": "Medical - Mental health service"
+                },
+                {
+                  "name": "Medical - Optician",
+                  "display": "Medical - Optician"
+                },
+                { "name": "Medical - Other", "display": "Medical - Other" },
+                {
+                  "name": "Medical - Physiotherapy",
+                  "display": "Medical - Physiotherapy"
+                },
+                {
+                  "name": "Medical - Podiatry",
+                  "display": "Medical - Podiatry"
+                },
+                {
+                  "name": "Medical - Psychiatry",
+                  "display": "Medical - Psychiatry"
+                },
+                {
+                  "name": "Medical - Substance use mutual aid",
+                  "display": "Medical - Substance use mutual aid"
+                },
+                {
+                  "name": "Medical - Substance use support",
+                  "display": "Medical - Substance use support"
+                },
+                { "name": "Medical - X-ray", "display": "Medical - X-ray" },
+                {
+                  "name": "Offender Management Unit",
+                  "display": "Offender Management Unit"
+                },
+                { "name": "Other", "display": "Other" },
+                { "name": "Parole Hearing", "display": "Parole Hearing" },
+                { "name": "Practicals", "display": "Practicals" },
+                {
+                  "name": "Pre-Release Meeting",
+                  "display": "Pre-Release Meeting"
+                },
+                { "name": "Prison Activities", "display": "Prison Activities" },
+                { "name": "Programme Session", "display": "Programme Session" },
+                {
+                  "name": "Programmes Appointment",
+                  "display": "Programmes Appointment"
+                },
+                {
+                  "name": "Psychology Services - Forensic",
+                  "display": "Psychology Services - Forensic"
+                },
+                { "name": "Rec - Other", "display": "Rec - Other" },
+                { "name": "Rec - Photo", "display": "Rec - Photo" },
+                { "name": "Rec - Prop", "display": "Rec - Prop" },
+                { "name": "Reset Appointment", "display": "Reset Appointment" },
+                { "name": "ROTL Board", "display": "ROTL Board" },
+                {
+                  "name": "Shannon Trust Appointment",
+                  "display": "Shannon Trust Appointment"
+                },
+                { "name": "Social video call", "display": "Social video call" },
+                {
+                  "name": "Solicitor Meeting (Not Legal Visit)",
+                  "display": "Solicitor Meeting (Not Legal Visit)"
+                },
+                { "name": "SOTP Appointment", "display": "SOTP Appointment" },
+                { "name": "Storybook Dad's", "display": "Storybook Dad's" },
+                { "name": "Student Council", "display": "Student Council" },
+                {
+                  "name": "Toe by Toe Appointment",
+                  "display": "Toe by Toe Appointment"
+                },
+                { "name": "TSP Appointment", "display": "TSP Appointment" },
+                {
+                  "name": "User Voice Session",
+                  "display": "User Voice Session"
+                },
+                {
+                  "name": "Video Link - Court Hearing",
+                  "display": "Video Link - Court Hearing"
+                },
+                {
+                  "name": "Video Link - Legal Appointment",
+                  "display": "Video Link - Legal Appointment"
+                },
+                {
+                  "name": "Video Link - Official Other",
+                  "display": "Video Link - Official Other"
+                },
+                {
+                  "name": "Video Link - Parole Hearing",
+                  "display": "Video Link - Parole Hearing"
+                },
+                {
+                  "name": "Video Link - Probation Meeting",
+                  "display": "Video Link - Probation Meeting"
+                },
+                {
+                  "name": "Video Link to Another Prison",
+                  "display": "Video Link to Another Prison"
+                }
+              ]
+            }
+          },
+          {
+            "name": "$ref:custom_appointment_name",
+            "display": "Custom appointment name",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:appointment_location",
+            "display": "Location",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:appointment_status",
+            "display": "Status",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "index": 4,
+              "type": "multiselect",
+              "mandatory": false,
+              "interactive": true,
+              "staticoptions": [
+                {
+                  "name": "Scheduled",
+                  "display": "Scheduled"
+                },
+                {
+                  "name": "Attended",
+                  "display": "Attended"
+                },
+                {
+                  "name": "Did not attend",
+                  "display": "Did not attend"
+                },
+                {
+                  "name": "Not recorded",
+                  "display": "Not recorded"
+                },
+                {
+                  "name": "Cancelled",
+                  "display": "Cancelled"
+                },
+                {
+                  "name": "Removed",
+                  "display": "Removed"
+                }
+              ]
+            }
+          },
+          {
+            "name": "$ref:cancellation_reason",
+            "display": "Cancellation reason",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:removal_reason",
+            "display": "Removal reason",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:prison_code",
+            "display": "Establishment",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:appointment_link",
+            "display": "Appointment",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false,
+            "formula": "make_url('https://activities-${env}.prison.service.justice.gov.uk/appointments/attendance/${appointment_id}/attendees',${appointment_link},TRUE)"
+          },
+          {
+            "name": "$ref:appointment_tier",
+            "display": "Tier",
+            "visible": "false",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:parent_category",
+            "display": "Parent category",
+            "visible": "false",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    }
+  ]
+}
