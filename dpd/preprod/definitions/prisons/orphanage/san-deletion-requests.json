@@ -1,0 +1,155 @@
+{
+    "id": "san002",
+    "name": "Support for Additional Needs Data Deletion Report",
+    "description": "",
+    "metadata": {
+        "author": "TBC",
+        "owner": "TBC",
+        "version": "1.0.0"
+    },
+    "datasource": [
+        {
+            "id": "datamart",
+            "name": "datamart"
+        }
+    ],
+    "dataset": [
+        {
+            "id": "san-dataset",
+            "name": "Applications",
+            "datasource": "datamart",
+            "query": "SELECT prison_number as prisoner_number, reason as reason_for_deletion, trunc(data_deleted_at) as deletion_date, data_deleted_by, data_deleted_at_prison, prison, initcap(last_name) || ', ' || initcap(first_name) As staff_name FROM prisons.supportforadditionalneeds_data_deletion_event e LEFT JOIN datamart.staff.staff ON username = data_deleted_by LEFT JOIN datamart.prisons.prisonestate_prisons p ON p.prison_code = data_deleted_at_prison ORDER BY deletion_date",
+            "parameters": [],
+            "schema": {
+                "field": [
+                    {
+                        "name": "prisoner_number",
+                        "type": "string",
+                        "display": "Number"
+                    },
+                    {
+                        "name": "reason_for_deletion",
+                        "type": "string",
+                        "display": "Reason"
+                    },
+                    {
+                        "name": "deletion_date",
+                        "type": "string",
+                        "display": "Date",
+                        "filter": {
+                            "index": 0,
+                            "interactive": "true",
+                            "type": "daterange",
+                            "default": ""
+                        }
+                    },
+                    {
+                        "name": "data_deleted_by",
+                        "type": "string",
+                        "display": "Deleted by"
+                    },
+                    {
+                        "name": "data_deleted_at_prison",
+                        "type": "string",
+                        "display": "Location"
+                    },
+                    {
+                        "name": "prison",
+                        "type": "string",
+                        "display": "Location"
+                    },
+                    {
+                        "name": "staff_name",
+                        "type": "string",
+                        "display": "Staff Name"
+                    }
+                ]
+            }
+        }
+    ],
+    "policy": [
+        {
+            "id": "access",
+            "type": "access",
+            "rule": [
+                {
+                    "effect": "permit",
+                    "condition": [
+                        {
+                            "match": [
+                                "${role}",
+                                "ROLE_SAN_EDITOR",
+                                "ROLE_SAN_EDUCATION_MANAGER"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "report": [
+        {
+            "id": "san-deletion-request-report",
+            "name": "Support for Additional Needs Data Deletion Report",
+            "description": "This report returns information about data deletion in the Support for Additional Needs service",
+            "classification": "Official",
+            "version": "1.0.0",
+            "render": "HTML",
+            "dataset": "$ref:san-dataset",
+            "feature": [
+                {
+                    "type": "share|save|email|print|download"
+                }
+            ],
+            "metadata": {
+                "hints": [
+                    "interactive"
+                ]
+            },
+            "specification": {
+                "template": "list",
+                "field": [
+                    {
+                        "name": "deletion_date",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": true,
+                        "sortdirection": "desc",
+                        "formula": "format_date(${deletion_date}, 'dd MMMM yyyy')"
+                    },
+                    {
+                        "name": "$ref:prisoner_number",
+                        "display": "Prisoner Number",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "staff_name",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": false
+                    },
+                    {
+                        "name": "data_deleted_at_prison",
+                        "visible": "true",
+                        "formula": "${prison}",
+                        "sortable": true,
+                        "defaultsort": false,
+                        "filter": {
+                            "index": 1,
+                            "type": "caseloads",
+                            "interactive": "true"
+                        }
+                    },
+                    {
+                        "name": "reason_for_deletion",
+                        "visible": "true",
+                        "sortable": true,
+                        "defaultsort": false
+                    }
+                ]
+            }
+        }
+    ]
+}
