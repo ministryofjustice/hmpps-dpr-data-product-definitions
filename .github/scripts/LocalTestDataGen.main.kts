@@ -118,7 +118,7 @@ fun loadDPDtoGenerateTestData(): Map<String, Map<String, String>> {
             val reports = root["report"]
 
             val firstDatasetId = reports
-                .map { it["dataset"].asText() }
+                .map { it["dataset"].asText().removePrefix("\$ref:") }
                 .distinct()
                 .first()
 
