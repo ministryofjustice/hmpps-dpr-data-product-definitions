@@ -44,12 +44,12 @@ object TestDataGenerator {
     fun generate(columnName: String, dataType: String, rowNum: Int): Any =
         when (columnName.uppercase()) {
             // Special column-specific generators
-            "OFFENDER_ID_DISPLAY" -> TestDataConstants.generateOffenderId()
-            "LAST_NAME" -> "Surname${rowNum.toString().padStart(4, '0')}"
-            "FIRST_NAME" -> "GivenName${rowNum.toString().padStart(4, '0')}"
-            "LOCATION"  -> TestDataConstants.generateLocation(('A'..'Z').random())
-            "UNIT_CODE_1" -> ('A'..'Z').random()
-            "IEP_LEVEL" -> listOf("Basic", "Enhanced", "Standard").random()
+            "OFFENDER_ID_DISPLAY"   -> TestDataConstants.generateOffenderId()
+            "LAST_NAME"             -> "Surname${rowNum.toString().padStart(4, '0')}"
+            "FIRST_NAME"            -> "GivenName${rowNum.toString().padStart(4, '0')}"
+            "LOCATION"              -> TestDataConstants.generateLocation(('A'..'Z').random())
+            "UNIT_CODE_1"           -> ('A'..'Z').random()
+            "IEP_LEVEL"             -> listOf("Basic", "Enhanced", "Standard").random()
             else -> generateByType(dataType)
         }
 
