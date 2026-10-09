@@ -16,6 +16,7 @@ import kotlin.random.Random
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
+import java.time.LocalDateTime
 import kotlin.collections.firstOrNull
 
 // ==========================================
@@ -41,17 +42,20 @@ object TestDataConstants {
 }
 
 object TestDataGenerator {
-    fun generate(columnName: String, dataType: String, rowNum: Int): Any =
-        when (columnName.uppercase()) {
+    fun generate(columnName: String, dataType: String, rowNum: Int): Any {
+        val aTozChar = ('A'..'Z').random()
+        return when (columnName.uppercase()) {
             // Special column-specific generators
-            "OFFENDER_ID_DISPLAY"   -> TestDataConstants.generateOffenderId()
-            "LAST_NAME"             -> "Surname${rowNum.toString().padStart(4, '0')}"
-            "FIRST_NAME"            -> "GivenName${rowNum.toString().padStart(4, '0')}"
-            "LOCATION"              -> TestDataConstants.generateLocation(('A'..'Z').random())
-            "UNIT_CODE_1"           -> ('A'..'Z').random()
-            "IEP_LEVEL"             -> listOf("Basic", "Enhanced", "Standard").random()
+            "OFFENDER_ID_DISPLAY" -> TestDataConstants.generateOffenderId()
+            "LAST_NAME" -> "Surname${rowNum.toString().padStart(4, '0')}"
+            "FIRST_NAME" -> "GivenName${rowNum.toString().padStart(4, '0')}"
+            "LOCATION"  -> TestDataConstants.generateLocation(aTozChar)
+            "UNIT_DESCRIPTION_4_SHORT" ->  TestDataConstants.generateLocation(aTozChar)
+            "UNIT_CODE_1" -> aTozChar
+            "IEP_LEVEL" -> listOf("Basic", "Enhanced", "Standard").random()
             else -> generateByType(dataType)
         }
+    }
 
     fun generateVarchar(type: String): String {
         val chars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
@@ -76,6 +80,7 @@ object TestDataGenerator {
             "DATE"                   -> LocalDate.now()
                                        .minusDays((0..365).random().toLong())
                                        .toString()
+            "DATETIME"               -> LocalDateTime.now()
             else -> ""
         }
 }
@@ -194,7 +199,8 @@ fun getRedshiftColumnsMap(
         "date" to "DATE",
         "double" to "DOUBLE PRECISION",
         "long" to "BIGINT",
-        "int" to "INTEGER"
+        "int" to "INTEGER",
+        "datetime" to "DATETIME",
     )
 
     val redshiftColumns = fields.mapValues { (_, type) ->
