@@ -47,6 +47,7 @@ object TestDataGenerator {
         return when (columnName.uppercase()) {
             // Special column-specific generators
             "OFFENDER_ID_DISPLAY" -> TestDataConstants.generateOffenderId()
+            "PRISONER_NUMBER" -> TestDataConstants.generateOffenderId()
             "LAST_NAME" -> "Surname${rowNum.toString().padStart(4, '0')}"
             "FIRST_NAME" -> "GivenName${rowNum.toString().padStart(4, '0')}"
             "LOCATION"  -> TestDataConstants.generateLocation(aTozChar)
