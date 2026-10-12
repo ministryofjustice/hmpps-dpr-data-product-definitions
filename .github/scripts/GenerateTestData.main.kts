@@ -18,6 +18,7 @@ import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import kotlin.collections.firstOrNull
 
 // ==========================================
@@ -45,9 +46,9 @@ object TestDataConstants {
                 .minusDays((0..365).random().toLong())
                 .toString()
             "TIMESTAMP"               -> LocalDateTime.now()
+                                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
             else -> ""
         }
-
 }
 
 object TestDataGenerator {
