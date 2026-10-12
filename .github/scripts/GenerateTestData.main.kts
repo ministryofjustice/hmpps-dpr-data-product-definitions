@@ -49,7 +49,6 @@ object TestDataConstants {
                                         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
             else -> ""
         }
-
 }
 
 object TestDataGenerator {
