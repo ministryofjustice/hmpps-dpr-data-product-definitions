@@ -5,6 +5,7 @@
 @file:DependsOn("com.opencsv:opencsv:5.9")
 @file:DependsOn("software.amazon.awssdk:s3:2.25.53")
 
+import TestDataGenerator.generateVarchar
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
@@ -24,21 +25,29 @@ import kotlin.collections.firstOrNull
 // ==========================================
 
 object TestDataConstants {
-    fun generateOffenderId(): String {
-        val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        return (1..8)
-            .map { chars.random() }
-            .joinToString("")
-    }
 
-    fun generateLocation(unitCode: Char): String {
-        val wing = Random.nextInt(1, 6)
-        val cell = Random.nextInt(1, 1000)
-            .toString()
-            .padStart(3, '0')
+    val redshiftTypeMapping = mapOf(
+        "string" to "VARCHAR(30)",
+        "date" to "DATE",
+        "double" to "DOUBLE PRECISION",
+        "long" to "BIGINT",
+        "int" to "INTEGER",
+        "datetime" to "TIMESTAMP",
+    )
 
-        return "$unitCode-$wing-$cell"
-    }
+    fun redshiftTypeValueAssigner(dataType: String): Any =
+        when (dataType.uppercase()) {
+            "VARCHAR(30)", "VARCHAR" -> generateVarchar(dataType)
+            "DOUBLE PRECISION"       -> (1..100).random().toDouble()
+            "BIGINT"                 -> (1..10000).random().toLong()
+            "INTEGER"                -> (1..10000).random()
+            "DATE"                   -> LocalDate.now()
+                .minusDays((0..365).random().toLong())
+                .toString()
+            "TIMESTAMP"               -> LocalDateTime.now()
+            else -> ""
+        }
+
 }
 
 object TestDataGenerator {
@@ -46,16 +55,32 @@ object TestDataGenerator {
         val aTozChar = ('A'..'Z').random()
         return when (columnName.uppercase()) {
             // Special column-specific generators
-            "OFFENDER_ID_DISPLAY" -> TestDataConstants.generateOffenderId()
-            "PRISONER_NUMBER" -> TestDataConstants.generateOffenderId()
+            "OFFENDER_ID_DISPLAY" -> generateOffenderId()
+            "PRISONER_NUMBER" -> generateOffenderId()
             "LAST_NAME" -> "Surname${rowNum.toString().padStart(4, '0')}"
             "FIRST_NAME" -> "GivenName${rowNum.toString().padStart(4, '0')}"
-            "LOCATION"  -> TestDataConstants.generateLocation(aTozChar)
-            "UNIT_DESCRIPTION_4_SHORT" ->  TestDataConstants.generateLocation(aTozChar)
+            "LOCATION"  -> generateLocation(aTozChar)
+            "UNIT_DESCRIPTION_4_SHORT" ->  generateLocation(aTozChar)
             "UNIT_CODE_1" -> aTozChar
             "IEP_LEVEL" -> listOf("Basic", "Enhanced", "Standard").random()
-            else -> generateByType(dataType)
+            else -> TestDataConstants.redshiftTypeValueAssigner(dataType)
         }
+    }
+
+    private fun generateOffenderId(): String {
+        val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        return (1..8)
+            .map { chars.random() }
+            .joinToString("")
+    }
+
+    private fun generateLocation(unitCode: Char): String {
+        val wing = Random.nextInt(1, 6)
+        val cell = Random.nextInt(1, 1000)
+            .toString()
+            .padStart(3, '0')
+
+        return "$unitCode-$wing-$cell"
     }
 
     fun generateVarchar(type: String): String {
@@ -71,19 +96,6 @@ object TestDataGenerator {
             .map { chars.random() }
             .joinToString("")
     }
-
-    private fun generateByType(dataType: String): Any =
-        when (dataType.uppercase()) {
-            "VARCHAR(30)", "VARCHAR" -> generateVarchar(dataType)
-            "DOUBLE PRECISION"       -> (1..100).random().toDouble()
-            "BIGINT"                 -> (1..10000).random().toLong()
-            "INTEGER"                -> (1..10000).random()
-            "DATE"                   -> LocalDate.now()
-                                       .minusDays((0..365).random().toLong())
-                                       .toString()
-            "DATETIME"               -> LocalDateTime.now()
-            else -> ""
-        }
 }
 
 // =====================================================
@@ -195,14 +207,7 @@ fun getRedshiftColumnsMap(
 
     val fields = getSchemaFields(root, datasetId)
 
-    val redshiftTypeMapping = mapOf(
-        "string" to "VARCHAR(30)",
-        "date" to "DATE",
-        "double" to "DOUBLE PRECISION",
-        "long" to "BIGINT",
-        "int" to "INTEGER",
-        "datetime" to "DATETIME",
-    )
+    val redshiftTypeMapping = TestDataConstants.redshiftTypeMapping
 
     val redshiftColumns = fields.mapValues { (_, type) ->
         redshiftTypeMapping[type.lowercase()] ?: "VARCHAR(30)"
