@@ -4,6 +4,7 @@
 @file:DependsOn("com.fasterxml.jackson.core:jackson-databind:2.18.2")
 @file:DependsOn("com.opencsv:opencsv:5.9")
 @file:DependsOn("software.amazon.awssdk:s3:2.25.53")
+@file:DependsOn("org.jetbrains.kotlin:kotlin-main-kts:2.2.0")
 
 import TestDataGenerator.generateVarchar
 import com.fasterxml.jackson.databind.JsonNode
