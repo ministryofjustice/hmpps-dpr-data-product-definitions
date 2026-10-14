@@ -3,9 +3,9 @@
 brew install kotlin
 kotlinc -version
 
-chmod +x ./.github/scripts/LocalTestDataGen.main.kts
+chmod +x ./.github/scripts/GenerateTestData.main.kts
 cd ./.github/scripts
-kotlinc -script LocalTestDataGen.main.kts
+kotlinc -script GenerateTestData.main.kts
 
 Once the script has been executed, the following outputs are generated:
 1> A test data CSV file for each DPD definition, located under:

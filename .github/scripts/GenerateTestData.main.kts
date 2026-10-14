@@ -5,8 +5,10 @@
 @file:DependsOn("com.opencsv:opencsv:5.9")
 @file:DependsOn("software.amazon.awssdk:s3:2.25.53")
 
+import TestDataGenerator.generateVarchar
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ObjectNode
 import com.opencsv.CSVWriter
 import java.io.File
 import java.io.FileWriter
@@ -15,20 +17,65 @@ import kotlin.random.Random
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import kotlin.collections.firstOrNull
 
 // ==========================================
 // 1. CONSTANTS
 // ==========================================
 
 object TestDataConstants {
-    fun generateOffenderId(): String {
+
+    val redshiftTypeMapping = mapOf(
+        "string" to "VARCHAR(30)",
+        "date" to "DATE",
+        "double" to "DOUBLE PRECISION",
+        "long" to "BIGINT",
+        "int" to "INTEGER",
+        "datetime" to "TIMESTAMP",
+    )
+
+    fun redshiftTypeValueAssigner(dataType: String): Any =
+        when (dataType.uppercase()) {
+            "VARCHAR(30)", "VARCHAR" -> generateVarchar(dataType)
+            "DOUBLE PRECISION"       -> (1..100).random().toDouble()
+            "BIGINT"                 -> (1..10000).random().toLong()
+            "INTEGER"                -> (1..10000).random()
+            "DATE"                   -> LocalDate.now()
+                .minusDays((0..365).random().toLong())
+                .toString()
+            "TIMESTAMP"               -> LocalDateTime.now()
+                                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+            else -> ""
+        }
+}
+
+object TestDataGenerator {
+    fun generate(columnName: String, dataType: String, rowNum: Int): Any {
+        val aTozChar = ('A'..'Z').random()
+        return when (columnName.uppercase()) {
+            // Special column-specific generators
+            "OFFENDER_ID_DISPLAY" -> generateOffenderId()
+            "PRISONER_NUMBER" -> generateOffenderId()
+            "LAST_NAME" -> "Surname${rowNum.toString().padStart(4, '0')}"
+            "FIRST_NAME" -> "GivenName${rowNum.toString().padStart(4, '0')}"
+            "LOCATION"  -> generateLocation(aTozChar)
+            "UNIT_DESCRIPTION_4_SHORT" ->  generateLocation(aTozChar)
+            "UNIT_CODE_1" -> aTozChar
+            "IEP_LEVEL" -> listOf("Basic", "Enhanced", "Standard").random()
+            else -> TestDataConstants.redshiftTypeValueAssigner(dataType)
+        }
+    }
+
+    private fun generateOffenderId(): String {
         val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         return (1..8)
             .map { chars.random() }
             .joinToString("")
     }
 
-    fun generateLocation(unitCode: Char): String {
+    private fun generateLocation(unitCode: Char): String {
         val wing = Random.nextInt(1, 6)
         val cell = Random.nextInt(1, 1000)
             .toString()
@@ -36,20 +83,6 @@ object TestDataConstants {
 
         return "$unitCode-$wing-$cell"
     }
-}
-
-object TestDataGenerator {
-    fun generate(columnName: String, dataType: String, rowNum: Int): Any =
-        when (columnName.uppercase()) {
-            // Special column-specific generators
-            "OFFENDER_ID_DISPLAY" -> TestDataConstants.generateOffenderId()
-            "LAST_NAME" -> "Surname${rowNum.toString().padStart(4, '0')}"
-            "FIRST_NAME" -> "GivenName${rowNum.toString().padStart(4, '0')}"
-            "LOCATION" -> TestDataConstants.generateLocation(
-                ('A'..'Z').random()
-            )
-            else -> generateByType(dataType)
-        }
 
     fun generateVarchar(type: String): String {
         val chars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
@@ -64,29 +97,19 @@ object TestDataGenerator {
             .map { chars.random() }
             .joinToString("")
     }
-
-    private fun generateByType(dataType: String): Any =
-        when (dataType.uppercase()) {
-            "VARCHAR(30)", "VARCHAR" -> generateVarchar(dataType)
-            "DOUBLE PRECISION" -> (1..100).random().toDouble()
-            "BIGINT" -> (1..10000).random().toLong()
-            "INTEGER" -> (1..10000).random()
-            "DATE" -> LocalDate.now()
-                .minusDays((0..365).random().toLong())
-                .toString()
-            else -> ""
-        }
 }
-
 
 // =====================================================
 // 2. MAIN
 // =====================================================
 
 fun main() {
+
+    val localDPDgen = System.getenv("DPD_TEST_RESOURCES_PATH") ?: "local"
+
     // Load the DPD from the environment-specific test-resources folder
     val tableToColumnsMap: Map<String, Map<String, String>> =
-        loadDPDtoGenerateTestData()
+        loadDPDtoGenerateTestData(localDPDgen)
 
     // Read row count supplied by GitHub Actions.
     // Default to 100 if no value has been provided.
@@ -95,7 +118,7 @@ fun main() {
         ?: 100
 
     // Generate the test data CSV and upload it to S3
-    generateTestData(tableToColumnsMap, rowCount)
+    generateTestData(tableToColumnsMap, rowCount, localDPDgen)
 
     // Generate SQL script for createTable + copySql
     val sqlScript = sqlScriptGeneration(tableToColumnsMap)
@@ -107,12 +130,12 @@ fun main() {
 // 3. SUPPORTING METHODS FOR MAIN
 // ==========================================
 
-fun loadDPDtoGenerateTestData(): Map<String, Map<String, String>> {
+fun loadDPDtoGenerateTestData(localDPDgen: String): Map<String, Map<String, String>> {
     val objectMapper = ObjectMapper()
 
     val directory = File(
         System.getenv("DPD_TEST_RESOURCES_PATH")
-            ?: "dpd/dev/definitions/prisons/test-resources"
+            ?: "../../dpd/dev/definitions/prisons/test-resources"
     )
 
     val tableToColumnsMap: Map<String, Map<String, String>> = directory
@@ -130,12 +153,46 @@ fun loadDPDtoGenerateTestData(): Map<String, Map<String, String>> {
             val reports = root["report"]
 
             val firstDatasetId = reports
-                .map { it["dataset"].asText() }
+                .map { it["dataset"].asText().removePrefix("\$ref:") }
                 .distinct()
                 .first()
 
             val redshiftColumns =
                 getRedshiftColumnsMap(root.toString(), firstDatasetId)
+
+            if (localDPDgen == "local") {
+                println("Processing file: ${file.name}")
+                println("Table Name: $tableName")
+                println("Dataset Id: $firstDatasetId")
+
+                val testDPDDir = File("generated-test-dpds")
+                testDPDDir.mkdirs()
+                // Create new datasource array
+                val mutableRoot = root as ObjectNode
+                val currentName = root.get("name").asText()
+                root.put("name", "Test $currentName")
+
+                mutableRoot.set<JsonNode>(
+                    "datasource",
+                    objectMapper.createArrayNode().add(
+                        objectMapper.createObjectNode()
+                            .put("id", "datamart")
+                            .put("name", "datamart")
+                    )
+                )
+
+                val sql = "SELECT * FROM datamart.datahub_test.$tableName"
+                mutableRoot["dataset"]
+                    ?.firstOrNull { it["id"]?.asText() == firstDatasetId }
+                    ?.let { dataset ->
+                        (dataset as ObjectNode).put("query", sql)
+                    }
+
+                val testDPDFile = File(testDPDDir, "test-${file.name}")
+
+                objectMapper.writerWithDefaultPrettyPrinter()
+                    .writeValue(testDPDFile, mutableRoot)
+            }
 
             tableName to redshiftColumns
         } ?: emptyMap()
@@ -151,13 +208,7 @@ fun getRedshiftColumnsMap(
 
     val fields = getSchemaFields(root, datasetId)
 
-    val redshiftTypeMapping = mapOf(
-        "string" to "VARCHAR(30)",
-        "date" to "DATE",
-        "double" to "DOUBLE PRECISION",
-        "long" to "BIGINT",
-        "int" to "INTEGER"
-    )
+    val redshiftTypeMapping = TestDataConstants.redshiftTypeMapping
 
     val redshiftColumns = fields.mapValues { (_, type) ->
         redshiftTypeMapping[type.lowercase()] ?: "VARCHAR(30)"
@@ -191,13 +242,25 @@ fun getSchemaFields(
 
 fun generateTestData(
     tableToColumnsMap: Map<String, Map<String, String>>,
-    rowCount: Int = 1
+    rowCount: Int = 1,
+    localDPDgen: String
 ) {
+    var outputDir: File? = null
+    if (localDPDgen == "local") {
+        outputDir = File("generated-test-data")
+        outputDir.mkdirs()
+    }
 
     tableToColumnsMap.forEach { (tableName, redshiftColumns) ->
 
         val csvFileName = "$tableName.csv"
-        val outputFile = File(csvFileName)
+
+        var outputFile: File? = null
+        if (localDPDgen == "local") {
+            outputFile = File(outputDir, csvFileName)
+        } else {
+            outputFile = File(csvFileName)
+        }
 
         CSVWriter(FileWriter(outputFile)).use { writer ->
 
@@ -219,16 +282,18 @@ fun generateTestData(
             }
         }
 
-        val s3 = S3Client.builder().build()
-        val s3Path = System.getenv("TEST_DATA_S3_PATH") ?: "dpr-working-development"
+        if (localDPDgen != "local") {
+            val s3 = S3Client.builder().build()
+            val s3Path = System.getenv("TEST_DATA_S3_PATH") ?: "dpr-working-development"
 
-        s3.putObject(
-            PutObjectRequest.builder()
-                .bucket(s3Path)
-                .key("datahub-test-data/$csvFileName")
-                .build(),
-            RequestBody.fromFile(outputFile)
-        )
+            s3.putObject(
+                PutObjectRequest.builder()
+                    .bucket(s3Path)
+                    .key("datahub-test-data/$csvFileName")
+                    .build(),
+                RequestBody.fromFile(outputFile)
+            )
+        }
     }
 }
 
