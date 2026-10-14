@@ -1,0 +1,165 @@
+{
+    "id": "esw-employers-001",
+    "name": "ESW Jobs Board - Employers Summary",
+    "description": "Report of employers added or updated in the given time period",
+    "metadata": {
+        "version": "0.0.1",
+        "tags": [],
+        "author": "Mary Ford"
+    },
+    "datasource": [
+        {
+            "id": "redshift_via_athena",
+            "name": "datamart_via_athena",
+            "database": "datamart",
+            "catalog": "redshift_datamart",
+            "connection": "federated",
+            "dialect": "redshift/4"
+        }
+    ],
+    "dataset": [
+        {
+            "id": "esw-employers-summary--DS",
+            "name": "Employers added or updated",
+            "datasource": "redshift_via_athena",
+            "query": "SELECT created_by, id, CAST(created_at AS DATE) AS created_date, last_modified_by, CAST(last_modified_at AS DATE) AS last_modified_date, sector, name, status from datamart.prisons.matchjobsandmanageapplications_employers where (created_date >= (SELECT START_DATE from prompt_) and created_date <= (SELECT END_DATE from prompt_)) or (last_modified_date >= (SELECT START_DATE from prompt_) and last_modified_date <= (SELECT END_DATE from prompt_))",
+            "parameters": [
+                            {
+              "index": 0,
+              "name": "start_date",
+              "filterType": "date",
+              "reportFieldType": "date",
+              "display": "Start Date",
+              "description": "",
+              "mandatory": "true"
+            },
+            {
+              "index": 1,
+              "name": "end_date",
+              "filterType": "date",
+              "reportFieldType": "date",
+              "display": "End Date",
+              "description": "",
+              "mandatory": "true"
+            }
+            ],
+            "schema": {
+                "field": [
+                    {
+                        "name": "created_by",
+                        "type": "string",
+                        "display": "Created By User",
+                        "sensitivity": "internal"
+                    },
+                    {
+                        "name": "id",
+                        "type": "string",
+                        "display": "Employer ID",
+                        "sensitivity": "internal"
+                    },
+                    {
+                        "name": "created_date",
+                        "type": "date",
+                        "display": "Created On"
+                    },
+                    {
+                        "name": "last_modified_by",
+                        "type": "string",
+                        "display": "Modified By User",
+                        "sensitivity": "internal"
+                    },
+                    {
+                        "name": "last_modified_date",
+                        "type": "date",
+                        "display": "Modified On"
+                    },
+                    {
+                        "name": "name",
+                        "type": "string",
+                        "display": "Employer Name",
+                        "sensitivity": "internal"
+                    },
+                    {
+                        "name": "status",
+                        "type": "string",
+                        "display": "Employer Status"
+                    },
+                    {
+                        "name": "sector",
+                        "type": "string",
+                        "display": "Employer Sector"
+                    }
+                ]
+            }
+        }
+    ],
+    "policy": [
+        {
+            "id": "access",
+            "type": "access",
+            "rule": [
+                {
+                    "effect": "permit",
+                    "condition": [
+                        {
+                            "match": [
+                                "${role}",
+                                "ROLE_JOBS_EMPLOYERS_REPORT_VIEW"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "report": [
+        {
+            "id": "esw-employers-summary.RS",
+            "name": "Employers added or updated in time period",
+            "description": "A list of employers added or updated in the specified time period",
+            "version": "0.0.1",
+            "dataset": "esw-employers-summary--DS",
+            "render": "HTML",
+            "classification": "OFFICIAL",
+            "specification": {
+                "template": "list",
+                "field": [
+                    {
+                        "name": "created_by",
+                        "sortable": true
+                    },
+                    {
+                        "name": "id"
+                    },
+                    {
+                        "name": "created_date",
+                        "sortable": true,
+                        "type": "date"
+                    },
+                    {
+                        "name": "last_modified_by",
+                        "sortable": true
+                    },
+                    {
+                        "name": "last_modified_date",
+                        "sortable": true,
+                        "type": "date"
+                    },
+                    {
+                        "name": "name",
+                        "sortable": true,
+                        "defaultsort": true
+                    },
+                    {
+                        "name": "status",
+                        "sortable": true
+                    },
+                    {
+                        "name": "sector",
+                        "sortable": true
+                    }
+                ]
+            }
+        }
+    ]
+}
