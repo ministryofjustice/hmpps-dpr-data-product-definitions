@@ -1,44 +1,31 @@
 {
   "id": "act007-prisoner-appointment-history",
   "name": "Prisoner appointments",
-  "description": "Historic and future appointments for an individual prisoner. Dates can be refined using the report filters.",
+  "description": "Historic and future appointments for an individual prisoner over a selected date range. The self-service window is limited to 12 months historically and 370 days into the future.",
   "metadata": {
     "author": "Martin Lippe",
     "owner": "Claire Morgan",
-    "version": "0.1.5"
+    "version": "1.0.0"
   },
   "datasource": [
     {
-      "id": "athena",
-      "name": "athena",
-      "database": "curated",
-      "catalog": "awsdatacatalog",
-      "connection": "awsdatacatalog",
-      "dialect": "athena/3"
+      "id": "datamart",
+      "name": "datamart"
     }
   ],
   "dataset": [
     {
       "id": "prisoner-appointments",
       "name": "Appointments for an individual prisoner",
-      "datasource": "athena",
+      "datasource": "datamart",
       "query": [
         {
           "index": 0,
-          "datasource": "athena",
-          "query": "WITH person_prisoner AS ( SELECT o.offender_id_display AS prisoner_number, REGEXP_REPLACE(LOWER(o.last_name || ', ' || o.first_name), '(\\b[a-z])', x -> UPPER(x[1])) AS prisoner_name, ob.agy_loc_id AS current_prison_id FROM curated.nomis_offender_bookings ob INNER JOIN curated.nomis_offenders o ON ob.offender_id = o.offender_id AND ob.booking_seq = 1 ) SELECT app.prison_code, att.prisoner_number, dm.prisoner_name, app.appointment_id, app.appointment_tier_id AS appointment_tier, app.start_date, SUBSTRING(app.start_time, 1, 5) AS start_time, SUBSTRING(app.end_time, 1, 5) AS end_time, COALESCE(SUBSTRING(app.start_time, 1, 5), '') || CASE WHEN app.end_time IS NOT NULL THEN ' - ' || SUBSTRING(app.end_time, 1, 5) ELSE '' END AS start_to_end, par.name AS parent_category, cat.description AS appointment_category, app.category_code, app.custom_name AS custom_appointment_name, COALESCE( NULLIF(app.custom_location, ''), dps_loc.local_name, nomis_loc.description, dps_loc.path_hierarchy, 'Not recorded' ) AS appointment_location, CASE WHEN app.cancellation_reason_id IS NOT NULL THEN 'Cancelled' WHEN att.removal_reason_id IS NOT NULL OR att.is_deleted THEN 'Removed' WHEN app.start_date > CURRENT_DATE OR ( app.start_date = CURRENT_DATE AND COALESCE(SUBSTRING(app.start_time, 1, 5), '23:59') > FORMAT_DATETIME(CURRENT_TIMESTAMP AT TIME ZONE 'Europe/London', 'HH:mm') ) THEN 'Scheduled' WHEN att.attended IS NULL THEN 'Not recorded' WHEN att.attended = FALSE THEN 'Did not attend' WHEN att.attended = TRUE THEN 'Attended' END AS appointment_status, cancellation_reason.description AS cancellation_reason, removal_reason.description AS removal_reason, 'Open appointment' AS appointment_link FROM curated.activities_appointment_attendee att INNER JOIN curated.activities_appointment app ON app.appointment_id = att.appointment_id INNER JOIN person_prisoner dm ON dm.prisoner_number = att.prisoner_number LEFT JOIN curated.activities_appointment_category cat ON cat.code = app.category_code LEFT JOIN curated.activities_appointment_parent_category par ON par.appointment_parent_category_id = cat.appointment_parent_category_id LEFT JOIN curated.activities_appointment_cancellation_reason cancellation_reason ON cancellation_reason.appointment_cancellation_reason_id = app.cancellation_reason_id LEFT JOIN curated.activities_appointment_attendee_removal_reason removal_reason ON removal_reason.appointment_attendee_removal_reason_id = att.removal_reason_id LEFT JOIN curated.nomis_agency_internal_locations nomis_loc ON nomis_loc.internal_location_id = app.internal_location_id LEFT JOIN curated.locationsinsideprison_location dps_loc ON dps_loc.id = app.dps_location_id WHERE att.prisoner_number = UPPER((SELECT prisoner_number_filter FROM prompt_)) AND app.appointment_tier_id IN (1, 2) AND NOT app.is_deleted AND app.start_date BETWEEN DATE_ADD('month', -12, CURRENT_DATE) AND DATE_ADD('day', 370, CURRENT_DATE) ORDER BY app.start_date, app.start_time, app.appointment_id"
+          "datasource": "datamart",
+          "query": "SELECT app.prison_code, att.prisoner_number, dm.name AS prisoner_name, app.appointment_id, app.appointment_tier_id AS appointment_tier, app.start_date, SUBSTRING(app.start_time, 1, 5) AS start_time, SUBSTRING(app.end_time, 1, 5) AS end_time, COALESCE(SUBSTRING(app.start_time, 1, 5), '') || CASE WHEN app.end_time IS NOT NULL THEN ' - ' || SUBSTRING(app.end_time, 1, 5) ELSE '' END AS start_to_end, par.name AS parent_category, cat.description AS appointment_category, app.category_code, app.custom_name AS custom_appointment_name, COALESCE(NULLIF(app.custom_location, ''), dps_loc.local_name, nomis_loc.description, dps_loc.path_hierarchy, 'Not recorded') AS appointment_location, CASE WHEN app.cancellation_reason_id IS NOT NULL THEN 'Cancelled' WHEN att.removal_reason_id IS NOT NULL OR att.is_deleted THEN 'Removed' WHEN app.start_date > CURRENT_DATE OR (app.start_date = CURRENT_DATE AND COALESCE(SUBSTRING(app.start_time, 1, 5), '23:59') > TO_CHAR(CONVERT_TIMEZONE('UTC','Europe/London',GETDATE()), 'HH24:MI')) THEN 'Scheduled' WHEN att.attended IS NULL THEN 'Not recorded' WHEN att.attended = FALSE THEN 'Did not attend' WHEN att.attended = TRUE THEN 'Attended' END AS appointment_status, cancellation_reason.description AS cancellation_reason, removal_reason.description AS removal_reason, 'Open appointment' AS appointment_link FROM datamart.prisons.activities_appointment_attendee att INNER JOIN datamart.prisons.activities_appointment app ON app.appointment_id = att.appointment_id INNER JOIN datamart.person.prisoner dm ON dm.prisoner_number = att.prisoner_number LEFT JOIN datamart.prisons.activities_appointment_category cat ON cat.code = app.category_code LEFT JOIN datamart.prisons.activities_appointment_parent_category par ON par.appointment_parent_category_id = cat.appointment_parent_category_id LEFT JOIN datamart.prisons.activities_appointment_cancellation_reason cancellation_reason ON cancellation_reason.appointment_cancellation_reason_id = app.cancellation_reason_id LEFT JOIN datamart.prisons.activities_appointment_attendee_removal_reason removal_reason ON removal_reason.appointment_attendee_removal_reason_id = att.removal_reason_id LEFT JOIN datamart.prisons.nomis_agency_internal_locations nomis_loc ON nomis_loc.internal_location_id = app.internal_location_id LEFT JOIN datamart.prisons.locationsinsideprison_location dps_loc ON dps_loc.id = app.dps_location_id WHERE app.appointment_tier_id IN (1, 2) AND NOT app.is_deleted AND NOT att.is_deleted AND app.start_date BETWEEN DATEADD(month, -12, CURRENT_DATE) AND DATEADD(day, 370, CURRENT_DATE) ORDER BY app.start_date, app.start_time, app.appointment_id"
         }
       ],
-      "parameters": [
-        {
-          "index": 0,
-          "name": "prisoner_number_filter",
-          "filterType": "text",
-          "reportFieldType": "string",
-          "display": "Prisoner number",
-          "mandatory": "true"
-        }
-      ],
+      "parameters": [],
       "schema": {
         "field": [
           {
@@ -178,9 +165,9 @@
     {
       "id": "prisoner-appointment-history",
       "name": "Prisoner appointments",
-      "description": "Historic and future appointments for a selected prisoner. Use the report filters to refine the date range. The available window is limited to 12 months historically and 370 days into the future.",
+      "description": "Historic and future appointments for a selected prisoner. The self-service window is limited to 12 months historically and 370 days into the future.",
       "classification": "Official",
-      "version": "0.1.5",
+      "version": "1.0.0",
       "render": "HTML",
       "dataset": "$ref:prisoner-appointments",
       "feature": [
@@ -199,9 +186,15 @@
           {
             "name": "$ref:prisoner_number",
             "display": "Prisoner number",
-            "visible": "false",
+            "visible": "mandatory",
             "sortable": false,
-            "defaultsort": false
+            "defaultsort": false,
+            "filter": {
+              "index": 0,
+              "type": "text",
+              "mandatory": true,
+              "interactive": false
+            }
           },
           {
             "name": "$ref:prisoner_name",
