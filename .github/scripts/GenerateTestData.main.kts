@@ -42,7 +42,7 @@ object TestDataConstants {
             "VARCHAR(30)", "VARCHAR" -> generateVarchar(dataType)
             "DOUBLE PRECISION"       -> (1..100).random().toDouble()
             "BIGINT"                 -> (1..10000).random().toLong()
-            "INTEGER"                -> (1..10000).random()
+            "INTEGER"                -> (1..100).random()
             "DATE"                   -> LocalDate.now()
                 .minusDays((0..365).random().toLong())
                 .toString()
@@ -66,6 +66,7 @@ object TestDataGenerator {
             "UNIT_DESCRIPTION_4_SHORT" ->  generateLocation(aTozChar)
             "UNIT_CODE_1" -> aTozChar
             "IEP_LEVEL" -> listOf("Basic", "Enhanced", "Standard").random()
+            "PRISON_CODE" -> listOf("LEI", "MDI", "RSI").random()
             else -> TestDataConstants.redshiftTypeValueAssigner(dataType)
         }
     }
