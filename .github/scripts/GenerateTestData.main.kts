@@ -213,8 +213,6 @@ fun loadDPDtoGenerateTestData(localDPDgen: String): Map<String, Map<String, Stri
         } ?.toMap()
         ?: emptyMap()
 
-
-    println("tableToColumnsMap : ${tableToColumnsMap.keys}")
     return tableToColumnsMap
 }
 
