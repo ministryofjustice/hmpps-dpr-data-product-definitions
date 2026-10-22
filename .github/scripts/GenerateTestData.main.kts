@@ -34,6 +34,7 @@ object TestDataConstants {
         "long" to "BIGINT",
         "int" to "INTEGER",
         "datetime" to "TIMESTAMP",
+        "timestamp" to "TIMESTAMP",
     )
 
     fun redshiftTypeValueAssigner(dataType: String): Any =
@@ -151,10 +152,18 @@ fun loadDPDtoGenerateTestData(localDPDgen: String): Map<String, Map<String, Stri
                 .uppercase()
 
             val reports = root["report"]
-
-            val datasetIds = reports
-                .map { it["dataset"].asText().removePrefix("\$ref:") }
+            val reportDatasetIds = reports
+                ?.map { it["dataset"].asText().removePrefix("\$ref:") }
+                .orEmpty()
                 .distinct()
+
+            val dashboards = root["dashboard"]
+            val dashboardDatasetIds = dashboards
+                ?.map { it["dataset"].asText().removePrefix("\$ref:") }
+                .orEmpty()
+                .distinct()
+
+            val datasetIds = (dashboardDatasetIds + reportDatasetIds).distinct()
 
             if (localDPDgen == "local") {
                 println("Processing file: ${file.name}")
