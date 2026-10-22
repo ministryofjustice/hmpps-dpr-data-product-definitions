@@ -47,6 +47,7 @@ object TestDataConstants {
                 .minusDays((0..365).random().toLong())
                 .toString()
             "TIMESTAMP"               -> LocalDateTime.now()
+                                        .minusDays((0..365).random().toLong())
                                         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
             else -> ""
         }
