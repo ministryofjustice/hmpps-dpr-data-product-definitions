@@ -142,7 +142,7 @@ fun loadDPDtoGenerateTestData(localDPDgen: String): Map<String, Map<String, Stri
         .listFiles { file ->
             file.isFile && file.extension == "json"
         }
-        ?.associate { file ->
+        ?.flatMap { file ->
 
             val root: JsonNode = objectMapper.readTree(file)
 
@@ -152,18 +152,14 @@ fun loadDPDtoGenerateTestData(localDPDgen: String): Map<String, Map<String, Stri
 
             val reports = root["report"]
 
-            val firstDatasetId = reports
+            val datasetIds = reports
                 .map { it["dataset"].asText().removePrefix("\$ref:") }
                 .distinct()
-                .first()
-
-            val redshiftColumns =
-                getRedshiftColumnsMap(root.toString(), firstDatasetId)
 
             if (localDPDgen == "local") {
                 println("Processing file: ${file.name}")
                 println("Table Name: $tableName")
-                println("Dataset Id: $firstDatasetId")
+                println("Dataset Id: $datasetIds")
 
                 val testDPDDir = File("generated-test-dpds")
                 testDPDDir.mkdirs()
@@ -181,12 +177,18 @@ fun loadDPDtoGenerateTestData(localDPDgen: String): Map<String, Map<String, Stri
                     )
                 )
 
-                val sql = "SELECT * FROM datamart.datahub_test.$tableName"
-                mutableRoot["dataset"]
-                    ?.firstOrNull { it["id"]?.asText() == firstDatasetId }
-                    ?.let { dataset ->
-                        (dataset as ObjectNode).put("query", sql)
-                    }
+                datasetIds.forEach { datasetId ->
+                    val tableNameWithID = "${tableName}_$datasetId"
+                        .replace("/", "_")
+                        .replace("-", "_")
+                        .uppercase()
+                    val sql = "SELECT * FROM datamart.datahub_test.$tableNameWithID"
+                    mutableRoot["dataset"]
+                        ?.firstOrNull { it["id"]?.asText() == datasetId }
+                        ?.let { dataset ->
+                            (dataset as ObjectNode).put("query", sql)
+                        }
+                }
 
                 val testDPDFile = File(testDPDDir, "test-${file.name}")
 
@@ -194,8 +196,22 @@ fun loadDPDtoGenerateTestData(localDPDgen: String): Map<String, Map<String, Stri
                     .writeValue(testDPDFile, mutableRoot)
             }
 
-            tableName to redshiftColumns
-        } ?: emptyMap()
+            // Return multiple datasets for this file
+            datasetIds.map { datasetId ->
+
+                val redshiftColumns =
+                    getRedshiftColumnsMap(root.toString(), datasetId)
+
+                val tableNameWithID = "${tableName}_$datasetId"
+                    .replace("/", "_")
+                    .replace("-", "_")
+                    .uppercase()
+
+                tableNameWithID to redshiftColumns
+            }
+//            tableName to redshiftColumns
+        } ?.toMap()
+        ?: emptyMap()
 
     return tableToColumnsMap
 }
