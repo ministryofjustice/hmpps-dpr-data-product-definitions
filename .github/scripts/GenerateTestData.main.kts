@@ -69,6 +69,7 @@ object TestDataGenerator {
             "PRISON_CODE" -> listOf("LEI", "WSI", "RSI", "KMI").random()
             "PCODE" -> listOf("WSI", "SLI", "KMI").random()
             "PRISON_ID" -> listOf("WSI", "SLI", "KMI").random()
+            "PRISON_NAME" -> listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)").random()
             "PNAME" -> listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)").random()
             "LOCATION_NAME" -> listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)").random()
             else -> TestDataConstants.redshiftTypeValueAssigner(dataType)
