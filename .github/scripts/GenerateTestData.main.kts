@@ -34,6 +34,7 @@ object TestDataConstants {
         "long" to "BIGINT",
         "int" to "INTEGER",
         "datetime" to "TIMESTAMP",
+        "timestamp" to "TIMESTAMP",
     )
 
     fun redshiftTypeValueAssigner(dataType: String): Any =
@@ -41,11 +42,12 @@ object TestDataConstants {
             "VARCHAR(30)", "VARCHAR" -> generateVarchar(dataType)
             "DOUBLE PRECISION"       -> (1..100).random().toDouble()
             "BIGINT"                 -> (1..10000).random().toLong()
-            "INTEGER"                -> (1..10000).random()
+            "INTEGER"                -> (1..100).random()
             "DATE"                   -> LocalDate.now()
                 .minusDays((0..365).random().toLong())
                 .toString()
             "TIMESTAMP"               -> LocalDateTime.now()
+                                        .minusDays((0..365).random().toLong())
                                         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
             else -> ""
         }
@@ -64,6 +66,7 @@ object TestDataGenerator {
             "UNIT_DESCRIPTION_4_SHORT" ->  generateLocation(aTozChar)
             "UNIT_CODE_1" -> aTozChar
             "IEP_LEVEL" -> listOf("Basic", "Enhanced", "Standard").random()
+            "PRISON_CODE" -> listOf("LEI", "MDI", "RSI").random()
             else -> TestDataConstants.redshiftTypeValueAssigner(dataType)
         }
     }
@@ -151,10 +154,18 @@ fun loadDPDtoGenerateTestData(localDPDgen: String): Map<String, Map<String, Stri
                 .uppercase()
 
             val reports = root["report"]
-
-            val datasetIds = reports
-                .map { it["dataset"].asText().removePrefix("\$ref:") }
+            val reportDatasetIds = reports
+                ?.map { it["dataset"].asText().removePrefix("\$ref:") }
+                .orEmpty()
                 .distinct()
+
+            val dashboards = root["dashboard"]
+            val dashboardDatasetIds = dashboards
+                ?.map { it["dataset"].asText().removePrefix("\$ref:") }
+                .orEmpty()
+                .distinct()
+
+            val datasetIds = (dashboardDatasetIds + reportDatasetIds).distinct()
 
             if (localDPDgen == "local") {
                 println("Processing file: ${file.name}")
