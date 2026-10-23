@@ -66,7 +66,12 @@ object TestDataGenerator {
             "UNIT_DESCRIPTION_4_SHORT" ->  generateLocation(aTozChar)
             "UNIT_CODE_1" -> aTozChar
             "IEP_LEVEL" -> listOf("Basic", "Enhanced", "Standard").random()
-            "PRISON_CODE" -> listOf("LEI", "MDI", "RSI").random()
+            "PRISON_CODE" -> listOf("LEI", "WSI", "RSI", "KMI").random()
+            "PCODE" -> listOf("WSI", "SLI", "KMI").random()
+            "PRISON_ID" -> listOf("WSI", "SLI", "KMI").random()
+            "PRISON_NAME" -> listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)").random()
+            "PNAME" -> listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)").random()
+            "LOCATION_NAME" -> listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)").random()
             else -> TestDataConstants.redshiftTypeValueAssigner(dataType)
         }
     }
