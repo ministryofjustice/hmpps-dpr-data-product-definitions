@@ -111,8 +111,8 @@ object TestDataGenerator {
             .find(type.uppercase())
             ?.groupValues?.get(1)?.toInt()
             ?: 20
-
-        return "Value$rowNum".take(length)
+        var ramNum = Random.nextInt(1, rowNum)
+        return "Value$ramNum".take(length)
     }
 }
 
