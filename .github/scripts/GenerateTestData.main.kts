@@ -39,7 +39,7 @@ object TestDataConstants {
 
     fun redshiftTypeValueAssigner(dataType: String): Any =
         when (dataType.uppercase()) {
-            "VARCHAR(30)", "VARCHAR" -> generateVarchar(dataType)
+            "VARCHAR(30)", "VARCHAR" -> generateVarchar(dataType, 10)
             "DOUBLE PRECISION"       -> (1..100).random().toDouble()
             "BIGINT"                 -> (1..10000).random().toLong()
             "INTEGER"                -> (1..100).random()
@@ -104,6 +104,15 @@ object TestDataGenerator {
         return (1..length.coerceAtMost(100))
             .map { chars.random() }
             .joinToString("")
+    }
+
+    fun generateVarchar(type: String, rowNum: Int): String {
+        val length = Regex("""VARCHAR\\((\\d+)\\)""")
+            .find(type.uppercase())
+            ?.groupValues?.get(1)?.toInt()
+            ?: 20
+
+        return "Value$rowNum".take(length)
     }
 }
 
