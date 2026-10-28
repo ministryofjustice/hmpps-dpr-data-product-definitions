@@ -204,6 +204,8 @@ fun loadDPDtoGenerateTestData(localDPDgen: String): Map<String, Map<String, Stri
 
                 datasetIds.forEach { datasetId ->
                     val tableNameWithID = "${tableName}_$datasetId"
+                        .replace("(", "")
+                        .replace(")", "")
                         .replace("/", "_")
                         .replace("-", "_")
                         .uppercase()
@@ -228,13 +230,14 @@ fun loadDPDtoGenerateTestData(localDPDgen: String): Map<String, Map<String, Stri
                     getRedshiftColumnsMap(root.toString(), datasetId)
 
                 val tableNameWithID = "${tableName}_$datasetId"
+                    .replace("(", "")
+                    .replace(")", "")
                     .replace("/", "_")
                     .replace("-", "_")
                     .uppercase()
 
                 tableNameWithID to redshiftColumns
             }
-//            tableName to redshiftColumns
         } ?.toMap()
         ?: emptyMap()
 

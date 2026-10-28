@@ -1,0 +1,311 @@
+{
+  "id": "dpd005-court-movements",
+  "name": "Receptions & Discharges for a date range",
+  "description": "Reports associated with prisoner external movements",
+  "metadata": {
+    "author": "Zahoor Hussain",
+    "owner": "Michael Clarke",
+    "version": "1.0.4"
+  },
+  "datasource": [
+    {
+      "id": "datamart",
+      "name": "datamart"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "external-movements",
+      "name": "external-movements",
+      "datasource": "datamart",
+      "query": "SELECT prisoners.number AS prison_number,prisoners.name AS name, movements.time AS date, movements.direction, movements.type, movements.origin, movements.origin_code, movements.destination, movements.destination_code, movements.reason FROM datamart.movement_movement as movements JOIN datamart.prisoner_prisoner as prisoners ON movements.prisoner = prisoners.id",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_number",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "date",
+            "type": "date",
+            "display": ""
+          },
+          {
+            "name": "direction",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "origin",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "origin_code",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "destination",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "destination_code",
+            "type": "string",
+            "display": ""
+          },
+          {
+            "name": "reason",
+            "type": "string",
+            "display": ""
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "caseload",
+      "type": "row-level",
+      "action": ["(origin_code='${caseload}' AND lower(direction)='out') OR (destination_code='${caseload}' AND lower(direction)='in')"],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": ["${caseload}"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": ["${role}", "ROLE_PRISONS_REPORTING_USER"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "last-month",
+      "name": "Last month",
+      "description": "All movements in the past month",
+      "classification": "OFFICIAL",
+      "version": "1.2.5",
+      "render": "HTML",
+      "dataset": "$ref:external-movements",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:prison_number",
+            "display": "Prison Number",
+            "formula": "",
+            "visible": "mandatory",
+            "sortable": true,
+            "defaultsort": true
+          },
+          {
+            "name": "$ref:name",
+            "display": "Name",
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prison_number}',${name},TRUE)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:date",
+            "display": "Date",
+            "formula": "format_date(${date}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "filter": {
+              "type": "daterange",
+              "default": "today(-1,months) - today()"
+            }
+          },
+          {
+            "name": "$ref:origin",
+            "display": "From",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:destination",
+            "display": "To",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:direction",
+            "display": "Direction",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "radio",
+              "staticoptions": [
+                {
+                  "name": "in",
+                  "display": "In"
+                },
+                {
+                  "name": "out",
+                  "display": "Out"
+                }
+              ]
+            }
+          },
+          {
+            "name": "$ref:type",
+            "display": "Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:reason",
+            "display": "Reason",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "last-week",
+      "name": "Last week",
+      "description": "All movements in the past week",
+      "classification": "OFFICIAL",
+      "version": "1.2.5",
+      "render": "HTML",
+      "dataset": "$ref:external-movements",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:prison_number",
+            "display": "Prison Number",
+            "formula": "",
+            "visible": "mandatory",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:name",
+            "display": "Name",
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prison_number}',${name},TRUE)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:date",
+            "display": "Date",
+            "formula": "format_date(${date}, 'dd/MM/yyyy')",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "filter": {
+              "type": "daterange",
+              "default": "today(-1,weeks) - today()"
+            }
+          },
+          {
+            "name": "$ref:origin",
+            "display": "From",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:destination",
+            "display": "To",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:direction",
+            "display": "Direction",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "radio",
+              "staticoptions": [
+                {
+                  "name": "in",
+                  "display": "In"
+                },
+                {
+                  "name": "out",
+                  "display": "Out"
+                }
+              ]
+            }
+          },
+          {
+            "name": "$ref:type",
+            "display": "Type",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:reason",
+            "display": "Reason",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    }
+  ]
+}
