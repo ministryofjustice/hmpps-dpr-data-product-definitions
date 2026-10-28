@@ -78,16 +78,17 @@ jobs:
           echo "Generating $TEST_DATA_ROW_COUNT rows of test data"
           echo "S3 path $TEST_DATA_S3_PATH"
 
-          SQL=$(kotlin -J-Dorg.slf4j.simpleLogger.defaultLogLevel=error ./.github/scripts/GenerateTestData.main.kts)
-
-          if [[ ! "$SQL" =~ ^BEGIN\; ]]; then
+          kotlin -J-Dorg.slf4j.simpleLogger.defaultLogLevel=error \./.github/scripts/GenerateTestData.main.kts > generated.sql
+         
+          if ! grep -q '^BEGIN;' generated.sql; then
             echo "::error::Generated SQL script must start with 'BEGIN;'"
             exit 1
           fi
 
-          echo "sql<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$SQL" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "Generated SQL size:"
+          ls -lh generated.sql
+  
+          SQL=$(<generated.sql)
 
       - name: Execute SQL in Redshift
         env:
@@ -99,7 +100,7 @@ jobs:
             --cluster-identifier $REDSHIFT_CLUSTER \
             --database datamart \
             --db-user dpruser \
-            --sql "${{ steps.generate_sql.outputs.sql }}" \
+            --sql "$SQL" \
             --query 'Id' \
             --output text)
 
