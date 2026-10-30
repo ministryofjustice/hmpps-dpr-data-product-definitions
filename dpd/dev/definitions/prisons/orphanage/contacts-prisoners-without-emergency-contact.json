@@ -18,11 +18,16 @@
       "id": "prisoners-without-emergency-contact",
       "name": "Prisoners without an active emergency contact",
       "datasource": "datamart",
-      "query": "SELECT ob.agy_loc_id AS prison_code, o.offender_id_display AS prisoner_number, o.last_name AS last_name, o.first_name AS first_name, ob.living_unit_id AS living_unit_id, 'Manage contacts' AS contacts_link FROM prisons.nomis_offender_bookings ob JOIN prisons.nomis_offenders o ON o.offender_id = ob.offender_id LEFT JOIN (SELECT DISTINCT prisoner_number FROM prisons.personalrelationships_prisoner_contact WHERE active AND (emergency_contact OR next_of_kin) AND (expiry_date IS NULL OR expiry_date >= CURRENT_DATE)) ec ON ec.prisoner_number = o.offender_id_display WHERE ob.active_flag = 'Y' AND ob.in_out_status = 'IN' AND ec.prisoner_number IS NULL",
+      "query": "SELECT ob.agy_loc_id AS prison_code, est.name AS prison_name, o.offender_id_display AS prisoner_number, o.last_name || ', ' || o.first_name AS prisoner_name, COALESCE(c.total_contacts, 0) AS total_contacts, COALESCE(c.lapsed_key_contacts, 0) AS expired_or_inactive_key_contacts, 'Manage contacts' AS contacts_link FROM prisons.nomis_offender_bookings ob JOIN prisons.nomis_offenders o ON o.offender_id = ob.offender_id LEFT JOIN datamart.establishment_establishment est ON est.id = ob.agy_loc_id LEFT JOIN (SELECT prisoner_number, SUM(CASE WHEN active THEN 1 ELSE 0 END) AS total_contacts, SUM(CASE WHEN (emergency_contact OR next_of_kin) AND NOT (active AND (expiry_date IS NULL OR expiry_date >= CURRENT_DATE)) THEN 1 ELSE 0 END) AS lapsed_key_contacts, MAX(CASE WHEN (emergency_contact OR next_of_kin) AND (active AND (expiry_date IS NULL OR expiry_date >= CURRENT_DATE)) THEN 1 ELSE 0 END) AS has_valid_key_contact FROM prisons.personalrelationships_prisoner_contact GROUP BY prisoner_number) c ON c.prisoner_number = o.offender_id_display WHERE ob.active_flag = 'Y' AND ob.in_out_status = 'IN' AND COALESCE(c.has_valid_key_contact, 0) = 0",
       "schema": {
         "field": [
           {
             "name": "prison_code",
+            "type": "string",
+            "display": "Prison Code"
+          },
+          {
+            "name": "prison_name",
             "type": "string",
             "display": "Prison"
           },
@@ -32,19 +37,19 @@
             "display": "Prison Number"
           },
           {
-            "name": "last_name",
+            "name": "prisoner_name",
             "type": "string",
-            "display": "Last Name"
+            "display": "Name"
           },
           {
-            "name": "first_name",
-            "type": "string",
-            "display": "First Name"
+            "name": "total_contacts",
+            "type": "long",
+            "display": "Total Contacts"
           },
           {
-            "name": "living_unit_id",
-            "type": "string",
-            "display": "Cell"
+            "name": "expired_or_inactive_key_contacts",
+            "type": "long",
+            "display": "Expired or Inactive Emergency Contact / Next of Kin"
           },
           {
             "name": "contacts_link",
@@ -55,14 +60,14 @@
       }
     },
     {
-      "id": "prison-code-filter",
-      "name": "Prison Code Filter",
+      "id": "prison-name-filter",
+      "name": "Prison Name Filter",
       "datasource": "datamart",
-      "query": "SELECT DISTINCT agy_loc_id AS prison_code FROM prisons.nomis_offender_bookings WHERE active_flag = 'Y' AND in_out_status = 'IN'",
+      "query": "SELECT DISTINCT est.name AS prison_name FROM prisons.nomis_offender_bookings ob JOIN datamart.establishment_establishment est ON est.id = ob.agy_loc_id WHERE ob.active_flag = 'Y' AND ob.in_out_status = 'IN'",
       "schema": {
         "field": [
           {
-            "name": "prison_code",
+            "name": "prison_name",
             "type": "string",
             "display": "Prison"
           }
@@ -127,6 +132,14 @@
         "field": [
           {
             "name": "$ref:prison_code",
+            "display": "Prison Code",
+            "formula": "",
+            "visible": "false",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:prison_name",
             "display": "Prison",
             "formula": "",
             "visible": "true",
@@ -137,9 +150,9 @@
               "dynamicoptions": {
                 "returnAsStaticOptions": true,
                 "maximumOptions": 200,
-                "dataset": "$ref:prison-code-filter",
-                "name": "prison_code",
-                "display": "prison_code"
+                "dataset": "$ref:prison-name-filter",
+                "name": "prison_name",
+                "display": "prison_name"
               }
             }
           },
@@ -152,24 +165,24 @@
             "defaultsort": false
           },
           {
-            "name": "$ref:last_name",
-            "display": "Last Name",
-            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prisoner_number}',${last_name},TRUE)",
+            "name": "$ref:prisoner_name",
+            "display": "Name",
+            "formula": "",
             "visible": "true",
             "sortable": true,
             "defaultsort": true
           },
           {
-            "name": "$ref:first_name",
-            "display": "First Name",
+            "name": "$ref:total_contacts",
+            "display": "Total Contacts",
             "formula": "",
             "visible": "true",
             "sortable": true,
             "defaultsort": false
           },
           {
-            "name": "$ref:living_unit_id",
-            "display": "Cell",
+            "name": "$ref:expired_or_inactive_key_contacts",
+            "display": "Expired or Inactive Emergency Contact / Next of Kin",
             "formula": "",
             "visible": "true",
             "sortable": true,
