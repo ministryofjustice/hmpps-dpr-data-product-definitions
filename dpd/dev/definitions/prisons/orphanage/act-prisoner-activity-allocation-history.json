@@ -1,0 +1,235 @@
+{
+  "id": "act-prisoner-activity-allocation-history-001",
+  "name": "Prisoner activity allocation history",
+  "description": "Activities a prisoner has been allocated to over the past 12 months, combining NOMIS and DPS Activities allocations, including at previous prisons",
+  "metadata": {
+    "author": "Kristian Gregor",
+    "owner": "Prisoner Activities",
+    "version": "1.0.0"
+  },
+  "datasource": [
+    {
+      "id": "datamart",
+      "name": "datamart"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "prisoner-activity-allocations",
+      "name": "Prisoner activity allocations, last 12 months",
+      "datasource": "datamart",
+      "query": "WITH allocations AS ( SELECT al.prisoner_number, a.summary AS activity, a.prison_code AS allocation_prison_code, al.start_date AS start_date, COALESCE(al.end_date, CAST(al.deallocated_time AS date)) AS end_date, CASE WHEN al.deallocated_reason IS NULL THEN NULL ELSE UPPER(SUBSTRING(REPLACE(al.deallocated_reason, '_', ' '), 1, 1)) || LOWER(SUBSTRING(REPLACE(al.deallocated_reason, '_', ' '), 2)) END AS end_reason, CAST(NULL AS varchar) AS end_comment, 'DPS Activities' AS source FROM datamart.prisons.activities_allocation al INNER JOIN datamart.prisons.activities_activity_schedule s ON s.activity_schedule_id = al.activity_schedule_id INNER JOIN datamart.prisons.activities_activity a ON a.activity_id = s.activity_id WHERE al.start_date <= CURRENT_DATE AND COALESCE(al.end_date, CAST(al.deallocated_time AS date), CURRENT_DATE) >= DATEADD(month, -12, CURRENT_DATE) UNION ALL SELECT o.offender_id_display, ca.description, p.agy_loc_id, CAST(p.offender_start_date AS date), CAST(p.offender_end_date AS date), CASE WHEN p.offender_program_status = 'END' THEN rc.description END, CASE WHEN p.offender_program_status = 'END' THEN p.offender_end_comment_text END, 'NOMIS' FROM datamart.prisons.nomis_offender_program_profiles p INNER JOIN datamart.prisons.nomis_offender_bookings b ON b.offender_book_id = p.offender_book_id INNER JOIN datamart.prisons.nomis_offenders o ON o.offender_id = b.offender_id LEFT JOIN datamart.prisons.nomis_course_activities ca ON ca.crs_acty_id = p.crs_acty_id LEFT JOIN datamart.prisons.nomis_reference_codes rc ON rc.domain = 'PS_END_RSN' AND rc.code = p.offender_end_reason WHERE p.offender_program_status IN ('ALLOC', 'END') AND p.create_user_id <> 'PRISONER_MANAGER_API' AND p.offender_start_date <= CURRENT_DATE AND COALESCE(p.offender_end_date, CURRENT_DATE) >= DATEADD(month, -12, CURRENT_DATE) ) SELECT pr.prison_id AS prison_code, al.prisoner_number, pr.name AS prisoner_name, al.activity, est.name AS prison_name, al.start_date, CASE WHEN al.end_date IS NULL THEN 'Ongoing' ELSE TO_CHAR(al.end_date, 'DD/MM/YYYY') END AS end_date, al.end_reason, al.end_comment, al.source FROM allocations al INNER JOIN datamart.person.prisoner pr ON pr.prisoner_number = al.prisoner_number LEFT JOIN datamart.establishment_establishment est ON est.id = al.allocation_prison_code ORDER BY al.start_date DESC",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_code",
+            "type": "string",
+            "display": "Current Prison Code"
+          },
+          {
+            "name": "prisoner_number",
+            "type": "string",
+            "display": "Prison Number"
+          },
+          {
+            "name": "prisoner_name",
+            "type": "string",
+            "display": "Name"
+          },
+          {
+            "name": "activity",
+            "type": "string",
+            "display": "Activity"
+          },
+          {
+            "name": "prison_name",
+            "type": "string",
+            "display": "Prison"
+          },
+          {
+            "name": "start_date",
+            "type": "date",
+            "display": "Start Date"
+          },
+          {
+            "name": "end_date",
+            "type": "string",
+            "display": "End Date"
+          },
+          {
+            "name": "end_reason",
+            "type": "string",
+            "display": "End Reason"
+          },
+          {
+            "name": "end_comment",
+            "type": "string",
+            "display": "End Comment"
+          },
+          {
+            "name": "source",
+            "type": "string",
+            "display": "Recorded In"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseload",
+      "type": "row-level",
+      "action": [
+        "(prison_code='${caseload}')"
+      ],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": [
+                "${caseload}"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "prisoner-activity-allocation-history-report",
+      "name": "Prisoner activity allocation history",
+      "description": "Activities a prisoner has been allocated to over the past 12 months, including at previous prisons. Only prisoners at your current caseload prison are shown.",
+      "classification": "Official",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "$ref:prisoner-activity-allocations",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "metadata": {
+        "hints": [
+          "interactive"
+        ]
+      },
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:prison_code",
+            "display": "Current Prison Code",
+            "formula": "",
+            "visible": "false",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:prisoner_number",
+            "display": "Prison Number",
+            "formula": "",
+            "visible": "mandatory",
+            "sortable": false,
+            "defaultsort": false,
+            "filter": {
+              "index": 0,
+              "type": "text",
+              "mandatory": true,
+              "interactive": false
+            }
+          },
+          {
+            "name": "$ref:prisoner_name",
+            "display": "Name",
+            "formula": "make_url('https://prisoner-${env}.digital.prison.service.justice.gov.uk/prisoner/${prisoner_number}',${prisoner_name},TRUE)",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:activity",
+            "display": "Activity",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:prison_name",
+            "display": "Prison",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:start_date",
+            "display": "Start Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true,
+            "sortdirection": "desc",
+            "filter": {
+              "index": 1,
+              "type": "daterange",
+              "mandatory": false,
+              "interactive": true
+            }
+          },
+          {
+            "name": "$ref:end_date",
+            "display": "End Date",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:end_reason",
+            "display": "End Reason",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:end_comment",
+            "display": "End Comment",
+            "formula": "",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:source",
+            "display": "Recorded In",
+            "formula": "",
+            "visible": "false",
+            "sortable": true,
+            "defaultsort": false
+          }
+        ]
+      }
+    }
+  ]
+}
