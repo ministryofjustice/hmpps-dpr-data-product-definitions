@@ -67,6 +67,7 @@ jobs:
           DPD_TEST_RESOURCES_PATH: dpd/${{ inputs.deployEnv || 'dev' }}/definitions/prisons/${{ inputs.deployFolder || 'test-resources' }}
           TEST_DATA_ROW_COUNT: ${{ inputs.rowCount || 100 }}
           TEST_DATA_S3_PATH: ${{ inputs.deployEnv == 'test' && 'dpr-working-test' || 'dpr-working-development'  }}
+          REDSHIFT_CLUSTER: ${{ inputs.deployEnv == 'test' && 'dpr-redshift-test' || 'dpr-redshift-development'  }}
         run: |
           chmod +x ./.github/scripts/GenerateTestData.main.kts
 
@@ -88,12 +89,11 @@ jobs:
           echo "Generated SQL size:"
           ls -lh generated.sql
 
-      - name: Execute SQL in Redshift
-        env:
-          REDSHIFT_CLUSTER: ${{ inputs.deployEnv == 'test' && 'dpr-redshift-test' || 'dpr-redshift-development'  }}
-          SQL: $(<generated.sql)
-        run: |
           echo "Testing Redshift connectivity..."
+          
+          SQL=$(cat generated.sql)
+          head -5 generated.sql
+          echo "SQL length: ${#SQL}"
           
           STATEMENT_ID=$(aws redshift-data execute-statement \
             --cluster-identifier $REDSHIFT_CLUSTER \
