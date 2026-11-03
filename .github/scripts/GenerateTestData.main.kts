@@ -364,7 +364,7 @@ fun sqlScriptGeneration(
             appendLine("COMMIT;")
         }
 
-        println("SQL: $sql")
+//        println("SQL: $sql")
 
         if (localDPDgen != "local") {
             val s3 = S3Client.builder().build()
