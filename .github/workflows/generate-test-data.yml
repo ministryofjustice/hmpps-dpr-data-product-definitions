@@ -67,7 +67,6 @@ jobs:
           DPD_TEST_RESOURCES_PATH: dpd/${{ inputs.deployEnv || 'dev' }}/definitions/prisons/${{ inputs.deployFolder || 'test-resources' }}
           TEST_DATA_ROW_COUNT: ${{ inputs.rowCount || 100 }}
           TEST_DATA_S3_PATH: ${{ inputs.deployEnv == 'test' && 'dpr-working-test' || 'dpr-working-development'  }}
-          REDSHIFT_CLUSTER: ${{ inputs.deployEnv == 'test' && 'dpr-redshift-test' || 'dpr-redshift-development'  }}
         run: |
           chmod +x ./.github/scripts/GenerateTestData.main.kts
 
@@ -88,44 +87,66 @@ jobs:
 
           echo "Generated SQL size:"
           ls -lh generated.sql
-
-          echo "Testing Redshift connectivity..."
-          
-          SQL=$(cat generated.sql)
           head -5 generated.sql
           echo "SQL length: ${#SQL}"
+
+      - name: Execute SQL in Redshift
+        env:
+          REDSHIFT_CLUSTER: ${{ inputs.deployEnv == 'test' && 'dpr-redshift-test' || 'dpr-redshift-development'  }}
+          S3_BUCKET: ${{ inputs.deployEnv == 'test' && 'dpr-working-test' || 'dpr-working-development' }}
+        run: |
+
+          echo "Fetching SQL files from S3..."
+
+          aws s3 ls "s3://$S3_BUCKET/datahub-test-data/a-generated-sql/" --recursive | \
+          awk '{print $4}' | while read SQL_KEY
+          do
+
+            echo "===================================================="
+            echo "Processing: $SQL_KEY"
+            echo "===================================================="
           
-          STATEMENT_ID=$(aws redshift-data execute-statement \
-            --cluster-identifier $REDSHIFT_CLUSTER \
-            --database datamart \
-            --db-user dpruser \
-            --sql "$SQL" \
-            --query 'Id' \
-            --output text)
+            aws s3 cp "s3://$S3_BUCKET/$SQL_KEY" current.sql
+            SQL=$(cat current.sql)
 
-          echo "Statement ID: $STATEMENT_ID"
-
-          # Wait for statement to complete
-          for i in {1..150}; do
-            STATUS=$(aws redshift-data describe-statement \
-              --id "$STATEMENT_ID" \
-              --query 'Status' \
+            echo "SQL length: ${#SQL}"
+          
+            STATEMENT_ID=$(aws redshift-data execute-statement \
+              --cluster-identifier "$REDSHIFT_CLUSTER" \
+              --database datamart \
+              --db-user dpruser \
+              --sql "$SQL" \
+              --query 'Id' \
               --output text)
+            echo "Statement ID: $STATEMENT_ID"
+            SUCCESS=false
+          
+            for i in {1..150}; do
+              STATUS=$(aws redshift-data describe-statement \
+                --id "$STATEMENT_ID" \
+                --query 'Status' \
+                --output text)
+              echo "Attempt $i/150 - Status: $STATUS"
+              if [ "$STATUS" = "FINISHED" ]; then
+                echo "Completed: $SQL_KEY"
+                SUCCESS=true
+                break
+              fi
 
-            echo "Attempt $i/30 - Status: $STATUS"
-
-            if [ "$STATUS" = "FINISHED" ]; then
-              echo "_____Redshift connectivity validated successfully"
-              exit 0
-            elif [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "ABORTED" ]; then
-              echo "_____Redshift query failed"
-              aws redshift-data describe-statement --id "$STATEMENT_ID"
+              if [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "ABORTED" ]; then
+                echo "SQL execution failed: $SQL_KEY"
+                aws redshift-data describe-statement \
+                  --id "$STATEMENT_ID"
+                exit 1
+              fi
+              sleep 2
+            done
+          
+            if [ "$SUCCESS" = false ]; then
+              echo "Timeout waiting for $SQL_KEY"
               exit 1
             fi
-
-            sleep 2
+          
           done
-
-          echo "____Timeout waiting for Redshift query"
-          exit 1
-
+          
+          echo "All SQL files executed successfully."

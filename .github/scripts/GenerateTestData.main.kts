@@ -20,6 +20,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.collections.firstOrNull
+import kotlin.text.appendLine
 
 // ==========================================
 // 1. CONSTANTS
@@ -138,8 +139,8 @@ fun main() {
     generateTestData(tableToColumnsMap, rowCount, localDPDgen)
 
     // Generate SQL script for createTable + copySql
-    val sqlScript = sqlScriptGeneration(tableToColumnsMap)
-    println(sqlScript)
+    sqlScriptGeneration(tableToColumnsMap, localDPDgen)
+
 }
 
 
@@ -343,56 +344,126 @@ fun generateTestData(
 
 
 fun sqlScriptGeneration(
-    tableToColumnsMap: Map<String, Map<String, String>>
-): String {
+    tableToColumnsMap: Map<String, Map<String, String>>,
+    localDPDgen: String
+){
 
+    // Build SQL script for all the DPDs per chunk of 50
+    val tableChunks = tableToColumnsMap.entries.chunked(50)
+
+    tableChunks.forEachIndexed { index, chunk ->
+
+        val sql = buildString {
+            appendLine("BEGIN;")
+
+            chunk.forEach { (tableName, redshiftColumns) ->
+                // Generate SQL for this table
+                appendLine(generateTableSql(tableName, redshiftColumns))
+            }
+
+            appendLine("COMMIT;")
+        }
+
+        println("SQL: $sql")
+
+        if (localDPDgen != "local") {
+            val s3 = S3Client.builder().build()
+            val s3Path = System.getenv("TEST_DATA_S3_PATH") ?: "dpr-working-development"
+            val outputFile = File("create-load-datahub-tables-${index + 1}.sql")
+            outputFile.writeText(sql)
+
+            s3.putObject(
+                PutObjectRequest.builder()
+                    .bucket(s3Path)
+                    .key("datahub-test-data/a-generated-sql/${outputFile.name}")
+                    .build(),
+                RequestBody.fromFile(outputFile)
+            )
+        }
+
+    }
+
+//    // Build SQL script for all the DPDs
+//    val sqlScript = buildString {
+//
+//        appendLine("BEGIN; ")
+//
+//        tableToColumnsMap.forEach { (tableName, redshiftColumns) ->
+//
+//            val csvFileName = "$tableName.csv"
+//
+//            // Create a Redshift table
+//            appendLine("DROP TABLE IF EXISTS datahub_test.$tableName; ")
+//
+//            appendLine(
+//                "CREATE TABLE datahub_test.$tableName ("
+//            )
+//
+//            append(
+//                redshiftColumns.entries.joinToString(",\n") {
+//                    "    ${it.key} ${it.value}"
+//                }
+//            )
+//
+//            appendLine()
+//            appendLine("); ")
+//
+//            // Load the S3 CSV to Redshift table
+//            appendLine("COPY datahub_test.$tableName ")
+//
+//            appendLine(
+//                "FROM 's3://$s3Path/datahub-test-data/$csvFileName' "
+//            )
+//
+//            appendLine("IAM_ROLE '$iamRoleArn' ")
+//            appendLine("CSV ")
+//            appendLine("IGNOREHEADER 1;")
+//        }
+//
+//        appendLine(" COMMIT; ")
+//    }
+//
+//    return sqlScript
+}
+
+fun generateTableSql(tableName: String, redshiftColumns: Map<String, String>) : String {
     // Get AWS account ID from environment or use default
     val accountId = System.getenv("AWS_ACCOUNT_ID") ?: "771283872747"
     val iamRoleArn = "arn:aws:iam::${accountId}:role/dpr-redshift-cluster-role"
     val s3Path = System.getenv("TEST_DATA_S3_PATH") ?: "dpr-working-development"
 
-    // Build SQL script for all the DPDs
     val sqlScript = buildString {
+       val csvFileName = "$tableName.csv"
 
-        appendLine("BEGIN; ")
+       // Create a Redshift table
+       appendLine("DROP TABLE IF EXISTS datahub_test.$tableName; ")
 
-        tableToColumnsMap.forEach { (tableName, redshiftColumns) ->
+       appendLine(
+           "CREATE TABLE datahub_test.$tableName ("
+       )
 
-            val csvFileName = "$tableName.csv"
+       append(
+           redshiftColumns.entries.joinToString(",\n") {
+               "    ${it.key} ${it.value}"
+           }
+       )
 
-            // Create a Redshift table
-            appendLine("DROP TABLE IF EXISTS datahub_test.$tableName; ")
+       appendLine()
+       appendLine("); ")
 
-            appendLine(
-                "CREATE TABLE datahub_test.$tableName ("
-            )
+       // Load the S3 CSV to Redshift table
+       appendLine("COPY datahub_test.$tableName ")
 
-            append(
-                redshiftColumns.entries.joinToString(",\n") {
-                    "    ${it.key} ${it.value}"
-                }
-            )
+       appendLine(
+           "FROM 's3://$s3Path/datahub-test-data/$csvFileName' "
+       )
 
-            appendLine()
-            appendLine("); ")
-
-            // Load the S3 CSV to Redshift table
-            appendLine("COPY datahub_test.$tableName ")
-
-            appendLine(
-                "FROM 's3://$s3Path/datahub-test-data/$csvFileName' "
-            )
-
-            appendLine("IAM_ROLE '$iamRoleArn' ")
-            appendLine("CSV ")
-            appendLine("IGNOREHEADER 1;")
-        }
-
-        appendLine(" COMMIT; ")
+       appendLine("IAM_ROLE '$iamRoleArn' ")
+       appendLine("CSV ")
+       appendLine("IGNOREHEADER 1;")
     }
 
     return sqlScript
 }
-
 
 main()
