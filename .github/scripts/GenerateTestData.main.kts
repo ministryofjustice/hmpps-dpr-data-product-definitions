@@ -143,7 +143,6 @@ fun main() {
 
 }
 
-
 // ==========================================
 // 3. SUPPORTING METHODS FOR MAIN
 // ==========================================
@@ -284,7 +283,6 @@ fun getSchemaFields(
     return fieldMap
 }
 
-
 fun generateTestData(
     tableToColumnsMap: Map<String, Map<String, String>>,
     rowCount: Int = 1,
@@ -342,13 +340,16 @@ fun generateTestData(
     }
 }
 
-
 fun sqlScriptGeneration(
     tableToColumnsMap: Map<String, Map<String, String>>,
     localDPDgen: String
 ){
     val s3 = S3Client.builder().build()
     val s3Path = System.getenv("TEST_DATA_S3_PATH") ?: "dpr-working-development"
+
+    // Delete the generated SQL statement files (i.e: create-load-datahub-tables-1.sql)
+    // under S3 folder (i.e: In dev s3://dpr-working-development/datahub-test-data/a-generated-sql/)
+    // before recreating the files again
     if (localDPDgen != "local") {
         val prefix = "datahub-test-data/a-generated-sql/"
 
@@ -372,16 +373,12 @@ fun sqlScriptGeneration(
 
         val sql = buildString {
             appendLine("BEGIN;")
-
             chunk.forEach { (tableName, redshiftColumns) ->
                 // Generate SQL for this table
                 appendLine(generateTableSql(tableName, redshiftColumns))
             }
-
             appendLine("COMMIT;")
         }
-
-//        println("SQL: $sql")
 
         if (localDPDgen != "local") {
             val outputFile = File("create-load-datahub-tables-${index + 1}.sql")
@@ -394,51 +391,10 @@ fun sqlScriptGeneration(
                     .build(),
                 RequestBody.fromFile(outputFile)
             )
+        } else {
+            println("SQL: $sql")
         }
-
     }
-
-//    // Build SQL script for all the DPDs
-//    val sqlScript = buildString {
-//
-//        appendLine("BEGIN; ")
-//
-//        tableToColumnsMap.forEach { (tableName, redshiftColumns) ->
-//
-//            val csvFileName = "$tableName.csv"
-//
-//            // Create a Redshift table
-//            appendLine("DROP TABLE IF EXISTS datahub_test.$tableName; ")
-//
-//            appendLine(
-//                "CREATE TABLE datahub_test.$tableName ("
-//            )
-//
-//            append(
-//                redshiftColumns.entries.joinToString(",\n") {
-//                    "    ${it.key} ${it.value}"
-//                }
-//            )
-//
-//            appendLine()
-//            appendLine("); ")
-//
-//            // Load the S3 CSV to Redshift table
-//            appendLine("COPY datahub_test.$tableName ")
-//
-//            appendLine(
-//                "FROM 's3://$s3Path/datahub-test-data/$csvFileName' "
-//            )
-//
-//            appendLine("IAM_ROLE '$iamRoleArn' ")
-//            appendLine("CSV ")
-//            appendLine("IGNOREHEADER 1;")
-//        }
-//
-//        appendLine(" COMMIT; ")
-//    }
-//
-//    return sqlScript
 }
 
 fun generateTableSql(tableName: String, redshiftColumns: Map<String, String>) : String {
@@ -452,7 +408,6 @@ fun generateTableSql(tableName: String, redshiftColumns: Map<String, String>) : 
 
        // Create a Redshift table
        appendLine("DROP TABLE IF EXISTS datahub_test.$tableName; ")
-
        appendLine(
            "CREATE TABLE datahub_test.$tableName ("
        )
@@ -477,7 +432,6 @@ fun generateTableSql(tableName: String, redshiftColumns: Map<String, String>) : 
        appendLine("CSV ")
        appendLine("IGNOREHEADER 1;")
     }
-
     return sqlScript
 }
 
