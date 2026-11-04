@@ -74,7 +74,7 @@ object TestDataGenerator {
             "PNAME" -> listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)").random()
             "LOCATION_NAME" -> listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)").random()
             "ACTIVITY_STATUS" -> listOf("Archived", "Live").random()
-            "STAUS" -> listOf("Approved", "Pending").random()
+            "STATUS" -> listOf("Approved", "Pending").random()
             else -> TestDataConstants.redshiftTypeValueAssigner(dataType)
         }
     }
