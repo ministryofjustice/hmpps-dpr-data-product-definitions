@@ -347,6 +347,23 @@ fun sqlScriptGeneration(
     tableToColumnsMap: Map<String, Map<String, String>>,
     localDPDgen: String
 ){
+    val s3 = S3Client.builder().build()
+    val s3Path = System.getenv("TEST_DATA_S3_PATH") ?: "dpr-working-development"
+    if (localDPDgen != "local") {
+        val prefix = "datahub-test-data/a-generated-sql/"
+
+        val objects = s3.listObjectsV2 {
+            it.bucket(s3Path)
+            it.prefix(prefix)
+        }.contents()
+
+        objects.forEach { obj ->
+            s3.deleteObject {
+                it.bucket(s3Path)
+                it.key(obj.key())
+            }
+        }
+    }
 
     // Build SQL script for all the DPDs per chunk of 50
     val tableChunks = tableToColumnsMap.entries.chunked(50)
@@ -367,8 +384,6 @@ fun sqlScriptGeneration(
 //        println("SQL: $sql")
 
         if (localDPDgen != "local") {
-            val s3 = S3Client.builder().build()
-            val s3Path = System.getenv("TEST_DATA_S3_PATH") ?: "dpr-working-development"
             val outputFile = File("create-load-datahub-tables-${index + 1}.sql")
             outputFile.writeText(sql)
 
