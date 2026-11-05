@@ -78,54 +78,69 @@ jobs:
           echo "Generating $TEST_DATA_ROW_COUNT rows of test data"
           echo "S3 path $TEST_DATA_S3_PATH"
 
-          SQL=$(kotlin -J-Dorg.slf4j.simpleLogger.defaultLogLevel=error ./.github/scripts/GenerateTestData.main.kts)
-
-          if [[ ! "$SQL" =~ ^BEGIN\; ]]; then
-            echo "::error::Generated SQL script must start with 'BEGIN;'"
-            exit 1
-          fi
-
-          echo "sql<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$SQL" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          kotlin -J-Dorg.slf4j.simpleLogger.defaultLogLevel=error ./.github/scripts/GenerateTestData.main.kts
 
       - name: Execute SQL in Redshift
         env:
           REDSHIFT_CLUSTER: ${{ inputs.deployEnv == 'test' && 'dpr-redshift-test' || 'dpr-redshift-development'  }}
+          S3_BUCKET: ${{ inputs.deployEnv == 'test' && 'dpr-working-test' || 'dpr-working-development' }}
         run: |
-          echo "Testing Redshift connectivity..."
+
+          echo "Fetching SQL files from S3..."
+
+          aws s3 ls "s3://${S3_BUCKET}/datahub-test-data/a-generated-sql/" --recursive | \
+          awk '{print $4}' | while read SQL_KEY
+          do
           
-          STATEMENT_ID=$(aws redshift-data execute-statement \
-            --cluster-identifier $REDSHIFT_CLUSTER \
-            --database datamart \
-            --db-user dpruser \
-            --sql "${{ steps.generate_sql.outputs.sql }}" \
-            --query 'Id' \
-            --output text)
-
-          echo "Statement ID: $STATEMENT_ID"
-
-          # Wait for statement to complete
-          for i in {1..150}; do
-            STATUS=$(aws redshift-data describe-statement \
-              --id "$STATEMENT_ID" \
-              --query 'Status' \
-              --output text)
-
-            echo "Attempt $i/30 - Status: $STATUS"
-
-            if [ "$STATUS" = "FINISHED" ]; then
-              echo "_____Redshift connectivity validated successfully"
-              exit 0
-            elif [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "ABORTED" ]; then
-              echo "_____Redshift query failed"
-              aws redshift-data describe-statement --id "$STATEMENT_ID"
-              exit 1
+            if [[ "$SQL_KEY" == */ ]]; then
+              continue
             fi
 
-            sleep 2
+            echo "===================================================="
+            echo "Processing: $SQL_KEY"
+            echo "===================================================="
+          
+            aws s3 cp "s3://$S3_BUCKET/$SQL_KEY" current.sql
+            SQL=$(cat current.sql)
+
+            echo "SQL length: ${#SQL}"
+          
+            STATEMENT_ID=$(aws redshift-data execute-statement \
+              --cluster-identifier "$REDSHIFT_CLUSTER" \
+              --database datamart \
+              --db-user dpruser \
+              --sql "$SQL" \
+              --query 'Id' \
+              --output text)
+            echo "Statement ID: $STATEMENT_ID"
+            SUCCESS=false
+          
+            for i in {1..60}; do
+              STATUS=$(aws redshift-data describe-statement \
+                --id "$STATEMENT_ID" \
+                --query 'Status' \
+                --output text)
+              echo "Attempt $i/60 - Status: $STATUS"
+              if [ "$STATUS" = "FINISHED" ]; then
+                echo "Completed: $SQL_KEY"
+                SUCCESS=true
+                break
+              fi
+
+              if [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "ABORTED" ]; then
+                echo "SQL execution failed: $SQL_KEY"
+                aws redshift-data describe-statement \
+                  --id "$STATEMENT_ID"
+                exit 1
+              fi
+              sleep 2
+            done
+          
+            if [ "$SUCCESS" = false ]; then
+              echo "Timeout waiting for $SQL_KEY"
+              exit 1
+            fi
+          
           done
-
-          echo "____Timeout waiting for Redshift query"
-          exit 1
-
+          
+          echo "All SQL files executed successfully."
