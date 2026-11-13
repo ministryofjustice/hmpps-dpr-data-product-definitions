@@ -1,0 +1,203 @@
+{
+  "id": "contacts-prisoners-without-emergency-contact-001",
+  "name": "Prisoners without an emergency contact or next of kin",
+  "description": "Prisoners currently in custody at the selected prison with no active, unexpired emergency contact or next of kin recorded in personal relationships",
+  "metadata": {
+    "author": "Kristian Gregor",
+    "owner": "Prisoner Contacts and Personal Relationships",
+    "version": "1.0.0"
+  },
+  "datasource": [
+    {
+      "id": "datamart",
+      "name": "datamart"
+    }
+  ],
+  "dataset": [
+    {
+      "id": "prisoners-without-emergency-contact",
+      "name": "Prisoners without an active emergency contact",
+      "datasource": "datamart",
+      "query": "SELECT ob.agy_loc_id AS prison_code, est.name AS prison_name, o.offender_id_display AS prisoner_number, INITCAP(o.last_name) || ', ' || INITCAP(o.first_name) AS prisoner_name, COALESCE(c.total_contacts, 0) AS total_contacts, COALESCE(c.lapsed_key_contacts, 0) AS expired_or_inactive_key_contacts, 'Manage contacts' AS contacts_link FROM prisons.nomis_offender_bookings ob JOIN prisons.nomis_offenders o ON o.offender_id = ob.offender_id LEFT JOIN datamart.establishment_establishment est ON est.id = ob.agy_loc_id LEFT JOIN (SELECT prisoner_number, SUM(CASE WHEN active THEN 1 ELSE 0 END) AS total_contacts, SUM(CASE WHEN (emergency_contact OR next_of_kin) AND NOT (active AND (expiry_date IS NULL OR expiry_date >= CURRENT_DATE)) THEN 1 ELSE 0 END) AS lapsed_key_contacts, MAX(CASE WHEN (emergency_contact OR next_of_kin) AND (active AND (expiry_date IS NULL OR expiry_date >= CURRENT_DATE)) THEN 1 ELSE 0 END) AS has_valid_key_contact FROM prisons.personalrelationships_prisoner_contact GROUP BY prisoner_number) c ON c.prisoner_number = o.offender_id_display WHERE ob.active_flag = 'Y' AND ob.in_out_status = 'IN' AND COALESCE(c.has_valid_key_contact, 0) = 0",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_code",
+            "type": "string",
+            "display": "Prison Code"
+          },
+          {
+            "name": "prison_name",
+            "type": "string",
+            "display": "Prison"
+          },
+          {
+            "name": "prisoner_number",
+            "type": "string",
+            "display": "Prison Number"
+          },
+          {
+            "name": "prisoner_name",
+            "type": "string",
+            "display": "Name"
+          },
+          {
+            "name": "total_contacts",
+            "type": "long",
+            "display": "Total Contacts"
+          },
+          {
+            "name": "expired_or_inactive_key_contacts",
+            "type": "long",
+            "display": "Expired or Inactive Emergency Contact / Next of Kin"
+          },
+          {
+            "name": "contacts_link",
+            "type": "string",
+            "display": "Contacts"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prison-name-filter",
+      "name": "Prison Name Filter",
+      "datasource": "datamart",
+      "query": "SELECT DISTINCT est.name AS prison_name FROM prisons.nomis_offender_bookings ob JOIN datamart.establishment_establishment est ON est.id = ob.agy_loc_id WHERE ob.active_flag = 'Y' AND ob.in_out_status = 'IN'",
+      "schema": {
+        "field": [
+          {
+            "name": "prison_name",
+            "type": "string",
+            "display": "Prison"
+          }
+        ]
+      }
+    }
+  ],
+  "policy": [
+    {
+      "id": "access",
+      "type": "access",
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "match": [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caseload",
+      "type": "row-level",
+      "action": [
+        "(prison_code='${caseload}')"
+      ],
+      "rule": [
+        {
+          "effect": "permit",
+          "condition": [
+            {
+              "exists": [
+                "${caseload}"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report": [
+    {
+      "id": "prisoners-without-emergency-contact-report",
+      "name": "Prisoners without an emergency contact or next of kin",
+      "description": "Prisoners currently in custody at the selected prison with no active, unexpired emergency contact or next of kin recorded in personal relationships",
+      "classification": "Official",
+      "version": "1.0.0",
+      "render": "HTML",
+      "dataset": "$ref:prisoners-without-emergency-contact",
+      "feature": [
+        {
+          "type": "print"
+        }
+      ],
+      "specification": {
+        "template": "list",
+        "field": [
+          {
+            "name": "$ref:prison_code",
+            "display": "Prison Code",
+            "formula": "",
+            "visible": "false",
+            "sortable": false,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:prison_name",
+            "display": "Prison",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false,
+            "filter": {
+              "type": "select",
+              "dynamicoptions": {
+                "returnAsStaticOptions": true,
+                "maximumOptions": 200,
+                "dataset": "$ref:prison-name-filter",
+                "name": "prison_name",
+                "display": "prison_name"
+              }
+            }
+          },
+          {
+            "name": "$ref:prisoner_number",
+            "display": "Prison Number",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:prisoner_name",
+            "display": "Name",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": true
+          },
+          {
+            "name": "$ref:total_contacts",
+            "display": "Total Contacts",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:expired_or_inactive_key_contacts",
+            "display": "Expired or Inactive Emergency Contact / Next of Kin",
+            "formula": "",
+            "visible": "true",
+            "sortable": true,
+            "defaultsort": false
+          },
+          {
+            "name": "$ref:contacts_link",
+            "display": "Contacts",
+            "formula": "make_url('https://contacts-dev.hmpps.service.justice.gov.uk/prisoner/${prisoner_number}/contacts/list',${contacts_link},TRUE)",
+            "visible": "true",
+            "sortable": false,
+            "defaultsort": false
+          }
+        ]
+      }
+    }
+  ]
+}
