@@ -1,0 +1,159 @@
+{
+  "id" : "yearly-data-quality-time-series-metrics",
+  "name" : "measure missing yearly data quality time series",
+  "description" : "Dashboard to show missing yearly data quality time series measure",
+  "metadata" : {
+    "author" : "Zahoor",
+    "version" : "1.2.3",
+    "owner" : "DPR"
+  },
+  "datasource" : [
+    {
+      "id" : "datamart",
+      "name" : "datamart"
+    }
+  ],
+  "dataset" : [
+    {
+      "id" : "establishments",
+      "name" : "Establishments",
+      "datasource" : "datamart",
+      "query" : "SELECT id as establishment_id,name as establishment_name FROM datamart.establishment_establishment where id in ('BWI','ESI','LT4','RDI','LT3','ALI','MWI')",
+      "schema" : {
+        "field" : [
+          {
+            "name" : "establishment_id",
+            "type" : "string",
+            "display" : "Establishment ID"
+          },
+          {
+            "name" : "establishment_name",
+            "type" : "string",
+            "display" : "Establishment Name"
+          }
+        ]
+      }
+    },
+    {
+      "id" : "data-quality-dataset",
+      "name" : "Data quality dataset",
+      "datasource" : "datamart",
+      "query" : "SELECT DISTINCT establishment_id, TO_CHAR(ts, 'YYYY') AS year, has_ethnicity, ethnicity_is_missing FROM datamart.metrics._dataquality_time_series WHERE establishment_id IN ('BWI', 'ESI', 'LT4') ORDER BY DATE_TRUNC('month', ts)",
+      "schema" : {
+        "field" : [
+          {
+            "name" : "establishment_id",
+            "type" : "string",
+            "display" : "Establishment ID"
+          },
+          {
+            "name": "year",
+            "type": "timestamp",
+            "display": "Date"
+          },
+          {
+            "name" : "has_ethnicity",
+            "type" : "long",
+            "display" : "% prisoners with ethnicity"
+          },
+          {
+            "name" : "ethnicity_is_missing",
+            "type" : "long",
+            "display" : "% prisoners without ethnicity"
+          }
+        ]
+      }
+    }
+  ],
+  "dashboard" : [
+    {
+      "id" : "data-quality-dashboard-test",
+      "name" : "Data quality dashboard",
+      "description" : "Data quality dashboard",
+      "dataset" : "data-quality-dataset",
+      "section" : [
+        {
+          "id" : "missing-ethnicity-section",
+          "display" : "Missing ethnicity",
+          "description" : "Number of prisoner with missing or present ethnicity data",
+          "visualisation" : [
+            {
+              "id": "missing-ethnicity-metric-bar-visualisation",
+              "type" : "bar",
+              "display" : "Missing ethnicity",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:establishment_id",
+                    "display": "Establishmnent ID"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:has_ethnicity",
+                    "display": "% of prisoners with ethnicity",
+                    "unit" : "percentage"
+                  },
+                  {
+                    "id" : "$ref:ethnicity_is_missing",
+                    "display" : "% of prisoners without ethnicity",
+                    "unit" : "percentage"
+                  }
+                ],
+                "expectNull": false
+              }
+            },
+            {
+              "id": "missing-ethnicity-metric-doughnut-visualisation",
+              "type" : "doughnut",
+              "display" : "Yearly Missing ethnicity",
+              "column": {
+                "key": [
+                  {
+                    "id": "$ref:year",
+                    "display": "Date"
+                  },
+                  {
+                    "id": "$ref:establishment_id",
+                    "display": "Establishmnent ID"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:has_ethnicity",
+                    "display": "% of prisoners with ethnicity",
+                    "unit" : "percentage"
+                  },
+                  {
+                    "id" : "$ref:ethnicity_is_missing",
+                    "display" : "% of prisoners without ethnicity",
+                    "unit" : "percentage"
+                  }
+                ],
+                "expectNull": false
+              }
+            }
+          ]
+        }
+      ]}],
+  "policy" : [
+    {
+      "id" : "access",
+      "type" : "access",
+      "rule" : [
+        {
+          "effect" : "permit",
+          "condition" : [
+            {
+              "match" : [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report" : []
+}
