@@ -1,0 +1,210 @@
+{
+  "id" : "doughnut-chart-dashboard",
+  "name" : "Doughnut chart dashboard",
+  "description" : "Dashboard for Doughnut chart",
+  "metadata" : {
+    "author" : "Zahoor",
+    "version" : "1.2.3",
+    "owner" : "DPR"
+  },
+  "datasource" : [
+    {
+      "id" : "datamart",
+      "name" : "datamart"
+    }
+  ],
+  "dataset" : [
+    {
+      "id" : "establishments",
+      "name" : "Establishments",
+      "datasource" : "datamart",
+      "query" : "SELECT id as establishment_id,name as establishment_name FROM datamart.establishment_establishment where id in ('BWI','ESI','LT4','RDI','LT3','ALI','MWI')",
+      "schema" : {
+        "field" : [
+          {
+            "name" : "establishment_id",
+            "type" : "string",
+            "display" : "Establishment ID"
+          },
+          {
+            "name" : "establishment_name",
+            "type" : "string",
+            "display" : "Establishment Name"
+          }
+        ]
+      }
+    },
+    {
+      "id" : "data-quality-dataset",
+      "name" : "Data quality dataset",
+      "datasource" : "datamart",
+      "query" : "SELECT DISTINCT establishment_id, ts, has_ethnicity, ethnicity_is_missing FROM datamart.metrics._dataquality_time_series where establishment_id in ('BWI','ESI','LT4')",
+      "schema" : {
+        "field" : [
+          {
+            "name" : "establishment_id",
+            "type" : "string",
+            "display" : "Establishment ID"
+          },
+          {
+            "name": "ts",
+            "type": "timestamp",
+            "formula": "format_date(${ts}, 'YYYY-MM-DD')",
+            "display": "Date"
+          },
+          {
+            "name" : "has_ethnicity",
+            "type" : "long",
+            "display" : "% prisoners with ethnicity"
+          },
+          {
+            "name" : "ethnicity_is_missing",
+            "type" : "long",
+            "display" : "% prisoners without ethnicity"
+          }
+        ]
+      }
+    }
+  ],
+  "dashboard" : [
+    {
+      "id" : "data-quality-dashboard-test",
+      "name" : "Doughnut chart dashboard",
+      "description" : "Doughnut chart dashboard",
+      "dataset" : "data-quality-dataset",
+      "section" : [
+        {
+          "id" : "missing-ethnicity-section",
+          "display" : "Missing ethnicity",
+          "description" : "Number of prisoner with missing or present ethnicity data",
+          "visualisation" : [
+            {
+              "id": "one-missing-ethnicity-metric-doughnut-visualisation",
+              "type" : "doughnut",
+              "display" : "Simple One Missing ethnicity",
+              "column": {
+                "key": [
+                  {
+                    "id": "ts",
+                    "display": "Date"
+                  },
+                  {
+                    "id": "$ref:establishment_id",
+                    "display": "Establishmnent ID"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:has_ethnicity",
+                    "display": "% of prisoners with ethnicity",
+                    "unit" : "percentage"
+                  },
+                  {
+                    "id" : "$ref:ethnicity_is_missing",
+                    "display" : "% of prisoners without ethnicity",
+                    "unit" : "percentage"
+                  }
+                ],
+                "filter": [
+                  {
+                    "id": "$ref:establishment_id",
+                    "equals": "BWI"
+                  }
+                ],
+                "expectNull": false
+              }
+            },
+            {
+              "id": "two-missing-ethnicity-metric-doughnut-visualisation",
+              "type" : "doughnut",
+              "display" : "Two Missing ethnicity",
+              "column": {
+                "key": [
+                  {
+                    "id": "ts",
+                    "display": "Date"
+                  },
+                  {
+                    "id": "$ref:establishment_id",
+                    "display": "Establishmnent ID"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:has_ethnicity",
+                    "display": "% of prisoners with ethnicity",
+                    "unit" : "percentage"
+                  },
+                  {
+                    "id" : "$ref:ethnicity_is_missing",
+                    "display" : "% of prisoners without ethnicity",
+                    "unit" : "percentage"
+                  }
+                ],
+                "filter": [
+                  {
+                    "id": "$ref:establishment_id",
+                    "equals": "BWI"
+                  },
+                  {
+                    "id": "$ref:establishment_id",
+                    "equals": "LT4"
+                  }
+                ],
+                "expectNull": false
+              }
+            },
+            {
+              "id": "multiple-missing-ethnicity-metric-doughnut-visualisation",
+              "type" : "doughnut",
+              "display" : "Multiple Missing ethnicity",
+              "column": {
+                "key": [
+                  {
+                    "id": "ts",
+                    "display": "Date"
+                  },
+                  {
+                    "id": "$ref:establishment_id",
+                    "display": "Establishmnent ID"
+                  }
+                ],
+                "measure": [
+                  {
+                    "id": "$ref:has_ethnicity",
+                    "display": "% of prisoners with ethnicity",
+                    "unit" : "percentage"
+                  },
+                  {
+                    "id" : "$ref:ethnicity_is_missing",
+                    "display" : "% of prisoners without ethnicity",
+                    "unit" : "percentage"
+                  }
+                ],
+                "expectNull": false
+              }
+            }
+          ]
+        }
+      ]}],
+  "policy" : [
+    {
+      "id" : "access",
+      "type" : "access",
+      "rule" : [
+        {
+          "effect" : "permit",
+          "condition" : [
+            {
+              "match" : [
+                "${role}",
+                "ROLE_PRISONS_REPORTING_USER"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report" : []
+}
