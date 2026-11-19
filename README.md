@@ -33,6 +33,24 @@ https://raw.githubusercontent.com/ministryofjustice/hmpps-digital-prison-reporti
 
 Documentation on the DPD schema contents can be found here: https://github.com/ministryofjustice/hmpps-digital-prison-reporting-data-product-definitions-schema?tab=readme-ov-file
 
+Running the validation locally:
+```
+npm ci --ignore-scripts &&
+
+curl -fsSL \
+  "https://raw.githubusercontent.com/ministryofjustice/hmpps-digital-prison-reporting-data-product-definitions-schema/main/schema/1.1.0/data-product-definition-schema.json" \
+  -o schema1_1_0.json &&
+
+curl -fsSL \
+  "https://raw.githubusercontent.com/ministryofjustice/hmpps-digital-prison-reporting-data-product-definitions-schema/main/schema/1.0.0/data-product-definition-schema.json" \
+  -o schema1_0_0.json &&
+
+SCHEMA_1_1_0_LOCATION="$PWD/schema1_1_0.json" \
+SCHEMA_1_0_0_LOCATION="$PWD/schema1_0_0.json" \
+npm run validate
+
+```
+
 ## Environments
 
 All DPDs are stored in one or more environment folders. A DPDs will only be available in an environment if it is in that environment's folder, and the containing version of the service has been deployed to that environment.
