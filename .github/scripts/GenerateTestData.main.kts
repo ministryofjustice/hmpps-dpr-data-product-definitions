@@ -21,6 +21,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.collections.firstOrNull
 import kotlin.text.appendLine
+import kotlin.text.removeSuffix
 
 // ==========================================
 // 1. CONSTANTS
@@ -67,14 +68,15 @@ object TestDataGenerator {
             "UNIT_DESCRIPTION_4_SHORT" ->  generateLocation(aTozChar)
             "UNIT_CODE_1" -> aTozChar
             "IEP_LEVEL" -> listOf("Basic", "Enhanced", "Standard").random()
-            "PRISON_CODE" -> listOf("LEI", "WSI", "RSI", "KMI").random()
-            "PCODE" -> listOf("WSI", "SLI", "KMI").random()
-            "PRISON_ID" -> listOf("WSI", "SLI", "KMI").random()
-            "PRISON_NAME" -> listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)").random()
-            "PNAME" -> listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)").random()
-            "LOCATION_NAME" -> listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)").random()
+            "PRISON_CODE" -> getSequentialOrRandomValue(listOf("WSI", "RSI", "KMI"), rowNum)
+            "PCODE" -> getSequentialOrRandomValue(listOf("WSI", "RSI", "KMI"), rowNum)
+            "PRISON_ID" -> getSequentialOrRandomValue(listOf("WSI", "RSI", "KMI"), rowNum)
+            "PRISON_NAME" -> getSequentialOrRandomValue(listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)"), rowNum)
+            "PNAME" -> getSequentialOrRandomValue(listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)"), rowNum)
+            "LOCATION_NAME" -> getSequentialOrRandomValue(listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)"), rowNum)
             "ACTIVITY_STATUS" -> listOf("Archived", "Live").random()
-            "ESTABLISHMENT_ID" -> listOf("WSI", "RSI", "KMI").random()
+            "ESTABLISHMENT_ID" -> getSequentialOrRandomValue(listOf("WSI", "RSI", "KMI"), rowNum)
+            "ORGANISATION_ID" -> getSequentialOrRandomValue(listOf("WSI", "RSI", "KMI"), rowNum)
             else -> TestDataConstants.redshiftTypeValueAssigner(dataType)
         }
     }
@@ -116,6 +118,14 @@ object TestDataGenerator {
             ?: 20
         var ramNum = Random.nextInt(1, rowNum)
         return "Value$ramNum".take(length)
+    }
+
+    private fun getSequentialOrRandomValue( ids: List<String>, rowNum: Int ): String {
+            if ((rowNum - 1) < ids.size) {
+                return  ids[rowNum-1 ]
+            } else {
+                return ids.random()
+            }
     }
 }
 
@@ -171,13 +181,13 @@ fun loadDPDtoGenerateTestData(localDPDgen: String): Map<String, Map<String, Stri
 
             val reports = root["report"]
             val reportDatasetIds = reports
-                ?.map { it["dataset"].asText().removePrefix("\$ref:") }
+                ?.map {  "${it["dataset"].asText().removePrefix("\$ref:")}_REPORT" }
                 .orEmpty()
                 .distinct()
 
             val dashboards = root["dashboard"]
             val dashboardDatasetIds = dashboards
-                ?.map { it["dataset"].asText().removePrefix("\$ref:") }
+                ?.map { "${it["dataset"].asText().removePrefix("\$ref:")}_DASHBOARD" }
                 .orEmpty()
                 .distinct()
 
@@ -237,7 +247,7 @@ fun loadDPDtoGenerateTestData(localDPDgen: String): Map<String, Map<String, Stri
                     .replace("/", "_")
                     .replace("-", "_")
                     .uppercase()
-
+                println("tableNameWithID : $tableNameWithID and redshiftColumns: $redshiftColumns")
                 tableNameWithID to redshiftColumns
             }
         } ?.toMap()
@@ -251,6 +261,8 @@ fun getRedshiftColumnsMap(
     root: String,
     datasetId: String
 ): Map<String, String> {
+    val datasetId =  datasetId.removeSuffix("_REPORT")
+                              .removeSuffix("_DASHBOARD")
 
     val fields = getSchemaFields(root, datasetId)
 
@@ -296,8 +308,57 @@ fun generateTestData(
         outputDir.mkdirs()
     }
 
-    tableToColumnsMap.forEach { (tableName, redshiftColumns) ->
+    tableToColumnsMap
+        .filterKeys { it.endsWith("_DASHBOARD") }
+        .forEach { (tableNameWithDataset, redshiftColumns) ->
+            val tableName = tableNameWithDataset.removeSuffix("_DASHBOARD")
+            val csvFileName = "$tableName.csv"
+            println("csvFileName : $csvFileName")
+            var outputFile: File? = null
+            if (localDPDgen == "local") {
+                outputFile = File(outputDir, csvFileName)
+            } else {
+                outputFile = File(csvFileName)
+            }
 
+            CSVWriter(FileWriter(outputFile)).use { writer ->
+
+                // Header row
+                writer.writeNext(redshiftColumns.keys.toTypedArray())
+
+                // Data rows
+                repeat(3) { rowIndex ->
+
+                    val row = redshiftColumns.entries.map { (column, type) ->
+                        TestDataGenerator.generate(
+                            columnName = column,
+                            dataType = type,
+                            rowNum = rowIndex + 1
+                        ).toString()
+                    }
+                    println("row : $row")
+                    writer.writeNext(row.toTypedArray())
+                }
+            }
+
+            if (localDPDgen != "local") {
+                val s3 = S3Client.builder().build()
+                val s3Path = System.getenv("TEST_DATA_S3_PATH") ?: "dpr-working-development"
+
+                s3.putObject(
+                    PutObjectRequest.builder()
+                        .bucket(s3Path)
+                        .key("datahub-test-data/$csvFileName")
+                        .build(),
+                    RequestBody.fromFile(outputFile)
+                )
+            }
+        }
+
+    tableToColumnsMap
+        .filterKeys { it.endsWith("_REPORT") }
+        .forEach { (tableNameWithDataset, redshiftColumns) ->
+        val tableName = tableNameWithDataset.removeSuffix("_REPORT")
         val csvFileName = "$tableName.csv"
 
         var outputFile: File? = null
@@ -376,6 +437,9 @@ fun sqlScriptGeneration(
         val sql = buildString {
             appendLine("BEGIN;")
             chunk.forEach { (tableName, redshiftColumns) ->
+                val tableName = tableName
+                .removeSuffix("_REPORT")
+                .removeSuffix("_DASHBOARD")
                 // Generate SQL for this table
                 appendLine(generateTableSql(tableName, redshiftColumns))
             }
