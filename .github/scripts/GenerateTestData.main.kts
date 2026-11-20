@@ -143,12 +143,16 @@ fun main() {
 
     // Read row count supplied by GitHub Actions.
     // Default to 100 if no value has been provided.
-    val rowCount = System.getenv("TEST_DATA_ROW_COUNT")
+    val reportRowCount = System.getenv("TEST_DATA_REPORT_ROW_COUNT")
         ?.toIntOrNull()
         ?: 100
 
+    val dashboardRowCount = System.getenv("TEST_DATA_DASHBOARD_ROW_COUNT")
+        ?.toIntOrNull()
+        ?: 3
+
     // Generate the test data CSV and upload it to S3
-    generateTestData(tableToColumnsMap, rowCount, localDPDgen)
+    generateTestData(tableToColumnsMap, reportRowCount, dashboardRowCount, localDPDgen)
 
     // Generate SQL script for createTable + copySql
     sqlScriptGeneration(tableToColumnsMap, localDPDgen)
@@ -215,6 +219,8 @@ fun loadDPDtoGenerateTestData(localDPDgen: String): Map<String, Map<String, Stri
                 )
 
                 datasetIds.forEach { datasetId ->
+                    val datasetId =  datasetId.removeSuffix("_REPORT")
+                                              .removeSuffix("_DASHBOARD")
                     val tableNameWithID = "${tableName}_$datasetId"
                         .replace("(", "")
                         .replace(")", "")
@@ -247,7 +253,6 @@ fun loadDPDtoGenerateTestData(localDPDgen: String): Map<String, Map<String, Stri
                     .replace("/", "_")
                     .replace("-", "_")
                     .uppercase()
-                println("tableNameWithID : $tableNameWithID and redshiftColumns: $redshiftColumns")
                 tableNameWithID to redshiftColumns
             }
         } ?.toMap()
@@ -299,7 +304,8 @@ fun getSchemaFields(
 
 fun generateTestData(
     tableToColumnsMap: Map<String, Map<String, String>>,
-    rowCount: Int = 1,
+    reportRowCount: Int = 1,
+    dashboardRowCount: Int = 1,
     localDPDgen: String
 ) {
     var outputDir: File? = null
@@ -308,12 +314,18 @@ fun generateTestData(
         outputDir.mkdirs()
     }
 
+    var rowCount = 1
     tableToColumnsMap
-        .filterKeys { it.endsWith("_DASHBOARD") }
         .forEach { (tableNameWithDataset, redshiftColumns) ->
-            val tableName = tableNameWithDataset.removeSuffix("_DASHBOARD")
+            var tableName = ""
+            if(tableNameWithDataset.endsWith("_DASHBOARD")) {
+                rowCount = dashboardRowCount
+                tableName = tableNameWithDataset.removeSuffix("_DASHBOARD")
+            } else {
+                rowCount = reportRowCount
+                tableName = tableNameWithDataset.removeSuffix("_REPORT")
+            }
             val csvFileName = "$tableName.csv"
-            println("csvFileName : $csvFileName")
             var outputFile: File? = null
             if (localDPDgen == "local") {
                 outputFile = File(outputDir, csvFileName)
@@ -327,7 +339,7 @@ fun generateTestData(
                 writer.writeNext(redshiftColumns.keys.toTypedArray())
 
                 // Data rows
-                repeat(3) { rowIndex ->
+                repeat(rowCount) { rowIndex ->
 
                     val row = redshiftColumns.entries.map { (column, type) ->
                         TestDataGenerator.generate(
@@ -336,7 +348,6 @@ fun generateTestData(
                             rowNum = rowIndex + 1
                         ).toString()
                     }
-                    println("row : $row")
                     writer.writeNext(row.toTypedArray())
                 }
             }
@@ -354,53 +365,6 @@ fun generateTestData(
                 )
             }
         }
-
-    tableToColumnsMap
-        .filterKeys { it.endsWith("_REPORT") }
-        .forEach { (tableNameWithDataset, redshiftColumns) ->
-        val tableName = tableNameWithDataset.removeSuffix("_REPORT")
-        val csvFileName = "$tableName.csv"
-
-        var outputFile: File? = null
-        if (localDPDgen == "local") {
-            outputFile = File(outputDir, csvFileName)
-        } else {
-            outputFile = File(csvFileName)
-        }
-
-        CSVWriter(FileWriter(outputFile)).use { writer ->
-
-            // Header row
-            writer.writeNext(redshiftColumns.keys.toTypedArray())
-
-            // Data rows
-            repeat(rowCount) { rowIndex ->
-
-                val row = redshiftColumns.entries.map { (column, type) ->
-                    TestDataGenerator.generate(
-                        columnName = column,
-                        dataType = type,
-                        rowNum = rowIndex + 1
-                    ).toString()
-                }
-
-                writer.writeNext(row.toTypedArray())
-            }
-        }
-
-        if (localDPDgen != "local") {
-            val s3 = S3Client.builder().build()
-            val s3Path = System.getenv("TEST_DATA_S3_PATH") ?: "dpr-working-development"
-
-            s3.putObject(
-                PutObjectRequest.builder()
-                    .bucket(s3Path)
-                    .key("datahub-test-data/$csvFileName")
-                    .build(),
-                RequestBody.fromFile(outputFile)
-            )
-        }
-    }
 }
 
 fun sqlScriptGeneration(
