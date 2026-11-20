@@ -121,7 +121,10 @@ object TestDataGenerator {
     }
 
     private fun getSequentialOrRandomValue( ids: List<String>, rowNum: Int ): String {
-            if ((rowNum - 1) < ids.size) {
+        val dashboardRowCount = System.getenv("TEST_DATA_DASHBOARD_ROW_COUNT")
+            ?.toIntOrNull()
+            ?: 3
+            if (dashboardRowCount < ids.size) {
                 return  ids[rowNum-1 ]
             } else {
                 return ids.random()
