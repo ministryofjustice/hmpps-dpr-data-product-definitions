@@ -21,6 +21,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.collections.firstOrNull
 import kotlin.text.appendLine
+import kotlin.text.removeSuffix
 
 // ==========================================
 // 1. CONSTANTS
@@ -67,14 +68,15 @@ object TestDataGenerator {
             "UNIT_DESCRIPTION_4_SHORT" ->  generateLocation(aTozChar)
             "UNIT_CODE_1" -> aTozChar
             "IEP_LEVEL" -> listOf("Basic", "Enhanced", "Standard").random()
-            "PRISON_CODE" -> listOf("LEI", "WSI", "RSI", "KMI").random()
-            "PCODE" -> listOf("WSI", "SLI", "KMI").random()
-            "PRISON_ID" -> listOf("WSI", "SLI", "KMI").random()
-            "PRISON_NAME" -> listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)").random()
-            "PNAME" -> listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)").random()
-            "LOCATION_NAME" -> listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)").random()
+            "PRISON_CODE" -> getSequentialOrRandomValue(listOf("WSI", "RSI", "KMI"), rowNum)
+            "PCODE" -> getSequentialOrRandomValue(listOf("WSI", "RSI", "KMI"), rowNum)
+            "PRISON_ID" -> getSequentialOrRandomValue(listOf("WSI", "RSI", "KMI"), rowNum)
+            "PRISON_NAME" -> getSequentialOrRandomValue(listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)"), rowNum)
+            "PNAME" -> getSequentialOrRandomValue(listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)"), rowNum)
+            "LOCATION_NAME" -> getSequentialOrRandomValue(listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)"), rowNum)
             "ACTIVITY_STATUS" -> listOf("Archived", "Live").random()
-            "ESTABLISHMENT_ID" -> listOf("WSI", "RSI", "KMI").random()
+            "ESTABLISHMENT_ID" -> getSequentialOrRandomValue(listOf("WSI", "RSI", "KMI"), rowNum)
+            "ORGANISATION_ID" -> getSequentialOrRandomValue(listOf("WSI", "RSI", "KMI"), rowNum)
             else -> TestDataConstants.redshiftTypeValueAssigner(dataType)
         }
     }
@@ -117,6 +119,14 @@ object TestDataGenerator {
         var ramNum = Random.nextInt(1, rowNum)
         return "Value$ramNum".take(length)
     }
+
+    private fun getSequentialOrRandomValue( ids: List<String>, rowNum: Int ): String {
+            if ((rowNum-1) < ids.size) {
+                return  ids[rowNum-1 ]
+            } else {
+                return ids.random()
+            }
+    }
 }
 
 // =====================================================
@@ -133,12 +143,16 @@ fun main() {
 
     // Read row count supplied by GitHub Actions.
     // Default to 100 if no value has been provided.
-    val rowCount = System.getenv("TEST_DATA_ROW_COUNT")
+    val reportRowCount = System.getenv("TEST_DATA_REPORT_ROW_COUNT")
         ?.toIntOrNull()
         ?: 100
 
+    val dashboardRowCount = System.getenv("TEST_DATA_DASHBOARD_ROW_COUNT")
+        ?.toIntOrNull()
+        ?: 3
+
     // Generate the test data CSV and upload it to S3
-    generateTestData(tableToColumnsMap, rowCount, localDPDgen)
+    generateTestData(tableToColumnsMap, reportRowCount, dashboardRowCount, localDPDgen)
 
     // Generate SQL script for createTable + copySql
     sqlScriptGeneration(tableToColumnsMap, localDPDgen)
@@ -171,13 +185,13 @@ fun loadDPDtoGenerateTestData(localDPDgen: String): Map<String, Map<String, Stri
 
             val reports = root["report"]
             val reportDatasetIds = reports
-                ?.map { it["dataset"].asText().removePrefix("\$ref:") }
+                ?.map {  "${it["dataset"].asText().removePrefix("\$ref:")}_REPORT" }
                 .orEmpty()
                 .distinct()
 
             val dashboards = root["dashboard"]
             val dashboardDatasetIds = dashboards
-                ?.map { it["dataset"].asText().removePrefix("\$ref:") }
+                ?.map { "${it["dataset"].asText().removePrefix("\$ref:")}_DASHBOARD" }
                 .orEmpty()
                 .distinct()
 
@@ -205,6 +219,8 @@ fun loadDPDtoGenerateTestData(localDPDgen: String): Map<String, Map<String, Stri
                 )
 
                 datasetIds.forEach { datasetId ->
+                    val datasetId =  datasetId.removeSuffix("_REPORT")
+                                              .removeSuffix("_DASHBOARD")
                     val tableNameWithID = "${tableName}_$datasetId"
                         .replace("(", "")
                         .replace(")", "")
@@ -237,7 +253,6 @@ fun loadDPDtoGenerateTestData(localDPDgen: String): Map<String, Map<String, Stri
                     .replace("/", "_")
                     .replace("-", "_")
                     .uppercase()
-
                 tableNameWithID to redshiftColumns
             }
         } ?.toMap()
@@ -251,6 +266,8 @@ fun getRedshiftColumnsMap(
     root: String,
     datasetId: String
 ): Map<String, String> {
+    val datasetId =  datasetId.removeSuffix("_REPORT")
+                              .removeSuffix("_DASHBOARD")
 
     val fields = getSchemaFields(root, datasetId)
 
@@ -287,7 +304,8 @@ fun getSchemaFields(
 
 fun generateTestData(
     tableToColumnsMap: Map<String, Map<String, String>>,
-    rowCount: Int = 1,
+    reportRowCount: Int = 1,
+    dashboardRowCount: Int = 1,
     localDPDgen: String
 ) {
     var outputDir: File? = null
@@ -296,50 +314,57 @@ fun generateTestData(
         outputDir.mkdirs()
     }
 
-    tableToColumnsMap.forEach { (tableName, redshiftColumns) ->
+    var rowCount = 1
+    tableToColumnsMap
+        .forEach { (tableNameWithDataset, redshiftColumns) ->
+            var tableName = ""
+            if(tableNameWithDataset.endsWith("_DASHBOARD")) {
+                rowCount = dashboardRowCount
+                tableName = tableNameWithDataset.removeSuffix("_DASHBOARD")
+            } else {
+                rowCount = reportRowCount
+                tableName = tableNameWithDataset.removeSuffix("_REPORT")
+            }
+            val csvFileName = "$tableName.csv"
+            var outputFile: File? = null
+            if (localDPDgen == "local") {
+                outputFile = File(outputDir, csvFileName)
+            } else {
+                outputFile = File(csvFileName)
+            }
 
-        val csvFileName = "$tableName.csv"
+            CSVWriter(FileWriter(outputFile)).use { writer ->
 
-        var outputFile: File? = null
-        if (localDPDgen == "local") {
-            outputFile = File(outputDir, csvFileName)
-        } else {
-            outputFile = File(csvFileName)
-        }
+                // Header row
+                writer.writeNext(redshiftColumns.keys.toTypedArray())
 
-        CSVWriter(FileWriter(outputFile)).use { writer ->
+                // Data rows
+                repeat(rowCount) { rowIndex ->
 
-            // Header row
-            writer.writeNext(redshiftColumns.keys.toTypedArray())
-
-            // Data rows
-            repeat(rowCount) { rowIndex ->
-
-                val row = redshiftColumns.entries.map { (column, type) ->
-                    TestDataGenerator.generate(
-                        columnName = column,
-                        dataType = type,
-                        rowNum = rowIndex + 1
-                    ).toString()
+                    val row = redshiftColumns.entries.map { (column, type) ->
+                        TestDataGenerator.generate(
+                            columnName = column,
+                            dataType = type,
+                            rowNum = rowIndex + 1
+                        ).toString()
+                    }
+                    writer.writeNext(row.toTypedArray())
                 }
+            }
 
-                writer.writeNext(row.toTypedArray())
+            if (localDPDgen != "local") {
+                val s3 = S3Client.builder().build()
+                val s3Path = System.getenv("TEST_DATA_S3_PATH") ?: "dpr-working-development"
+
+                s3.putObject(
+                    PutObjectRequest.builder()
+                        .bucket(s3Path)
+                        .key("datahub-test-data/$csvFileName")
+                        .build(),
+                    RequestBody.fromFile(outputFile)
+                )
             }
         }
-
-        if (localDPDgen != "local") {
-            val s3 = S3Client.builder().build()
-            val s3Path = System.getenv("TEST_DATA_S3_PATH") ?: "dpr-working-development"
-
-            s3.putObject(
-                PutObjectRequest.builder()
-                    .bucket(s3Path)
-                    .key("datahub-test-data/$csvFileName")
-                    .build(),
-                RequestBody.fromFile(outputFile)
-            )
-        }
-    }
 }
 
 fun sqlScriptGeneration(
@@ -376,6 +401,9 @@ fun sqlScriptGeneration(
         val sql = buildString {
             appendLine("BEGIN;")
             chunk.forEach { (tableName, redshiftColumns) ->
+                val tableName = tableName
+                .removeSuffix("_REPORT")
+                .removeSuffix("_DASHBOARD")
                 // Generate SQL for this table
                 appendLine(generateTableSql(tableName, redshiftColumns))
             }
