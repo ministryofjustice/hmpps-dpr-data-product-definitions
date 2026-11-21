@@ -3,14 +3,14 @@
   "name": "ORS National Alerts Report",
   "description": "The report returns a list of all prisoners in each establishment selected who have active alerts.<br/> <br/>NAT00005 - v1.0 Last Modified: 13/05/2021",
   "metadata": {
-    "author": "",
-    "owner": "",
     "version": "1.0.0",
     "tags": [
       "NAT00005 v1.0",
       "National",
       "Alerts"
-    ]
+    ],
+    "author": "",
+    "owner": ""
   },
   "datasource": [
     {
@@ -119,7 +119,7 @@
         {
           "index": 0,
           "name": "alert_code",
-          "filterType": "autocomplete",
+          "filterType": "autocompletemulti",
           "reportFieldType": "string",
           "display": "Alert",
           "description": "@Prompt('Alert (All for all)','A','Alerts\\Alert Description',multi,free,,Not_Persistent,,User:400)",
@@ -203,6 +203,31 @@
             "name": "ALERT_COUNT",
             "type": "int",
             "display": "Total Alerts"
+          }
+        ]
+      }
+    },
+    {
+      "id": "alerts-total-establishment-per-alert",
+      "name": "Total Establishment count",
+      "datasource": "redshift",
+      "query": "WITH counts AS ( SELECT AGY_LOC_ID, ALERT_DESCRIPTION, COUNT(*) AS cnt FROM ${tableId} GROUP BY AGY_LOC_ID, ALERT_DESCRIPTION ), ranked AS ( SELECT AGY_LOC_ID, ALERT_DESCRIPTION, cnt, ROW_NUMBER() OVER ( PARTITION BY AGY_LOC_ID ORDER BY cnt DESC, ALERT_DESCRIPTION ) AS rn FROM counts ), rolled AS ( SELECT AGY_LOC_ID, CASE WHEN rn <= 5 THEN ALERT_DESCRIPTION ELSE 'Other' END AS ALERT_DESCRIPTION, SUM(cnt)  AS cnt, MIN(rn)   AS sort_key FROM ranked GROUP BY AGY_LOC_ID, CASE WHEN rn <= 5 THEN ALERT_DESCRIPTION ELSE 'Other' END ) SELECT AGY_LOC_ID, SUM(cnt) AS TOTAL_ALERTS, LISTAGG(ALERT_DESCRIPTION || ': ' || cnt, ', ') WITHIN GROUP (ORDER BY sort_key) AS ALERT_COUNT_SUMMARY FROM rolled GROUP BY AGY_LOC_ID",
+      "schema": {
+        "field": [
+          {
+            "name": "AGY_LOC_ID",
+            "type": "string",
+            "display": "Establishment"
+          },
+          {
+            "name": "TOTAL_ALERTS",
+            "type": "int",
+            "display": "Total Alerts"
+          },
+          {
+            "name": "ALERT_COUNT_SUMMARY",
+            "type": "string",
+            "display": "Summary"
           }
         ]
       }
@@ -429,7 +454,7 @@
         {
           "id": "alerts-total-establishment-header",
           "template": "page-header",
-          "dataset": "$ref:alerts-total-establishment"
+          "dataset": "$ref:alerts-total-establishment-per-alert"
         },
         {
           "id": "alerts-total-header",
@@ -451,7 +476,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": false
+            "defaultsort": true
           },
           {
             "name": "$ref:OFFENDER_ID_DISPLAY",
@@ -467,7 +492,7 @@
             "formula": "",
             "visible": "true",
             "sortable": true,
-            "defaultsort": true
+            "defaultsort": false
           },
           {
             "name": "$ref:FIRST_NAME",
