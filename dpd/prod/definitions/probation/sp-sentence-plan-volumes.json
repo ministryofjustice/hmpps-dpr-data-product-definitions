@@ -73,6 +73,7 @@
             "id": "sentence-plan-volumes-by-date-range",
             "name": "SP summary",
             "datasource": "datamart",
+            "description": "description",
             "query": "  SELECT TRUNC(p.created_at) as ts, '$TBC' AS link, COUNT(p.id) as plan_count, COUNT(a.status) as agreement_count, COUNT( CASE WHEN a.status = 'AGREED' THEN 1 END ) AS agreed_count, COUNT( CASE WHEN a.status = 'COULD_NOT_ANSWER' THEN 1 END ) AS could_not_answer_count, COUNT( CASE WHEN a.status = 'DO_NOT_AGREE' THEN 1 END ) AS not_agreed_count, COUNT( CASE WHEN a.status = 'UPDATED_AGREED' THEN 1 END ) AS updated_agreed_count, COUNT( CASE WHEN a.status = 'UPDATED_COULD_NOT_AGREE' THEN 1 END ) AS updated_could_not_agree_count, SUM(plan_count) over ( order by ts rows unbounded preceding ) AS total_to_date, SUM(agreed_count) over ( order by ts rows unbounded preceding ) AS total_agreed, SUM(could_not_answer_count) over ( order by ts rows unbounded preceding ) AS total_could_not_answer, SUM(not_agreed_count) over ( order by ts rows unbounded preceding ) AS total_not_agreed, SUM(updated_agreed_count) over ( order by ts rows unbounded preceding ) AS total_updated_agreed, SUM(updated_could_not_agree_count) over ( order by ts rows unbounded preceding ) AS total_updated_could_not_agree,round(total_not_agreed::FLOAT4 / total_to_date::FLOAT4 * 100,1)  AS not_agreed_pct,  round(total_agreed::FLOAT4 / total_to_date::FLOAT4 * 100,1) AS agreed_pct, round(total_could_not_answer::FLOAT4 / total_to_date::FLOAT4 * 100,1) AS could_not_answer_pct, round(total_updated_could_not_agree::FLOAT4 / total_to_date::FLOAT4 * 100,1) AS updated_could_not_agree_pct, round(total_updated_agreed::FLOAT4 / total_to_date::FLOAT4 * 100,1) AS updated_agreed_pct, SUM(agreement_count) over ( order by ts rows unbounded preceding ) AS total_agreement, round(total_agreement::FLOAT4 / total_to_date::FLOAT4 * 100,1) AS agreement_pct FROM datamart.probation.sentenceplanassessmentview_sentence_plan p LEFT JOIN datamart.probation.sentenceplanassessmentview_sentence_plan_identifier i ON i.sentence_plan_id = p.id LEFT JOIN datamart.probation.sentenceplanassessmentview_plan_agreement a ON a.sentence_plan_id = p.snapshot_id WHERE exists ( SELECT 1 FROM datamart.probation.sentenceplanassessmentview_goal g WHERE g.sentence_plan_id = p.snapshot_id ) AND p.deleted = false GROUP BY ts ORDER BY ts",
             "schema": {
                 "field": [
@@ -201,6 +202,7 @@
             "id": "sentence-plan-by-date",
             "name": "Sentence Plan active detail",
             "datasource": "datamart",
+            "description": "description",
             "query": "SELECT p.id, TRUNC(p.created_at) as ts, trunc(p.updated_at) AS updated_at, CASE WHEN a.status IS NULL THEN 'DRAFT' ELSE a.status END AS status, region_code, COUNT(CASE WHEN g.area_of_need = 'ACCOMMODATION' THEN 1 END) AS accommodation_count, COUNT(CASE WHEN g.area_of_need = 'DRUG_USE' THEN 1 END) AS drug_count, COUNT(CASE WHEN g.area_of_need = 'FINANCES' THEN 1 END) AS finance_count, COUNT(CASE WHEN g.area_of_need = 'ALCOHOL_USE' THEN 1 END) AS alcohol_count, COUNT(CASE WHEN g.area_of_need = 'HEALTH_AND_WELLBEING' THEN 1 END) AS health_count, COUNT(CASE WHEN g.area_of_need = 'PERSONAL_RELATIONSHIPS_AND_COMMUNITY' THEN 1 END) AS personal_count, COUNT(CASE WHEN g.area_of_need = 'EMPLOYMENT_AND_EDUCATION' THEN 1 END) AS employment_count, COUNT(CASE WHEN g.area_of_need = 'THINKING_BEHAVIOURS_AND_ATTITUDES' THEN 1 END) AS thinking_count, count(g.id) as total_goal_count FROM datamart.probation.sentenceplanassessmentview_sentence_plan p LEFT JOIN datamart.probation.sentenceplanassessmentview_goal g ON  g.sentence_plan_id = p.snapshot_id LEFT JOIN datamart.probation.sentenceplanassessmentview_plan_agreement a ON  a.sentence_plan_id = p.snapshot_id GROUP BY  (p.id, ts,p.updated_at, a.status,region_code)",
             "schema": {
                 "field": [
@@ -588,12 +590,13 @@
                 {
                     "id": "scorecard1",
                     "display": "Volume of sentence plans with at least 1 goal for the selected criteria",
+                    "description": "Volume of sentence plans",
                     "visualisation": [
                         {
                             "id": "sc1",
                             "type": "scorecard",
                             "display": "Total no of sentence plans with created date",
-                            "description": "stuff",
+                            "description": "By created date",
                             "column": {
                                 "key": [
                                     {
@@ -613,6 +616,7 @@
                 {
                     "id": "list3",
                     "display": "Volume of sentences plans created by day that currently have at least 1 goal for the selected criteria",
+                    "description": "Volume of sentences plans created by day",
                     "visualisation": [
                         {
                             "id": "pc1",
@@ -643,27 +647,33 @@
                                     },
                                     {
                                         "id": "$ref:agreement_pct",
-                                        "display": "Plans with an agreement status (%)"
+                                        "display": "Plans with an agreement status (%)",
+                                        "unit": "percentage"
                                     },
                                     {
                                         "id": "$ref:agreed_pct",
-                                        "display": "Agreed (%)"
+                                        "display": "Agreed (%)",
+                                        "unit": "percentage"
                                     },
                                     {
                                         "id": "$ref:not_agreed_pct",
-                                        "display": "Do not agree (%)"
+                                        "display": "Do not agree (%)",
+                                        "unit": "percentage"
                                     },
                                     {
                                         "id": "$ref:could_not_answer_pct",
-                                        "display": "Could not answer (%)"
+                                        "display": "Could not answer (%)",
+                                        "unit": "percentage"
                                     },
                                     {
                                         "id": "$ref:updated_agreed_pct",
-                                        "display": "Updated agreed (%)"
+                                        "display": "Updated agreed (%)",
+                                        "unit": "percentage"
                                     },
                                     {
                                         "id": "$ref:updated_could_not_agree_pct",
-                                        "display": "Updated could not agree (%)"
+                                        "display": "Updated could not agree (%)",
+                                        "unit": "percentage"
                                     }
                                 ],
                                 "expectNull": false
@@ -711,9 +721,7 @@
                             "display": "Plans with an agreement status, by status",
                             "option": {
                                 "horizontal": false,
-                                "xStacked": true,
-                                "yStacked": true,
-                                "showLatest": false
+                                "showLatest": true
                             },
                             "column": {
                                 "key": [
@@ -725,23 +733,28 @@
                                 "measure": [
                                     {
                                         "id": "$ref:agreed_pct",
-                                        "display": "Agreed (%)"
+                                        "display": "Agreed",
+                                        "unit": "percentage"
                                     },
                                     {
                                         "id": "$ref:not_agreed_pct",
-                                        "display": "Not agreed (%)"
+                                        "display": "Not agreed",
+                                        "unit": "percentage"
                                     },
                                     {
                                         "id": "$ref:could_not_answer_pct",
-                                        "display": "Could not answer (%)"
+                                        "display": "Could not answer",
+                                        "unit": "percentage"
                                     },
                                     {
                                         "id": "$ref:updated_agreed_pct",
-                                        "display": "Updated agreed (%)"
+                                        "display": "Updated agreed",
+                                        "unit": "percentage"
                                     },
                                     {
                                         "id": "$ref:updated_could_not_agree_pct",
-                                        "display": "Updated could not agree (%)"
+                                        "display": "Updated could not agree",
+                                        "unit": "percentage"
                                     }
                                 ],
                                 "expectNull": false
