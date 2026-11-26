@@ -35,7 +35,7 @@ object TestDataConstants {
         "double" to "DOUBLE PRECISION",
         "long" to "BIGINT",
         "int" to "INTEGER",
-        "float" to "FLOAT",
+        "float" to "REAL",
         "datetime" to "TIMESTAMP",
         "timestamp" to "TIMESTAMP"
     )
