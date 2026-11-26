@@ -149,7 +149,7 @@ fun main() {
 
     val dashboardRowCount = System.getenv("TEST_DATA_DASHBOARD_ROW_COUNT")
         ?.toIntOrNull()
-        ?: 3
+        ?: 9
 
     // Generate the test data CSV and upload it to S3
     generateTestData(tableToColumnsMap, reportRowCount, dashboardRowCount, localDPDgen)
