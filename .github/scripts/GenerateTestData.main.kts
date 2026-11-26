@@ -75,8 +75,8 @@ object TestDataGenerator {
             "PNAME" -> getSequentialOrRandomValue(listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)"), rowNum)
             "LOCATION_NAME" -> getSequentialOrRandomValue(listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)"), rowNum)
             "ACTIVITY_STATUS" -> listOf("Archived", "Live").random()
-            "ESTABLISHMENT_ID" -> getSequentialOrRandomValue(listOf("WSI", "RSI", "KMI"), rowNum)
-            "ORGANISATION_ID" -> getSequentialOrRandomValue(listOf("WSI", "RSI", "KMI"), rowNum)
+            "ESTABLISHMENT_ID" -> getSequentialOrRandomValue(listOf("WSI", "RSI", "KMI","WSI", "RSI", "KMI"), rowNum)
+            "ORGANISATION_ID" -> getSequentialOrRandomValue(listOf("WSI", "RSI", "KMI","WSI", "RSI", "KMI"), rowNum)
             else -> TestDataConstants.redshiftTypeValueAssigner(dataType)
         }
     }
