@@ -35,8 +35,9 @@ object TestDataConstants {
         "double" to "DOUBLE PRECISION",
         "long" to "BIGINT",
         "int" to "INTEGER",
+        "float" to "FLOAT",
         "datetime" to "TIMESTAMP",
-        "timestamp" to "TIMESTAMP",
+        "timestamp" to "TIMESTAMP"
     )
 
     fun redshiftTypeValueAssigner(dataType: String): Any =
