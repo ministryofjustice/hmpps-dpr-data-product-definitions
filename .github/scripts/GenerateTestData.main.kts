@@ -35,8 +35,9 @@ object TestDataConstants {
         "double" to "DOUBLE PRECISION",
         "long" to "BIGINT",
         "int" to "INTEGER",
+        "float" to "DOUBLE PRECISION",
         "datetime" to "TIMESTAMP",
-        "timestamp" to "TIMESTAMP",
+        "timestamp" to "TIMESTAMP"
     )
 
     fun redshiftTypeValueAssigner(dataType: String): Any =
@@ -75,8 +76,8 @@ object TestDataGenerator {
             "PNAME" -> getSequentialOrRandomValue(listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)"), rowNum)
             "LOCATION_NAME" -> getSequentialOrRandomValue(listOf("WORMWOOD SCRUBS (HMP)", "Swaleside (HMP)", "Kirkham (HMP)"), rowNum)
             "ACTIVITY_STATUS" -> listOf("Archived", "Live").random()
-            "ESTABLISHMENT_ID" -> getSequentialOrRandomValue(listOf("WSI", "RSI", "KMI"), rowNum)
-            "ORGANISATION_ID" -> getSequentialOrRandomValue(listOf("WSI", "RSI", "KMI"), rowNum)
+            "ESTABLISHMENT_ID" -> getSequentialOrRandomValue(listOf("WSI", "RSI", "KMI","WSI", "RSI", "KMI"), rowNum)
+            "ORGANISATION_ID" -> getSequentialOrRandomValue(listOf("WSI", "RSI", "KMI","WSI", "RSI", "KMI"), rowNum)
             else -> TestDataConstants.redshiftTypeValueAssigner(dataType)
         }
     }
@@ -149,7 +150,7 @@ fun main() {
 
     val dashboardRowCount = System.getenv("TEST_DATA_DASHBOARD_ROW_COUNT")
         ?.toIntOrNull()
-        ?: 3
+        ?: 100
 
     // Generate the test data CSV and upload it to S3
     generateTestData(tableToColumnsMap, reportRowCount, dashboardRowCount, localDPDgen)
